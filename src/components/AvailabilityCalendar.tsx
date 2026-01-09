@@ -47,15 +47,6 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
   },
 };
 
-// Map mock IDs to database UUIDs
-const mockIdToDbId: Record<string, string> = {
-  '1': '11111111-1111-1111-1111-111111111111',
-  '2': '22222222-2222-2222-2222-222222222222',
-  '3': '33333333-3333-3333-3333-333333333333',
-  '4': '44444444-4444-4444-4444-444444444444',
-  '5': '55555555-5555-5555-5555-555555555555',
-};
-
 export function AvailabilityCalendar({ personnelId, personnelName }: AvailabilityCalendarProps) {
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -65,8 +56,6 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
   const [isSaving, setIsSaving] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const { toast } = useToast();
-
-  const dbPersonnelId = mockIdToDbId[personnelId] || personnelId;
 
   useEffect(() => {
     fetchAvailability();
@@ -78,7 +67,7 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
       const { data, error } = await supabase
         .from('availability')
         .select('*')
-        .eq('personnel_id', dbPersonnelId);
+        .eq('personnel_id', personnelId);
 
       if (error) throw error;
       setAvailability(
@@ -140,7 +129,7 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
         const { error } = await supabase
           .from('availability')
           .insert({
-            personnel_id: dbPersonnelId,
+            personnel_id: personnelId,
             date: dateStr,
             status: selectedStatus,
             notes: notes || null,

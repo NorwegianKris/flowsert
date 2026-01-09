@@ -15,9 +15,10 @@ import { ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle }
 interface PersonnelDetailProps {
   personnel: Personnel;
   onBack: () => void;
+  hideBackButton?: boolean;
 }
 
-export function PersonnelDetail({ personnel, onBack }: PersonnelDetailProps) {
+export function PersonnelDetail({ personnel, onBack, hideBackButton = false }: PersonnelDetailProps) {
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
   const initials = personnel.name
@@ -28,14 +29,16 @@ export function PersonnelDetail({ personnel, onBack }: PersonnelDetailProps) {
 
   return (
     <div className="space-y-6">
-      <Button
-        variant="ghost"
-        onClick={onBack}
-        className="gap-2 text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Personnel
-      </Button>
+      {!hideBackButton && (
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Personnel
+        </Button>
+      )}
 
       <Card className="border-border/50">
         <CardContent className="p-6">
