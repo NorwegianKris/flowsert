@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CertificateTable } from '@/components/CertificateTable';
+import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { Personnel } from '@/types';
 import {
   getPersonnelOverallStatus,
@@ -135,14 +136,25 @@ export function PersonnelDetail({ personnel, onBack }: PersonnelDetailProps) {
         </Card>
       </div>
 
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CertificateTable certificates={personnel.certificates} />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CertificateTable certificates={personnel.certificates} />
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div>
+          <AvailabilityCalendar 
+            personnelId={personnel.id} 
+            personnelName={personnel.name}
+          />
+        </div>
+      </div>
     </div>
   );
 }

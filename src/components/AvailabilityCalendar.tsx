@@ -1,0 +1,377 @@
+import { useState, useEffect } from 'react';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { format, isSameDay } from 'date-fns';
+import { CalendarDays, Check, X, Clock, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
+
+interface AvailabilityEntry {
+  id: string;
+  date: string;
+  status: AvailabilityStatus;
+  notes: string | null;
+}
+
+interface AvailabilityCalendarProps {
+  personnelId: string;
+  personnelName: string;
+}
+
+const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Check; className: string }> = {
+  available: {
+    label: 'Available',
+    icon: Check,
+    className: 'bg-[hsl(var(--status-valid))] text-[hsl(var(--status-valid-foreground))]',
+  },
+  partial: {
+    label: 'Partial',
+    icon: Clock,
+    className: 'bg-[hsl(var(--status-warning))] text-[hsl(var(--status-warning-foreground))]',
+  },
+  unavailable: {
+    label: 'Unavailable',
+    icon: X,
+    className: 'bg-[hsl(var(--status-expired))] text-[hsl(var(--status-expired-foreground))]',
+  },
+};
+
+// Map mock IDs to database UUIDs
+const mockIdToDbId: Record<string, string> = {
+  '1': '11111111-1111-1111-1111-111111111111',
+  '2': '22222222-2222-2222-2222-222222222222',
+  '3': '33333333-3333-3333-3333-333333333333',
+  '4': '44444444-4444-4444-4444-444444444444',
+  '5': '55555555-5555-5555-5555-555555555555',
+};
+
+export function AvailabilityCalendar({ personnelId, personnelName }: AvailabilityCalendarProps) {
+  const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedStatus, setSelectedStatus] = useState<AvailabilityStatus>('available');
+  const [notes, setNotes] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const { toast } = useToast();
+
+  const dbPersonnelId = mockIdToDbId[personnelId] || personnelId;
+
+  useEffect(() => {
+    fetchAvailability();
+  }, [personnelId]);
+
+  const fetchAvailability = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('availability')
+        .select('*')
+        .eq('personnel_id', dbPersonnelId);
+
+      if (error) throw error;
+      setAvailability(
+        (data || []).map((item) => ({
+          id: item.id,
+          date: item.date,
+          status: item.status as AvailabilityStatus,
+          notes: item.notes,
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching availability:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load availability data',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    setSelectedDate(date);
+    
+    const existing = availability.find((a) =>
+      isSameDay(new Date(a.date), date)
+    );
+    
+    if (existing) {
+      setSelectedStatus(existing.status as AvailabilityStatus);
+      setNotes(existing.notes || '');
+    } else {
+      setSelectedStatus('available');
+      setNotes('');
+    }
+    setPopoverOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!selectedDate) return;
+    
+    setIsSaving(true);
+    try {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const existing = availability.find((a) =>
+        isSameDay(new Date(a.date), selectedDate)
+      );
+
+      if (existing) {
+        const { error } = await supabase
+          .from('availability')
+          .update({ status: selectedStatus, notes: notes || null })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('availability')
+          .insert({
+            personnel_id: dbPersonnelId,
+            date: dateStr,
+            status: selectedStatus,
+            notes: notes || null,
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'Saved',
+        description: `Availability for ${format(selectedDate, 'PPP')} updated`,
+      });
+      
+      fetchAvailability();
+      setPopoverOpen(false);
+    } catch (error) {
+      console.error('Error saving availability:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save availability',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!selectedDate) return;
+    
+    const existing = availability.find((a) =>
+      isSameDay(new Date(a.date), selectedDate)
+    );
+    
+    if (!existing) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('availability')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Removed',
+        description: `Availability for ${format(selectedDate, 'PPP')} removed`,
+      });
+      
+      fetchAvailability();
+      setPopoverOpen(false);
+    } catch (error) {
+      console.error('Error removing availability:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to remove availability',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getDateStatus = (date: Date): AvailabilityStatus | null => {
+    const entry = availability.find((a) => isSameDay(new Date(a.date), date));
+    return entry ? (entry.status as AvailabilityStatus) : null;
+  };
+
+  const modifiers = {
+    available: availability
+      .filter((a) => a.status === 'available')
+      .map((a) => new Date(a.date)),
+    unavailable: availability
+      .filter((a) => a.status === 'unavailable')
+      .map((a) => new Date(a.date)),
+    partial: availability
+      .filter((a) => a.status === 'partial')
+      .map((a) => new Date(a.date)),
+  };
+
+  const modifiersStyles = {
+    available: {
+      backgroundColor: 'hsl(142 76% 36%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+    unavailable: {
+      backgroundColor: 'hsl(0 72% 50%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+    partial: {
+      backgroundColor: 'hsl(38 92% 50%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+  };
+
+  return (
+    <Card className="border-border/50">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          Availability Calendar
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-3 mb-4">
+              {Object.entries(statusConfig).map(([status, config]) => (
+                <div key={status} className="flex items-center gap-1.5 text-sm">
+                  <span className={cn('h-3 w-3 rounded-full', config.className)} />
+                  <span className="text-muted-foreground">{config.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <div>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    modifiers={modifiers}
+                    modifiersStyles={modifiersStyles}
+                    className="rounded-md border border-border pointer-events-auto"
+                  />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="start">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-1">
+                      {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Set availability for {personnelName}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {Object.entries(statusConfig).map(([status, config]) => {
+                      const Icon = config.icon;
+                      return (
+                        <Button
+                          key={status}
+                          variant={selectedStatus === status ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedStatus(status as AvailabilityStatus)}
+                          className={cn(
+                            'flex-1',
+                            selectedStatus === status && config.className
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5 mr-1" />
+                          {config.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <div>
+                    <Textarea
+                      placeholder="Add notes (optional)..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={handleSave} disabled={isSaving} className="flex-1">
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Save'
+                      )}
+                    </Button>
+                    {availability.find((a) =>
+                      selectedDate && isSameDay(new Date(a.date), selectedDate)
+                    ) && (
+                      <Button
+                        variant="outline"
+                        onClick={handleRemove}
+                        disabled={isSaving}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <div className="pt-4 border-t border-border/50">
+              <h4 className="text-sm font-medium mb-2">Upcoming Availability</h4>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {availability
+                  .filter((a) => new Date(a.date) >= new Date())
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .slice(0, 5)
+                  .map((entry) => {
+                    const config = statusConfig[entry.status as AvailabilityStatus];
+                    return (
+                      <div key={entry.id} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {format(new Date(entry.date), 'EEE, MMM d')}
+                        </span>
+                        <Badge className={cn('text-xs', config.className)}>
+                          {config.label}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                {availability.filter((a) => new Date(a.date) >= new Date()).length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No upcoming availability set
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
