@@ -219,7 +219,7 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
 
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
-                <div>
+                <div className="w-full">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -228,7 +228,20 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
                     onMonthChange={setCurrentMonth}
                     modifiers={modifiers}
                     modifiersStyles={modifiersStyles}
-                    className="rounded-md border border-border pointer-events-auto"
+                    className="rounded-md border border-border pointer-events-auto w-full"
+                    classNames={{
+                      months: "flex flex-col w-full",
+                      month: "space-y-4 w-full",
+                      table: "w-full border-collapse",
+                      head_row: "flex w-full",
+                      head_cell: "text-muted-foreground rounded-md flex-1 font-medium text-base",
+                      row: "flex w-full mt-2",
+                      cell: "flex-1 aspect-square text-center text-lg p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      day: "h-full w-full p-0 font-normal text-lg aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
+                      caption: "flex justify-center pt-1 relative items-center",
+                      caption_label: "text-base font-semibold",
+                      nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100",
+                    }}
                   />
                 </div>
               </PopoverTrigger>
