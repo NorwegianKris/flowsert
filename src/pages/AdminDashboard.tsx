@@ -7,18 +7,18 @@ import { ChatBot } from '@/components/ChatBot';
 import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
+import { ProjectsTab } from '@/components/ProjectsTab';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Loader2, UserPlus, LogOut, Plus, ChevronDown, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [personnelOpen, setPersonnelOpen] = useState(true);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const { personnel, loading, refetch } = usePersonnel();
   const { signOut, profile } = useAuth();
@@ -95,19 +95,23 @@ export default function AdminDashboard() {
 
         <DashboardStats personnel={personnel} />
         
-        <Collapsible open={personnelOpen} onOpenChange={setPersonnelOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto mb-4 hover:bg-transparent">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">
-                  Personnel ({filteredPersonnel.length})
-                </h2>
-              </div>
-              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${personnelOpen ? '' : '-rotate-90'}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
+        <Tabs defaultValue="personnel" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="personnel" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Personnel
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Projects
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="personnel" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredPersonnel.map((p) => (
                 <PersonnelCard
@@ -127,10 +131,16 @@ export default function AdminDashboard() {
                 </p>
               </div>
             )}
-          </CollapsibleContent>
-        </Collapsible>
-        
-        <TeamCalendar personnel={personnel} />
+          </TabsContent>
+          
+          <TabsContent value="calendar" className="mt-6">
+            <TeamCalendar personnel={personnel} />
+          </TabsContent>
+          
+          <TabsContent value="projects" className="mt-6">
+            <ProjectsTab />
+          </TabsContent>
+        </Tabs>
       </main>
       
       <ChatBot />
