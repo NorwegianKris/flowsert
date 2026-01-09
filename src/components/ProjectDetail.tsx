@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ProjectCalendar } from '@/components/ProjectCalendar';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
+import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { Project, CalendarItem } from '@/types/project';
 import { Personnel } from '@/types';
 import {
@@ -19,6 +20,7 @@ import {
   Plus,
   Share2,
   XCircle,
+  Pencil,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import {
@@ -50,6 +52,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
@@ -127,6 +130,10 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
         </Button>
 
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)} className="gap-2">
+            <Pencil className="h-4 w-4" />
+            Edit Project
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsAddItemOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Calendar Item
@@ -387,6 +394,18 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
       </Card>
 
       {/* Dialogs */}
+      <EditProjectDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        project={project}
+        personnel={personnel}
+        onSave={(updatedProject) => {
+          if (onUpdateProject) {
+            onUpdateProject(updatedProject);
+          }
+        }}
+      />
+
       <AddCalendarItemDialog
         open={isAddItemOpen}
         onOpenChange={setIsAddItemOpen}
