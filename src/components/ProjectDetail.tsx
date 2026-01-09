@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ProjectCalendar } from '@/components/ProjectCalendar';
-import { Project } from '@/types/project';
+import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
+import { ShareProjectDialog } from '@/components/ShareProjectDialog';
+import { Project, CalendarItem } from '@/types/project';
 import { Personnel } from '@/types';
 import {
   ArrowLeft,
@@ -13,8 +16,22 @@ import {
   FileText,
   Calendar,
   MapPin,
+  Plus,
+  Share2,
+  XCircle,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface ProjectDetailProps {
   project: Project;
@@ -30,6 +47,10 @@ const statusConfig = {
 };
 
 export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: ProjectDetailProps) {
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
   
@@ -60,16 +81,73 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
     }
   };
 
+  const handleAddCalendarItem = (item: CalendarItem) => {
+    if (onUpdateProject) {
+      const updatedItems = [...(project.calendarItems || []), item];
+      onUpdateProject({
+        ...project,
+        calendarItems: updatedItems,
+      });
+      toast.success('Calendar item added');
+    }
+  };
+
+  const handleRemoveCalendarItem = (itemId: string) => {
+    if (onUpdateProject) {
+      const updatedItems = (project.calendarItems || []).filter((i) => i.id !== itemId);
+      onUpdateProject({
+        ...project,
+        calendarItems: updatedItems,
+      });
+      toast.success('Calendar item removed');
+    }
+  };
+
+  const handleCloseProject = () => {
+    if (onUpdateProject) {
+      onUpdateProject({
+        ...project,
+        status: 'completed',
+      });
+      toast.success('Project status changed to Completed');
+    }
+    setIsCloseDialogOpen(false);
+  };
+
   return (
     <div className="space-y-6">
-      <Button
-        variant="ghost"
-        onClick={onBack}
-        className="gap-2 text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Projects
-      </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="gap-2 text-muted-foreground hover:text-foreground w-fit"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Projects
+        </Button>
+
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsAddItemOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Calendar Item
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsShareOpen(true)} className="gap-2">
+            <Share2 className="h-4 w-4" />
+            Share Project
+          </Button>
+          {project.status === 'active' && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsCloseDialogOpen(true)} 
+              className="gap-2 text-destructive hover:text-destructive"
+            >
+              <XCircle className="h-4 w-4" />
+              Close Project
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Project Header Card */}
       <Card className="border-border/50">
@@ -164,12 +242,54 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar Section */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-4">
           <ProjectCalendar 
             project={project} 
             onUpdateDates={handleUpdateDates}
             editable={!!onUpdateProject}
           />
+
+          {/* Calendar Items List */}
+          {project.calendarItems && project.calendarItems.length > 0 && (
+            <Card className="border-border/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Calendar Items ({project.calendarItems.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {project.calendarItems
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">
+                            {format(parseISO(item.date), 'MMM d, yyyy')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.description}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveCalendarItem(item.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Assigned Personnel Section */}
@@ -265,6 +385,39 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <AddCalendarItemDialog
+        open={isAddItemOpen}
+        onOpenChange={setIsAddItemOpen}
+        onAdd={handleAddCalendarItem}
+        projectStartDate={project.startDate}
+        projectEndDate={project.endDate}
+      />
+
+      <ShareProjectDialog
+        open={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        project={project}
+        personnel={personnel}
+      />
+
+      <AlertDialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to close this project? This will change the status from "Active" to "Completed" and move it to Previous projects.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCloseProject}>
+              Close Project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

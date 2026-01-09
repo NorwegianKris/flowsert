@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Project } from '@/types/project';
 import {
@@ -63,6 +64,11 @@ export function ProjectCalendar({ project, onUpdateDates, editable = true }: Pro
 
   const isProjectStart = (day: Date) => isSameDay(day, projectStart);
   const isProjectEnd = (day: Date) => projectEnd && isSameDay(day, projectEnd);
+
+  const getCalendarItemForDay = (day: Date) => {
+    if (!project.calendarItems) return null;
+    return project.calendarItems.find((item) => isSameDay(parseISO(item.date), day));
+  };
 
   const handleSave = () => {
     if (onUpdateDates && editStartDate) {
@@ -159,40 +165,62 @@ export function ProjectCalendar({ project, onUpdateDates, editable = true }: Pro
           </Button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center text-sm">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-            <div key={day} className="py-2 text-muted-foreground font-medium text-xs">
-              {day}
-            </div>
-          ))}
-          {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="contents">
-              {week.map((day, dayIndex) => {
-                const inRange = isInProjectRange(day);
-                const isStart = isProjectStart(day);
-                const isEnd = isProjectEnd(day);
-                const isCurrentMonth = isSameMonth(day, currentMonth);
+        <TooltipProvider>
+          <div className="grid grid-cols-7 gap-1 text-center text-sm">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+              <div key={day} className="py-2 text-muted-foreground font-medium text-xs">
+                {day}
+              </div>
+            ))}
+            {weeks.map((week, weekIndex) => (
+              <div key={weekIndex} className="contents">
+                {week.map((day, dayIndex) => {
+                  const inRange = isInProjectRange(day);
+                  const isStart = isProjectStart(day);
+                  const isEnd = isProjectEnd(day);
+                  const isCurrentMonth = isSameMonth(day, currentMonth);
+                  const calendarItem = getCalendarItemForDay(day);
 
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className={`
-                      relative py-2 text-sm
-                      ${!isCurrentMonth ? 'text-muted-foreground/40' : ''}
-                      ${inRange ? 'bg-primary/20' : ''}
-                      ${isStart ? 'rounded-l-md bg-primary text-primary-foreground font-semibold' : ''}
-                      ${isEnd ? 'rounded-r-md bg-primary text-primary-foreground font-semibold' : ''}
-                      ${inRange && !isStart && !isEnd && dayIndex === 0 ? 'rounded-l-md' : ''}
-                      ${inRange && !isStart && !isEnd && dayIndex === 6 ? 'rounded-r-md' : ''}
-                    `}
-                  >
-                    {format(day, 'd')}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+                  const dayContent = (
+                    <div
+                      key={day.toISOString()}
+                      className={`
+                        relative py-2 text-sm
+                        ${!isCurrentMonth ? 'text-muted-foreground/40' : ''}
+                        ${inRange ? 'bg-primary/20' : ''}
+                        ${isStart ? 'rounded-l-md bg-primary text-primary-foreground font-semibold' : ''}
+                        ${isEnd ? 'rounded-r-md bg-primary text-primary-foreground font-semibold' : ''}
+                        ${inRange && !isStart && !isEnd && dayIndex === 0 ? 'rounded-l-md' : ''}
+                        ${inRange && !isStart && !isEnd && dayIndex === 6 ? 'rounded-r-md' : ''}
+                      `}
+                    >
+                      {format(day, 'd')}
+                      {calendarItem && (
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-destructive" />
+                      )}
+                    </div>
+                  );
+
+                  if (calendarItem) {
+                    return (
+                      <Tooltip key={day.toISOString()}>
+                        <TooltipTrigger asChild>
+                          {dayContent}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">{format(day, 'MMM d, yyyy')}</p>
+                          <p className="text-xs">{calendarItem.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return dayContent;
+                })}
+              </div>
+            ))}
+          </div>
+        </TooltipProvider>
       </CardContent>
     </Card>
   );

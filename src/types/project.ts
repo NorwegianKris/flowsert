@@ -1,3 +1,9 @@
+export interface CalendarItem {
+  id: string;
+  date: string;
+  description: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -6,6 +12,7 @@ export interface Project {
   startDate: string;
   endDate?: string;
   assignedPersonnel: string[];
+  calendarItems?: CalendarItem[];
 }
 
 export const dummyProjects: Project[] = [
