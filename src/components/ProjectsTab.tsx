@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { FolderOpen, Clock, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { FolderOpen, Clock, CheckCircle, Calendar, Users } from 'lucide-react';
 import { Project } from '@/types/project';
 import { Personnel } from '@/types';
 
@@ -17,6 +19,7 @@ const statusConfig = {
 };
 
 export function ProjectsTab({ projects, personnel }: ProjectsTabProps) {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'pending');
   const completedProjects = projects.filter((p) => p.status === 'completed');
 
@@ -30,6 +33,12 @@ export function ProjectsTab({ projects, personnel }: ProjectsTabProps) {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const assignedPersonnel = selectedProject
+    ? selectedProject.assignedPersonnel
+        .map(getPersonnelById)
+        .filter((p): p is Personnel => p !== undefined)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -46,6 +55,7 @@ export function ProjectsTab({ projects, personnel }: ProjectsTabProps) {
               personnel={personnel}
               getPersonnelById={getPersonnelById}
               getInitials={getInitials}
+              onClick={() => setSelectedProject(project)}
             />
           ))}
         </div>
@@ -67,6 +77,7 @@ export function ProjectsTab({ projects, personnel }: ProjectsTabProps) {
               personnel={personnel}
               getPersonnelById={getPersonnelById}
               getInitials={getInitials}
+              onClick={() => setSelectedProject(project)}
             />
           ))}
         </div>
@@ -74,6 +85,70 @@ export function ProjectsTab({ projects, personnel }: ProjectsTabProps) {
           <p className="text-muted-foreground text-center py-8">No completed projects</p>
         )}
       </div>
+
+      {/* Project Details Dialog */}
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="sm:max-w-lg">
+          {selectedProject && (
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between gap-3">
+                  <DialogTitle className="text-xl">{selectedProject.name}</DialogTitle>
+                  <Badge variant={statusConfig[selectedProject.status].variant} className="shrink-0">
+                    {(() => {
+                      const StatusIcon = statusConfig[selectedProject.status].icon;
+                      return <StatusIcon className="h-3 w-3 mr-1" />;
+                    })()}
+                    {statusConfig[selectedProject.status].label}
+                  </Badge>
+                </div>
+                <DialogDescription className="text-left pt-2">
+                  {selectedProject.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span>{new Date(selectedProject.startDate).toLocaleDateString()}</span>
+                  {selectedProject.endDate && (
+                    <>
+                      <span className="text-muted-foreground">—</span>
+                      <span>{new Date(selectedProject.endDate).toLocaleDateString()}</span>
+                    </>
+                  )}
+                </div>
+
+                {assignedPersonnel.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Assigned Personnel ({assignedPersonnel.length})</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {assignedPersonnel.map((person) => (
+                        <div key={person.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={person.avatarUrl} alt={person.name} />
+                            <AvatarFallback className="text-xs">
+                              {getInitials(person.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{person.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{person.role}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -83,9 +158,10 @@ interface ProjectCardProps {
   personnel: Personnel[];
   getPersonnelById: (id: string) => Personnel | undefined;
   getInitials: (name: string) => string;
+  onClick: () => void;
 }
 
-function ProjectCard({ project, getPersonnelById, getInitials }: ProjectCardProps) {
+function ProjectCard({ project, getPersonnelById, getInitials, onClick }: ProjectCardProps) {
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
   const assignedPersonnel = project.assignedPersonnel
@@ -93,7 +169,7 @@ function ProjectCard({ project, getPersonnelById, getInitials }: ProjectCardProp
     .filter((p): p is Personnel => p !== undefined);
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
