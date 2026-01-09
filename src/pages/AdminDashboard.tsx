@@ -6,11 +6,13 @@ import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { ChatBot } from '@/components/ChatBot';
 import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
+import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
+import { Project, dummyProjects } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen } from 'lucide-react';
@@ -20,6 +22,8 @@ export default function AdminDashboard() {
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
+  const [addProjectOpen, setAddProjectOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>(dummyProjects);
   const { personnel, loading, refetch } = usePersonnel();
   const { signOut, profile } = useAuth();
 
@@ -35,6 +39,10 @@ export default function AdminDashboard() {
         p.certificates.some((c) => c.name.toLowerCase().includes(query))
     );
   }, [searchQuery, personnel]);
+
+  const handleProjectAdded = (project: Project) => {
+    setProjects((prev) => [project, ...prev]);
+  };
 
   if (loading) {
     return (
@@ -81,6 +89,10 @@ export default function AdminDashboard() {
             <Button onClick={() => setAddPersonnelOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Personnel
+            </Button>
+            <Button onClick={() => setAddProjectOpen(true)}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              New Project
             </Button>
             <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
@@ -138,7 +150,7 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="projects" className="mt-6">
-            <ProjectsTab />
+            <ProjectsTab projects={projects} personnel={personnel} />
           </TabsContent>
         </Tabs>
       </main>
@@ -149,6 +161,13 @@ export default function AdminDashboard() {
         open={addPersonnelOpen}
         onOpenChange={setAddPersonnelOpen}
         onPersonnelAdded={refetch}
+      />
+      
+      <AddProjectDialog
+        open={addProjectOpen}
+        onOpenChange={setAddProjectOpen}
+        personnel={personnel}
+        onProjectAdded={handleProjectAdded}
       />
       
       <InviteWorkerDialog 

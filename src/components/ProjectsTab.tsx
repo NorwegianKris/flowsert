@@ -1,57 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FolderOpen, Clock, CheckCircle } from 'lucide-react';
+import { Project } from '@/types/project';
+import { Personnel } from '@/types';
 
-interface Project {
-  id: string;
-  name: string;
-  status: 'active' | 'completed' | 'pending';
-  description: string;
-  startDate: string;
-  endDate?: string;
+interface ProjectsTabProps {
+  projects: Project[];
+  personnel: Personnel[];
 }
-
-const dummyProjects: Project[] = [
-  {
-    id: '1',
-    name: 'Offshore Wind Farm Installation',
-    status: 'active',
-    description: 'Installation and commissioning of offshore wind turbines in the North Sea.',
-    startDate: '2025-01-01',
-    endDate: '2025-06-30',
-  },
-  {
-    id: '2',
-    name: 'Platform Maintenance Q1',
-    status: 'active',
-    description: 'Quarterly maintenance operations for Platform Alpha.',
-    startDate: '2025-01-15',
-    endDate: '2025-03-15',
-  },
-  {
-    id: '3',
-    name: 'Emergency Response Training',
-    status: 'pending',
-    description: 'Annual emergency response and safety training program.',
-    startDate: '2025-02-01',
-  },
-  {
-    id: '4',
-    name: 'Pipeline Inspection 2024',
-    status: 'completed',
-    description: 'Annual pipeline inspection and integrity assessment.',
-    startDate: '2024-09-01',
-    endDate: '2024-11-30',
-  },
-  {
-    id: '5',
-    name: 'Rig Decommissioning Phase 1',
-    status: 'completed',
-    description: 'First phase of rig decommissioning operations.',
-    startDate: '2024-06-01',
-    endDate: '2024-08-31',
-  },
-];
 
 const statusConfig = {
   active: { label: 'Active', variant: 'default' as const, icon: Clock },
@@ -59,9 +16,20 @@ const statusConfig = {
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock },
 };
 
-export function ProjectsTab() {
-  const activeProjects = dummyProjects.filter((p) => p.status === 'active' || p.status === 'pending');
-  const completedProjects = dummyProjects.filter((p) => p.status === 'completed');
+export function ProjectsTab({ projects, personnel }: ProjectsTabProps) {
+  const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'pending');
+  const completedProjects = projects.filter((p) => p.status === 'completed');
+
+  const getPersonnelById = (id: string) => personnel.find((p) => p.id === id);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <div className="space-y-6">
@@ -72,7 +40,13 @@ export function ProjectsTab() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {activeProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard 
+              key={project.id} 
+              project={project} 
+              personnel={personnel}
+              getPersonnelById={getPersonnelById}
+              getInitials={getInitials}
+            />
           ))}
         </div>
         {activeProjects.length === 0 && (
@@ -87,7 +61,13 @@ export function ProjectsTab() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {completedProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard 
+              key={project.id} 
+              project={project}
+              personnel={personnel}
+              getPersonnelById={getPersonnelById}
+              getInitials={getInitials}
+            />
           ))}
         </div>
         {completedProjects.length === 0 && (
@@ -98,9 +78,19 @@ export function ProjectsTab() {
   );
 }
 
-function ProjectCard({ project }: { project: Project }) {
+interface ProjectCardProps {
+  project: Project;
+  personnel: Personnel[];
+  getPersonnelById: (id: string) => Personnel | undefined;
+  getInitials: (name: string) => string;
+}
+
+function ProjectCard({ project, getPersonnelById, getInitials }: ProjectCardProps) {
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
+  const assignedPersonnel = project.assignedPersonnel
+    .map(getPersonnelById)
+    .filter((p): p is Personnel => p !== undefined);
 
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -115,6 +105,27 @@ function ProjectCard({ project }: { project: Project }) {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>
+        
+        {assignedPersonnel.length > 0 && (
+          <div className="flex items-center gap-1 mb-3">
+            <div className="flex -space-x-2">
+              {assignedPersonnel.slice(0, 4).map((person) => (
+                <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
+                  <AvatarImage src={person.avatarUrl} alt={person.name} />
+                  <AvatarFallback className="text-[10px]">
+                    {getInitials(person.name)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+            </div>
+            {assignedPersonnel.length > 4 && (
+              <span className="text-xs text-muted-foreground ml-1">
+                +{assignedPersonnel.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
+        
         <div className="text-xs text-muted-foreground">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           {project.endDate && (
