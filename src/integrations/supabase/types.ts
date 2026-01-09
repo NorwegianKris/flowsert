@@ -52,9 +52,126 @@ export type Database = {
           },
         ]
       }
+      businesses: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      certificates: {
+        Row: {
+          created_at: string
+          date_of_issue: string
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          name: string
+          personnel_id: string
+          place_of_issue: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_issue: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          name: string
+          personnel_id: string
+          place_of_issue: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_of_issue?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          name?: string
+          personnel_id?: string
+          place_of_issue?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          business_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          personnel_id: string
+          status: string
+          token: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          personnel_id: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          personnel_id?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personnel: {
         Row: {
           avatar_url: string | null
+          business_id: string | null
           created_at: string
           email: string
           id: string
@@ -63,9 +180,11 @@ export type Database = {
           phone: string
           role: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           avatar_url?: string | null
+          business_id?: string | null
           created_at?: string
           email: string
           id?: string
@@ -74,9 +193,11 @@ export type Database = {
           phone: string
           role: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           avatar_url?: string | null
+          business_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -85,6 +206,68 @@ export type Database = {
           phone?: string
           role?: string
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnel_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -93,10 +276,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_personnel: {
+        Args: { _personnel_id: string; _user_id: string }
+        Returns: boolean
+      }
+      get_user_business_id: { Args: { _user_id: string }; Returns: string }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "worker" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -223,6 +421,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "worker", "manager"],
+    },
   },
 } as const
