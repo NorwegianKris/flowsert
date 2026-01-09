@@ -3,6 +3,7 @@ import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
 import { PersonnelCard } from '@/components/PersonnelCard';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
+import { ProjectDetail } from '@/components/ProjectDetail';
 import { ChatBot } from '@/components/ChatBot';
 import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
@@ -20,6 +21,7 @@ import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen } from 'lu
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
@@ -44,6 +46,13 @@ export default function AdminDashboard() {
     setProjects((prev) => [project, ...prev]);
   };
 
+  const handleUpdateProject = (updatedProject: Project) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+    );
+    setSelectedProject(updatedProject);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -63,6 +72,26 @@ export default function AdminDashboard() {
           <PersonnelDetail
             personnel={selectedPersonnel}
             onBack={() => setSelectedPersonnel(null)}
+          />
+        </main>
+        <ChatBot />
+      </div>
+    );
+  }
+
+  if (selectedProject) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <main className="container mx-auto px-4 py-6">
+          <ProjectDetail
+            project={selectedProject}
+            personnel={personnel}
+            onBack={() => setSelectedProject(null)}
+            onUpdateProject={handleUpdateProject}
           />
         </main>
         <ChatBot />
@@ -150,7 +179,11 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="projects" className="mt-6">
-            <ProjectsTab projects={projects} personnel={personnel} />
+            <ProjectsTab 
+              projects={projects} 
+              personnel={personnel} 
+              onSelectProject={setSelectedProject}
+            />
           </TabsContent>
         </Tabs>
       </main>
