@@ -2,11 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { format, isSameDay, startOfMonth, endOfMonth, addMonths } from 'date-fns';
-import { CalendarDays, Award, Check, X, Clock, Loader2 } from 'lucide-react';
+import { format, isSameDay, addMonths, parseISO, isWithinInterval } from 'date-fns';
+import { CalendarDays, Award, Check, X, Clock, Loader2, FolderOpen, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Personnel } from '@/types';
+import { Project } from '@/types/project';
 import { getCertificateStatus } from '@/lib/certificateUtils';
 import {
   Popover,
@@ -17,15 +20,19 @@ import {
 interface CalendarEvent {
   id: string;
   date: Date;
-  type: 'certificate_expiry' | 'availability';
+  type: 'certificate_expiry' | 'availability' | 'project_duration' | 'project_item';
   title: string;
-  personnelName: string;
+  personnelName?: string;
+  projectName?: string;
   status?: string;
   notes?: string;
+  isRangeStart?: boolean;
+  isRangeEnd?: boolean;
 }
 
 interface TeamCalendarProps {
   personnel: Personnel[];
+  projects?: Project[];
 }
 
 type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
@@ -56,12 +63,16 @@ const availabilityConfig: Record<AvailabilityStatus, { label: string; icon: type
   },
 };
 
-export function TeamCalendar({ personnel }: TeamCalendarProps) {
+export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Toggle states
+  const [showCertificates, setShowCertificates] = useState(true);
+  const [showProjects, setShowProjects] = useState(true);
 
   const personnelMap = useMemo(() => {
     return new Map(personnel.map(p => [p.id, p.name]));
@@ -106,39 +117,87 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
     const allEvents: CalendarEvent[] = [];
 
     // Add certificate expiries
-    personnel.forEach(p => {
-      p.certificates.forEach(cert => {
-        if (cert.expiryDate) {
-          const expiryDate = new Date(cert.expiryDate);
-          const status = getCertificateStatus(cert.expiryDate);
+    if (showCertificates) {
+      personnel.forEach(p => {
+        p.certificates.forEach(cert => {
+          if (cert.expiryDate) {
+            const expiryDate = new Date(cert.expiryDate);
+            const status = getCertificateStatus(cert.expiryDate);
+            allEvents.push({
+              id: `cert-${cert.id}`,
+              date: expiryDate,
+              type: 'certificate_expiry',
+              title: cert.name,
+              personnelName: p.name,
+              status,
+            });
+          }
+        });
+      });
+    }
+
+    // Add project events
+    if (showProjects) {
+      projects.forEach(project => {
+        const startDate = parseISO(project.startDate);
+        const endDate = project.endDate ? parseISO(project.endDate) : startDate;
+
+        // Add project duration start marker
+        allEvents.push({
+          id: `proj-start-${project.id}`,
+          date: startDate,
+          type: 'project_duration',
+          title: project.name,
+          projectName: project.name,
+          status: project.status,
+          isRangeStart: true,
+        });
+
+        // Add project duration end marker (if different from start)
+        if (project.endDate && !isSameDay(startDate, endDate)) {
           allEvents.push({
-            id: `cert-${cert.id}`,
-            date: expiryDate,
-            type: 'certificate_expiry',
-            title: cert.name,
-            personnelName: p.name,
-            status,
+            id: `proj-end-${project.id}`,
+            date: endDate,
+            type: 'project_duration',
+            title: project.name,
+            projectName: project.name,
+            status: project.status,
+            isRangeEnd: true,
           });
         }
-      });
-    });
 
-    // Add availability entries
-    availability.forEach(avail => {
-      const personnelName = personnelMap.get(avail.personnel_id) || 'Unknown';
-      allEvents.push({
-        id: `avail-${avail.id}`,
-        date: new Date(avail.date),
-        type: 'availability',
-        title: availabilityConfig[avail.status]?.label || avail.status,
-        personnelName,
-        status: avail.status,
-        notes: avail.notes || undefined,
+        // Add calendar items
+        project.calendarItems?.forEach(item => {
+          allEvents.push({
+            id: `proj-item-${item.id}`,
+            date: parseISO(item.date),
+            type: 'project_item',
+            title: item.description,
+            projectName: project.name,
+          });
+        });
       });
-    });
+    }
 
     return allEvents;
-  }, [personnel, availability, personnelMap]);
+  }, [personnel, projects, showCertificates, showProjects]);
+
+  // Get project ranges for background highlighting
+  const projectRanges = useMemo(() => {
+    if (!showProjects) return [];
+    return projects.map(project => ({
+      id: project.id,
+      name: project.name,
+      start: parseISO(project.startDate),
+      end: project.endDate ? parseISO(project.endDate) : parseISO(project.startDate),
+    }));
+  }, [projects, showProjects]);
+
+  const isDateInProjectRange = (date: Date): boolean => {
+    return projectRanges.some(range => 
+      isWithinInterval(date, { start: range.start, end: range.end })
+    );
+  };
 
   const getEventsForDate = (date: Date): CalendarEvent[] => {
     return events.filter(e => isSameDay(e.date, date));
@@ -147,7 +206,8 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
     const dateEvents = getEventsForDate(date);
-    if (dateEvents.length > 0) {
+    const inProjectRange = isDateInProjectRange(date);
+    if (dateEvents.length > 0 || inProjectRange) {
       setSelectedDate(date);
       setPopoverOpen(true);
     }
@@ -158,22 +218,37 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
     .filter(e => e.type === 'certificate_expiry')
     .map(e => e.date);
 
-  const availabilityDates = events
-    .filter(e => e.type === 'availability')
+  const projectDates = events
+    .filter(e => e.type === 'project_duration' || e.type === 'project_item')
     .map(e => e.date);
 
-  const hasEventDates = [...new Set([...certificateExpiryDates, ...availabilityDates].map(d => d.toDateString()))]
+  const hasEventDates = [...new Set([...certificateExpiryDates, ...projectDates].map(d => d.toDateString()))]
     .map(ds => new Date(ds));
+
+  // Get dates that are within any project range
+  const projectRangeDates = useMemo(() => {
+    const dates: Date[] = [];
+    projectRanges.forEach(range => {
+      let current = new Date(range.start);
+      while (current <= range.end) {
+        dates.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+    });
+    return dates;
+  }, [projectRanges]);
 
   const modifiers = {
     hasEvent: hasEventDates,
+    inProjectRange: projectRangeDates,
   };
 
   const modifiersStyles = {
     hasEvent: {
+      fontWeight: 700,
+    },
+    inProjectRange: {
       backgroundColor: 'hsl(var(--primary) / 0.15)',
-      borderRadius: '50%',
-      fontWeight: 600,
     },
   };
 
@@ -184,18 +259,72 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
     return events
       .filter(e => e.date >= now && e.date <= thirtyDaysFromNow)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 8);
+      .slice(0, 10);
   }, [events]);
 
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
+  const selectedDateProjects = selectedDate 
+    ? projectRanges.filter(range => isWithinInterval(selectedDate, { start: range.start, end: range.end }))
+    : [];
+
+  const getEventIcon = (type: CalendarEvent['type']) => {
+    switch (type) {
+      case 'certificate_expiry':
+        return Award;
+      case 'project_duration':
+        return FolderOpen;
+      case 'project_item':
+        return Bookmark;
+      default:
+        return CalendarDays;
+    }
+  };
+
+  const getEventBadgeVariant = (event: CalendarEvent) => {
+    if (event.type === 'certificate_expiry') {
+      return event.status === 'expired' ? 'destructive' : event.status === 'expiring' ? 'secondary' : 'default';
+    }
+    if (event.type === 'project_duration') {
+      return event.status === 'active' ? 'default' : event.status === 'completed' ? 'secondary' : 'outline';
+    }
+    return 'outline';
+  };
 
   return (
     <Card className="border-border/50">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" />
-          Team Calendar
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-primary" />
+            Master Calendar
+          </CardTitle>
+          
+          {/* Toggle Controls */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-certificates"
+                checked={showCertificates}
+                onCheckedChange={setShowCertificates}
+              />
+              <Label htmlFor="show-certificates" className="text-sm cursor-pointer flex items-center gap-1.5">
+                <Award className="h-3.5 w-3.5 text-primary" />
+                Certificate Expiries
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-projects"
+                checked={showProjects}
+                onCheckedChange={setShowProjects}
+              />
+              <Label htmlFor="show-projects" className="text-sm cursor-pointer flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5 text-primary" />
+                Projects
+              </Label>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -204,17 +333,26 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-3 mb-4">
-              <div className="flex items-center gap-1.5 text-sm">
-                <Award className="h-3.5 w-3.5 text-primary" />
-                <span className="text-muted-foreground">Certificate Expiry</span>
-              </div>
-              {Object.entries(availabilityConfig).map(([status, config]) => (
-                <div key={status} className="flex items-center gap-1.5 text-sm">
-                  <span className={cn('h-3 w-3 rounded-full', config.className)} />
-                  <span className="text-muted-foreground">{config.label}</span>
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 mb-4 p-3 rounded-lg bg-muted/30">
+              {showCertificates && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <Award className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-muted-foreground">Certificate Expiry</span>
                 </div>
-              ))}
+              )}
+              {showProjects && (
+                <>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="h-3 w-8 rounded bg-primary/15" />
+                    <span className="text-muted-foreground">Project Duration</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Bookmark className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-muted-foreground">Calendar Item</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -250,57 +388,83 @@ export function TeamCalendar({ personnel }: TeamCalendarProps) {
                   <h4 className="font-medium">
                     {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
                   </h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {selectedDateEvents.map(event => (
-                      <div key={event.id} className="p-2 rounded-md bg-muted/50 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{event.personnelName}</span>
-                          {event.type === 'certificate_expiry' ? (
-                            <Badge variant={event.status === 'expired' ? 'destructive' : event.status === 'expiring' ? 'secondary' : 'default'}>
-                              <Award className="h-3 w-3 mr-1" />
-                              Expiry
-                            </Badge>
-                          ) : (
-                            <Badge className={cn('text-xs', availabilityConfig[event.status as AvailabilityStatus]?.className)}>
-                              {event.title}
-                            </Badge>
-                          )}
+                  
+                  {/* Projects in range */}
+                  {selectedDateProjects.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active Projects</p>
+                      {selectedDateProjects.map(project => (
+                        <div key={project.id} className="p-2 rounded-md bg-primary/10 text-sm">
+                          <div className="flex items-center gap-2">
+                            <FolderOpen className="h-3.5 w-3.5 text-primary" />
+                            <span className="font-medium">{project.name}</span>
+                          </div>
+                          <p className="text-muted-foreground text-xs mt-1">
+                            {format(project.start, 'MMM d')} - {format(project.end, 'MMM d, yyyy')}
+                          </p>
                         </div>
-                        <p className="text-muted-foreground text-xs mt-1">
-                          {event.type === 'certificate_expiry' ? event.title : event.notes || 'No notes'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Events on this date */}
+                  {selectedDateEvents.length > 0 && (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Events</p>
+                      {selectedDateEvents.map(event => {
+                        const Icon = getEventIcon(event.type);
+                        return (
+                          <div key={event.id} className="p-2 rounded-md bg-muted/50 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {event.personnelName || event.projectName}
+                              </span>
+                              <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
+                                <Icon className="h-3 w-3 mr-1" />
+                                {event.type === 'certificate_expiry' ? 'Expiry' : 
+                                 event.type === 'project_duration' ? (event.isRangeStart ? 'Start' : 'End') : 
+                                 'Item'}
+                              </Badge>
+                            </div>
+                            <p className="text-muted-foreground text-xs mt-1">
+                              {event.title}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {selectedDateEvents.length === 0 && selectedDateProjects.length === 0 && (
+                    <p className="text-sm text-muted-foreground italic">No events on this date</p>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
 
+            {/* Upcoming Events */}
             <div className="pt-4 border-t border-border/50">
-              <h4 className="text-sm font-medium mb-2">Upcoming Events</h4>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {upcomingEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between text-sm">
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground">
-                        {format(event.date, 'EEE, MMM d')}
-                      </span>
-                      <span className="text-xs text-muted-foreground/70">
-                        {event.personnelName}
-                      </span>
+              <h4 className="text-sm font-medium mb-3">Upcoming Events</h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {upcomingEvents.map(event => {
+                  const Icon = getEventIcon(event.type);
+                  return (
+                    <div key={event.id} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">
+                          {format(event.date, 'EEE, MMM d')}
+                        </span>
+                        <span className="text-xs text-muted-foreground/70">
+                          {event.personnelName || event.projectName}
+                        </span>
+                      </div>
+                      <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
+                        <Icon className="h-3 w-3 mr-1" />
+                        {event.title.length > 20 ? event.title.slice(0, 20) + '...' : event.title}
+                      </Badge>
                     </div>
-                    {event.type === 'certificate_expiry' ? (
-                      <Badge variant={event.status === 'expired' ? 'destructive' : event.status === 'expiring' ? 'secondary' : 'default'} className="text-xs">
-                        <Award className="h-3 w-3 mr-1" />
-                        {event.title}
-                      </Badge>
-                    ) : (
-                      <Badge className={cn('text-xs', availabilityConfig[event.status as AvailabilityStatus]?.className)}>
-                        {event.title}
-                      </Badge>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
                 {upcomingEvents.length === 0 && (
                   <p className="text-sm text-muted-foreground italic">
                     No upcoming events in the next 30 days

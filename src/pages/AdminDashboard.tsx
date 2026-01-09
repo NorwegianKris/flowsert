@@ -175,7 +175,7 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="calendar" className="mt-6">
-            <TeamCalendar personnel={personnel} />
+            <TeamCalendar personnel={personnel} projects={projects} />
           </TabsContent>
           
           <TabsContent value="projects" className="mt-6">
