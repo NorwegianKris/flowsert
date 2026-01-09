@@ -3,6 +3,7 @@ import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
 import { PersonnelCard } from '@/components/PersonnelCard';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
+import { ChatBot } from '@/components/ChatBot';
 import { mockPersonnel } from '@/data/mockData';
 import { Personnel } from '@/types';
 
@@ -36,6 +37,7 @@ const Index = () => {
             onBack={() => setSelectedPersonnel(null)}
           />
         </main>
+        <ChatBot />
       </div>
     );
   }
@@ -76,6 +78,8 @@ const Index = () => {
           )}
         </div>
       </main>
+      
+      <ChatBot />
     </div>
   );
 };
