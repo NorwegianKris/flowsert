@@ -4,25 +4,40 @@ import { DashboardStats } from '@/components/DashboardStats';
 import { PersonnelCard } from '@/components/PersonnelCard';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { ChatBot } from '@/components/ChatBot';
-import { mockPersonnel } from '@/data/mockData';
+import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
+import { usePersonnel } from '@/hooks/usePersonnel';
+import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Loader2, UserPlus, LogOut } from 'lucide-react';
 
-const Index = () => {
+export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const { personnel, loading, refetch } = usePersonnel();
+  const { signOut, profile } = useAuth();
 
   const filteredPersonnel = useMemo(() => {
-    if (!searchQuery.trim()) return mockPersonnel;
+    if (!searchQuery.trim()) return personnel;
     
     const query = searchQuery.toLowerCase();
-    return mockPersonnel.filter(
+    return personnel.filter(
       (p) =>
         p.name.toLowerCase().includes(query) ||
         p.role.toLowerCase().includes(query) ||
         p.location.toLowerCase().includes(query) ||
         p.certificates.some((c) => c.name.toLowerCase().includes(query))
     );
-  }, [searchQuery]);
+  }, [searchQuery, personnel]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (selectedPersonnel) {
     return (
@@ -50,7 +65,26 @@ const Index = () => {
       />
       
       <main className="container mx-auto px-4 py-6 space-y-6">
-        <DashboardStats personnel={mockPersonnel} />
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back, {profile?.full_name || profile?.email}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setInviteDialogOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite Worker
+            </Button>
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+
+        <DashboardStats personnel={personnel} />
         
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -60,19 +94,21 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredPersonnel.map((personnel) => (
+            {filteredPersonnel.map((p) => (
               <PersonnelCard
-                key={personnel.id}
-                personnel={personnel}
-                onClick={() => setSelectedPersonnel(personnel)}
+                key={p.id}
+                personnel={p}
+                onClick={() => setSelectedPersonnel(p)}
               />
             ))}
           </div>
           
-          {filteredPersonnel.length === 0 && (
+          {filteredPersonnel.length === 0 && !loading && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                No personnel found matching "{searchQuery}"
+                {searchQuery 
+                  ? `No personnel found matching "${searchQuery}"`
+                  : 'No personnel yet. Add your first team member to get started.'}
               </p>
             </div>
           )}
@@ -80,8 +116,13 @@ const Index = () => {
       </main>
       
       <ChatBot />
+      
+      <InviteWorkerDialog 
+        open={inviteDialogOpen} 
+        onOpenChange={setInviteDialogOpen}
+        personnel={personnel}
+        onInviteSent={refetch}
+      />
     </div>
   );
-};
-
-export default Index;
+}

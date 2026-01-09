@@ -4,17 +4,22 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
-import { mockPersonnel } from '@/data/mockData';
 import { getCertificateStatus, getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { usePersonnel } from '@/hooks/usePersonnel';
+import { Personnel } from '@/types';
 
 type Message = {
   role: 'user' | 'assistant';
   content: string;
 };
 
-function generateCertificateContext() {
-  return mockPersonnel.map(person => {
+function generateCertificateContext(personnel: Personnel[]) {
+  if (personnel.length === 0) {
+    return 'No personnel data available.';
+  }
+
+  return personnel.map(person => {
     const certDetails = person.certificates.map(cert => {
       const status = getCertificateStatus(cert.expiryDate);
       const daysLeft = getDaysUntilExpiry(cert.expiryDate);
@@ -34,7 +39,7 @@ Location: ${person.location}
 Email: ${person.email}
 Phone: ${person.phone}
 Certificates:
-${certDetails}`;
+${certDetails || '  No certificates'}`;
   }).join('\n\n---\n');
 }
 
@@ -45,6 +50,7 @@ export function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { personnel } = usePersonnel();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -73,7 +79,7 @@ export function ChatBot() {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
-            certificateData: generateCertificateContext(),
+            certificateData: generateCertificateContext(personnel),
           }),
         }
       );
