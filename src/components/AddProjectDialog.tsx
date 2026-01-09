@@ -137,10 +137,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               ) : (
                 <div className="space-y-2">
                   {personnel.map((person) => (
-                    <div
+                    <label
                       key={person.id}
                       className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer"
-                      onClick={() => togglePersonnel(person.id)}
                     >
                       <Checkbox
                         checked={selectedPersonnel.includes(person.id)}
@@ -156,7 +155,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                         <p className="text-sm font-medium truncate">{person.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{person.role}</p>
                       </div>
-                    </div>
+                    </label>
                   ))}
                 </div>
               )}
