@@ -38,16 +38,23 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     };
 
     onProjectAdded(newProject);
-    handleClose();
+    resetForm();
+    onOpenChange(false);
   };
 
-  const handleClose = () => {
+  const resetForm = () => {
     setName('');
     setDescription('');
     setStartDate('');
     setEndDate('');
     setSelectedPersonnel([]);
-    onOpenChange(false);
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      resetForm();
+    }
+    onOpenChange(isOpen);
   };
 
   const togglePersonnel = (personnelId: string) => {
@@ -68,7 +75,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>New Project</DialogTitle>
@@ -162,7 +169,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit">Create Project</Button>
