@@ -95,48 +95,42 @@ export default function AdminDashboard() {
 
         <DashboardStats personnel={personnel} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Collapsible open={personnelOpen} onOpenChange={setPersonnelOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto mb-4 hover:bg-transparent">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-foreground">
-                      Personnel ({filteredPersonnel.length})
-                    </h2>
-                  </div>
-                  <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${personnelOpen ? '' : '-rotate-90'}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredPersonnel.map((p) => (
-                    <PersonnelCard
-                      key={p.id}
-                      personnel={p}
-                      onClick={() => setSelectedPersonnel(p)}
-                    />
-                  ))}
-                </div>
-                
-                {filteredPersonnel.length === 0 && !loading && (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">
-                      {searchQuery 
-                        ? `No personnel found matching "${searchQuery}"`
-                        : 'No personnel yet. Add your first team member to get started.'}
-                    </p>
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-          
-          <div className="lg:col-span-1">
-            <TeamCalendar personnel={personnel} />
-          </div>
-        </div>
+        <Collapsible open={personnelOpen} onOpenChange={setPersonnelOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto mb-4 hover:bg-transparent">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">
+                  Personnel ({filteredPersonnel.length})
+                </h2>
+              </div>
+              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${personnelOpen ? '' : '-rotate-90'}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredPersonnel.map((p) => (
+                <PersonnelCard
+                  key={p.id}
+                  personnel={p}
+                  onClick={() => setSelectedPersonnel(p)}
+                />
+              ))}
+            </div>
+            
+            {filteredPersonnel.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  {searchQuery 
+                    ? `No personnel found matching "${searchQuery}"`
+                    : 'No personnel yet. Add your first team member to get started.'}
+                </p>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+        
+        <TeamCalendar personnel={personnel} />
       </main>
       
       <ChatBot />
