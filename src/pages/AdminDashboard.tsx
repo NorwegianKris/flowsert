@@ -6,16 +6,19 @@ import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { ChatBot } from '@/components/ChatBot';
 import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
+import { TeamCalendar } from '@/components/TeamCalendar';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, LogOut, Plus } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Loader2, UserPlus, LogOut, Plus, ChevronDown, Users } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [personnelOpen, setPersonnelOpen] = useState(true);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const { personnel, loading, refetch } = usePersonnel();
   const { signOut, profile } = useAuth();
@@ -92,32 +95,47 @@ export default function AdminDashboard() {
 
         <DashboardStats personnel={personnel} />
         
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              Personnel ({filteredPersonnel.length})
-            </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Collapsible open={personnelOpen} onOpenChange={setPersonnelOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto mb-4 hover:bg-transparent">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">
+                      Personnel ({filteredPersonnel.length})
+                    </h2>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${personnelOpen ? '' : '-rotate-90'}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredPersonnel.map((p) => (
+                    <PersonnelCard
+                      key={p.id}
+                      personnel={p}
+                      onClick={() => setSelectedPersonnel(p)}
+                    />
+                  ))}
+                </div>
+                
+                {filteredPersonnel.length === 0 && !loading && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">
+                      {searchQuery 
+                        ? `No personnel found matching "${searchQuery}"`
+                        : 'No personnel yet. Add your first team member to get started.'}
+                    </p>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredPersonnel.map((p) => (
-              <PersonnelCard
-                key={p.id}
-                personnel={p}
-                onClick={() => setSelectedPersonnel(p)}
-              />
-            ))}
+          <div className="lg:col-span-1">
+            <TeamCalendar personnel={personnel} />
           </div>
-          
-          {filteredPersonnel.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                {searchQuery 
-                  ? `No personnel found matching "${searchQuery}"`
-                  : 'No personnel yet. Add your first team member to get started.'}
-              </p>
-            </div>
-          )}
         </div>
       </main>
       
