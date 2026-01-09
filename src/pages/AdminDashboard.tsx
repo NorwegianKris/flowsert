@@ -5,16 +5,18 @@ import { PersonnelCard } from '@/components/PersonnelCard';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { ChatBot } from '@/components/ChatBot';
 import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
+import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus, LogOut } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, Plus } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const { personnel, loading, refetch } = usePersonnel();
   const { signOut, profile } = useAuth();
 
@@ -73,7 +75,11 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setInviteDialogOpen(true)}>
+            <Button onClick={() => setAddPersonnelOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Personnel
+            </Button>
+            <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Invite Worker
             </Button>
@@ -116,6 +122,12 @@ export default function AdminDashboard() {
       </main>
       
       <ChatBot />
+      
+      <AddPersonnelDialog
+        open={addPersonnelOpen}
+        onOpenChange={setAddPersonnelOpen}
+        onPersonnelAdded={refetch}
+      />
       
       <InviteWorkerDialog 
         open={inviteDialogOpen} 
