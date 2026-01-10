@@ -14,6 +14,14 @@ interface DbPersonnel {
   avatar_url: string | null;
   business_id: string | null;
   user_id: string | null;
+  nationality: string | null;
+  gender: string | null;
+  address: string | null;
+  postal_code: string | null;
+  postal_address: string | null;
+  national_id: string | null;
+  salary_account_number: string | null;
+  language: string | null;
 }
 
 interface DbCertificate {
@@ -70,6 +78,14 @@ export function usePersonnel() {
         email: p.email,
         phone: p.phone,
         avatarUrl: p.avatar_url || undefined,
+        nationality: p.nationality || undefined,
+        gender: p.gender || undefined,
+        address: p.address || undefined,
+        postalCode: p.postal_code || undefined,
+        postalAddress: p.postal_address || undefined,
+        nationalId: p.national_id || undefined,
+        salaryAccountNumber: p.salary_account_number || undefined,
+        language: p.language || undefined,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -149,6 +165,14 @@ export function useWorkerPersonnel() {
           email: p.email,
           phone: p.phone,
           avatarUrl: p.avatar_url || undefined,
+          nationality: p.nationality || undefined,
+          gender: p.gender || undefined,
+          address: p.address || undefined,
+          postalCode: p.postal_code || undefined,
+          postalAddress: p.postal_address || undefined,
+          nationalId: p.national_id || undefined,
+          salaryAccountNumber: p.salary_account_number || undefined,
+          language: p.language || undefined,
           certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
             id: c.id,
             name: c.name,

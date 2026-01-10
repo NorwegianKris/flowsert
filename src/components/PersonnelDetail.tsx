@@ -13,7 +13,10 @@ import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
-import { ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import { 
+  ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
+  User, Globe, Home, CreditCard, Languages
+} from 'lucide-react';
 
 interface PersonnelDetailProps {
   personnel: Personnel;
@@ -90,6 +93,82 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   <span>{personnel.phone}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Personal Information Section */}
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            Personal Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Full Name</p>
+              <p className="text-sm font-medium text-foreground">{personnel.name}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Nationality</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                {personnel.nationality || 'Not specified'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Gender</p>
+              <p className="text-sm font-medium text-foreground">{personnel.gender || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Address</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Home className="h-4 w-4 text-muted-foreground" />
+                {personnel.address || 'Not specified'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Postal Code</p>
+              <p className="text-sm font-medium text-foreground">{personnel.postalCode || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Postal Address</p>
+              <p className="text-sm font-medium text-foreground">{personnel.postalAddress || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Phone Number</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                {personnel.phone}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Email Address</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                {personnel.email}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Norwegian ID Number</p>
+              <p className="text-sm font-medium text-foreground">{personnel.nationalId || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Salary Account Number</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                {personnel.salaryAccountNumber || 'Not specified'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Language</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Languages className="h-4 w-4 text-muted-foreground" />
+                {personnel.language || 'Norwegian'}
+              </p>
             </div>
           </div>
         </CardContent>

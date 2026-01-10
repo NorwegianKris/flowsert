@@ -17,5 +17,13 @@ export interface Personnel {
   email: string;
   phone: string;
   avatarUrl?: string;
+  nationality?: string;
+  gender?: string;
+  address?: string;
+  postalCode?: string;
+  postalAddress?: string;
+  nationalId?: string;
+  salaryAccountNumber?: string;
+  language?: string;
   certificates: Certificate[];
 }
