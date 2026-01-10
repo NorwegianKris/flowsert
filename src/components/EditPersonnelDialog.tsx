@@ -31,6 +31,9 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     nationalId: '',
     salaryAccountNumber: '',
     language: '',
+    nextOfKinName: '',
+    nextOfKinRelation: '',
+    nextOfKinPhone: '',
   });
 
   useEffect(() => {
@@ -49,6 +52,9 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         nationalId: personnel.nationalId || '',
         salaryAccountNumber: personnel.salaryAccountNumber || '',
         language: personnel.language || 'Norwegian',
+        nextOfKinName: personnel.nextOfKinName || '',
+        nextOfKinRelation: personnel.nextOfKinRelation || '',
+        nextOfKinPhone: personnel.nextOfKinPhone || '',
       });
     }
   }, [open, personnel]);
@@ -79,6 +85,9 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           national_id: formData.nationalId.trim() || null,
           salary_account_number: formData.salaryAccountNumber.trim() || null,
           language: formData.language.trim() || 'Norwegian',
+          next_of_kin_name: formData.nextOfKinName.trim() || null,
+          next_of_kin_relation: formData.nextOfKinRelation.trim() || null,
+          next_of_kin_phone: formData.nextOfKinPhone.trim() || null,
         })
         .eq('id', personnel.id);
 
@@ -223,6 +232,40 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                 placeholder="Norwegian"
               />
+            </div>
+          </div>
+
+          {/* Next of Kin Section */}
+          <div className="pt-4 border-t">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nextOfKinName">Name</Label>
+                <Input
+                  id="edit-nextOfKinName"
+                  value={formData.nextOfKinName}
+                  onChange={(e) => setFormData({ ...formData, nextOfKinName: e.target.value })}
+                  placeholder="Contact name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-nextOfKinRelation">Relation</Label>
+                <Input
+                  id="edit-nextOfKinRelation"
+                  value={formData.nextOfKinRelation}
+                  onChange={(e) => setFormData({ ...formData, nextOfKinRelation: e.target.value })}
+                  placeholder="Spouse, Parent, etc."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-nextOfKinPhone">Phone Number</Label>
+                <Input
+                  id="edit-nextOfKinPhone"
+                  value={formData.nextOfKinPhone}
+                  onChange={(e) => setFormData({ ...formData, nextOfKinPhone: e.target.value })}
+                  placeholder="+47 123 45 678"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -182,6 +182,9 @@ export type Database = {
           name: string
           national_id: string | null
           nationality: string | null
+          next_of_kin_name: string | null
+          next_of_kin_phone: string | null
+          next_of_kin_relation: string | null
           phone: string
           postal_address: string | null
           postal_code: string | null
@@ -203,6 +206,9 @@ export type Database = {
           name: string
           national_id?: string | null
           nationality?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          next_of_kin_relation?: string | null
           phone: string
           postal_address?: string | null
           postal_code?: string | null
@@ -224,6 +230,9 @@ export type Database = {
           name?: string
           national_id?: string | null
           nationality?: string | null
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
+          next_of_kin_relation?: string | null
           phone?: string
           postal_address?: string | null
           postal_code?: string | null

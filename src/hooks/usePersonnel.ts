@@ -22,6 +22,9 @@ interface DbPersonnel {
   national_id: string | null;
   salary_account_number: string | null;
   language: string | null;
+  next_of_kin_name: string | null;
+  next_of_kin_relation: string | null;
+  next_of_kin_phone: string | null;
 }
 
 interface DbCertificate {
@@ -86,6 +89,9 @@ export function usePersonnel() {
         nationalId: p.national_id || undefined,
         salaryAccountNumber: p.salary_account_number || undefined,
         language: p.language || undefined,
+        nextOfKinName: p.next_of_kin_name || undefined,
+        nextOfKinRelation: p.next_of_kin_relation || undefined,
+        nextOfKinPhone: p.next_of_kin_phone || undefined,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -173,6 +179,9 @@ export function useWorkerPersonnel() {
           nationalId: p.national_id || undefined,
           salaryAccountNumber: p.salary_account_number || undefined,
           language: p.language || undefined,
+          nextOfKinName: p.next_of_kin_name || undefined,
+          nextOfKinRelation: p.next_of_kin_relation || undefined,
+          nextOfKinPhone: p.next_of_kin_phone || undefined,
           certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
             id: c.id,
             name: c.name,
