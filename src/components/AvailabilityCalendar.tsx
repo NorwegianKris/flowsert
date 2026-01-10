@@ -3,15 +3,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval, isAfter, isBefore } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval } from 'date-fns';
 import { CalendarDays, Check, X, Clock, Loader2, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Certificate } from '@/types';
@@ -57,7 +52,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const { toast } = useToast();
 
   // Get certificate expiry dates
@@ -110,9 +104,8 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const handleRangeSelect = (range: DateRange | undefined) => {
     setSelectedRange(range);
     
-    // Open popover when we have at least a start date
+    // When selecting dates, update defaults based on existing entries
     if (range?.from) {
-      // If selecting a single date, check for existing entry
       if (!range.to || isSameDay(range.from, range.to)) {
         const existing = availability.find((a) =>
           isSameDay(new Date(a.date), range.from!)
@@ -129,7 +122,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         setSelectedStatus('available');
         setNotes('');
       }
-      setPopoverOpen(true);
     }
   };
 
@@ -185,7 +177,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       });
       
       fetchAvailability();
-      setPopoverOpen(false);
       setSelectedRange(undefined);
     } catch (error) {
       console.error('Error saving availability:', error);
@@ -232,7 +223,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       });
       
       fetchAvailability();
-      setPopoverOpen(false);
       setSelectedRange(undefined);
     } catch (error) {
       console.error('Error removing availability:', error);
@@ -319,43 +309,36 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               </div>
             </div>
 
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-              <PopoverTrigger asChild>
-                <div>
-                  <Calendar
-                    mode="range"
-                    selected={selectedRange}
-                    onSelect={handleRangeSelect}
-                    modifiers={modifiers}
-                    modifiersStyles={modifiersStyles}
-                    className="rounded-md border border-border pointer-events-auto"
-                    numberOfMonths={1}
-                  />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" align="start">
-                <div className="space-y-4">
+            <Calendar
+              mode="range"
+              selected={selectedRange}
+              onSelect={handleRangeSelect}
+              modifiers={modifiers}
+              modifiersStyles={modifiersStyles}
+              className="rounded-md border border-border"
+              numberOfMonths={1}
+            />
+
+            {selectedRange?.from && (
+              <Card className="mt-4 border-border/50">
+                <CardContent className="p-4 space-y-4">
                   <div>
                     <h4 className="font-medium mb-1">
-                      {selectedRange?.from ? (
-                        selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
-                          `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d, yyyy')}`
-                        ) : (
-                          format(selectedRange.from, 'EEEE, MMMM d, yyyy')
-                        )
+                      {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
+                        `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d, yyyy')}`
                       ) : (
-                        'Select dates'
+                        format(selectedRange.from, 'EEEE, MMMM d, yyyy')
                       )}
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      {selectedRange?.to && !isSameDay(selectedRange.from!, selectedRange.to) 
+                      {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) 
                         ? `Set availability for ${getDatesInRange().length} days`
                         : `Set availability for ${personnelName}`
                       }
                     </p>
                   </div>
 
-                  {selectedRange?.from && !selectedRange.to && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
+                  {!selectedRange.to && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
                     <div className="p-3 rounded-lg bg-[hsl(280_70%_50%)]/10 border border-[hsl(280_70%_50%)]/30">
                       <div className="flex items-center gap-2 mb-2">
                         <Award className="h-4 w-4 text-[hsl(280_70%_50%)]" />
@@ -403,7 +386,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={handleSave} disabled={isSaving || !selectedRange?.from} className="flex-1">
+                    <Button onClick={handleSave} disabled={isSaving} className="flex-1">
                       {isSaving ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
@@ -419,10 +402,17 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                         Remove
                       </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => setSelectedRange(undefined)}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="pt-4 border-t border-border/50">
               <h4 className="text-sm font-medium mb-2">Upcoming Availability</h4>
