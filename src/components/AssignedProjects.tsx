@@ -2,23 +2,16 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Briefcase, Calendar, Loader2 } from 'lucide-react';
+import { Briefcase, Calendar, Loader2, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface Project {
-  id: string;
-  name: string;
-  status: string;
-  description: string;
-  startDate: string;
-  endDate?: string;
-}
+import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 
 interface AssignedProjectsProps {
   personnelId: string;
+  onProjectClick?: (project: Project) => void;
 }
 
-export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
+export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjectsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,20 +19,45 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
     async function fetchAssignedProjects() {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        
+        // Fetch projects where this personnel is assigned
+        const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select('*')
           .contains('assigned_personnel', [personnelId]);
 
-        if (error) throw error;
+        if (projectsError) throw projectsError;
 
-        const mapped = (data || []).map((p) => ({
+        if (!projectsData || projectsData.length === 0) {
+          setProjects([]);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch calendar items for these projects
+        const projectIds = projectsData.map((p) => p.id);
+        const { data: calendarItemsData, error: calendarError } = await supabase
+          .from('project_calendar_items')
+          .select('*')
+          .in('project_id', projectIds);
+
+        if (calendarError) throw calendarError;
+
+        const mapped: Project[] = projectsData.map((p) => ({
           id: p.id,
           name: p.name,
-          status: p.status,
+          status: p.status as 'active' | 'completed' | 'pending',
           description: p.description,
           startDate: p.start_date,
           endDate: p.end_date || undefined,
+          assignedPersonnel: p.assigned_personnel || [],
+          calendarItems: (calendarItemsData || [])
+            .filter((item) => item.project_id === p.id)
+            .map((item) => ({
+              id: item.id,
+              date: item.date,
+              description: item.description,
+            })),
         }));
 
         setProjects(mapped);
@@ -76,6 +94,12 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
       return `${start} - ${end}`;
     }
     return `${start} - Present`;
+  };
+
+  const handleProjectClick = (project: Project) => {
+    if (onProjectClick) {
+      onProjectClick(project);
+    }
   };
 
   if (loading) {
@@ -118,11 +142,12 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
                   {activeProjects.map((project) => (
                     <div
                       key={project.id}
-                      className="p-3 rounded-lg border border-border/50 bg-card hover:bg-accent/50 transition-colors"
+                      onClick={() => handleProjectClick(project)}
+                      className="p-3 rounded-lg border border-border/50 bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                             {project.name}
                           </p>
                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -130,9 +155,12 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
                             <span>{formatDateRange(project.startDate, project.endDate)}</span>
                           </div>
                         </div>
-                        <Badge variant={getStatusVariant(project.status)} className="text-xs capitalize shrink-0">
-                          {project.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getStatusVariant(project.status)} className="text-xs capitalize shrink-0">
+                            {project.status}
+                          </Badge>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -149,11 +177,12 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
                   {previousProjects.map((project) => (
                     <div
                       key={project.id}
-                      className="p-3 rounded-lg border border-border/50 bg-muted/30"
+                      onClick={() => handleProjectClick(project)}
+                      className="p-3 rounded-lg border border-border/50 bg-muted/30 cursor-pointer group hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                             {project.name}
                           </p>
                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -161,9 +190,12 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
                             <span>{formatDateRange(project.startDate, project.endDate)}</span>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs capitalize shrink-0">
-                          {project.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs capitalize shrink-0">
+                            {project.status}
+                          </Badge>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -175,4 +207,66 @@ export function AssignedProjects({ personnelId }: AssignedProjectsProps) {
       </CardContent>
     </Card>
   );
+}
+
+// Export a hook for fetching assigned projects data (for use in AvailabilityCalendar)
+export function useAssignedProjects(personnelId: string) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchAssignedProjects() {
+      try {
+        setLoading(true);
+        
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('projects')
+          .select('*')
+          .contains('assigned_personnel', [personnelId]);
+
+        if (projectsError) throw projectsError;
+
+        if (!projectsData || projectsData.length === 0) {
+          setProjects([]);
+          setLoading(false);
+          return;
+        }
+
+        const projectIds = projectsData.map((p) => p.id);
+        const { data: calendarItemsData, error: calendarError } = await supabase
+          .from('project_calendar_items')
+          .select('*')
+          .in('project_id', projectIds);
+
+        if (calendarError) throw calendarError;
+
+        const mapped: Project[] = projectsData.map((p) => ({
+          id: p.id,
+          name: p.name,
+          status: p.status as 'active' | 'completed' | 'pending',
+          description: p.description,
+          startDate: p.start_date,
+          endDate: p.end_date || undefined,
+          assignedPersonnel: p.assigned_personnel || [],
+          calendarItems: (calendarItemsData || [])
+            .filter((item) => item.project_id === p.id)
+            .map((item) => ({
+              id: item.id,
+              date: item.date,
+              description: item.description,
+            })),
+        }));
+
+        setProjects(mapped);
+      } catch (error) {
+        console.error('Error fetching assigned projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAssignedProjects();
+  }, [personnelId]);
+
+  return { projects, loading };
 }
