@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText } from 'lucide-react';
 
 interface AddCertificateDialogProps {
   open: boolean;
@@ -30,6 +30,7 @@ interface CertificateEntry {
   expiryDate: string;
   placeOfIssue: string;
   selected: boolean;
+  file: File | null;
 }
 
 const COMMON_CERTIFICATES = [
@@ -69,8 +70,10 @@ export function AddCertificateDialog({
       expiryDate: '',
       placeOfIssue: '',
       selected: false,
+      file: null,
     }))
   );
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [customName, setCustomName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -92,6 +95,21 @@ export function AddCertificateDialog({
     );
   };
 
+  const handleFileChange = (id: string, file: File | null) => {
+    setCertificates((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, file } : c))
+    );
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setCertificates((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, file: null } : c))
+    );
+    if (fileInputRefs.current[id]) {
+      fileInputRefs.current[id]!.value = '';
+    }
+  };
+
   const handleAddCustom = () => {
     if (!customName.trim()) return;
     const newCert: CertificateEntry = {
@@ -101,6 +119,7 @@ export function AddCertificateDialog({
       expiryDate: '',
       placeOfIssue: '',
       selected: true,
+      file: null,
     };
     setCertificates((prev) => [newCert, ...prev]);
     setCustomName('');
@@ -119,17 +138,49 @@ export function AddCertificateDialog({
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from('certificates').insert(
-        toAdd.map((c) => ({
-          personnel_id: personnelId,
-          name: c.name,
-          date_of_issue: c.dateOfIssue,
-          expiry_date: c.expiryDate || null,
-          place_of_issue: c.placeOfIssue,
-        }))
-      );
+      // Insert certificates one by one to handle file uploads
+      for (const cert of toAdd) {
+        // First insert the certificate to get its ID
+        const { data: insertedCert, error: insertError } = await supabase
+          .from('certificates')
+          .insert({
+            personnel_id: personnelId,
+            name: cert.name,
+            date_of_issue: cert.dateOfIssue,
+            expiry_date: cert.expiryDate || null,
+            place_of_issue: cert.placeOfIssue,
+          })
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (insertError) throw insertError;
+
+        // If there's a file, upload it and update the certificate
+        if (cert.file && insertedCert) {
+          const fileExt = cert.file.name.split('.').pop();
+          const filePath = `${insertedCert.id}/${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('certificate-documents')
+            .upload(filePath, cert.file);
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            toast.error(`Failed to upload document for ${cert.name}`);
+            continue;
+          }
+
+          // Get public URL and update certificate
+          const { data: urlData } = supabase.storage
+            .from('certificate-documents')
+            .getPublicUrl(filePath);
+
+          await supabase
+            .from('certificates')
+            .update({ document_url: urlData.publicUrl })
+            .eq('id', insertedCert.id);
+        }
+      }
 
       toast.success(`${toAdd.length} certificate(s) added successfully`);
       onSuccess();
@@ -144,6 +195,7 @@ export function AddCertificateDialog({
           expiryDate: '',
           placeOfIssue: '',
           selected: false,
+          file: null,
         }))
       );
     } catch (error) {
@@ -200,54 +252,100 @@ export function AddCertificateDialog({
                       <span className="font-medium">{cert.name}</span>
 
                       {cert.selected && (
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">
-                              Date of Issue *
-                            </Label>
-                            <Input
-                              type="date"
-                              value={cert.dateOfIssue}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  cert.id,
-                                  'dateOfIssue',
-                                  e.target.value
-                                )
-                              }
-                            />
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">
+                                Date of Issue *
+                              </Label>
+                              <Input
+                                type="date"
+                                value={cert.dateOfIssue}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    cert.id,
+                                    'dateOfIssue',
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">
+                                Expiry Date
+                              </Label>
+                              <Input
+                                type="date"
+                                value={cert.expiryDate}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    cert.id,
+                                    'expiryDate',
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">
+                                Place of Issue *
+                              </Label>
+                              <Input
+                                placeholder="e.g., Norway"
+                                value={cert.placeOfIssue}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    cert.id,
+                                    'placeOfIssue',
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
                           </div>
+                          
+                          {/* File upload */}
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">
-                              Expiry Date
+                              Document (PDF or Image)
                             </Label>
-                            <Input
-                              type="date"
-                              value={cert.expiryDate}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  cert.id,
-                                  'expiryDate',
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">
-                              Place of Issue *
-                            </Label>
-                            <Input
-                              placeholder="e.g., Norway"
-                              value={cert.placeOfIssue}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  cert.id,
-                                  'placeOfIssue',
-                                  e.target.value
-                                )
-                              }
-                            />
+                            {cert.file ? (
+                              <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
+                                <FileText className="h-4 w-4 text-primary" />
+                                <span className="text-sm flex-1 truncate">{cert.file.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleRemoveFile(cert.id)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  className="hidden"
+                                  ref={(el) => (fileInputRefs.current[cert.id] = el)}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    handleFileChange(cert.id, file);
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => fileInputRefs.current[cert.id]?.click()}
+                                >
+                                  <Upload className="h-4 w-4 mr-2" />
+                                  Upload Document
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
