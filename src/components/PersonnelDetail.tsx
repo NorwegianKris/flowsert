@@ -106,121 +106,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </CardContent>
       </Card>
 
-      {/* Personal Information Section */}
-      <Card className="border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <User className="h-5 w-5 text-primary" />
-            Personal Information
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditProfileOpen(true)}
-            className="gap-1"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Full Name</p>
-              <p className="text-sm font-medium text-foreground">{personnel.name}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Nationality</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                {personnel.nationality || 'Not specified'}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Gender</p>
-              <p className="text-sm font-medium text-foreground">{personnel.gender || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Address</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Home className="h-4 w-4 text-muted-foreground" />
-                {personnel.address || 'Not specified'}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Postal Code</p>
-              <p className="text-sm font-medium text-foreground">{personnel.postalCode || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Postal Address</p>
-              <p className="text-sm font-medium text-foreground">{personnel.postalAddress || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Phone Number</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                {personnel.phone}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Email Address</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                {personnel.email}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Norwegian ID Number</p>
-              <p className="text-sm font-medium text-foreground">{personnel.nationalId || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Salary Account Number</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                {personnel.salaryAccountNumber || 'Not specified'}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Language</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Languages className="h-4 w-4 text-muted-foreground" />
-                {personnel.language || 'Norwegian'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Next of Kin Section */}
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Next of Kin
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Name</p>
-              <p className="text-sm font-medium text-foreground">{personnel.nextOfKinName || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Relation</p>
-              <p className="text-sm font-medium text-foreground">{personnel.nextOfKinRelation || 'Not specified'}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Phone Number</p>
-              <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                {personnel.nextOfKinPhone || 'Not specified'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      {/* Certificate Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
@@ -278,35 +165,139 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </Card>
       </div>
 
+      {/* Certificates Table */}
+      <Card className="border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAddCertOpen(true)}
+              className="gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsRemoveCertOpen(true)}
+              className="gap-1 text-destructive hover:text-destructive"
+              disabled={personnel.certificates.length === 0}
+            >
+              <Trash2 className="h-4 w-4" />
+              Remove
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <CertificateTable certificates={personnel.certificates} />
+        </CardContent>
+      </Card>
+
+      {/* Personal Info + Next of Kin on left, Calendar on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Personal Information Section */}
           <Card className="border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAddCertOpen(true)}
-                  className="gap-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsRemoveCertOpen(true)}
-                  className="gap-1 text-destructive hover:text-destructive"
-                  disabled={personnel.certificates.length === 0}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Remove
-                </Button>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between py-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                Personal Information
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditProfileOpen(true)}
+                className="gap-1 h-8"
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Button>
             </CardHeader>
-            <CardContent>
-              <CertificateTable certificates={personnel.certificates} />
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Full Name</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.name}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Nationality</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.nationality || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Gender</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.gender || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Language</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.language || 'Norwegian'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Address</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.address || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Postal Code</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.postalCode || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Postal Address</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.postalAddress || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.phone}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.email}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Norwegian ID</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.nationalId || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Salary Account</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.salaryAccountNumber || '—'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Next of Kin Section */}
+          <Card className="border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between py-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Next of Kin
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditProfileOpen(true)}
+                className="gap-1 h-8"
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Name</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinName || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Relation</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinRelation || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinPhone || '—'}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
