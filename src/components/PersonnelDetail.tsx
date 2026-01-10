@@ -8,6 +8,7 @@ import { CertificateTable } from '@/components/CertificateTable';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
+import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
 import { Personnel } from '@/types';
 import {
   getPersonnelOverallStatus,
@@ -15,7 +16,7 @@ import {
 } from '@/lib/certificateUtils';
 import { 
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages
+  User, Globe, Home, CreditCard, Languages, Pencil
 } from 'lucide-react';
 
 interface PersonnelDetailProps {
@@ -29,11 +30,18 @@ interface PersonnelDetailProps {
 export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel }: PersonnelDetailProps) {
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
   
   const handleCertificateChange = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleProfileUpdate = () => {
     if (onRefresh) {
       onRefresh();
     }
@@ -100,11 +108,20 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
       {/* Personal Information Section */}
       <Card className="border-border/50">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
             Personal Information
           </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditProfileOpen(true)}
+            className="gap-1"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -288,6 +305,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         certificates={personnel.certificates}
         personnelName={personnel.name}
         onSuccess={handleCertificateChange}
+      />
+
+      <EditPersonnelDialog
+        open={isEditProfileOpen}
+        onOpenChange={setIsEditProfileOpen}
+        personnel={personnel}
+        onSuccess={handleProfileUpdate}
       />
     </div>
   );
