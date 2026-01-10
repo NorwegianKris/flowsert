@@ -7,14 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Personnel } from '@/types';
-import { Project } from '@/types/project';
+import { Project } from '@/hooks/useProjects';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface AddProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   personnel: Personnel[];
-  onProjectAdded: (project: Project) => void;
+  onProjectAdded: (project: Omit<Project, 'id' | 'calendarItems'>) => void;
 }
 
 export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded }: AddProjectDialogProps) {
@@ -27,8 +27,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newProject: Project = {
-      id: crypto.randomUUID(),
+    const newProject: Omit<Project, 'id' | 'calendarItems'> = {
       name,
       description,
       startDate,

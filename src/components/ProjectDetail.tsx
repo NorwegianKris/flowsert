@@ -7,7 +7,7 @@ import { ProjectCalendar } from '@/components/ProjectCalendar';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
-import { Project, CalendarItem } from '@/types/project';
+import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import {
   ArrowLeft,
@@ -84,7 +84,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
     }
   };
 
-  const handleAddCalendarItem = (item: CalendarItem) => {
+  const handleAddCalendarItem = (item: ProjectCalendarItem) => {
     if (onUpdateProject) {
       const updatedItems = [...(project.calendarItems || []), item];
       onUpdateProject({

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FolderOpen, Clock, CheckCircle } from 'lucide-react';
-import { Project } from '@/types/project';
+import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 
 interface ProjectsTabProps {

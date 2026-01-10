@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Project } from '@/types/project';
+import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { toast } from 'sonner';
 

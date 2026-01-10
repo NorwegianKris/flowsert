@@ -11,9 +11,9 @@ import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { usePersonnel } from '@/hooks/usePersonnel';
+import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
-import { Project, dummyProjects } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen } from 'lucide-react';
@@ -25,9 +25,11 @@ export default function AdminDashboard() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(dummyProjects);
-  const { personnel, loading, refetch } = usePersonnel();
+  const { personnel, loading: personnelLoading, refetch } = usePersonnel();
+  const { projects, loading: projectsLoading, addProject, updateProject } = useProjects();
   const { signOut, profile } = useAuth();
+  
+  const loading = personnelLoading || projectsLoading;
 
   const filteredPersonnel = useMemo(() => {
     if (!searchQuery.trim()) return personnel;
@@ -42,15 +44,15 @@ export default function AdminDashboard() {
     );
   }, [searchQuery, personnel]);
 
-  const handleProjectAdded = (project: Project) => {
-    setProjects((prev) => [project, ...prev]);
+  const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>) => {
+    await addProject(projectData);
   };
 
-  const handleUpdateProject = (updatedProject: Project) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    );
-    setSelectedProject(updatedProject);
+  const handleUpdateProject = async (updatedProject: Project) => {
+    const success = await updateProject(updatedProject);
+    if (success) {
+      setSelectedProject(updatedProject);
+    }
   };
 
   if (loading) {
