@@ -98,6 +98,10 @@ export default function AdminDashboard() {
             personnel={personnel}
             onBack={() => setSelectedProject(null)}
             onUpdateProject={handleUpdateProject}
+            onPersonnelClick={(person) => {
+              setSelectedProject(null);
+              setSelectedPersonnel(person);
+            }}
           />
         </main>
         <ChatBot />
