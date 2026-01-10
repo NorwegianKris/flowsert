@@ -2,15 +2,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isSameDay, addMonths, parseISO, isWithinInterval } from 'date-fns';
-import { CalendarDays, Award, Check, X, Clock, Loader2, FolderOpen, Bookmark } from 'lucide-react';
+import { CalendarDays, Award, Check, X, Clock, Loader2, FolderOpen, Bookmark, Plus, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Personnel } from '@/types';
 import { Project } from '@/hooks/useProjects';
 import { getCertificateStatus } from '@/lib/certificateUtils';
+import { generateICSContent, downloadICSFile } from '@/lib/calendarExport';
+import { AddMasterCalendarItemDialog } from '@/components/AddMasterCalendarItemDialog';
+import { toast } from 'sonner';
 import {
   Popover,
   PopoverContent,
@@ -33,6 +37,7 @@ interface CalendarEvent {
 interface TeamCalendarProps {
   personnel: Personnel[];
   projects?: Project[];
+  onAddCalendarItem?: (projectId: string, date: string, description: string) => Promise<void>;
 }
 
 type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
@@ -63,12 +68,13 @@ const availabilityConfig: Record<AvailabilityStatus, { label: string; icon: type
   },
 };
 
-export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
+export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: TeamCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [addItemDialogOpen, setAddItemDialogOpen] = useState(false);
 
   // Toggle states
   const [showCertificates, setShowCertificates] = useState(true);
@@ -211,6 +217,18 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
       setSelectedDate(date);
       setPopoverOpen(true);
     }
+  };
+
+  const handleAddCalendarItem = async (projectId: string, date: string, description: string) => {
+    if (onAddCalendarItem) {
+      await onAddCalendarItem(projectId, date, description);
+    }
+  };
+
+  const handleExportToOutlook = () => {
+    const icsContent = generateICSContent(projects, personnel, showCertificates, showProjects);
+    downloadICSFile(icsContent);
+    toast.success('Calendar exported! Import the .ics file into Outlook.');
   };
 
   // Create modifiers for dates with events
@@ -356,11 +374,37 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
   return (
     <Card className="border-border/50">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            Master Calendar
-          </CardTitle>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              Master Calendar
+            </CardTitle>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              {onAddCalendarItem && projects.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setAddItemDialogOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Item
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportToOutlook}
+                className="gap-1.5"
+              >
+                <Download className="h-4 w-4" />
+                Sync with Outlook
+              </Button>
+            </div>
+          </div>
           
           {/* Toggle Controls */}
           <div className="flex flex-wrap items-center gap-4">
@@ -590,6 +634,14 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Add Calendar Item Dialog */}
+      <AddMasterCalendarItemDialog
+        open={addItemDialogOpen}
+        onOpenChange={setAddItemDialogOpen}
+        projects={projects}
+        onAdd={handleAddCalendarItem}
+      />
     </Card>
   );
 }
