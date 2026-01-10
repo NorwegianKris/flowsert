@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Certificate } from '@/types';
 import {
@@ -21,7 +22,7 @@ import {
   formatExpiryText,
 } from '@/lib/certificateUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2 } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File } from 'lucide-react';
 
 interface CertificateTableProps {
   certificates: Certificate[];
@@ -37,6 +38,14 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
     return statusOrder[statusA] - statusOrder[statusB];
   });
 
+  const isImageFile = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+  };
+
+  const isPdfFile = (url: string) => {
+    return /\.pdf$/i.test(url);
+  };
+
   return (
     <>
       <div className="rounded-lg border border-border/50 overflow-hidden">
@@ -48,6 +57,7 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
               <TableHead className="font-semibold">Date of Issue</TableHead>
               <TableHead className="font-semibold">Expiry Date</TableHead>
               <TableHead className="font-semibold">Place of Issue</TableHead>
+              <TableHead className="font-semibold">Document</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -98,6 +108,20 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                   <TableCell className="text-muted-foreground">
                     {cert.placeOfIssue}
                   </TableCell>
+                  <TableCell>
+                    {cert.documentUrl ? (
+                      <div className="flex items-center gap-1">
+                        {isImageFile(cert.documentUrl) ? (
+                          <Image className="h-4 w-4 text-primary" />
+                        ) : (
+                          <File className="h-4 w-4 text-primary" />
+                        )}
+                        <span className="text-xs text-primary">Attached</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">None</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -106,7 +130,7 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
       </div>
 
       <Dialog open={!!selectedCertificate} onOpenChange={(open) => !open && setSelectedCertificate(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Award className="h-5 w-5 text-primary" />
@@ -116,26 +140,69 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
           
           {selectedCertificate && (
             <div className="space-y-6">
-              {/* Certificate Preview */}
-              <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-lg p-8 relative overflow-hidden">
-                <div className="absolute top-4 right-4 opacity-10">
-                  <Award className="h-24 w-24 text-primary" />
-                </div>
-                
-                <div className="text-center space-y-4 relative z-10">
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                    Certificate of Competency
+              {/* Document Preview */}
+              {selectedCertificate.documentUrl ? (
+                <div className="border rounded-lg overflow-hidden bg-muted/20">
+                  <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                    <span className="text-sm font-medium">Document Preview</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open Full Size
+                    </Button>
                   </div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    {selectedCertificate.name}
-                  </h2>
-                  <div className="w-24 h-0.5 bg-primary/30 mx-auto" />
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    This is to certify that the holder has successfully completed all requirements
-                    and is authorized to perform duties as specified by this certificate.
-                  </p>
+                  <div className="p-4 flex justify-center">
+                    {isImageFile(selectedCertificate.documentUrl) ? (
+                      <img
+                        src={selectedCertificate.documentUrl}
+                        alt={`${selectedCertificate.name} document`}
+                        className="max-h-[400px] object-contain rounded"
+                      />
+                    ) : isPdfFile(selectedCertificate.documentUrl) ? (
+                      <iframe
+                        src={selectedCertificate.documentUrl}
+                        title={`${selectedCertificate.name} document`}
+                        className="w-full h-[500px] rounded"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 py-8">
+                        <File className="h-16 w-16 text-muted-foreground" />
+                        <p className="text-muted-foreground">Document available</p>
+                        <Button
+                          variant="outline"
+                          onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Download Document
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Certificate Placeholder when no document */
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-lg p-8 relative overflow-hidden">
+                  <div className="absolute top-4 right-4 opacity-10">
+                    <Award className="h-24 w-24 text-primary" />
+                  </div>
+                  
+                  <div className="text-center space-y-4 relative z-10">
+                    <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                      Certificate of Competency
+                    </div>
+                    <h2 className="text-2xl font-bold text-foreground">
+                      {selectedCertificate.name}
+                    </h2>
+                    <div className="w-24 h-0.5 bg-primary/30 mx-auto" />
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      No document uploaded for this certificate.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Certificate Details */}
               <div className="grid grid-cols-2 gap-4">
