@@ -40,6 +40,7 @@ interface ProjectDetailProps {
   personnel: Personnel[];
   onBack: () => void;
   onUpdateProject?: (project: Project) => void;
+  onPersonnelClick?: (person: Personnel) => void;
 }
 
 const statusConfig = {
@@ -48,7 +49,7 @@ const statusConfig = {
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, color: 'bg-amber-500' },
 };
 
-export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: ProjectDetailProps) {
+export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick }: ProjectDetailProps) {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
@@ -314,7 +315,8 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject }: P
                   {assignedPersonnel.map((person) => (
                     <div
                       key={person.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors ${onPersonnelClick ? 'cursor-pointer' : ''}`}
+                      onClick={() => onPersonnelClick?.(person)}
                     >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={person.avatarUrl} alt={person.name} />
