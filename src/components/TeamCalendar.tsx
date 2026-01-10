@@ -238,30 +238,6 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
     return dates;
   }, [projectRanges]);
 
-  const modifiers = {
-    hasEvent: hasEventDates,
-    inProjectRange: projectRangeDates,
-  };
-
-  const modifiersStyles = {
-    hasEvent: {
-      fontWeight: 700,
-    },
-    inProjectRange: {
-      backgroundColor: 'hsl(var(--primary) / 0.15)',
-    },
-  };
-
-  // Get upcoming events (next 30 days)
-  const upcomingEvents = useMemo(() => {
-    const now = new Date();
-    const thirtyDaysFromNow = addMonths(now, 1);
-    return events
-      .filter(e => e.date >= now && e.date <= thirtyDaysFromNow)
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 10);
-  }, [events]);
-
   // Get all certificate expiries sorted by date (soonest first)
   const upcomingCertificateExpiries = useMemo(() => {
     const allCertExpiries: Array<{
@@ -290,6 +266,64 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
 
     return allCertExpiries.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime());
   }, [personnel]);
+
+  // Separate certificate expiry dates by status for different styling
+  const expiredCertDates = useMemo(() => {
+    return upcomingCertificateExpiries
+      .filter(c => c.status === 'expired')
+      .map(c => c.expiryDate);
+  }, [upcomingCertificateExpiries]);
+
+  const expiringCertDates = useMemo(() => {
+    return upcomingCertificateExpiries
+      .filter(c => c.status === 'expiring')
+      .map(c => c.expiryDate);
+  }, [upcomingCertificateExpiries]);
+
+  const validCertDates = useMemo(() => {
+    return upcomingCertificateExpiries
+      .filter(c => c.status === 'valid')
+      .map(c => c.expiryDate);
+  }, [upcomingCertificateExpiries]);
+
+  const modifiers = {
+    hasEvent: hasEventDates,
+    inProjectRange: projectRangeDates,
+    certExpired: expiredCertDates,
+    certExpiring: expiringCertDates,
+    certValid: validCertDates,
+  };
+
+  const modifiersStyles = {
+    hasEvent: {
+      fontWeight: 700,
+    },
+    inProjectRange: {
+      backgroundColor: 'hsl(var(--primary) / 0.15)',
+    },
+    certExpired: {
+      border: '2px solid hsl(var(--destructive))',
+      borderRadius: '50%',
+    },
+    certExpiring: {
+      border: '2px solid hsl(38 92% 50%)',
+      borderRadius: '50%',
+    },
+    certValid: {
+      border: '2px solid hsl(142 76% 36%)',
+      borderRadius: '50%',
+    },
+  };
+
+  // Get upcoming events (next 30 days)
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysFromNow = addMonths(now, 1);
+    return events
+      .filter(e => e.date >= now && e.date <= thirtyDaysFromNow)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, 10);
+  }, [events]);
 
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
   const selectedDateProjects = selectedDate 
