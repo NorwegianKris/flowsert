@@ -9,6 +9,7 @@ import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
 import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
+import { AssignedProjects } from '@/components/AssignedProjects';
 import { Personnel } from '@/types';
 import {
   getPersonnelOverallStatus,
@@ -303,6 +304,9 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               </div>
             </CardContent>
           </Card>
+
+          {/* Assigned Projects Section */}
+          <AssignedProjects personnelId={personnel.id} />
         </div>
         
         <div>
