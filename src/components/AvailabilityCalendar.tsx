@@ -11,10 +11,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, isAfter, isBefore } from 'date-fns';
 import { CalendarDays, Check, X, Clock, Loader2, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Certificate } from '@/types';
+import type { DateRange } from 'react-day-picker';
 
 type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
 
@@ -51,7 +52,7 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
 
 export function AvailabilityCalendar({ personnelId, personnelName, certificates = [] }: AvailabilityCalendarProps) {
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<AvailabilityStatus>('available');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -106,61 +107,86 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     }
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-    setSelectedDate(date);
+  const handleRangeSelect = (range: DateRange | undefined) => {
+    setSelectedRange(range);
     
-    const existing = availability.find((a) =>
-      isSameDay(new Date(a.date), date)
-    );
-    
-    if (existing) {
-      setSelectedStatus(existing.status as AvailabilityStatus);
-      setNotes(existing.notes || '');
-    } else {
-      setSelectedStatus('available');
-      setNotes('');
+    // Open popover when we have at least a start date
+    if (range?.from) {
+      // If selecting a single date, check for existing entry
+      if (!range.to || isSameDay(range.from, range.to)) {
+        const existing = availability.find((a) =>
+          isSameDay(new Date(a.date), range.from!)
+        );
+        if (existing) {
+          setSelectedStatus(existing.status as AvailabilityStatus);
+          setNotes(existing.notes || '');
+        } else {
+          setSelectedStatus('available');
+          setNotes('');
+        }
+      } else {
+        // For range selection, reset to defaults
+        setSelectedStatus('available');
+        setNotes('');
+      }
+      setPopoverOpen(true);
     }
-    setPopoverOpen(true);
+  };
+
+  const getDatesInRange = (): Date[] => {
+    if (!selectedRange?.from) return [];
+    if (!selectedRange.to) return [selectedRange.from];
+    return eachDayOfInterval({ start: selectedRange.from, end: selectedRange.to });
   };
 
   const handleSave = async () => {
-    if (!selectedDate) return;
+    if (!selectedRange?.from) return;
+    
+    const datesToSave = getDatesInRange();
+    if (datesToSave.length === 0) return;
     
     setIsSaving(true);
     try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      const existing = availability.find((a) =>
-        isSameDay(new Date(a.date), selectedDate)
-      );
+      // For each date in the range, upsert availability
+      for (const date of datesToSave) {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const existing = availability.find((a) =>
+          isSameDay(new Date(a.date), date)
+        );
 
-      if (existing) {
-        const { error } = await supabase
-          .from('availability')
-          .update({ status: selectedStatus, notes: notes || null })
-          .eq('id', existing.id);
+        if (existing) {
+          const { error } = await supabase
+            .from('availability')
+            .update({ status: selectedStatus, notes: notes || null })
+            .eq('id', existing.id);
 
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('availability')
-          .insert({
-            personnel_id: personnelId,
-            date: dateStr,
-            status: selectedStatus,
-            notes: notes || null,
-          });
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('availability')
+            .insert({
+              personnel_id: personnelId,
+              date: dateStr,
+              status: selectedStatus,
+              notes: notes || null,
+            });
 
-        if (error) throw error;
+          if (error) throw error;
+        }
       }
+
+      const description = datesToSave.length === 1
+        ? `Availability for ${format(datesToSave[0], 'PPP')} updated`
+        : `Availability for ${format(datesToSave[0], 'MMM d')} - ${format(datesToSave[datesToSave.length - 1], 'MMM d, yyyy')} updated`;
 
       toast({
         title: 'Saved',
-        description: `Availability for ${format(selectedDate, 'PPP')} updated`,
+        description,
       });
       
       fetchAvailability();
       setPopoverOpen(false);
+      setSelectedRange(undefined);
     } catch (error) {
       console.error('Error saving availability:', error);
       toast({
@@ -174,30 +200,40 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const handleRemove = async () => {
-    if (!selectedDate) return;
+    if (!selectedRange?.from) return;
     
-    const existing = availability.find((a) =>
-      isSameDay(new Date(a.date), selectedDate)
-    );
+    const datesToRemove = getDatesInRange();
+    const existingEntries = datesToRemove
+      .map((date) => availability.find((a) => isSameDay(new Date(a.date), date)))
+      .filter(Boolean);
     
-    if (!existing) return;
+    if (existingEntries.length === 0) return;
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('availability')
-        .delete()
-        .eq('id', existing.id);
+      for (const entry of existingEntries) {
+        if (entry) {
+          const { error } = await supabase
+            .from('availability')
+            .delete()
+            .eq('id', entry.id);
 
-      if (error) throw error;
+          if (error) throw error;
+        }
+      }
+
+      const description = datesToRemove.length === 1
+        ? `Availability for ${format(datesToRemove[0], 'PPP')} removed`
+        : `Availability for ${datesToRemove.length} days removed`;
 
       toast({
         title: 'Removed',
-        description: `Availability for ${format(selectedDate, 'PPP')} removed`,
+        description,
       });
       
       fetchAvailability();
       setPopoverOpen(false);
+      setSelectedRange(undefined);
     } catch (error) {
       console.error('Error removing availability:', error);
       toast({
@@ -208,6 +244,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const hasExistingEntriesInRange = (): boolean => {
+    const dates = getDatesInRange();
+    return dates.some((date) => availability.find((a) => isSameDay(new Date(a.date), date)));
   };
 
   const getDateStatus = (date: Date): AvailabilityStatus | null => {
@@ -282,12 +323,13 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               <PopoverTrigger asChild>
                 <div>
                   <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
+                    mode="range"
+                    selected={selectedRange}
+                    onSelect={handleRangeSelect}
                     modifiers={modifiers}
                     modifiersStyles={modifiersStyles}
                     className="rounded-md border border-border pointer-events-auto"
+                    numberOfMonths={1}
                   />
                 </div>
               </PopoverTrigger>
@@ -295,21 +337,32 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-1">
-                      {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
+                      {selectedRange?.from ? (
+                        selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
+                          `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d, yyyy')}`
+                        ) : (
+                          format(selectedRange.from, 'EEEE, MMMM d, yyyy')
+                        )
+                      ) : (
+                        'Select dates'
+                      )}
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      Set availability for {personnelName}
+                      {selectedRange?.to && !isSameDay(selectedRange.from!, selectedRange.to) 
+                        ? `Set availability for ${getDatesInRange().length} days`
+                        : `Set availability for ${personnelName}`
+                      }
                     </p>
                   </div>
 
-                  {selectedDate && getCertificatesExpiringOnDate(selectedDate).length > 0 && (
+                  {selectedRange?.from && !selectedRange.to && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
                     <div className="p-3 rounded-lg bg-[hsl(280_70%_50%)]/10 border border-[hsl(280_70%_50%)]/30">
                       <div className="flex items-center gap-2 mb-2">
                         <Award className="h-4 w-4 text-[hsl(280_70%_50%)]" />
                         <span className="text-sm font-medium text-foreground">Certificate Expiries</span>
                       </div>
                       <ul className="text-sm text-muted-foreground space-y-1">
-                        {getCertificatesExpiringOnDate(selectedDate).map((certName, idx) => (
+                        {getCertificatesExpiringOnDate(selectedRange.from).map((certName, idx) => (
                           <li key={idx} className="flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-[hsl(280_70%_50%)]" />
                             {certName}
@@ -350,16 +403,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={handleSave} disabled={isSaving} className="flex-1">
+                    <Button onClick={handleSave} disabled={isSaving || !selectedRange?.from} className="flex-1">
                       {isSaving ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        'Save'
+                        `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
                       )}
                     </Button>
-                    {availability.find((a) =>
-                      selectedDate && isSameDay(new Date(a.date), selectedDate)
-                    ) && (
+                    {hasExistingEntriesInRange() && (
                       <Button
                         variant="outline"
                         onClick={handleRemove}
