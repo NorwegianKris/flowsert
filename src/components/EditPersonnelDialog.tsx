@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Camera } from 'lucide-react';
 import { Personnel } from '@/types';
 
 interface EditPersonnelDialogProps {
@@ -17,6 +18,9 @@ interface EditPersonnelDialogProps {
 
 export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }: EditPersonnelDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,8 +60,67 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         nextOfKinRelation: personnel.nextOfKinRelation || '',
         nextOfKinPhone: personnel.nextOfKinPhone || '',
       });
+      setAvatarUrl(personnel.avatarUrl || null);
     }
   }, [open, personnel]);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${personnel.id}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update personnel record with avatar URL
+      const { error: updateError } = await supabase
+        .from('personnel')
+        .update({ avatar_url: publicUrl })
+        .eq('id', personnel.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast.success('Profile picture updated');
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error(error.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const initials = personnel.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +174,41 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           <DialogTitle>Edit Personal Information</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Avatar Upload Section */}
+          <div className="flex items-center gap-4 pb-4 border-b">
+            <div className="relative">
+              <Avatar className="h-20 w-20 border-2 border-border">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={personnel.name} />}
+                <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Camera className="h-3 w-3" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Profile Picture</p>
+              <p className="text-xs text-muted-foreground">Click the camera icon to upload</p>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Full Name *</Label>
