@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -5,22 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CertificateTable } from '@/components/CertificateTable';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
+import { AddCertificateDialog } from '@/components/AddCertificateDialog';
+import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
 import { Personnel } from '@/types';
 import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
-import { ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2 } from 'lucide-react';
 
 interface PersonnelDetailProps {
   personnel: Personnel;
   onBack: () => void;
   hideBackButton?: boolean;
+  onRefresh?: () => void;
 }
 
-export function PersonnelDetail({ personnel, onBack, hideBackButton = false }: PersonnelDetailProps) {
+export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh }: PersonnelDetailProps) {
+  const [isAddCertOpen, setIsAddCertOpen] = useState(false);
+  const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
+  
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
+  
+  const handleCertificateChange = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
   const initials = personnel.name
     .split(' ')
     .map((n) => n[0])
@@ -142,8 +155,29 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false }: P
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card className="border-border/50">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddCertOpen(true)}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsRemoveCertOpen(true)}
+                  className="gap-1 text-destructive hover:text-destructive"
+                  disabled={personnel.certificates.length === 0}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <CertificateTable certificates={personnel.certificates} />
@@ -158,6 +192,22 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false }: P
           />
         </div>
       </div>
+
+      <AddCertificateDialog
+        open={isAddCertOpen}
+        onOpenChange={setIsAddCertOpen}
+        personnelId={personnel.id}
+        personnelName={personnel.name}
+        onSuccess={handleCertificateChange}
+      />
+
+      <RemoveCertificateDialog
+        open={isRemoveCertOpen}
+        onOpenChange={setIsRemoveCertOpen}
+        certificates={personnel.certificates}
+        personnelName={personnel.name}
+        onSuccess={handleCertificateChange}
+      />
     </div>
   );
 }

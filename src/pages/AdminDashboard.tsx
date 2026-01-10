@@ -62,6 +62,9 @@ export default function AdminDashboard() {
   }
 
   if (selectedPersonnel) {
+    // Find the latest version of selected personnel from the list
+    const currentPersonnel = personnel.find(p => p.id === selectedPersonnel.id) || selectedPersonnel;
+    
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader
@@ -70,8 +73,9 @@ export default function AdminDashboard() {
         />
         <main className="container mx-auto px-4 py-6">
           <PersonnelDetail
-            personnel={selectedPersonnel}
+            personnel={currentPersonnel}
             onBack={() => setSelectedPersonnel(null)}
+            onRefresh={refetch}
           />
         </main>
         <ChatBot />
