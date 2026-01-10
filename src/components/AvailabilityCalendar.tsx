@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay } from 'date-fns';
-import { CalendarDays, Check, X, Clock, Loader2 } from 'lucide-react';
+import { CalendarDays, Check, X, Clock, Loader2, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Certificate } from '@/types';
 
 type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
 
@@ -27,6 +28,7 @@ interface AvailabilityEntry {
 interface AvailabilityCalendarProps {
   personnelId: string;
   personnelName: string;
+  certificates?: Certificate[];
 }
 
 const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Check; className: string }> = {
@@ -47,7 +49,7 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
   },
 };
 
-export function AvailabilityCalendar({ personnelId, personnelName }: AvailabilityCalendarProps) {
+export function AvailabilityCalendar({ personnelId, personnelName, certificates = [] }: AvailabilityCalendarProps) {
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<AvailabilityStatus>('available');
@@ -56,6 +58,20 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
   const [isSaving, setIsSaving] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const { toast } = useToast();
+
+  // Get certificate expiry dates
+  const certificateExpiryDates = certificates
+    .filter((cert) => cert.expiryDate)
+    .map((cert) => ({
+      date: new Date(cert.expiryDate!),
+      name: cert.name,
+    }));
+
+  const getCertificatesExpiringOnDate = (date: Date): string[] => {
+    return certificateExpiryDates
+      .filter((cert) => isSameDay(cert.date, date))
+      .map((cert) => cert.name);
+  };
 
   useEffect(() => {
     fetchAvailability();
@@ -209,6 +225,7 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
     partial: availability
       .filter((a) => a.status === 'partial')
       .map((a) => new Date(a.date)),
+    certificateExpiry: certificateExpiryDates.map((c) => c.date),
   };
 
   const modifiersStyles = {
@@ -225,6 +242,10 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
     partial: {
       backgroundColor: 'hsl(38 92% 50%)',
       color: 'white',
+      borderRadius: '50%',
+    },
+    certificateExpiry: {
+      border: '2px solid hsl(280 70% 50%)',
       borderRadius: '50%',
     },
   };
@@ -251,6 +272,10 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
                   <span className="text-muted-foreground">{config.label}</span>
                 </div>
               ))}
+              <div className="flex items-center gap-1.5 text-sm">
+                <span className="h-3 w-3 rounded-full border-2 border-[hsl(280_70%_50%)]" />
+                <span className="text-muted-foreground">Certificate Expiry</span>
+              </div>
             </div>
 
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -276,6 +301,23 @@ export function AvailabilityCalendar({ personnelId, personnelName }: Availabilit
                       Set availability for {personnelName}
                     </p>
                   </div>
+
+                  {selectedDate && getCertificatesExpiringOnDate(selectedDate).length > 0 && (
+                    <div className="p-3 rounded-lg bg-[hsl(280_70%_50%)]/10 border border-[hsl(280_70%_50%)]/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className="h-4 w-4 text-[hsl(280_70%_50%)]" />
+                        <span className="text-sm font-medium text-foreground">Certificate Expiries</span>
+                      </div>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        {getCertificatesExpiringOnDate(selectedDate).map((certName, idx) => (
+                          <li key={idx} className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(280_70%_50%)]" />
+                            {certName}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     {Object.entries(statusConfig).map(([status, config]) => {

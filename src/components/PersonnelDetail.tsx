@@ -190,6 +190,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <AvailabilityCalendar 
             personnelId={personnel.id} 
             personnelName={personnel.name}
+            certificates={personnel.certificates}
           />
         </div>
       </div>
