@@ -10,7 +10,10 @@ import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
 import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
 import { AssignedProjects } from '@/components/AssignedProjects';
+import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { Personnel } from '@/types';
+import { Project } from '@/hooks/useProjects';
+import { usePersonnel } from '@/hooks/usePersonnel';
 import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
@@ -32,6 +35,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  
+  // Get all personnel for the project detail view
+  const { personnel: allPersonnel } = usePersonnel();
   
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
@@ -47,11 +54,27 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       onRefresh();
     }
   };
+
+  const handleProjectClick = (project: Project) => {
+    setSelectedProject(project);
+  };
+
   const initials = personnel.name
     .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase();
+
+  // Show project detail if a project is selected
+  if (selectedProject) {
+    return (
+      <WorkerProjectDetail
+        project={selectedProject}
+        personnel={allPersonnel}
+        onBack={() => setSelectedProject(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -306,7 +329,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           </Card>
 
           {/* Assigned Projects Section */}
-          <AssignedProjects personnelId={personnel.id} />
+          <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />
         </div>
         
         <div>

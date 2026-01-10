@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval } from 'date-fns';
-import { CalendarDays, Check, X, Clock, Loader2, Award } from 'lucide-react';
+import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO } from 'date-fns';
+import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Certificate } from '@/types';
+import { useAssignedProjects } from '@/components/AssignedProjects';
 import type { DateRange } from 'react-day-picker';
 
 type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
@@ -19,6 +20,13 @@ interface AvailabilityEntry {
   date: string;
   status: AvailabilityStatus;
   notes: string | null;
+}
+
+interface ProjectEvent {
+  date: Date;
+  projectName: string;
+  description: string;
+  type: 'event' | 'duration';
 }
 
 interface AvailabilityCalendarProps {
@@ -53,6 +61,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  
+  // Fetch assigned projects for this personnel
+  const { projects: assignedProjects } = useAssignedProjects(personnelId);
 
   // Get certificate expiry dates
   const certificateExpiryDates = certificates
@@ -66,6 +77,79 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return certificateExpiryDates
       .filter((cert) => isSameDay(cert.date, date))
       .map((cert) => cert.name);
+  };
+
+  // Get project events for a specific date
+  const getProjectEventsOnDate = (date: Date): ProjectEvent[] => {
+    const events: ProjectEvent[] = [];
+    
+    for (const project of assignedProjects) {
+      // Check if date is within project duration
+      const startDate = parseISO(project.startDate);
+      const endDate = project.endDate ? parseISO(project.endDate) : null;
+      
+      if (endDate) {
+        if (isWithinInterval(date, { start: startDate, end: endDate })) {
+          // Only add duration marker for start and end dates
+          if (isSameDay(date, startDate)) {
+            events.push({
+              date,
+              projectName: project.name,
+              description: 'Project Start',
+              type: 'duration',
+            });
+          } else if (isSameDay(date, endDate)) {
+            events.push({
+              date,
+              projectName: project.name,
+              description: 'Project End',
+              type: 'duration',
+            });
+          }
+        }
+      } else if (isSameDay(date, startDate)) {
+        events.push({
+          date,
+          projectName: project.name,
+          description: 'Project Start',
+          type: 'duration',
+        });
+      }
+      
+      // Check calendar items
+      for (const item of project.calendarItems || []) {
+        if (isSameDay(parseISO(item.date), date)) {
+          events.push({
+            date,
+            projectName: project.name,
+            description: item.description,
+            type: 'event',
+          });
+        }
+      }
+    }
+    
+    return events;
+  };
+
+  // Get all project-related dates for calendar modifiers
+  const getProjectDates = () => {
+    const projectDates: Date[] = [];
+    
+    for (const project of assignedProjects) {
+      const startDate = parseISO(project.startDate);
+      projectDates.push(startDate);
+      
+      if (project.endDate) {
+        projectDates.push(parseISO(project.endDate));
+      }
+      
+      for (const item of project.calendarItems || []) {
+        projectDates.push(parseISO(item.date));
+      }
+    }
+    
+    return projectDates;
   };
 
   useEffect(() => {
@@ -257,6 +341,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       .filter((a) => a.status === 'partial')
       .map((a) => new Date(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
+    projectEvent: getProjectDates(),
   };
 
   const modifiersStyles = {
@@ -277,6 +362,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     },
     certificateExpiry: {
       border: '2px solid hsl(280 70% 50%)',
+      borderRadius: '50%',
+    },
+    projectEvent: {
+      border: '2px solid hsl(210 100% 50%)',
       borderRadius: '50%',
     },
   };
@@ -306,6 +395,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               <div className="flex items-center gap-1.5 text-sm">
                 <span className="h-3 w-3 rounded-full border-2 border-[hsl(280_70%_50%)]" />
                 <span className="text-muted-foreground">Certificate Expiry</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <span className="h-3 w-3 rounded-full border-2 border-[hsl(210_100%_50%)]" />
+                <span className="text-muted-foreground">Project Event</span>
               </div>
             </div>
 
@@ -337,6 +430,23 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                       }
                     </p>
                   </div>
+
+                  {!selectedRange.to && getProjectEventsOnDate(selectedRange.from).length > 0 && (
+                    <div className="p-3 rounded-lg bg-[hsl(210_100%_50%)]/10 border border-[hsl(210_100%_50%)]/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Briefcase className="h-4 w-4 text-[hsl(210_100%_50%)]" />
+                        <span className="text-sm font-medium text-foreground">Project Events</span>
+                      </div>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        {getProjectEventsOnDate(selectedRange.from).map((event, idx) => (
+                          <li key={idx} className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(210_100%_50%)]" />
+                            <span className="font-medium">{event.projectName}:</span> {event.description}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {!selectedRange.to && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
                     <div className="p-3 rounded-lg bg-[hsl(280_70%_50%)]/10 border border-[hsl(280_70%_50%)]/30">
