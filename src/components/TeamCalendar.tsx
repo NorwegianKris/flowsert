@@ -9,7 +9,7 @@ import { format, isSameDay, addMonths, parseISO, isWithinInterval } from 'date-f
 import { CalendarDays, Award, Check, X, Clock, Loader2, FolderOpen, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Personnel } from '@/types';
-import { Project } from '@/types/project';
+import { Project } from '@/hooks/useProjects';
 import { getCertificateStatus } from '@/lib/certificateUtils';
 import {
   Popover,

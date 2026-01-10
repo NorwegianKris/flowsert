@@ -10,12 +10,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarItem } from '@/types/project';
+import { ProjectCalendarItem } from '@/hooks/useProjects';
 
 interface AddCalendarItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (item: CalendarItem) => void;
+  onAdd: (item: ProjectCalendarItem) => void;
   projectStartDate: string;
   projectEndDate?: string;
 }
