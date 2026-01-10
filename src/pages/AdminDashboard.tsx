@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
-  const { projects, loading: projectsLoading, addProject, updateProject } = useProjects();
+  const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { signOut, profile } = useAuth();
   
   const loading = personnelLoading || projectsLoading;
@@ -54,6 +54,10 @@ export default function AdminDashboard() {
     if (success) {
       setSelectedProject(updatedProject);
     }
+  };
+
+  const handleAddCalendarItem = async (projectId: string, date: string, description: string) => {
+    await addCalendarItem(projectId, { date, description });
   };
 
   if (loading) {
@@ -201,7 +205,11 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="calendar" className="mt-6">
-            <TeamCalendar personnel={personnel} projects={projects} />
+            <TeamCalendar 
+              personnel={personnel} 
+              projects={projects} 
+              onAddCalendarItem={handleAddCalendarItem}
+            />
           </TabsContent>
           
           <TabsContent value="projects" className="mt-6">
