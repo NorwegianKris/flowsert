@@ -262,6 +262,35 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
       .slice(0, 10);
   }, [events]);
 
+  // Get all certificate expiries sorted by date (soonest first)
+  const upcomingCertificateExpiries = useMemo(() => {
+    const allCertExpiries: Array<{
+      id: string;
+      name: string;
+      expiryDate: Date;
+      personnelName: string;
+      personnelId: string;
+      status: string;
+    }> = [];
+
+    personnel.forEach(p => {
+      p.certificates.forEach(cert => {
+        if (cert.expiryDate) {
+          allCertExpiries.push({
+            id: cert.id,
+            name: cert.name,
+            expiryDate: new Date(cert.expiryDate),
+            personnelName: p.name,
+            personnelId: p.id,
+            status: getCertificateStatus(cert.expiryDate),
+          });
+        }
+      });
+    });
+
+    return allCertExpiries.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime());
+  }, [personnel]);
+
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
   const selectedDateProjects = selectedDate 
     ? projectRanges.filter(range => isWithinInterval(selectedDate, { start: range.start, end: range.end }))
@@ -468,6 +497,49 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
                 {upcomingEvents.length === 0 && (
                   <p className="text-sm text-muted-foreground italic">
                     No upcoming events in the next 30 days
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Next Certificate Expiries */}
+            <div className="pt-4 border-t border-border/50">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Award className="h-4 w-4 text-primary" />
+                Next Certificate Expiries
+              </h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {upcomingCertificateExpiries.map((cert, index) => (
+                  <div 
+                    key={cert.id} 
+                    className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-muted-foreground w-5">
+                        #{index + 1}
+                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{cert.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {cert.personnelName}
+                        </span>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant={
+                        cert.status === 'expired' ? 'destructive' : 
+                        cert.status === 'expiring' ? 'secondary' : 
+                        'outline'
+                      }
+                      className="text-xs"
+                    >
+                      {format(cert.expiryDate, 'MMM d, yyyy')}
+                    </Badge>
+                  </div>
+                ))}
+                {upcomingCertificateExpiries.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No certificates with expiry dates
                   </p>
                 )}
               </div>
