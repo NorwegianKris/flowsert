@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,6 +69,9 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             <Avatar className="h-24 w-24 border-4 border-border">
+              {personnel.avatarUrl && (
+                <AvatarImage src={personnel.avatarUrl} alt={personnel.name} />
+              )}
               <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
                 {initials}
               </AvatarFallback>
