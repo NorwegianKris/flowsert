@@ -170,41 +170,65 @@ export type Database = {
       }
       personnel: {
         Row: {
+          address: string | null
           avatar_url: string | null
           business_id: string | null
           created_at: string
           email: string
+          gender: string | null
           id: string
+          language: string | null
           location: string
           name: string
+          national_id: string | null
+          nationality: string | null
           phone: string
+          postal_address: string | null
+          postal_code: string | null
           role: string
+          salary_account_number: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           business_id?: string | null
           created_at?: string
           email: string
+          gender?: string | null
           id?: string
+          language?: string | null
           location: string
           name: string
+          national_id?: string | null
+          nationality?: string | null
           phone: string
+          postal_address?: string | null
+          postal_code?: string | null
           role: string
+          salary_account_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           business_id?: string | null
           created_at?: string
           email?: string
+          gender?: string | null
           id?: string
+          language?: string | null
           location?: string
           name?: string
+          national_id?: string | null
+          nationality?: string | null
           phone?: string
+          postal_address?: string | null
+          postal_code?: string | null
           role?: string
+          salary_account_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
