@@ -20,9 +20,10 @@ interface PersonnelDetailProps {
   onBack: () => void;
   hideBackButton?: boolean;
   onRefresh?: () => void;
+  backLabel?: string;
 }
 
-export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh }: PersonnelDetailProps) {
+export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel }: PersonnelDetailProps) {
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
   
@@ -49,7 +50,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           className="gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Personnel
+          {backLabel || 'Back to Personnel'}
         </Button>
       )}
 

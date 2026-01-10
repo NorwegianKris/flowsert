@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [previousProject, setPreviousProject] = useState<Project | null>(null); // Track if coming from a project
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
@@ -67,6 +68,19 @@ export default function AdminDashboard() {
     // Find the latest version of selected personnel from the list
     const currentPersonnel = personnel.find(p => p.id === selectedPersonnel.id) || selectedPersonnel;
     
+    const handleBack = () => {
+      if (previousProject) {
+        // Go back to the project they came from
+        const updatedProject = projects.find(p => p.id === previousProject.id) || previousProject;
+        setSelectedPersonnel(null);
+        setSelectedProject(updatedProject);
+        setPreviousProject(null);
+      } else {
+        // Go back to dashboard
+        setSelectedPersonnel(null);
+      }
+    };
+    
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader
@@ -76,8 +90,9 @@ export default function AdminDashboard() {
         <main className="container mx-auto px-4 py-6">
           <PersonnelDetail
             personnel={currentPersonnel}
-            onBack={() => setSelectedPersonnel(null)}
+            onBack={handleBack}
             onRefresh={refetch}
+            backLabel={previousProject ? `Back to ${previousProject.name}` : undefined}
           />
         </main>
         <ChatBot />
@@ -99,6 +114,7 @@ export default function AdminDashboard() {
             onBack={() => setSelectedProject(null)}
             onUpdateProject={handleUpdateProject}
             onPersonnelClick={(person) => {
+              setPreviousProject(selectedProject);
               setSelectedProject(null);
               setSelectedPersonnel(person);
             }}
