@@ -16,7 +16,7 @@ import {
 } from '@/lib/certificateUtils';
 import { 
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil
+  User, Globe, Home, CreditCard, Languages, Pencil, Users
 } from 'lucide-react';
 
 interface PersonnelDetailProps {
@@ -185,6 +185,35 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               <p className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Languages className="h-4 w-4 text-muted-foreground" />
                 {personnel.language || 'Norwegian'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Next of Kin Section */}
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Next of Kin
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Name</p>
+              <p className="text-sm font-medium text-foreground">{personnel.nextOfKinName || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Relation</p>
+              <p className="text-sm font-medium text-foreground">{personnel.nextOfKinRelation || 'Not specified'}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Phone Number</p>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                {personnel.nextOfKinPhone || 'Not specified'}
               </p>
             </div>
           </div>

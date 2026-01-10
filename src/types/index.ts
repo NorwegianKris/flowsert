@@ -25,5 +25,8 @@ export interface Personnel {
   nationalId?: string;
   salaryAccountNumber?: string;
   language?: string;
+  nextOfKinName?: string;
+  nextOfKinRelation?: string;
+  nextOfKinPhone?: string;
   certificates: Certificate[];
 }
