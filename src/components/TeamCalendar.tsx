@@ -418,164 +418,173 @@ export function TeamCalendar({ personnel, projects = [] }: TeamCalendarProps) {
               )}
             </div>
 
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-              <PopoverTrigger asChild>
-                <div className="w-full">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    month={currentMonth}
-                    onMonthChange={setCurrentMonth}
-                    modifiers={modifiers}
-                    modifiersStyles={modifiersStyles}
-                    className="rounded-md border border-border pointer-events-auto w-full"
-                    classNames={{
-                      months: "flex flex-col w-full",
-                      month: "space-y-4 w-full",
-                      table: "w-full border-collapse",
-                      head_row: "flex w-full",
-                      head_cell: "text-muted-foreground rounded-md flex-1 font-medium text-base",
-                      row: "flex w-full mt-2",
-                      cell: "flex-1 aspect-square text-center text-lg p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                      day: "h-full w-full p-0 font-normal text-lg aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
-                      caption: "flex justify-center pt-1 relative items-center",
-                      caption_label: "text-base font-semibold",
-                      nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100",
-                    }}
-                  />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" align="start">
-                <div className="space-y-3">
-                  <h4 className="font-medium">
-                    {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
-                  </h4>
-                  
-                  {/* Projects in range */}
-                  {selectedDateProjects.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active Projects</p>
-                      {selectedDateProjects.map(project => (
-                        <div key={project.id} className="p-2 rounded-md bg-primary/10 text-sm">
-                          <div className="flex items-center gap-2">
-                            <FolderOpen className="h-3.5 w-3.5 text-primary" />
-                            <span className="font-medium">{project.name}</span>
-                          </div>
-                          <p className="text-muted-foreground text-xs mt-1">
-                            {format(project.start, 'MMM d')} - {format(project.end, 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                      ))}
+            {/* Main layout: Calendar on left, events on right */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Calendar */}
+              <div>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <div className="w-full">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        month={currentMonth}
+                        onMonthChange={setCurrentMonth}
+                        modifiers={modifiers}
+                        modifiersStyles={modifiersStyles}
+                        className="rounded-md border border-border pointer-events-auto w-full"
+                        classNames={{
+                          months: "flex flex-col w-full",
+                          month: "space-y-4 w-full",
+                          table: "w-full border-collapse",
+                          head_row: "flex w-full",
+                          head_cell: "text-muted-foreground rounded-md flex-1 font-medium text-sm",
+                          row: "flex w-full mt-2",
+                          cell: "flex-1 aspect-square text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                          day: "h-full w-full p-0 font-normal text-sm aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
+                          caption: "flex justify-center pt-1 relative items-center",
+                          caption_label: "text-sm font-semibold",
+                          nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                        }}
+                      />
                     </div>
-                  )}
-
-                  {/* Events on this date */}
-                  {selectedDateEvents.length > 0 && (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Events</p>
-                      {selectedDateEvents.map(event => {
-                        const Icon = getEventIcon(event.type);
-                        return (
-                          <div key={event.id} className="p-2 rounded-md bg-muted/50 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">
-                                {event.personnelName || event.projectName}
-                              </span>
-                              <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
-                                <Icon className="h-3 w-3 mr-1" />
-                                {event.type === 'certificate_expiry' ? 'Expiry' : 
-                                 event.type === 'project_duration' ? (event.isRangeStart ? 'Start' : 'End') : 
-                                 'Item'}
-                              </Badge>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="start">
+                    <div className="space-y-3">
+                      <h4 className="font-medium">
+                        {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a date'}
+                      </h4>
+                      
+                      {/* Projects in range */}
+                      {selectedDateProjects.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active Projects</p>
+                          {selectedDateProjects.map(project => (
+                            <div key={project.id} className="p-2 rounded-md bg-primary/10 text-sm">
+                              <div className="flex items-center gap-2">
+                                <FolderOpen className="h-3.5 w-3.5 text-primary" />
+                                <span className="font-medium">{project.name}</span>
+                              </div>
+                              <p className="text-muted-foreground text-xs mt-1">
+                                {format(project.start, 'MMM d')} - {format(project.end, 'MMM d, yyyy')}
+                              </p>
                             </div>
-                            <p className="text-muted-foreground text-xs mt-1">
-                              {event.title}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          ))}
+                        </div>
+                      )}
 
-                  {selectedDateEvents.length === 0 && selectedDateProjects.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">No events on this date</p>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
+                      {/* Events on this date */}
+                      {selectedDateEvents.length > 0 && (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Events</p>
+                          {selectedDateEvents.map(event => {
+                            const Icon = getEventIcon(event.type);
+                            return (
+                              <div key={event.id} className="p-2 rounded-md bg-muted/50 text-sm">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">
+                                    {event.personnelName || event.projectName}
+                                  </span>
+                                  <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
+                                    <Icon className="h-3 w-3 mr-1" />
+                                    {event.type === 'certificate_expiry' ? 'Expiry' : 
+                                     event.type === 'project_duration' ? (event.isRangeStart ? 'Start' : 'End') : 
+                                     'Item'}
+                                  </Badge>
+                                </div>
+                                <p className="text-muted-foreground text-xs mt-1">
+                                  {event.title}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
-            {/* Upcoming Events */}
-            <div className="pt-4 border-t border-border/50">
-              <h4 className="text-sm font-medium mb-3">Upcoming Events</h4>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {upcomingEvents.map(event => {
-                  const Icon = getEventIcon(event.type);
-                  return (
-                    <div key={event.id} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground">
-                          {format(event.date, 'EEE, MMM d')}
-                        </span>
-                        <span className="text-xs text-muted-foreground/70">
-                          {event.personnelName || event.projectName}
-                        </span>
-                      </div>
-                      <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
-                        <Icon className="h-3 w-3 mr-1" />
-                        {event.title.length > 20 ? event.title.slice(0, 20) + '...' : event.title}
-                      </Badge>
+                      {selectedDateEvents.length === 0 && selectedDateProjects.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">No events on this date</p>
+                      )}
                     </div>
-                  );
-                })}
-                {upcomingEvents.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">
-                    No upcoming events in the next 30 days
-                  </p>
-                )}
+                  </PopoverContent>
+                </Popover>
               </div>
-            </div>
 
-            {/* Next Certificate Expiries */}
-            <div className="pt-4 border-t border-border/50">
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Award className="h-4 w-4 text-primary" />
-                Next Certificate Expiries
-              </h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {upcomingCertificateExpiries.map((cert, index) => (
-                  <div 
-                    key={cert.id} 
-                    className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-muted-foreground w-5">
-                        #{index + 1}
-                      </span>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{cert.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {cert.personnelName}
-                        </span>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant={
-                        cert.status === 'expired' ? 'destructive' : 
-                        cert.status === 'expiring' ? 'secondary' : 
-                        'outline'
-                      }
-                      className="text-xs"
-                    >
-                      {format(cert.expiryDate, 'MMM d, yyyy')}
-                    </Badge>
+              {/* Right side: Upcoming Events + Certificate Expiries */}
+              <div className="space-y-4">
+                {/* Upcoming Events */}
+                <div>
+                  <h4 className="text-sm font-medium mb-3">Upcoming Events</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {upcomingEvents.map(event => {
+                      const Icon = getEventIcon(event.type);
+                      return (
+                        <div key={event.id} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground">
+                              {format(event.date, 'EEE, MMM d')}
+                            </span>
+                            <span className="text-xs text-muted-foreground/70">
+                              {event.personnelName || event.projectName}
+                            </span>
+                          </div>
+                          <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
+                            <Icon className="h-3 w-3 mr-1" />
+                            {event.title.length > 20 ? event.title.slice(0, 20) + '...' : event.title}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                    {upcomingEvents.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">
+                        No upcoming events in the next 30 days
+                      </p>
+                    )}
                   </div>
-                ))}
-                {upcomingCertificateExpiries.length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">
-                    No certificates with expiry dates
-                  </p>
-                )}
+                </div>
+
+                {/* Next Certificate Expiries */}
+                <div className="pt-4 border-t border-border/50">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Award className="h-4 w-4 text-primary" />
+                    Next Certificate Expiries
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {upcomingCertificateExpiries.map((cert, index) => (
+                      <div 
+                        key={cert.id} 
+                        className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-muted-foreground w-5">
+                            #{index + 1}
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{cert.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {cert.personnelName}
+                            </span>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={
+                            cert.status === 'expired' ? 'destructive' : 
+                            cert.status === 'expiring' ? 'secondary' : 
+                            'outline'
+                          }
+                          className="text-xs"
+                        >
+                          {format(cert.expiryDate, 'MMM d, yyyy')}
+                        </Badge>
+                      </div>
+                    ))}
+                    {upcomingCertificateExpiries.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">
+                        No certificates with expiry dates
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
