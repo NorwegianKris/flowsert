@@ -61,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: `${companyName} <onboarding@resend.dev>`,
+        from: `FlowSert <noreply@flowsert.com>`,
         to: [to],
         subject: `You've been invited to join ${companyName}`,
         html: `
@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailData = await emailResponse.json();
 
     if (!emailResponse.ok) {
-      console.error("Resend API error:", emailData);
+      console.error(`Resend API error - Status: ${emailResponse.status}, Message: ${emailData.message || 'Unknown'}, Code: ${emailData.statusCode || 'N/A'}`);
       return new Response(
         JSON.stringify({ error: emailData.message || "Failed to send email" }),
         {
