@@ -559,28 +559,59 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                 {/* Upcoming Events */}
                 <div>
                   <h4 className="text-sm font-medium mb-3">Upcoming Events</h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {upcomingEvents.map(event => {
-                      const Icon = getEventIcon(event.type);
-                      return (
-                        <div key={event.id} className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                          <div className="flex flex-col">
-                            <span className="text-muted-foreground">
-                              {format(event.date, 'EEE, MMM d')}
-                            </span>
-                            <span className="text-xs text-muted-foreground/70">
-                              {event.personnelName || event.projectName}
-                            </span>
-                          </div>
-                          <Badge variant={getEventBadgeVariant(event) as any} className="text-xs">
-                            <Icon className="h-3 w-3 mr-1" />
-                            {event.title.length > 20 ? event.title.slice(0, 20) + '...' : event.title}
-                          </Badge>
-                        </div>
-                      );
-                    })}
+                  <div className="max-h-48 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border/50">
+                          <th className="text-left py-2 px-1 text-xs font-medium text-muted-foreground">Date</th>
+                          <th className="text-left py-2 px-1 text-xs font-medium text-muted-foreground">Type</th>
+                          <th className="text-left py-2 px-1 text-xs font-medium text-muted-foreground">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {upcomingEvents.map(event => {
+                          const Icon = getEventIcon(event.type);
+                          const getEventTypeLabel = (e: CalendarEvent) => {
+                            if (e.type === 'certificate_expiry') return 'Certificate Expiry';
+                            if (e.type === 'project_duration') {
+                              if (e.isRangeStart) return 'Project Start';
+                              if (e.isRangeEnd) return 'Project End';
+                              return 'Project';
+                            }
+                            // Check if it's a milestone by looking at the title/id
+                            if (e.id.includes('milestone')) return 'Milestone';
+                            return 'Calendar Item';
+                          };
+                          return (
+                            <tr key={event.id} className="border-b border-border/30 hover:bg-muted/50 transition-colors">
+                              <td className="py-2 px-1">
+                                <span className="text-muted-foreground whitespace-nowrap">
+                                  {format(event.date, 'MMM d')}
+                                </span>
+                              </td>
+                              <td className="py-2 px-1">
+                                <Badge variant={getEventBadgeVariant(event) as any} className="text-xs whitespace-nowrap">
+                                  <Icon className="h-3 w-3 mr-1" />
+                                  {getEventTypeLabel(event)}
+                                </Badge>
+                              </td>
+                              <td className="py-2 px-1">
+                                <div className="flex flex-col">
+                                  <span className="font-medium truncate max-w-[120px]">
+                                    {event.title.length > 18 ? event.title.slice(0, 18) + '...' : event.title}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground/70 truncate max-w-[120px]">
+                                    {event.personnelName || event.projectName}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                     {upcomingEvents.length === 0 && (
-                      <p className="text-sm text-muted-foreground italic">
+                      <p className="text-sm text-muted-foreground italic py-4 text-center">
                         No upcoming events in the next 30 days
                       </p>
                     )}
