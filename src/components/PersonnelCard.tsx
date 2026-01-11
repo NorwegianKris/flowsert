@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Personnel } from '@/types';
@@ -31,6 +31,9 @@ export function PersonnelCard({ personnel, onClick }: PersonnelCardProps) {
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <Avatar className="h-14 w-14 border-2 border-border">
+            {personnel.avatarUrl && (
+              <AvatarImage src={personnel.avatarUrl} alt={personnel.name} />
+            )}
             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
               {initials}
             </AvatarFallback>
