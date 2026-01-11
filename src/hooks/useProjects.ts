@@ -7,6 +7,7 @@ export interface ProjectCalendarItem {
   id: string;
   date: string;
   description: string;
+  isMilestone?: boolean;
 }
 
 export interface Project {
@@ -48,6 +49,7 @@ interface DbCalendarItem {
   project_id: string;
   date: string;
   description: string;
+  is_milestone: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -110,6 +112,7 @@ export function useProjects() {
             id: item.id,
             date: item.date,
             description: item.description,
+            isMilestone: item.is_milestone,
           })),
       }));
 
@@ -242,6 +245,7 @@ export function useProjects() {
           project_id: projectId,
           date: item.date,
           description: item.description,
+          is_milestone: item.isMilestone || false,
         })
         .select()
         .single();
@@ -252,6 +256,7 @@ export function useProjects() {
         id: data.id,
         date: data.date,
         description: data.description,
+        isMilestone: data.is_milestone,
       };
 
       setProjects((prev) =>

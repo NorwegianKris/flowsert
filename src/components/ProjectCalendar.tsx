@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Flag } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import {
   format,
@@ -196,7 +196,7 @@ export function ProjectCalendar({ project, onUpdateDates, editable = true }: Pro
                     >
                       {format(day, 'd')}
                       {calendarItem && (
-                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-destructive" />
+                        <div className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${calendarItem.isMilestone ? 'bg-amber-500' : 'bg-destructive'}`} />
                       )}
                     </div>
                   );
@@ -208,8 +208,14 @@ export function ProjectCalendar({ project, onUpdateDates, editable = true }: Pro
                           {dayContent}
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="font-medium">{format(day, 'MMM d, yyyy')}</p>
+                          <div className="flex items-center gap-2">
+                            {calendarItem.isMilestone && <Flag className="h-3 w-3 text-amber-500" />}
+                            <p className="font-medium">{format(day, 'MMM d, yyyy')}</p>
+                          </div>
                           <p className="text-xs">{calendarItem.description}</p>
+                          {calendarItem.isMilestone && (
+                            <p className="text-xs text-amber-500 mt-1">Milestone</p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     );

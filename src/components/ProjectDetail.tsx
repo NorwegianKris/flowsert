@@ -22,6 +22,7 @@ import {
   Share2,
   XCircle,
   Pencil,
+  Flag,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import {
@@ -274,13 +275,28 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                     .map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                        className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
+                          item.isMilestone 
+                            ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20' 
+                            : 'bg-muted/50 hover:bg-muted'
+                        }`}
                       >
-                        <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                        {item.isMilestone ? (
+                          <Flag className="w-4 h-4 text-amber-500 mt-1 flex-shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                        )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground">
-                            {format(parseISO(item.date), 'MMM d, yyyy')}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground">
+                              {format(parseISO(item.date), 'MMM d, yyyy')}
+                            </p>
+                            {item.isMilestone && (
+                              <span className="text-xs font-medium text-amber-500 bg-amber-500/20 px-1.5 py-0.5 rounded">
+                                Milestone
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             {item.description}
                           </p>
