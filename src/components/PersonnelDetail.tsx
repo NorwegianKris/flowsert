@@ -8,6 +8,7 @@ import { CertificateTable } from '@/components/CertificateTable';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
+import { EditCertificateSelectDialog } from '@/components/EditCertificateSelectDialog';
 import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
 import { AssignedProjects } from '@/components/AssignedProjects';
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
@@ -34,6 +35,7 @@ interface PersonnelDetailProps {
 export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel }: PersonnelDetailProps) {
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
+  const [isEditCertSelectOpen, setIsEditCertSelectOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
@@ -209,6 +211,16 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setIsEditCertSelectOpen(true)}
+              className="gap-1"
+              disabled={personnel.certificates.length === 0}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setIsRemoveCertOpen(true)}
               className="gap-1 text-destructive hover:text-destructive"
               disabled={personnel.certificates.length === 0}
@@ -356,6 +368,14 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       <RemoveCertificateDialog
         open={isRemoveCertOpen}
         onOpenChange={setIsRemoveCertOpen}
+        certificates={personnel.certificates}
+        personnelName={personnel.name}
+        onSuccess={handleCertificateChange}
+      />
+
+      <EditCertificateSelectDialog
+        open={isEditCertSelectOpen}
+        onOpenChange={setIsEditCertSelectOpen}
         certificates={personnel.certificates}
         personnelName={personnel.name}
         onSuccess={handleCertificateChange}
