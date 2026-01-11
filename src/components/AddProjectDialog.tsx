@@ -23,6 +23,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<string[]>([]);
+  const [customer, setCustomer] = useState('');
+  const [workCategory, setWorkCategory] = useState('');
+  const [projectNumber, setProjectNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [projectManager, setProjectManager] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +39,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       endDate: endDate || undefined,
       status: 'active',
       assignedPersonnel: selectedPersonnel,
+      customer: customer.trim() || undefined,
+      workCategory: workCategory.trim() || undefined,
+      projectNumber: projectNumber.trim() || undefined,
+      location: location.trim() || undefined,
+      projectManager: projectManager.trim() || undefined,
     };
 
     onProjectAdded(newProject);
@@ -47,6 +57,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setStartDate('');
     setEndDate('');
     setSelectedPersonnel([]);
+    setCustomer('');
+    setWorkCategory('');
+    setProjectNumber('');
+    setLocation('');
+    setProjectManager('');
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -89,6 +104,58 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter project name"
               required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="projectNumber">Project Number</Label>
+              <Input
+                id="projectNumber"
+                value={projectNumber}
+                onChange={(e) => setProjectNumber(e.target.value)}
+                placeholder="e.g., PRJ-2025-001"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer">Customer</Label>
+              <Input
+                id="customer"
+                value={customer}
+                onChange={(e) => setCustomer(e.target.value)}
+                placeholder="Enter customer name"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="workCategory">Work Category</Label>
+              <Input
+                id="workCategory"
+                value={workCategory}
+                onChange={(e) => setWorkCategory(e.target.value)}
+                placeholder="e.g., Installation, Maintenance"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g., North Sea Platform A"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="projectManager">Project Manager</Label>
+            <Input
+              id="projectManager"
+              value={projectManager}
+              onChange={(e) => setProjectManager(e.target.value)}
+              placeholder="Enter project manager name"
             />
           </div>
 

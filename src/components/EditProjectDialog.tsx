@@ -44,6 +44,11 @@ export function EditProjectDialog({
   const [startDate, setStartDate] = useState(project.startDate);
   const [endDate, setEndDate] = useState(project.endDate || '');
   const [assignedPersonnel, setAssignedPersonnel] = useState<string[]>(project.assignedPersonnel);
+  const [customer, setCustomer] = useState(project.customer || '');
+  const [workCategory, setWorkCategory] = useState(project.workCategory || '');
+  const [projectNumber, setProjectNumber] = useState(project.projectNumber || '');
+  const [location, setLocation] = useState(project.location || '');
+  const [projectManager, setProjectManager] = useState(project.projectManager || '');
 
   useEffect(() => {
     if (open) {
@@ -53,6 +58,11 @@ export function EditProjectDialog({
       setStartDate(project.startDate);
       setEndDate(project.endDate || '');
       setAssignedPersonnel(project.assignedPersonnel);
+      setCustomer(project.customer || '');
+      setWorkCategory(project.workCategory || '');
+      setProjectNumber(project.projectNumber || '');
+      setLocation(project.location || '');
+      setProjectManager(project.projectManager || '');
     }
   }, [open, project]);
 
@@ -82,6 +92,11 @@ export function EditProjectDialog({
       startDate,
       endDate: endDate || undefined,
       assignedPersonnel,
+      customer: customer.trim() || undefined,
+      workCategory: workCategory.trim() || undefined,
+      projectNumber: projectNumber.trim() || undefined,
+      location: location.trim() || undefined,
+      projectManager: projectManager.trim() || undefined,
     });
     onOpenChange(false);
     toast.success('Project updated successfully');
@@ -105,6 +120,58 @@ export function EditProjectDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter project name"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="projectNumber">Project Number</Label>
+              <Input
+                id="projectNumber"
+                value={projectNumber}
+                onChange={(e) => setProjectNumber(e.target.value)}
+                placeholder="e.g., PRJ-2025-001"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer">Customer</Label>
+              <Input
+                id="customer"
+                value={customer}
+                onChange={(e) => setCustomer(e.target.value)}
+                placeholder="Enter customer name"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="workCategory">Work Category</Label>
+              <Input
+                id="workCategory"
+                value={workCategory}
+                onChange={(e) => setWorkCategory(e.target.value)}
+                placeholder="e.g., Installation, Maintenance"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g., North Sea Platform A"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="projectManager">Project Manager</Label>
+            <Input
+              id="projectManager"
+              value={projectManager}
+              onChange={(e) => setProjectManager(e.target.value)}
+              placeholder="Enter project manager name"
             />
           </div>
 
