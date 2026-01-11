@@ -7,6 +7,7 @@ export interface Certificate {
   expiryDate: string | null; // null for certificates that don't expire
   placeOfIssue: string;
   documentUrl?: string;
+  category?: string; // Category name from certificate_categories
 }
 
 export interface Personnel {

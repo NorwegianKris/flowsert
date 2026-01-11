@@ -69,6 +69,7 @@ Phone: ${personnel.nextOfKinPhone || 'Not specified'}`;
             : `${daysLeft} days until expiry`;
         
         return `  - ${cert.name}
+    Category: ${cert.category || 'Uncategorized'}
     Status: ${status.toUpperCase()}
     Issued: ${cert.dateOfIssue}
     Expires: ${cert.expiryDate || 'Never'}
