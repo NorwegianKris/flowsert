@@ -361,15 +361,33 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Project Name</p>
                 <p className="text-foreground">{project.name}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
-                <p className="text-foreground">{project.description}</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Project Number</p>
+                <p className="text-foreground">{project.projectNumber || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Customer</p>
+                <p className="text-foreground">{project.customer || 'Not specified'}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Work Category</p>
+                <p className="text-foreground">{project.workCategory || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Location</p>
+                <p className="text-foreground">{project.location || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Project Manager</p>
+                <p className="text-foreground">{project.projectManager || 'Not specified'}</p>
               </div>
             </div>
             <div className="space-y-4">
@@ -390,6 +408,10 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                   {config.label}
                 </Badge>
               </div>
+            </div>
+            <div className="md:col-span-2 lg:col-span-3">
+              <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
+              <p className="text-foreground">{project.description}</p>
             </div>
           </div>
         </CardContent>

@@ -18,6 +18,11 @@ export interface Project {
   endDate?: string;
   assignedPersonnel: string[];
   calendarItems?: ProjectCalendarItem[];
+  customer?: string;
+  workCategory?: string;
+  projectNumber?: string;
+  location?: string;
+  projectManager?: string;
 }
 
 interface DbProject {
@@ -31,6 +36,11 @@ interface DbProject {
   assigned_personnel: string[];
   created_at: string;
   updated_at: string;
+  customer: string | null;
+  work_category: string | null;
+  project_number: string | null;
+  location: string | null;
+  project_manager: string | null;
 }
 
 interface DbCalendarItem {
@@ -89,6 +99,11 @@ export function useProjects() {
         startDate: p.start_date,
         endDate: p.end_date || undefined,
         assignedPersonnel: p.assigned_personnel || [],
+        customer: p.customer || undefined,
+        workCategory: p.work_category || undefined,
+        projectNumber: p.project_number || undefined,
+        location: p.location || undefined,
+        projectManager: p.project_manager || undefined,
         calendarItems: (calendarItemsData || [])
           .filter((item: DbCalendarItem) => item.project_id === p.id)
           .map((item: DbCalendarItem) => ({
@@ -128,6 +143,11 @@ export function useProjects() {
           start_date: project.startDate,
           end_date: project.endDate || null,
           assigned_personnel: project.assignedPersonnel,
+          customer: project.customer || null,
+          work_category: project.workCategory || null,
+          project_number: project.projectNumber || null,
+          location: project.location || null,
+          project_manager: project.projectManager || null,
         })
         .select()
         .single();
@@ -142,6 +162,11 @@ export function useProjects() {
         startDate: data.start_date,
         endDate: data.end_date || undefined,
         assignedPersonnel: data.assigned_personnel || [],
+        customer: data.customer || undefined,
+        workCategory: data.work_category || undefined,
+        projectNumber: data.project_number || undefined,
+        location: data.location || undefined,
+        projectManager: data.project_manager || undefined,
         calendarItems: [],
       };
 
@@ -166,6 +191,11 @@ export function useProjects() {
           start_date: project.startDate,
           end_date: project.endDate || null,
           assigned_personnel: project.assignedPersonnel,
+          customer: project.customer || null,
+          work_category: project.workCategory || null,
+          project_number: project.projectNumber || null,
+          location: project.location || null,
+          project_manager: project.projectManager || null,
         })
         .eq('id', project.id);
 

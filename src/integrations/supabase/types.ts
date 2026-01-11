@@ -326,37 +326,52 @@ export type Database = {
           assigned_personnel: string[] | null
           business_id: string
           created_at: string
+          customer: string | null
           description: string
           end_date: string | null
           id: string
+          location: string | null
           name: string
+          project_manager: string | null
+          project_number: string | null
           start_date: string
           status: string
           updated_at: string
+          work_category: string | null
         }
         Insert: {
           assigned_personnel?: string[] | null
           business_id: string
           created_at?: string
+          customer?: string | null
           description: string
           end_date?: string | null
           id?: string
+          location?: string | null
           name: string
+          project_manager?: string | null
+          project_number?: string | null
           start_date: string
           status?: string
           updated_at?: string
+          work_category?: string | null
         }
         Update: {
           assigned_personnel?: string[] | null
           business_id?: string
           created_at?: string
+          customer?: string | null
           description?: string
           end_date?: string | null
           id?: string
+          location?: string | null
           name?: string
+          project_manager?: string | null
+          project_number?: string | null
           start_date?: string
           status?: string
           updated_at?: string
+          work_category?: string | null
         }
         Relationships: [
           {
