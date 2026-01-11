@@ -358,7 +358,7 @@ export default function Auth() {
             <div className="space-y-4">
               {/* Safety */}
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-slate-800">Safety</span>
+                <span className="text-xl font-bold text-primary">Safety</span>
                 <div className="flex items-center gap-2 mt-1">
                   <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -369,7 +369,7 @@ export default function Auth() {
               
               {/* Compliance */}
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-slate-800">Compliance</span>
+                <span className="text-xl font-bold text-primary">Compliance</span>
                 <div className="flex items-center gap-2 mt-1">
                   <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -380,7 +380,7 @@ export default function Auth() {
               
               {/* Workflow */}
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-slate-800">Workflow</span>
+                <span className="text-xl font-bold text-primary">Workflow</span>
                 <div className="flex items-center gap-2 mt-1">
                   <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
