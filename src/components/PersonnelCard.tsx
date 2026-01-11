@@ -47,7 +47,10 @@ export function PersonnelCard({ personnel, onClick }: PersonnelCardProps) {
               <StatusBadge status={overallStatus} size="sm" />
             </div>
             
-            <Badge variant="secondary" className="mb-3 font-normal">
+            <Badge 
+              variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
+              className="mb-3 font-normal"
+            >
               {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
             </Badge>
             
