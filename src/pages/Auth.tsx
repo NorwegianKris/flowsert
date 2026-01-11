@@ -103,9 +103,15 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-      <p className="text-primary text-xl font-semibold mb-6">Personnel Compliance Simplified</p>
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-gray-50 to-slate-200 px-4 relative overflow-hidden">
+      {/* Industrial-style decorative background elements */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-slate-300/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-80 h-80 bg-slate-400/15 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
+      <div className="absolute top-1/3 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl translate-x-1/2" />
+      <div className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-gray-300/20 rounded-full blur-2xl" />
+      
+      <p className="text-primary text-xl font-semibold mb-6 relative z-10">Personnel Compliance Simplified</p>
+      <Card className="w-full max-w-md relative z-10 shadow-lg backdrop-blur-sm bg-card/95">
         <CardHeader className="text-center">
           <h1 className="font-rajdhani text-4xl font-bold text-primary mb-2">
             FlowSert
