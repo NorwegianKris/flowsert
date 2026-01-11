@@ -35,6 +35,8 @@ interface DbCertificate {
   expiry_date: string | null;
   place_of_issue: string;
   document_url: string | null;
+  category_id: string | null;
+  certificate_categories: { name: string } | null;
 }
 
 export function usePersonnel() {
@@ -65,7 +67,7 @@ export function usePersonnel() {
       if (personnelIds.length > 0) {
         const { data, error: certError } = await supabase
           .from('certificates')
-          .select('*')
+          .select('*, certificate_categories(name)')
           .in('personnel_id', personnelIds);
 
         if (certError) throw certError;
@@ -101,6 +103,7 @@ export function usePersonnel() {
             expiryDate: c.expiry_date,
             placeOfIssue: c.place_of_issue,
             documentUrl: c.document_url || undefined,
+            category: c.certificate_categories?.name || undefined,
           })),
       }));
 
@@ -155,10 +158,10 @@ export function useWorkerPersonnel() {
 
         const p = personnelData as DbPersonnel;
 
-        // Fetch certificates
+        // Fetch certificates with category
         const { data: certificatesData, error: certError } = await supabase
           .from('certificates')
-          .select('*')
+          .select('*, certificate_categories(name)')
           .eq('personnel_id', p.id);
 
         if (certError) throw certError;
@@ -189,6 +192,7 @@ export function useWorkerPersonnel() {
             expiryDate: c.expiry_date,
             placeOfIssue: c.place_of_issue,
             documentUrl: c.document_url || undefined,
+            category: c.certificate_categories?.name || undefined,
           })),
         };
 
