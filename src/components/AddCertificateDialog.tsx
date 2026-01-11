@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddCertificateDialogProps {
   open: boolean;
@@ -33,27 +34,10 @@ interface CertificateEntry {
   file: File | null;
 }
 
-const COMMON_CERTIFICATES = [
-  'STCW Basic Safety Training',
-  'STCW Advanced Fire Fighting',
-  'STCW Medical First Aid',
-  'STCW Proficiency in Survival Craft',
-  'STCW Personal Safety and Social Responsibilities',
-  'GMDSS Radio Operator Certificate',
-  'Ship Security Officer Certificate',
-  'Crowd Management Certificate',
-  'Crisis Management Certificate',
-  'Medical Care Certificate',
-  'Basic Oil Tanker Cargo Operations',
-  'Advanced Oil Tanker Cargo Operations',
-  'Basic Chemical Tanker Cargo Operations',
-  'Advanced Chemical Tanker Cargo Operations',
-  'Basic LPG Tanker Cargo Operations',
-  'Advanced LPG Tanker Cargo Operations',
-  'Dynamic Positioning Operator Certificate',
-  'Helicopter Underwater Escape Training',
-  'Offshore Safety Induction',
-];
+interface CertificateCategory {
+  id: string;
+  name: string;
+}
 
 export function AddCertificateDialog({
   open,
@@ -62,20 +46,57 @@ export function AddCertificateDialog({
   personnelName,
   onSuccess,
 }: AddCertificateDialogProps) {
-  const [certificates, setCertificates] = useState<CertificateEntry[]>(
-    COMMON_CERTIFICATES.map((name, index) => ({
-      id: `cert-${index}`,
-      name,
-      dateOfIssue: '',
-      expiryDate: '',
-      placeOfIssue: '',
-      selected: false,
-      file: null,
-    }))
-  );
+  const { businessId } = useAuth();
+  const [categories, setCategories] = useState<CertificateCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [customName, setCustomName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch certificate categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!businessId) {
+        setLoadingCategories(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('certificate_categories')
+          .select('id, name')
+          .eq('business_id', businessId)
+          .order('name');
+
+        if (error) throw error;
+
+        setCategories(data || []);
+        
+        // Initialize certificates from categories
+        setCertificates(
+          (data || []).map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            dateOfIssue: '',
+            expiryDate: '',
+            placeOfIssue: '',
+            selected: false,
+            file: null,
+          }))
+        );
+      } catch (error) {
+        console.error('Error fetching certificate categories:', error);
+        toast.error('Failed to load certificate categories');
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (open) {
+      fetchCategories();
+    }
+  }, [businessId, open]);
 
   const selectedCertificates = certificates.filter((c) => c.selected);
 
@@ -188,9 +209,9 @@ export function AddCertificateDialog({
       
       // Reset form
       setCertificates(
-        COMMON_CERTIFICATES.map((name, index) => ({
-          id: `cert-${index}`,
-          name,
+        categories.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
           dateOfIssue: '',
           expiryDate: '',
           placeOfIssue: '',
@@ -233,7 +254,17 @@ export function AddCertificateDialog({
           {/* Certificate list */}
           <ScrollArea className="flex-1 border rounded-lg">
             <div className="p-4 space-y-4">
-              {certificates.map((cert) => (
+              {loadingCategories ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading categories...</span>
+                </div>
+              ) : certificates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No certificate categories defined.</p>
+                  <p className="text-sm">Add a custom certificate below or contact your administrator.</p>
+                </div>
+              ) : certificates.map((cert) => (
                 <div
                   key={cert.id}
                   className={`p-4 rounded-lg border transition-colors ${
