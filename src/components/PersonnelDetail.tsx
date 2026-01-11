@@ -250,6 +250,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   <p className="text-sm font-medium text-foreground truncate">{personnel.name}</p>
                 </div>
                 <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Role</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.role}</p>
+                </div>
+                <div className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">Nationality</p>
                   <p className="text-sm font-medium text-foreground truncate">{personnel.nationality || '—'}</p>
                 </div>
