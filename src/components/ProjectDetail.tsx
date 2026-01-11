@@ -7,6 +7,7 @@ import { ProjectCalendar } from '@/components/ProjectCalendar';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
+import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import {
@@ -416,6 +417,9 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
           </div>
         </CardContent>
       </Card>
+
+      {/* Certificate Status Section */}
+      <ProjectCertificateStatus personnel={assignedPersonnel} />
 
       {/* Dialogs */}
       <EditProjectDialog
