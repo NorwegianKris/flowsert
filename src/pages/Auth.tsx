@@ -319,90 +319,103 @@ export default function Auth() {
         </Card>
       </div>
 
-      {/* Right side - Step indicators with uploadable images */}
+      {/* Right side - Tab-based content */}
       <div className="hidden lg:flex flex-1 items-center justify-center relative z-10">
-        <div className="flex flex-col items-center">
-          <h2 className="text-2xl font-semibold text-slate-700 mb-8">How It Works</h2>
+        <Tabs defaultValue="how-it-works" className="w-full max-w-xl">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="how-it-works">How It Works</TabsTrigger>
+            <TabsTrigger value="functionality">Functionality</TabsTrigger>
+          </TabsList>
           
-          <div className="flex items-center gap-2">
-            {/* Step 1 */}
+          <TabsContent value="how-it-works">
             <div className="flex flex-col items-center">
-              <StepImageFrame 
-                stepNumber={1} 
-                image={stepImages[0]} 
-                onUpload={(file) => handleImageUpload(0, file)} 
-              />
-              <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Business establishes dashboard</p>
-            </div>
-            
-            {/* Curved arrow 1->2 */}
-            <CurvedArrow className="w-16 h-10 text-slate-500 -mt-6" />
-            
-            {/* Step 2 */}
-            <div className="flex flex-col items-center">
-              <StepImageFrame 
-                stepNumber={2} 
-                image={stepImages[1]} 
-                onUpload={(file) => handleImageUpload(1, file)} 
-              />
-              <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Worker uploads to user profile</p>
-            </div>
-            
-            {/* Curved arrow 2->3 */}
-            <CurvedArrow className="w-16 h-10 text-slate-500 -mt-6" />
-            
-            {/* Step 3 */}
-            <div className="flex flex-col items-center">
-              <StepImageFrame 
-                stepNumber={3} 
-                image={stepImages[2]} 
-                onUpload={(file) => handleImageUpload(2, file)} 
-              />
-              <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Joint certificate transparency and collaboration</p>
-            </div>
-          </div>
-          
-          {/* Certificate tracking importance section */}
-          <div className="mt-12 bg-white border-2 border-slate-800 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-slate-700 mb-6 text-center">
-              Tracking of Certificates is important for...
-            </h3>
-            <div className="space-y-4">
-              {/* Safety */}
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-primary">Safety</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="text-slate-600 text-sm">Right credentials and validity are critical for workforce safety</span>
+              <div className="flex items-center gap-2">
+                {/* Step 1 */}
+                <div className="flex flex-col items-center">
+                  <StepImageFrame 
+                    stepNumber={1} 
+                    image={stepImages[0]} 
+                    onUpload={(file) => handleImageUpload(0, file)} 
+                  />
+                  <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Business establishes dashboard</p>
+                </div>
+                
+                {/* Curved arrow 1->2 */}
+                <CurvedArrow className="w-16 h-10 text-slate-500 -mt-6" />
+                
+                {/* Step 2 */}
+                <div className="flex flex-col items-center">
+                  <StepImageFrame 
+                    stepNumber={2} 
+                    image={stepImages[1]} 
+                    onUpload={(file) => handleImageUpload(1, file)} 
+                  />
+                  <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Worker uploads to user profile</p>
+                </div>
+                
+                {/* Curved arrow 2->3 */}
+                <CurvedArrow className="w-16 h-10 text-slate-500 -mt-6" />
+                
+                {/* Step 3 */}
+                <div className="flex flex-col items-center">
+                  <StepImageFrame 
+                    stepNumber={3} 
+                    image={stepImages[2]} 
+                    onUpload={(file) => handleImageUpload(2, file)} 
+                  />
+                  <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Joint certificate transparency and collaboration</p>
                 </div>
               </div>
               
-              {/* Compliance */}
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-primary">Compliance</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="text-slate-600 text-sm">Customers and Auditors expect laws and regulations to be followed</span>
-                </div>
-              </div>
-              
-              {/* Workflow */}
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-primary">Workflow</span>
-                <div className="flex items-center gap-2 mt-1">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="text-slate-600 text-sm">Save time and effort chasing certificates and renewals</span>
+              {/* Certificate tracking importance section */}
+              <div className="mt-12 bg-white border-2 border-slate-800 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-slate-700 mb-6 text-center">
+                  Tracking of Certificates is important for...
+                </h3>
+                <div className="space-y-4">
+                  {/* Safety */}
+                  <div className="flex flex-col">
+                    <span className="text-xl font-bold text-primary">Safety</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-slate-600 text-sm">Right credentials and validity are critical for workforce safety</span>
+                    </div>
+                  </div>
+                  
+                  {/* Compliance */}
+                  <div className="flex flex-col">
+                    <span className="text-xl font-bold text-primary">Compliance</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-slate-600 text-sm">Customers and Auditors expect laws and regulations to be followed</span>
+                    </div>
+                  </div>
+                  
+                  {/* Workflow */}
+                  <div className="flex flex-col">
+                    <span className="text-xl font-bold text-primary">Workflow</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="text-slate-600 text-sm">Save time and effort chasing certificates and renewals</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="functionality">
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <p className="text-slate-500 text-lg">Functionality content coming soon...</p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
