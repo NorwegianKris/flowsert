@@ -374,7 +374,7 @@ export default function Auth() {
                     image={stepImages[1]} 
                     onUpload={(file) => handleImageUpload(1, file)} 
                   />
-                  <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Worker uploads to user profile</p>
+                  <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Worker uploads to personal user profile</p>
                 </div>
                 
                 {/* Curved arrow 2->3 */}
