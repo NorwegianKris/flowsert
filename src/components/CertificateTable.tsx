@@ -22,14 +22,17 @@ import {
   formatExpiryText,
 } from '@/lib/certificateUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil } from 'lucide-react';
+import { EditCertificateDialog } from './EditCertificateDialog';
 
 interface CertificateTableProps {
   certificates: Certificate[];
+  onCertificateUpdated?: () => void;
 }
 
-export function CertificateTable({ certificates }: CertificateTableProps) {
+export function CertificateTable({ certificates, onCertificateUpdated }: CertificateTableProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const [editCertificate, setEditCertificate] = useState<Certificate | null>(null);
 
   const sortedCertificates = [...certificates].sort((a, b) => {
     const statusOrder = { expired: 0, expiring: 1, valid: 2 };
@@ -46,6 +49,11 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
     return /\.pdf$/i.test(url);
   };
 
+  const handleEditClick = (e: React.MouseEvent, cert: Certificate) => {
+    e.stopPropagation();
+    setEditCertificate(cert);
+  };
+
   return (
     <>
       <div className="rounded-lg border border-border/50 overflow-hidden">
@@ -60,6 +68,7 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
               <TableHead className="font-semibold">Expiry Date</TableHead>
               <TableHead className="font-semibold">Place of Issue</TableHead>
               <TableHead className="font-semibold">Document</TableHead>
+              <TableHead className="font-semibold w-16">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -137,6 +146,16 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                       <span className="text-xs text-muted-foreground italic">None</span>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => handleEditClick(e, cert)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -160,14 +179,27 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                 <div className="border rounded-lg overflow-hidden bg-muted/20">
                   <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
                     <span className="text-sm font-medium">Document Preview</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Open Full Size
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCertificate(null);
+                          setEditCertificate(selectedCertificate);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Open Full Size
+                      </Button>
+                    </div>
                   </div>
                   <div className="p-4 flex justify-center">
                     {isImageFile(selectedCertificate.documentUrl) ? (
@@ -204,7 +236,21 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                     <Award className="h-24 w-24 text-primary" />
                   </div>
                   
-                  <div className="text-center space-y-4 relative z-10">
+                  <div className="absolute top-4 left-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCertificate(null);
+                        setEditCertificate(selectedCertificate);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+                  
+                  <div className="text-center space-y-4 relative z-10 mt-8">
                     <div className="text-xs uppercase tracking-widest text-muted-foreground">
                       Certificate of Competency
                     </div>
@@ -284,6 +330,16 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      <EditCertificateDialog
+        open={!!editCertificate}
+        onOpenChange={(open) => !open && setEditCertificate(null)}
+        certificate={editCertificate}
+        onSuccess={() => {
+          setEditCertificate(null);
+          onCertificateUpdated?.();
+        }}
+      />
     </>
   );
 }
