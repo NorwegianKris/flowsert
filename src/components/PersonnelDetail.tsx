@@ -219,7 +219,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           </div>
         </CardHeader>
         <CardContent>
-          <CertificateTable certificates={personnel.certificates} />
+          <CertificateTable certificates={personnel.certificates} onCertificateUpdated={handleCertificateChange} />
         </CardContent>
       </Card>
 
