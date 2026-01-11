@@ -22,7 +22,7 @@ import {
   formatExpiryText,
 } from '@/lib/certificateUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag } from 'lucide-react';
 
 interface CertificateTableProps {
   certificates: Certificate[];
@@ -53,6 +53,7 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="font-semibold">Certificate</TableHead>
+              <TableHead className="font-semibold">Category</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Date of Issue</TableHead>
               <TableHead className="font-semibold">Expiry Date</TableHead>
@@ -76,6 +77,16 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{cert.name}</span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {cert.category ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                        <Tag className="h-3 w-3" />
+                        {cert.category}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Uncategorized</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5">
@@ -233,6 +244,14 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                   <div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">Place of Issue</div>
                     <div className="font-medium">{selectedCertificate.placeOfIssue}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
+                  <Tag className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Category</div>
+                    <div className="font-medium">{selectedCertificate.category || 'Uncategorized'}</div>
                   </div>
                 </div>
                 
