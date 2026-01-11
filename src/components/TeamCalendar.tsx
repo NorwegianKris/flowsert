@@ -68,6 +68,18 @@ const availabilityConfig: Record<AvailabilityStatus, { label: string; icon: type
   },
 };
 
+// Project color palette - distinct colors for different projects
+const PROJECT_COLORS = [
+  { bg: 'hsl(221 83% 53% / 0.2)', border: 'hsl(221 83% 53%)', text: 'hsl(221 83% 40%)' }, // Blue
+  { bg: 'hsl(142 76% 36% / 0.2)', border: 'hsl(142 76% 36%)', text: 'hsl(142 76% 28%)' }, // Green
+  { bg: 'hsl(280 65% 60% / 0.2)', border: 'hsl(280 65% 60%)', text: 'hsl(280 65% 45%)' }, // Purple
+  { bg: 'hsl(25 95% 53% / 0.2)', border: 'hsl(25 95% 53%)', text: 'hsl(25 95% 40%)' }, // Orange
+  { bg: 'hsl(340 75% 55% / 0.2)', border: 'hsl(340 75% 55%)', text: 'hsl(340 75% 42%)' }, // Pink
+  { bg: 'hsl(180 60% 45% / 0.2)', border: 'hsl(180 60% 45%)', text: 'hsl(180 60% 35%)' }, // Teal
+  { bg: 'hsl(45 93% 47% / 0.2)', border: 'hsl(45 93% 47%)', text: 'hsl(45 93% 35%)' }, // Yellow
+  { bg: 'hsl(0 72% 51% / 0.2)', border: 'hsl(0 72% 51%)', text: 'hsl(0 72% 40%)' }, // Red
+];
+
 export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: TeamCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -83,6 +95,15 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
   const personnelMap = useMemo(() => {
     return new Map(personnel.map(p => [p.id, p.name]));
   }, [personnel]);
+
+  // Create a stable color mapping for projects
+  const projectColorMap = useMemo(() => {
+    const map = new Map<string, typeof PROJECT_COLORS[0]>();
+    projects.forEach((project, index) => {
+      map.set(project.id, PROJECT_COLORS[index % PROJECT_COLORS.length]);
+    });
+    return map;
+  }, [projects]);
 
   useEffect(() => {
     fetchAvailability();
@@ -205,6 +226,13 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
     );
   };
 
+  // Get all projects active on a specific date
+  const getProjectsForDate = (date: Date) => {
+    return projectRanges.filter(range => 
+      isWithinInterval(date, { start: range.start, end: range.end })
+    );
+  };
+
   const getEventsForDate = (date: Date): CalendarEvent[] => {
     return events.filter(e => isSameDay(e.date, date));
   };
@@ -306,7 +334,6 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
 
   const modifiers = {
     hasEvent: hasEventDates,
-    inProjectRange: projectRangeDates,
     certExpired: expiredCertDates,
     certExpiring: expiringCertDates,
     certValid: validCertDates,
@@ -315,9 +342,6 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
   const modifiersStyles = {
     hasEvent: {
       fontWeight: 700,
-    },
-    inProjectRange: {
-      backgroundColor: 'hsl(var(--primary) / 0.15)',
     },
     certExpired: {
       border: '2px solid hsl(var(--destructive))',
@@ -331,6 +355,46 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
       border: '2px solid hsl(142 76% 36%)',
       borderRadius: '50%',
     },
+  };
+
+  // Custom day content renderer to show project colors and labels
+  const renderDayContent = (day: Date) => {
+    const projectsOnDay = getProjectsForDate(day);
+    const dayNumber = day.getDate();
+    
+    if (projectsOnDay.length === 0) {
+      return <span>{dayNumber}</span>;
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full relative">
+        <span className="text-sm font-medium z-10">{dayNumber}</span>
+        <div className="absolute bottom-0.5 left-0.5 right-0.5 flex flex-col gap-0.5 max-h-[40%] overflow-hidden">
+          {projectsOnDay.slice(0, 2).map((project, idx) => {
+            const color = projectColorMap.get(project.id) || PROJECT_COLORS[0];
+            return (
+              <div
+                key={project.id}
+                className="text-[6px] leading-tight truncate px-0.5 rounded-sm"
+                style={{ 
+                  backgroundColor: color.bg,
+                  color: color.text,
+                  borderLeft: `2px solid ${color.border}`
+                }}
+                title={project.name}
+              >
+                {project.name.length > 6 ? project.name.slice(0, 5) + '…' : project.name}
+              </div>
+            );
+          })}
+          {projectsOnDay.length > 2 && (
+            <div className="text-[6px] text-muted-foreground text-center">
+              +{projectsOnDay.length - 2}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Get upcoming events (next 30 days)
@@ -462,15 +526,34 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                   </div>
                 </>
               )}
-              {showProjects && (
+              {showProjects && projects.length > 0 && (
                 <>
-                  <div className="flex items-center gap-1.5 text-sm">
-                    <span className="h-3 w-8 rounded bg-primary/15" />
-                    <span className="text-muted-foreground">Project Duration</span>
-                  </div>
                   <div className="flex items-center gap-1.5 text-sm">
                     <Bookmark className="h-3.5 w-3.5 text-primary" />
                     <span className="text-muted-foreground">Calendar Item</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm border-l border-border pl-3">
+                    <span className="text-muted-foreground font-medium">Projects:</span>
+                    {projects.slice(0, 5).map((project, idx) => {
+                      const color = projectColorMap.get(project.id) || PROJECT_COLORS[0];
+                      return (
+                        <div
+                          key={project.id}
+                          className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded"
+                          style={{ 
+                            backgroundColor: color.bg,
+                            borderLeft: `3px solid ${color.border}`
+                          }}
+                        >
+                          <span style={{ color: color.text }} className="font-medium truncate max-w-[80px]">
+                            {project.name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {projects.length > 5 && (
+                      <span className="text-xs text-muted-foreground">+{projects.length - 5} more</span>
+                    )}
                   </div>
                 </>
               )}
@@ -499,11 +582,14 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                           head_row: "flex w-full",
                           head_cell: "text-muted-foreground rounded-md flex-1 font-medium text-sm",
                           row: "flex w-full mt-2",
-                          cell: "flex-1 aspect-square text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                          day: "h-full w-full p-0 font-normal text-sm aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md",
+                          cell: "flex-1 min-h-[60px] text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                          day: "h-full w-full p-0 font-normal text-sm aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md flex flex-col",
                           caption: "flex justify-center pt-1 relative items-center",
                           caption_label: "text-sm font-semibold",
                           nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                        }}
+                        components={{
+                          DayContent: ({ date }) => renderDayContent(date),
                         }}
                       />
                     </div>
@@ -518,17 +604,27 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                       {selectedDateProjects.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active Projects</p>
-                          {selectedDateProjects.map(project => (
-                            <div key={project.id} className="p-2 rounded-md bg-primary/10 text-sm">
-                              <div className="flex items-center gap-2">
-                                <FolderOpen className="h-3.5 w-3.5 text-primary" />
-                                <span className="font-medium">{project.name}</span>
+                          {selectedDateProjects.map(project => {
+                            const color = projectColorMap.get(project.id) || PROJECT_COLORS[0];
+                            return (
+                              <div 
+                                key={project.id} 
+                                className="p-2 rounded-md text-sm"
+                                style={{ 
+                                  backgroundColor: color.bg,
+                                  borderLeft: `4px solid ${color.border}`
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FolderOpen className="h-3.5 w-3.5" style={{ color: color.border }} />
+                                  <span className="font-medium" style={{ color: color.text }}>{project.name}</span>
+                                </div>
+                                <p className="text-muted-foreground text-xs mt-1">
+                                  {format(project.start, 'MMM d')} - {format(project.end, 'MMM d, yyyy')}
+                                </p>
                               </div>
-                              <p className="text-muted-foreground text-xs mt-1">
-                                {format(project.start, 'MMM d')} - {format(project.end, 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
 
