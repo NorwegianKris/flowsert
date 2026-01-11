@@ -326,31 +326,40 @@ export default function Auth() {
           
           <div className="flex items-center gap-2">
             {/* Step 1 */}
-            <StepImageFrame 
-              stepNumber={1} 
-              image={stepImages[0]} 
-              onUpload={(file) => handleImageUpload(0, file)} 
-            />
+            <div className="flex flex-col items-center">
+              <StepImageFrame 
+                stepNumber={1} 
+                image={stepImages[0]} 
+                onUpload={(file) => handleImageUpload(0, file)} 
+              />
+              <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Business establishes dashboard</p>
+            </div>
             
             {/* Curved arrow 1->2 */}
-            <CurvedArrow className="w-16 h-10 text-slate-500" />
+            <CurvedArrow className="w-16 h-10 text-slate-500 -mt-6" />
             
             {/* Step 2 */}
-            <StepImageFrame 
-              stepNumber={2} 
-              image={stepImages[1]} 
-              onUpload={(file) => handleImageUpload(1, file)} 
-            />
+            <div className="flex flex-col items-center">
+              <StepImageFrame 
+                stepNumber={2} 
+                image={stepImages[1]} 
+                onUpload={(file) => handleImageUpload(1, file)} 
+              />
+              <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Worker uploads to user profile</p>
+            </div>
             
             {/* Curved arrow 2->3 */}
-            <CurvedArrow className="w-16 h-10 text-slate-500" />
+            <CurvedArrow className="w-16 h-10 text-slate-500 -mt-6" />
             
             {/* Step 3 */}
-            <StepImageFrame 
-              stepNumber={3} 
-              image={stepImages[2]} 
-              onUpload={(file) => handleImageUpload(2, file)} 
-            />
+            <div className="flex flex-col items-center">
+              <StepImageFrame 
+                stepNumber={3} 
+                image={stepImages[2]} 
+                onUpload={(file) => handleImageUpload(2, file)} 
+              />
+              <p className="text-slate-700 text-sm text-center mt-2 max-w-32">Joint certificate transparency and collaboration</p>
+            </div>
           </div>
           
           {/* Certificate tracking importance section */}
