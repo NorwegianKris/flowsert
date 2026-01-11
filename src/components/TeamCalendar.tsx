@@ -592,10 +592,23 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                               if (e.isRangeEnd) return 'Project End';
                               return 'Project';
                             }
-                            // Check if it's a milestone by looking at the title/id
                             if (e.id.includes('milestone')) return 'Milestone';
                             return 'Calendar Item';
                           };
+                          
+                          const getEventBadgeStyle = (e: CalendarEvent) => {
+                            if (e.type === 'certificate_expiry') {
+                              if (e.status === 'expired') {
+                                return 'bg-[hsl(var(--status-expired))] text-[hsl(var(--status-expired-foreground))] hover:bg-[hsl(var(--status-expired))]/90';
+                              }
+                              if (e.status === 'expiring') {
+                                return 'bg-[hsl(var(--status-warning))] text-[hsl(var(--status-warning-foreground))] hover:bg-[hsl(var(--status-warning))]/90';
+                              }
+                              return 'bg-[hsl(var(--status-valid))] text-[hsl(var(--status-valid-foreground))] hover:bg-[hsl(var(--status-valid))]/90';
+                            }
+                            return '';
+                          };
+                          
                           return (
                             <tr key={event.id} className="border-b border-border/30 hover:bg-muted/50 transition-colors">
                               <td className="py-2 px-1">
@@ -604,7 +617,10 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                                 </span>
                               </td>
                               <td className="py-2 px-1">
-                                <Badge variant={getEventBadgeVariant(event) as any} className="text-xs whitespace-nowrap">
+                                <Badge 
+                                  variant={event.type === 'certificate_expiry' ? undefined : getEventBadgeVariant(event) as any} 
+                                  className={cn("text-xs whitespace-nowrap", getEventBadgeStyle(event))}
+                                >
                                   <Icon className="h-3 w-3 mr-1" />
                                   {getEventTypeLabel(event)}
                                 </Badge>
