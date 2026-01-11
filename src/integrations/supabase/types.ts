@@ -337,6 +337,7 @@ export type Database = {
           date: string
           description: string
           id: string
+          is_milestone: boolean
           project_id: string
           updated_at: string
         }
@@ -345,6 +346,7 @@ export type Database = {
           date: string
           description: string
           id?: string
+          is_milestone?: boolean
           project_id: string
           updated_at?: string
         }
@@ -353,6 +355,7 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          is_milestone?: boolean
           project_id?: string
           updated_at?: string
         }
