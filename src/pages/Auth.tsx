@@ -196,7 +196,10 @@ export default function Auth() {
       
       {/* Left side - Login form */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 relative z-10">
-        <p className="text-primary text-xl font-semibold mb-6">Personnel Compliance Simplified</p>
+        <div className="text-center mb-8 -mt-16">
+          <h1 className="text-primary text-6xl font-bold mb-2">Personnel Compliance Simplified</h1>
+          <p className="text-slate-900 text-xl">A Leverage Solution for Industrial SMBs</p>
+        </div>
         <Card className="w-full max-w-md shadow-lg backdrop-blur-sm bg-card/95">
           <CardHeader className="text-center">
             <h1 className="font-rajdhani text-4xl font-bold text-primary mb-2">
