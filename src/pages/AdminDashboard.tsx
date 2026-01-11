@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { signOut, profile } = useAuth();
@@ -158,6 +159,10 @@ export default function AdminDashboard() {
               <UserPlus className="h-4 w-4 mr-2" />
               Invite Worker
             </Button>
+            <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
             <Button variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -168,7 +173,7 @@ export default function AdminDashboard() {
         <DashboardStats personnel={personnel} />
         
         <Tabs defaultValue="personnel" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="personnel" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Personnel
@@ -180,10 +185,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="projects" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               Projects
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
             </TabsTrigger>
           </TabsList>
           
@@ -224,13 +225,24 @@ export default function AdminDashboard() {
               onSelectProject={setSelectedProject}
             />
           </TabsContent>
-          
-          <TabsContent value="settings" className="mt-6">
-            <div className="max-w-2xl">
-              <CertificateCategoriesManager />
-            </div>
-          </TabsContent>
         </Tabs>
+
+        {settingsOpen && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+            <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-background border-l shadow-lg">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-lg font-semibold">Settings</h2>
+                <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(false)}>
+                  <span className="sr-only">Close</span>
+                  ✕
+                </Button>
+              </div>
+              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
+                <CertificateCategoriesManager />
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       
       <ChatBot />
