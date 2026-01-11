@@ -115,9 +115,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setRole(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.warn('Global signout failed, clearing local session:', error.message);
+        // Fallback to local-only signout
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+    } catch (error) {
+      console.error('SignOut error:', error);
+    } finally {
+      // Always clear local state
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setRole(null);
+    }
   };
 
   const value: AuthContextType = {
