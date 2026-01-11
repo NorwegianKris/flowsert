@@ -10,13 +10,14 @@ import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
+import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen, Settings } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,7 +168,7 @@ export default function AdminDashboard() {
         <DashboardStats personnel={personnel} />
         
         <Tabs defaultValue="personnel" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="personnel" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Personnel
@@ -179,6 +180,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="projects" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               Projects
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
             </TabsTrigger>
           </TabsList>
           
@@ -218,6 +223,12 @@ export default function AdminDashboard() {
               personnel={personnel} 
               onSelectProject={setSelectedProject}
             />
+          </TabsContent>
+          
+          <TabsContent value="settings" className="mt-6">
+            <div className="max-w-2xl">
+              <CertificateCategoriesManager />
+            </div>
           </TabsContent>
         </Tabs>
       </main>
