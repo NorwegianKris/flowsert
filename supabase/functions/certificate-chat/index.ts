@@ -11,25 +11,29 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, certificateData } = await req.json();
+    const { messages, contextData } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are CertTrack Assistant, an AI helper for managing industrial personnel certificates. You have access to the following certificate data for all personnel:
+    const systemPrompt = `You are Flowsert Assistant, an AI helper for industrial workers. You have access to the following information about the current user:
 
-${certificateData}
+${contextData}
 
 Based on this data, you can:
-- Answer questions about specific workers and their certificates
-- Identify certificates that are expired or expiring soon
-- Provide information about certificate dates, places of issue, and validity
-- Help track compliance across the workforce
-- Suggest which certificates need renewal
+- Answer questions about the worker's personal profile and contact information
+- Provide details about their certificates, including status, expiry dates, and renewal needs
+- Share information about their assigned projects, schedules, and calendar events
+- Explain their availability status on different dates
+- Provide information about their next of kin
+- Help them understand their work schedule and upcoming deadlines
 
-Always be helpful, concise, and accurate. When referring to dates, use a clear format. If asked about something not in the data, politely explain that you only have access to the certificate information provided.`;
+Always be helpful, concise, and accurate. When referring to dates, use a clear format (e.g., "January 15, 2025").
+If a certificate is expiring soon (within 30 days) or expired, proactively mention this.
+If asked about something not in the data, politely explain what information you do have access to.
+Keep responses friendly and professional.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

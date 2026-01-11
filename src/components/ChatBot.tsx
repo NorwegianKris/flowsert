@@ -6,41 +6,122 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { getCertificateStatus, getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { useToast } from '@/hooks/use-toast';
-import { usePersonnel } from '@/hooks/usePersonnel';
+import { useWorkerPersonnel } from '@/hooks/usePersonnel';
+import { useAssignedProjects } from '@/components/AssignedProjects';
+import { supabase } from '@/integrations/supabase/client';
 import { Personnel } from '@/types';
+import { Project } from '@/hooks/useProjects';
+import { format } from 'date-fns';
 
 type Message = {
   role: 'user' | 'assistant';
   content: string;
 };
 
-function generateCertificateContext(personnel: Personnel[]) {
-  if (personnel.length === 0) {
+interface AvailabilityEntry {
+  date: string;
+  status: string;
+  notes: string | null;
+}
+
+function generateFullContext(
+  personnel: Personnel | null,
+  projects: Project[],
+  availability: AvailabilityEntry[]
+) {
+  if (!personnel) {
     return 'No personnel data available.';
   }
 
-  return personnel.map(person => {
-    const certDetails = person.certificates.map(cert => {
-      const status = getCertificateStatus(cert.expiryDate);
-      const daysLeft = getDaysUntilExpiry(cert.expiryDate);
-      const daysText = daysLeft === null 
-        ? 'No expiry' 
-        : daysLeft < 0 
-          ? `Expired ${Math.abs(daysLeft)} days ago`
-          : `${daysLeft} days until expiry`;
-      
-      return `  - ${cert.name}: Status: ${status.toUpperCase()}, Issued: ${cert.dateOfIssue}, Expires: ${cert.expiryDate || 'Never'}, Place: ${cert.placeOfIssue}, ${daysText}`;
-    }).join('\n');
+  // Personal Information
+  const personalInfo = `
+=== PERSONAL INFORMATION ===
+Name: ${personnel.name}
+Role: ${personnel.role}
+Location: ${personnel.location}
+Email: ${personnel.email}
+Phone: ${personnel.phone}
+Nationality: ${personnel.nationality || 'Not specified'}
+Gender: ${personnel.gender || 'Not specified'}
+Language: ${personnel.language || 'Norwegian'}
+Address: ${personnel.address || 'Not specified'}
+Postal Code: ${personnel.postalCode || 'Not specified'}
+Postal Address: ${personnel.postalAddress || 'Not specified'}
+Norwegian ID: ${personnel.nationalId || 'Not specified'}
+Salary Account: ${personnel.salaryAccountNumber || 'Not specified'}`;
 
-    return `
-Worker: ${person.name}
-Role: ${person.role}
-Location: ${person.location}
-Email: ${person.email}
-Phone: ${person.phone}
-Certificates:
-${certDetails || '  No certificates'}`;
-  }).join('\n\n---\n');
+  // Next of Kin
+  const nextOfKin = `
+=== NEXT OF KIN ===
+Name: ${personnel.nextOfKinName || 'Not specified'}
+Relation: ${personnel.nextOfKinRelation || 'Not specified'}
+Phone: ${personnel.nextOfKinPhone || 'Not specified'}`;
+
+  // Certificates
+  const certDetails = personnel.certificates.length > 0
+    ? personnel.certificates.map(cert => {
+        const status = getCertificateStatus(cert.expiryDate);
+        const daysLeft = getDaysUntilExpiry(cert.expiryDate);
+        const daysText = daysLeft === null 
+          ? 'No expiry date' 
+          : daysLeft < 0 
+            ? `Expired ${Math.abs(daysLeft)} days ago`
+            : `${daysLeft} days until expiry`;
+        
+        return `  - ${cert.name}
+    Status: ${status.toUpperCase()}
+    Issued: ${cert.dateOfIssue}
+    Expires: ${cert.expiryDate || 'Never'}
+    Place of Issue: ${cert.placeOfIssue}
+    ${daysText}`;
+      }).join('\n\n')
+    : '  No certificates on file';
+
+  const certificatesSection = `
+=== CERTIFICATES ===
+Total: ${personnel.certificates.length}
+${certDetails}`;
+
+  // Projects
+  const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'pending');
+  const completedProjects = projects.filter(p => p.status === 'completed');
+
+  const formatProject = (p: Project) => {
+    const calendarItems = p.calendarItems && p.calendarItems.length > 0
+      ? p.calendarItems.map(item => `    - ${format(new Date(item.date), 'MMM d, yyyy')}: ${item.description}`).join('\n')
+      : '    No scheduled events';
+    
+    return `  - ${p.name}
+    Status: ${p.status.toUpperCase()}
+    Description: ${p.description}
+    Start Date: ${format(new Date(p.startDate), 'MMM d, yyyy')}
+    End Date: ${p.endDate ? format(new Date(p.endDate), 'MMM d, yyyy') : 'Ongoing'}
+    Calendar Events:
+${calendarItems}`;
+  };
+
+  const projectsSection = `
+=== ASSIGNED PROJECTS ===
+Active/Pending Projects (${activeProjects.length}):
+${activeProjects.length > 0 ? activeProjects.map(formatProject).join('\n\n') : '  No active projects'}
+
+Completed Projects (${completedProjects.length}):
+${completedProjects.length > 0 ? completedProjects.map(formatProject).join('\n\n') : '  No completed projects'}`;
+
+  // Availability
+  const availabilitySection = availability.length > 0
+    ? `
+=== AVAILABILITY ===
+${availability.map(a => `  - ${format(new Date(a.date), 'MMM d, yyyy')}: ${a.status.toUpperCase()}${a.notes ? ` (${a.notes})` : ''}`).join('\n')}`
+    : `
+=== AVAILABILITY ===
+  No availability entries recorded`;
+
+  return `${personalInfo}
+${nextOfKin}
+${certificatesSection}
+${projectsSection}
+${availabilitySection}`;
 }
 
 export function ChatBot() {
@@ -48,9 +129,30 @@ export function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { personnel } = usePersonnel();
+  const { personnel } = useWorkerPersonnel();
+  const { projects } = useAssignedProjects(personnel?.id || '');
+
+  // Fetch availability data when personnel is available
+  useEffect(() => {
+    async function fetchAvailability() {
+      if (!personnel?.id) return;
+      
+      const { data, error } = await supabase
+        .from('availability')
+        .select('date, status, notes')
+        .eq('personnel_id', personnel.id)
+        .order('date', { ascending: true });
+      
+      if (!error && data) {
+        setAvailability(data);
+      }
+    }
+    
+    fetchAvailability();
+  }, [personnel?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -79,7 +181,7 @@ export function ChatBot() {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
-            certificateData: generateCertificateContext(personnel),
+            contextData: generateFullContext(personnel, projects, availability),
           }),
         }
       );
@@ -172,7 +274,7 @@ export function ChatBot() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b border-border">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
-          CertTrack Assistant
+          Flowsert Assistant
         </CardTitle>
         <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
           <X className="h-4 w-4" />
@@ -184,8 +286,8 @@ export function ChatBot() {
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground text-sm py-8">
               <Bot className="h-12 w-12 mx-auto mb-3 text-primary/40" />
-              <p className="font-medium mb-1">Hi! I'm your Certificate Assistant</p>
-              <p className="text-xs">Ask me anything about your personnel's certificates, expiry dates, or compliance status.</p>
+              <p className="font-medium mb-1">Hi! I'm your Personal Assistant</p>
+              <p className="text-xs">Ask me anything about your profile, certificates, projects, or availability.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -232,7 +334,7 @@ export function ChatBot() {
         <div className="p-4 border-t border-border">
           <div className="flex gap-2">
             <Input
-              placeholder="Ask about certificates..."
+              placeholder="Ask me anything..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
