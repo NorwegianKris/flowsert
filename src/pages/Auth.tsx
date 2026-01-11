@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import flowsertLogo from '@/assets/flowsert_logo.png';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -107,11 +106,9 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <img 
-            src={flowsertLogo} 
-            alt="FlowSert Logo" 
-            className="mx-auto h-12 mb-4"
-          />
+          <h1 className="font-rajdhani text-4xl font-bold text-primary mb-4">
+            FlowSert
+          </h1>
           <CardTitle className="text-2xl">Welcome</CardTitle>
           <CardDescription>
             {inviteToken 
