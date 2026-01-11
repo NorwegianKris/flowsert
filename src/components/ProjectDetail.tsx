@@ -9,6 +9,7 @@ import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
+import { ProjectDocuments } from '@/components/ProjectDocuments';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import {
@@ -24,6 +25,7 @@ import {
   XCircle,
   Pencil,
   Flag,
+  FolderOpen,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import {
@@ -266,14 +268,18 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
           <Card className="border-border/50 h-full">
             <Tabs defaultValue="personnel" className="h-full flex flex-col">
               <CardHeader className="pb-0">
-                <TabsList className="w-full">
-                  <TabsTrigger value="personnel" className="flex-1 gap-2">
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger value="personnel" className="gap-1.5 text-xs sm:text-sm">
                     <Users className="h-4 w-4" />
-                    Personnel
+                    <span className="hidden sm:inline">Personnel</span>
                   </TabsTrigger>
-                  <TabsTrigger value="calendar" className="flex-1 gap-2">
+                  <TabsTrigger value="calendar" className="gap-1.5 text-xs sm:text-sm">
                     <Calendar className="h-4 w-4" />
-                    Calendar Items
+                    <span className="hidden sm:inline">Calendar</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="documents" className="gap-1.5 text-xs sm:text-sm">
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
                 </TabsList>
               </CardHeader>
@@ -373,6 +379,11 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                       </p>
                     </div>
                   )}
+                </TabsContent>
+
+                {/* Documents Tab */}
+                <TabsContent value="documents" className="mt-0 h-full">
+                  <ProjectDocuments projectId={project.id} />
                 </TabsContent>
               </CardContent>
             </Tabs>
