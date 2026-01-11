@@ -195,8 +195,8 @@ export default function Auth() {
       <div className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-slate-400/30 rounded-full blur-2xl" />
       
       {/* Left side - Login form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 relative z-10">
-        <div className="text-center mb-8 -mt-16">
+      <div className="flex-1 flex flex-col items-center justify-start pt-8 px-4 relative z-10">
+        <div className="text-center mb-8">
           <h1 className="text-primary text-4xl font-bold mb-2 whitespace-nowrap">Personnel Compliance Simplified</h1>
           <p className="text-slate-900 text-xl">A Leverage Solution for Industrial SMBs</p>
         </div>
@@ -317,6 +317,30 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
         </Card>
+
+        {/* Book a Demo section */}
+        <div className="w-full max-w-md mt-8">
+          <Card className="shadow-lg backdrop-blur-sm bg-card/95">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-xl">Book a Demo</CardTitle>
+              <CardDescription>
+                Enter your email and we'll get in touch
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="your@email.com"
+                  className="flex-1"
+                />
+                <Button type="button">
+                  Submit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Right side - Tab-based content */}
