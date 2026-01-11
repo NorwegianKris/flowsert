@@ -351,24 +351,44 @@ export default function Auth() {
           </div>
           
           {/* Certificate tracking importance section */}
-          <div className="mt-12 text-center">
-            <h3 className="text-xl font-semibold text-slate-700 mb-4">
+          <div className="mt-12">
+            <h3 className="text-xl font-semibold text-slate-700 mb-6 text-center">
               Tracking of Certificates is important for...
             </h3>
-            <ul className="text-slate-600 space-y-2 text-left">
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <span>Ensuring regulatory compliance and avoiding costly penalties</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <span>Maintaining workforce safety and operational readiness</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <span>Streamlining audits and reducing administrative overhead</span>
-              </li>
-            </ul>
+            <div className="space-y-4">
+              {/* Safety */}
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-slate-800">Safety</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="text-slate-600 text-sm">Ensure workforce safety with up-to-date certifications and training records</span>
+                </div>
+              </div>
+              
+              {/* Compliance */}
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-slate-800">Compliance</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="text-slate-600 text-sm">Meet regulatory requirements and avoid costly penalties during audits</span>
+                </div>
+              </div>
+              
+              {/* Workflow */}
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-slate-800">Workflow</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="text-slate-600 text-sm">Streamline administrative tasks and reduce manual tracking overhead</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
