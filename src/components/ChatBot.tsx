@@ -71,6 +71,7 @@ Phone: ${personnel.nextOfKinPhone || 'Not specified'}`;
         return `  - ${cert.name}
     Category: ${cert.category || 'Uncategorized'}
     Status: ${status.toUpperCase()}
+    Issuing Authority: ${cert.issuingAuthority || 'Not specified'}
     Issued: ${cert.dateOfIssue}
     Expires: ${cert.expiryDate || 'Never'}
     Place of Issue: ${cert.placeOfIssue}

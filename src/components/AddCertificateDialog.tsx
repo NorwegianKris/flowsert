@@ -30,6 +30,7 @@ interface CertificateEntry {
   dateOfIssue: string;
   expiryDate: string;
   placeOfIssue: string;
+  issuingAuthority: string;
   selected: boolean;
   file: File | null;
 }
@@ -81,6 +82,7 @@ export function AddCertificateDialog({
             dateOfIssue: '',
             expiryDate: '',
             placeOfIssue: '',
+            issuingAuthority: '',
             selected: false,
             file: null,
           }))
@@ -108,7 +110,7 @@ export function AddCertificateDialog({
 
   const handleFieldChange = (
     id: string,
-    field: 'dateOfIssue' | 'expiryDate' | 'placeOfIssue',
+    field: 'dateOfIssue' | 'expiryDate' | 'placeOfIssue' | 'issuingAuthority',
     value: string
   ) => {
     setCertificates((prev) =>
@@ -139,6 +141,7 @@ export function AddCertificateDialog({
       dateOfIssue: '',
       expiryDate: '',
       placeOfIssue: '',
+      issuingAuthority: '',
       selected: true,
       file: null,
     };
@@ -148,11 +151,11 @@ export function AddCertificateDialog({
 
   const handleSubmit = async () => {
     const toAdd = selectedCertificates.filter(
-      (c) => c.dateOfIssue && c.placeOfIssue
+      (c) => c.dateOfIssue && c.placeOfIssue && c.issuingAuthority
     );
 
     if (toAdd.length === 0) {
-      toast.error('Please select certificates and fill in required fields');
+      toast.error('Please select certificates and fill in required fields (Date of Issue, Place of Issue, Issuing Authority)');
       return;
     }
 
@@ -170,6 +173,8 @@ export function AddCertificateDialog({
             date_of_issue: cert.dateOfIssue,
             expiry_date: cert.expiryDate || null,
             place_of_issue: cert.placeOfIssue,
+            issuing_authority: cert.issuingAuthority,
+            category_id: cert.id.startsWith('custom-') ? null : cert.id,
           })
           .select()
           .single();
@@ -215,6 +220,7 @@ export function AddCertificateDialog({
           dateOfIssue: '',
           expiryDate: '',
           placeOfIssue: '',
+          issuingAuthority: '',
           selected: false,
           file: null,
         }))
@@ -284,7 +290,7 @@ export function AddCertificateDialog({
 
                       {cert.selected && (
                         <div className="space-y-3">
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground">
                                 Date of Issue *
@@ -328,6 +334,22 @@ export function AddCertificateDialog({
                                   handleFieldChange(
                                     cert.id,
                                     'placeOfIssue',
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">
+                                Issuing Authority *
+                              </Label>
+                              <Input
+                                placeholder="e.g., DNV, Lloyd's Register"
+                                value={cert.issuingAuthority}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    cert.id,
+                                    'issuingAuthority',
                                     e.target.value
                                   )
                                 }

@@ -53,8 +53,9 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="font-semibold">Certificate</TableHead>
-              <TableHead className="font-semibold">Category</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
+              <TableHead className="font-semibold">Category</TableHead>
+              <TableHead className="font-semibold">Issuing Authority</TableHead>
               <TableHead className="font-semibold">Date of Issue</TableHead>
               <TableHead className="font-semibold">Expiry Date</TableHead>
               <TableHead className="font-semibold">Place of Issue</TableHead>
@@ -79,6 +80,14 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <StatusBadge status={status} showLabel />
+                      <span className="text-xs text-muted-foreground">
+                        {formatExpiryText(daysUntilExpiry)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     {cert.category ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
                         <Tag className="h-3 w-3" />
@@ -88,13 +97,8 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                       <span className="text-xs text-muted-foreground italic">Uncategorized</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <StatusBadge status={status} showLabel />
-                      <span className="text-xs text-muted-foreground">
-                        {formatExpiryText(daysUntilExpiry)}
-                      </span>
-                    </div>
+                  <TableCell className="text-muted-foreground">
+                    {cert.issuingAuthority || <span className="italic">Not specified</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {format(parseISO(cert.dateOfIssue), 'dd MMM yyyy')}
@@ -257,6 +261,14 @@ export function CertificateTable({ certificates }: CertificateTableProps) {
                 
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
                   <Building2 className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Issuing Authority</div>
+                    <div className="font-medium">{selectedCertificate.issuingAuthority || 'Not specified'}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 col-span-2">
+                  <Award className="h-5 w-5 text-primary mt-0.5" />
                   <div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">Status</div>
                     <StatusBadge status={getCertificateStatus(selectedCertificate.expiryDate)} showLabel />

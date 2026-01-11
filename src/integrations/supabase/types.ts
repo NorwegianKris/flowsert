@@ -113,6 +113,7 @@ export type Database = {
           document_url: string | null
           expiry_date: string | null
           id: string
+          issuing_authority: string | null
           name: string
           personnel_id: string
           place_of_issue: string
@@ -125,6 +126,7 @@ export type Database = {
           document_url?: string | null
           expiry_date?: string | null
           id?: string
+          issuing_authority?: string | null
           name: string
           personnel_id: string
           place_of_issue: string
@@ -137,6 +139,7 @@ export type Database = {
           document_url?: string | null
           expiry_date?: string | null
           id?: string
+          issuing_authority?: string | null
           name?: string
           personnel_id?: string
           place_of_issue?: string
