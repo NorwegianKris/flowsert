@@ -344,7 +344,7 @@ export default function Auth() {
       </div>
 
       {/* Right side - Tab-based content */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative z-10">
+      <div className="hidden lg:flex flex-1 items-start justify-center pt-32 relative z-10">
         <Tabs defaultValue="how-it-works" className="w-full max-w-xl">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="how-it-works">How It Works</TabsTrigger>
