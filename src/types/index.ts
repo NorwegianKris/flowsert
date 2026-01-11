@@ -6,6 +6,7 @@ export interface Certificate {
   dateOfIssue: string;
   expiryDate: string | null; // null for certificates that don't expire
   placeOfIssue: string;
+  issuingAuthority?: string;
   documentUrl?: string;
   category?: string; // Category name from certificate_categories
 }

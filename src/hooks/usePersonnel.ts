@@ -34,6 +34,7 @@ interface DbCertificate {
   date_of_issue: string;
   expiry_date: string | null;
   place_of_issue: string;
+  issuing_authority: string | null;
   document_url: string | null;
   category_id: string | null;
   certificate_categories: { name: string } | null;
@@ -102,6 +103,7 @@ export function usePersonnel() {
             dateOfIssue: c.date_of_issue,
             expiryDate: c.expiry_date,
             placeOfIssue: c.place_of_issue,
+            issuingAuthority: c.issuing_authority || undefined,
             documentUrl: c.document_url || undefined,
             category: c.certificate_categories?.name || undefined,
           })),
@@ -191,6 +193,7 @@ export function useWorkerPersonnel() {
             dateOfIssue: c.date_of_issue,
             expiryDate: c.expiry_date,
             placeOfIssue: c.place_of_issue,
+            issuingAuthority: c.issuing_authority || undefined,
             documentUrl: c.document_url || undefined,
             category: c.certificate_categories?.name || undefined,
           })),
