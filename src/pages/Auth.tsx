@@ -350,9 +350,26 @@ export default function Auth() {
             />
           </div>
           
-          <p className="text-slate-600 mt-8 text-center max-w-md">
-            Upload images to showcase your workflow steps
-          </p>
+          {/* Certificate tracking importance section */}
+          <div className="mt-12 text-center">
+            <h3 className="text-xl font-semibold text-slate-700 mb-4">
+              Tracking of Certificates is important for...
+            </h3>
+            <ul className="text-slate-600 space-y-2 text-left">
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span>Ensuring regulatory compliance and avoiding costly penalties</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span>Maintaining workforce safety and operational readiness</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">•</span>
+                <span>Streamlining audits and reducing administrative overhead</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
