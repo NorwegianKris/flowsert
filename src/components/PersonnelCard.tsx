@@ -7,7 +7,7 @@ import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
-import { MapPin, Mail, Phone, FileCheck } from 'lucide-react';
+import { MapPin, Mail, Phone, FileCheck, Briefcase } from 'lucide-react';
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -45,10 +45,14 @@ export function PersonnelCard({ personnel, onClick }: PersonnelCardProps) {
             </div>
             
             <Badge variant="secondary" className="mb-3 font-normal">
-              {personnel.role}
+              {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
             </Badge>
             
             <div className="space-y-1.5 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">{personnel.role}</span>
+              </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="truncate">{personnel.location}</span>

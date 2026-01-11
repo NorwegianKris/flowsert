@@ -11,6 +11,8 @@ export interface Certificate {
   category?: string; // Category name from certificate_categories
 }
 
+export type PersonnelCategory = 'fixed_employee' | 'freelancer';
+
 export interface Personnel {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ export interface Personnel {
   email: string;
   phone: string;
   avatarUrl?: string;
+  category?: PersonnelCategory;
   nationality?: string;
   gender?: string;
   address?: string;

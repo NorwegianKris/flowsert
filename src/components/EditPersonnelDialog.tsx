@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Camera } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Personnel } from '@/types';
 
 interface EditPersonnelDialogProps {
@@ -27,6 +28,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     phone: '',
     role: '',
     location: '',
+    category: 'fixed_employee' as 'fixed_employee' | 'freelancer',
     nationality: '',
     gender: '',
     address: '',
@@ -48,6 +50,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         phone: personnel.phone || '',
         role: personnel.role || '',
         location: personnel.location || '',
+        category: personnel.category || 'fixed_employee',
         nationality: personnel.nationality || '',
         gender: personnel.gender || '',
         address: personnel.address || '',
@@ -140,6 +143,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           phone: formData.phone.trim(),
           role: formData.role.trim(),
           location: formData.location.trim(),
+          category: formData.category,
           nationality: formData.nationality.trim() || null,
           gender: formData.gender.trim() || null,
           address: formData.address.trim() || null,
@@ -258,6 +262,21 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="Oslo, Norway"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Category</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value: 'fixed_employee' | 'freelancer') => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger id="edit-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed_employee">Fixed Employee</SelectItem>
+                  <SelectItem value="freelancer">Freelancer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-nationality">Nationality</Label>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Personnel, Certificate } from '@/types';
+import { Personnel, Certificate, PersonnelCategory } from '@/types';
 
 interface DbPersonnel {
   id: string;
@@ -14,6 +14,7 @@ interface DbPersonnel {
   avatar_url: string | null;
   business_id: string | null;
   user_id: string | null;
+  category: string | null;
   nationality: string | null;
   gender: string | null;
   address: string | null;
@@ -84,6 +85,7 @@ export function usePersonnel() {
         email: p.email,
         phone: p.phone,
         avatarUrl: p.avatar_url || undefined,
+        category: (p.category as PersonnelCategory) || undefined,
         nationality: p.nationality || undefined,
         gender: p.gender || undefined,
         address: p.address || undefined,
@@ -176,6 +178,7 @@ export function useWorkerPersonnel() {
           email: p.email,
           phone: p.phone,
           avatarUrl: p.avatar_url || undefined,
+          category: (p.category as PersonnelCategory) || undefined,
           nationality: p.nationality || undefined,
           gender: p.gender || undefined,
           address: p.address || undefined,

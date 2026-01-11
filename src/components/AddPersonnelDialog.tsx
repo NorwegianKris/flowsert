@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AddPersonnelDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
     phone: '',
     role: '',
     location: '',
+    category: 'fixed_employee' as 'fixed_employee' | 'freelancer',
     nationality: '',
     gender: '',
     address: '',
@@ -54,6 +56,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
         phone: formData.phone.trim(),
         role: formData.role.trim(),
         location: formData.location.trim(),
+        category: formData.category,
         nationality: formData.nationality.trim() || null,
         gender: formData.gender.trim() || null,
         address: formData.address.trim() || null,
@@ -70,6 +73,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
       toast.success('Personnel record created successfully');
       setFormData({ 
         name: '', email: '', phone: '', role: '', location: '',
+        category: 'fixed_employee',
         nationality: '', gender: '', address: '', postalCode: '', 
         postalAddress: '', nationalId: '', salaryAccountNumber: '', language: 'Norwegian'
       });
@@ -141,6 +145,21 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
                 placeholder="Oslo, Norway"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value: 'fixed_employee' | 'freelancer') => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed_employee">Fixed Employee</SelectItem>
+                  <SelectItem value="freelancer">Freelancer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="nationality">Nationality</Label>
