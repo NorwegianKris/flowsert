@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCalendar } from '@/components/ProjectCalendar';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
@@ -249,122 +250,132 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         </Card>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Calendar with Side Tabs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar Section */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2">
           <ProjectCalendar 
             project={project} 
             onUpdateDates={handleUpdateDates}
             editable={!!onUpdateProject}
           />
-
-          {/* Calendar Items List */}
-          {project.calendarItems && project.calendarItems.length > 0 && (
-            <Card className="border-border/50">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Calendar Items ({project.calendarItems.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {project.calendarItems
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
-                          item.isMilestone 
-                            ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20' 
-                            : 'bg-muted/50 hover:bg-muted'
-                        }`}
-                      >
-                        {item.isMilestone ? (
-                          <Flag className="w-4 h-4 text-amber-500 mt-1 flex-shrink-0" />
-                        ) : (
-                          <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-foreground">
-                              {format(parseISO(item.date), 'MMM d, yyyy')}
-                            </p>
-                            {item.isMilestone && (
-                              <span className="text-xs font-medium text-amber-500 bg-amber-500/20 px-1.5 py-0.5 rounded">
-                                Milestone
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {item.description}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveCalendarItem(item.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
-        {/* Assigned Personnel Section */}
-        <div>
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Assigned Personnel
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {assignedPersonnel.length > 0 ? (
-                <div className="space-y-3">
-                  {assignedPersonnel.map((person) => (
-                    <div
-                      key={person.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors ${onPersonnelClick ? 'cursor-pointer' : ''}`}
-                      onClick={() => onPersonnelClick?.(person)}
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={person.avatarUrl} alt={person.name} />
-                        <AvatarFallback className="text-sm font-medium">
-                          {getInitials(person.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
-                          {person.name}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {person.role}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        <span className="truncate max-w-[80px]">{person.location}</span>
-                      </div>
+        {/* Right Side Tabs - Personnel & Calendar Items */}
+        <div className="lg:col-span-1">
+          <Card className="border-border/50 h-full">
+            <Tabs defaultValue="personnel" className="h-full flex flex-col">
+              <CardHeader className="pb-0">
+                <TabsList className="w-full">
+                  <TabsTrigger value="personnel" className="flex-1 gap-2">
+                    <Users className="h-4 w-4" />
+                    Personnel
+                  </TabsTrigger>
+                  <TabsTrigger value="calendar" className="flex-1 gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Calendar Items
+                  </TabsTrigger>
+                </TabsList>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-auto pt-4">
+                {/* Assigned Personnel Tab */}
+                <TabsContent value="personnel" className="mt-0 h-full">
+                  {assignedPersonnel.length > 0 ? (
+                    <div className="space-y-3">
+                      {assignedPersonnel.map((person) => (
+                        <div
+                          key={person.id}
+                          className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors ${onPersonnelClick ? 'cursor-pointer' : ''}`}
+                          onClick={() => onPersonnelClick?.(person)}
+                        >
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={person.avatarUrl} alt={person.name} />
+                            <AvatarFallback className="text-sm font-medium">
+                              {getInitials(person.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground truncate">
+                              {person.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {person.role}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate max-w-[80px]">{person.location}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-muted-foreground text-sm">
-                    No personnel assigned to this project
-                  </p>
-                </div>
-              )}
-            </CardContent>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">
+                        No personnel assigned to this project
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Calendar Items Tab */}
+                <TabsContent value="calendar" className="mt-0 h-full">
+                  {project.calendarItems && project.calendarItems.length > 0 ? (
+                    <div className="space-y-2">
+                      {project.calendarItems
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
+                              item.isMilestone 
+                                ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20' 
+                                : 'bg-muted/50 hover:bg-muted'
+                            }`}
+                          >
+                            {item.isMilestone ? (
+                              <Flag className="w-4 h-4 text-amber-500 mt-1 flex-shrink-0" />
+                            ) : (
+                              <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-foreground">
+                                  {format(parseISO(item.date), 'MMM d, yyyy')}
+                                </p>
+                                {item.isMilestone && (
+                                  <span className="text-xs font-medium text-amber-500 bg-amber-500/20 px-1.5 py-0.5 rounded">
+                                    Milestone
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {item.description}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveCalendarItem(item.id)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">
+                        No calendar items yet
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+              </CardContent>
+            </Tabs>
           </Card>
         </div>
       </div>
