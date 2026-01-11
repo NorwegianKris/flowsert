@@ -1,6 +1,5 @@
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import flowsertLogo from '@/assets/flowsert_logo.png';
 
 interface DashboardHeaderProps {
   searchQuery: string;
@@ -12,8 +11,8 @@ export function DashboardHeader({ searchQuery, onSearchChange }: DashboardHeader
     <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col items-start gap-1">
-            <img src={flowsertLogo} alt="FlowSert" className="h-8" />
+          <div className="flex flex-col items-start">
+            <h1 className="text-2xl font-semibold font-rajdhani text-primary">FlowSert</h1>
             <p className="text-sm text-muted-foreground">
               Personnel Certificate Management
             </p>
