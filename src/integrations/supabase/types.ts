@@ -369,6 +369,92 @@ export type Database = {
           },
         ]
       }
+      project_document_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_document_categories_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_documents: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          name: string
+          project_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "project_document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           assigned_personnel: string[] | null
