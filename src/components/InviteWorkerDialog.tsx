@@ -94,6 +94,10 @@ export function InviteWorkerDialog({
 
     setIsLoading(true);
     try {
+      // Get the selected personnel name
+      const selectedPerson = personnel.find(p => p.id === selectedPersonnelId);
+      const workerName = selectedPerson?.name || 'Team Member';
+
       const { data, error: insertError } = await supabase
         .from('invitations')
         .insert({
@@ -110,10 +114,28 @@ export function InviteWorkerDialog({
       const signupUrl = `${window.location.origin}/auth?token=${data.token}`;
       setInviteLink(signupUrl);
 
-      toast({
-        title: 'Invitation created',
-        description: 'Share the signup link with the worker.',
+      // Send invitation email
+      const { error: emailError } = await supabase.functions.invoke('send-invitation', {
+        body: {
+          to: email.toLowerCase().trim(),
+          workerName,
+          inviteLink: signupUrl,
+        },
       });
+
+      if (emailError) {
+        console.error('Failed to send email:', emailError);
+        toast({
+          title: 'Invitation created',
+          description: 'Email could not be sent. Please share the link manually.',
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Invitation sent!',
+          description: `An email with the signup link has been sent to ${email}.`,
+        });
+      }
 
       onInviteSent?.();
     } catch (err) {
