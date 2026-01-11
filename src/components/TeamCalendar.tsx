@@ -441,12 +441,26 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
         ) : (
           <div className="space-y-4">
             {/* Legend */}
-            <div className="flex flex-wrap gap-3 mb-4 p-3 rounded-lg bg-muted/30">
+            <div className="flex flex-wrap gap-4 mb-4 p-3 rounded-lg bg-muted/30">
               {showCertificates && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Award className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-muted-foreground">Certificate Expiry</span>
-                </div>
+                <>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Award className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-muted-foreground">Certificate Expiry</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="h-3 w-3 rounded-full bg-[hsl(var(--status-expired))]" />
+                    <span className="text-muted-foreground">Expired</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="h-3 w-3 rounded-full bg-[hsl(var(--status-warning))]" />
+                    <span className="text-muted-foreground">Expiring Soon (≤30 days)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="h-3 w-3 rounded-full bg-[hsl(var(--status-valid))]" />
+                    <span className="text-muted-foreground">Valid</span>
+                  </div>
+                </>
               )}
               {showProjects && (
                 <>
