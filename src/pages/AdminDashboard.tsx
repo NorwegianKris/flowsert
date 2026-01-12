@@ -14,6 +14,7 @@ import { CertificateCategoriesManager } from '@/components/CertificateCategories
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
+import { FeedbackList } from '@/components/FeedbackList';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
@@ -268,6 +269,8 @@ export default function AdminDashboard() {
                 
                 <CertificateCategoriesManager />
                 <DocumentCategoriesManager />
+                
+                <FeedbackList />
               </div>
             </div>
           </div>
