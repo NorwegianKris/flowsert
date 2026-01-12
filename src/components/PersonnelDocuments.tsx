@@ -2,8 +2,15 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -30,13 +37,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format, parseISO } from 'date-fns';
 import {
   Upload,
   FileText,
-  Folder,
   Trash2,
   Download,
   Pencil,
+  Tag,
+  File,
+  Image,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -328,61 +338,96 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
           </div>
         )}
 
-        {/* Documents List */}
+        {/* Documents Table */}
         {filteredDocuments.length > 0 ? (
-          <div className="space-y-2">
-            {filteredDocuments.map((doc) => (
-              <div
-                key={doc.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
-              >
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{doc.name}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatFileSize(doc.fileSize)}</span>
-                    <span>•</span>
-                    <Badge variant="secondary" className="text-xs">
-                      <Folder className="h-3 w-3 mr-1" />
-                      {getCategoryName(doc.categoryId)}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                      <Download className="h-4 w-4" />
-                    </a>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(doc)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setDocumentToDelete(doc);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <div className="rounded-lg border border-border/50 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="font-semibold">Document</TableHead>
+                  <TableHead className="font-semibold">Category</TableHead>
+                  <TableHead className="font-semibold">Date Uploaded</TableHead>
+                  <TableHead className="font-semibold">Size</TableHead>
+                  <TableHead className="font-semibold">Type</TableHead>
+                  <TableHead className="font-semibold w-28">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDocuments.map((doc) => {
+                  const isImage = doc.fileType?.startsWith('image/');
+                  
+                  return (
+                    <TableRow 
+                      key={doc.id} 
+                      className="group hover:bg-muted/50 transition-colors"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {isImage ? (
+                            <Image className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <File className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span className="font-medium">{doc.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {doc.categoryId ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                            <Tag className="h-3 w-3" />
+                            {getCategoryName(doc.categoryId)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Uncategorized</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(parseISO(doc.createdAt), 'dd MMM yyyy')}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatFileSize(doc.fileSize)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {doc.fileType ? doc.fileType.split('/')[1]?.toUpperCase() || doc.fileType : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          >
+                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(doc)}
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setDocumentToDelete(doc);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
