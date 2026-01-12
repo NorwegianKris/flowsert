@@ -19,9 +19,9 @@ import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
-import { 
+import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, FileText, Upload, ExternalLink
 } from 'lucide-react';
 
 interface PersonnelDetailProps {
@@ -346,6 +346,33 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
           {/* Assigned Projects Section */}
           <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />
+
+          {/* Documents Section */}
+          <Card className="border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Documents
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No documents uploaded yet</p>
+                <p className="text-xs mt-1">Upload contracts, ID documents, or other files</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
         <div>
