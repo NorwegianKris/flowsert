@@ -194,6 +194,44 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          business_id: string
+          category: string
+          created_at: string
+          id: string
+          message: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          category: string
+          created_at?: string
+          id?: string
+          message: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           business_id: string

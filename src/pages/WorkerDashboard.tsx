@@ -3,6 +3,7 @@ import { useWorkerPersonnel } from '@/hooks/usePersonnel';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { WorkerInvitations } from '@/components/WorkerInvitations';
 import { ChatBot } from '@/components/ChatBot';
+import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, LogOut, User } from 'lucide-react';
@@ -34,10 +35,13 @@ export default function WorkerDashboard() {
               </p>
             </div>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-3">
+            <ReportFeedbackDialog />
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
       
