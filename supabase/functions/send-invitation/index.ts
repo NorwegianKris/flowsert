@@ -91,8 +91,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="font-size: 16px;">You've been invited to join ${companyName} as a <strong>${roleLabel}</strong>. ${roleDescription}</p>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${inviteLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                    Accept Invitation
+                  <a href="${inviteLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    Join
                   </a>
                 </div>
                 
