@@ -6,11 +6,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { getCertificateStatus, getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { useToast } from '@/hooks/use-toast';
-import { useWorkerPersonnel } from '@/hooks/usePersonnel';
-import { useAssignedProjects } from '@/components/AssignedProjects';
+import { useWorkerPersonnel, usePersonnel } from '@/hooks/usePersonnel';
+import { useAssignedProjects, } from '@/components/AssignedProjects';
+import { useProjects, Project } from '@/hooks/useProjects';
 import { supabase } from '@/integrations/supabase/client';
 import { Personnel } from '@/types';
-import { Project } from '@/hooks/useProjects';
 import { format } from 'date-fns';
 
 type Message = {
@@ -22,9 +22,14 @@ interface AvailabilityEntry {
   date: string;
   status: string;
   notes: string | null;
+  personnel_id: string;
 }
 
-function generateFullContext(
+interface ChatBotProps {
+  isAdmin?: boolean;
+}
+
+function generateWorkerContext(
   personnel: Personnel | null,
   projects: Project[],
   availability: AvailabilityEntry[]
@@ -126,7 +131,119 @@ ${projectsSection}
 ${availabilitySection}`;
 }
 
-export function ChatBot() {
+function generateAdminContext(
+  allPersonnel: Personnel[],
+  allProjects: Project[],
+  allAvailability: AvailabilityEntry[]
+) {
+  if (allPersonnel.length === 0 && allProjects.length === 0) {
+    return 'No data available.';
+  }
+
+  // Personnel Overview
+  const personnelSection = `
+=== PERSONNEL OVERVIEW (${allPersonnel.length} total) ===
+${allPersonnel.map(p => {
+    const validCerts = p.certificates.filter(c => getCertificateStatus(c.expiryDate) === 'valid').length;
+    const expiringCerts = p.certificates.filter(c => getCertificateStatus(c.expiryDate) === 'expiring').length;
+    const expiredCerts = p.certificates.filter(c => getCertificateStatus(c.expiryDate) === 'expired').length;
+    
+    return `
+  ${p.name}
+    Role: ${p.role}
+    Location: ${p.location}
+    Email: ${p.email}
+    Phone: ${p.phone}
+    Certificates: ${p.certificates.length} total (${validCerts} valid, ${expiringCerts} expiring soon, ${expiredCerts} expired)
+    ${p.certificates.map(cert => {
+      const status = getCertificateStatus(cert.expiryDate);
+      const daysLeft = getDaysUntilExpiry(cert.expiryDate);
+      const daysText = daysLeft === null 
+        ? 'No expiry' 
+        : daysLeft < 0 
+          ? `Expired ${Math.abs(daysLeft)} days ago`
+          : `${daysLeft} days left`;
+      return `      - ${cert.name}: ${status.toUpperCase()} (${daysText})`;
+    }).join('\n')}`;
+  }).join('\n')}`;
+
+  // Projects Overview
+  const activeProjects = allProjects.filter(p => p.status === 'active');
+  const pendingProjects = allProjects.filter(p => p.status === 'pending');
+  const completedProjects = allProjects.filter(p => p.status === 'completed');
+
+  const formatProjectWithAssigned = (p: Project) => {
+    const assignedNames = p.assignedPersonnel && p.assignedPersonnel.length > 0
+      ? allPersonnel.filter(pers => p.assignedPersonnel?.includes(pers.id)).map(pers => pers.name).join(', ') || 'None'
+      : 'None';
+    
+    const calendarItems = p.calendarItems && p.calendarItems.length > 0
+      ? p.calendarItems.map(item => `      - ${format(new Date(item.date), 'MMM d, yyyy')}: ${item.description}${item.isMilestone ? ' [MILESTONE]' : ''}`).join('\n')
+      : '      No scheduled events';
+    
+    return `
+  ${p.name} (${p.projectNumber || 'No number'})
+    Status: ${p.status.toUpperCase()}
+    Description: ${p.description}
+    Customer: ${p.customer || 'Not specified'}
+    Location: ${p.location || 'Not specified'}
+    Project Manager: ${p.projectManager || 'Not specified'}
+    Start Date: ${format(new Date(p.startDate), 'MMM d, yyyy')}
+    End Date: ${p.endDate ? format(new Date(p.endDate), 'MMM d, yyyy') : 'Ongoing'}
+    Assigned Personnel: ${assignedNames}
+    Calendar Events:
+${calendarItems}`;
+  };
+
+  const projectsSection = `
+=== PROJECTS OVERVIEW (${allProjects.length} total) ===
+
+Active Projects (${activeProjects.length}):
+${activeProjects.length > 0 ? activeProjects.map(formatProjectWithAssigned).join('\n') : '  No active projects'}
+
+Pending Projects (${pendingProjects.length}):
+${pendingProjects.length > 0 ? pendingProjects.map(formatProjectWithAssigned).join('\n') : '  No pending projects'}
+
+Completed Projects (${completedProjects.length}):
+${completedProjects.length > 0 ? completedProjects.map(formatProjectWithAssigned).join('\n') : '  No completed projects'}`;
+
+  // Team Availability Overview
+  const today = new Date();
+  const upcomingAvailability = allAvailability.filter(a => new Date(a.date) >= today);
+  
+  const availabilityByPerson = upcomingAvailability.reduce((acc, a) => {
+    const person = allPersonnel.find(p => p.id === a.personnel_id);
+    const personName = person?.name || 'Unknown';
+    if (!acc[personName]) acc[personName] = [];
+    acc[personName].push(a);
+    return acc;
+  }, {} as Record<string, AvailabilityEntry[]>);
+
+  const availabilitySection = Object.keys(availabilityByPerson).length > 0
+    ? `
+=== TEAM AVAILABILITY ===
+${Object.entries(availabilityByPerson).map(([name, entries]) => `
+  ${name}:
+${entries.slice(0, 10).map(a => `    - ${format(new Date(a.date), 'MMM d, yyyy')}: ${a.status.toUpperCase()}${a.notes ? ` (${a.notes})` : ''}`).join('\n')}`).join('\n')}`
+    : `
+=== TEAM AVAILABILITY ===
+  No upcoming availability entries recorded`;
+
+  // Summary Stats
+  const summarySection = `
+=== SUMMARY STATISTICS ===
+Total Personnel: ${allPersonnel.length}
+Total Projects: ${allProjects.length} (${activeProjects.length} active, ${pendingProjects.length} pending, ${completedProjects.length} completed)
+Certificates Expiring Soon: ${allPersonnel.reduce((acc, p) => acc + p.certificates.filter(c => getCertificateStatus(c.expiryDate) === 'expiring').length, 0)}
+Expired Certificates: ${allPersonnel.reduce((acc, p) => acc + p.certificates.filter(c => getCertificateStatus(c.expiryDate) === 'expired').length, 0)}`;
+
+  return `${summarySection}
+${personnelSection}
+${projectsSection}
+${availabilitySection}`;
+}
+
+export function ChatBot({ isAdmin = false }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -134,33 +251,57 @@ export function ChatBot() {
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { personnel } = useWorkerPersonnel();
-  const { projects } = useAssignedProjects(personnel?.id || '');
+  
+  // Worker data hooks
+  const { personnel: workerPersonnel } = useWorkerPersonnel();
+  const { projects: workerProjects } = useAssignedProjects(workerPersonnel?.id || '');
+  
+  // Admin data hooks
+  const { personnel: allPersonnel } = usePersonnel();
+  const { projects: allProjects } = useProjects();
 
-  // Fetch availability data when personnel is available
+  // Fetch availability data
   useEffect(() => {
     async function fetchAvailability() {
-      if (!personnel?.id) return;
-      
-      const { data, error } = await supabase
-        .from('availability')
-        .select('date, status, notes')
-        .eq('personnel_id', personnel.id)
-        .order('date', { ascending: true });
-      
-      if (!error && data) {
-        setAvailability(data);
+      if (isAdmin) {
+        // Fetch all availability for admin
+        const { data, error } = await supabase
+          .from('availability')
+          .select('date, status, notes, personnel_id')
+          .order('date', { ascending: true });
+        
+        if (!error && data) {
+          setAvailability(data);
+        }
+      } else if (workerPersonnel?.id) {
+        // Fetch only worker's availability
+        const { data, error } = await supabase
+          .from('availability')
+          .select('date, status, notes, personnel_id')
+          .eq('personnel_id', workerPersonnel.id)
+          .order('date', { ascending: true });
+        
+        if (!error && data) {
+          setAvailability(data);
+        }
       }
     }
     
     fetchAvailability();
-  }, [personnel?.id]);
+  }, [isAdmin, workerPersonnel?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const getContextData = () => {
+    if (isAdmin) {
+      return generateAdminContext(allPersonnel, allProjects, availability);
+    }
+    return generateWorkerContext(workerPersonnel, workerProjects, availability);
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -183,7 +324,8 @@ export function ChatBot() {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
-            contextData: generateFullContext(personnel, projects, availability),
+            contextData: getContextData(),
+            isAdmin,
           }),
         }
       );
@@ -288,8 +430,12 @@ export function ChatBot() {
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground text-sm py-8">
               <Bot className="h-12 w-12 mx-auto mb-3 text-primary/40" />
-              <p className="font-medium mb-1">Hi! I'm your Personal Assistant</p>
-              <p className="text-xs">Ask me anything about your profile, certificates, projects, or availability.</p>
+              <p className="font-medium mb-1">Hi! I'm your {isAdmin ? 'Admin' : 'Personal'} Assistant</p>
+              <p className="text-xs">
+                {isAdmin 
+                  ? 'Ask me about personnel, certificates, projects, calendars, and team availability.'
+                  : 'Ask me anything about your profile, certificates, projects, or availability.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
