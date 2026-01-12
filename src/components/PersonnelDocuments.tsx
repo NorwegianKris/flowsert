@@ -39,7 +39,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import {
-  Upload,
+  Plus,
   FileText,
   Trash2,
   Download,
@@ -75,6 +75,8 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   const [documents, setDocuments] = useState<PersonnelDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isEditSelectOpen, setIsEditSelectOpen] = useState(false);
+  const [isRemoveSelectOpen, setIsRemoveSelectOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<PersonnelDocument | null>(null);
@@ -302,19 +304,38 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   return (
     <Card className="border-border/50">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          Documents
-        </CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsUploadOpen(true)}
-          className="gap-1"
-        >
-          <Upload className="h-4 w-4" />
-          Upload
-        </Button>
+        <CardTitle className="text-lg font-semibold">Documents</CardTitle>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsUploadOpen(true)}
+            className="gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            Add
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditSelectOpen(true)}
+            className="gap-1"
+            disabled={documents.length === 0}
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsRemoveSelectOpen(true)}
+            className="gap-1 text-destructive hover:text-destructive"
+            disabled={documents.length === 0}
+          >
+            <Trash2 className="h-4 w-4" />
+            Remove
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filter by category */}
@@ -537,6 +558,75 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
               </Button>
               <Button onClick={handleEditDocument} disabled={!editName.trim() || isSaving}>
                 {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Select Dialog */}
+        <Dialog open={isEditSelectOpen} onOpenChange={setIsEditSelectOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Select Document to Edit</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 py-4 max-h-[400px] overflow-y-auto">
+              {documents.map((doc) => (
+                <button
+                  key={doc.id}
+                  onClick={() => {
+                    setIsEditSelectOpen(false);
+                    openEditDialog(doc);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                >
+                  <File className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{doc.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {getCategoryName(doc.categoryId)} • {format(parseISO(doc.createdAt), 'dd MMM yyyy')}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditSelectOpen(false)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Remove Select Dialog */}
+        <Dialog open={isRemoveSelectOpen} onOpenChange={setIsRemoveSelectOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Select Document to Remove</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 py-4 max-h-[400px] overflow-y-auto">
+              {documents.map((doc) => (
+                <button
+                  key={doc.id}
+                  onClick={() => {
+                    setIsRemoveSelectOpen(false);
+                    setDocumentToDelete(doc);
+                    setIsDeleteDialogOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-destructive/10 transition-colors text-left group"
+                >
+                  <File className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate group-hover:text-destructive">{doc.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {getCategoryName(doc.categoryId)} • {format(parseISO(doc.createdAt), 'dd MMM yyyy')}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRemoveSelectOpen(false)}>
+                Cancel
               </Button>
             </DialogFooter>
           </DialogContent>
