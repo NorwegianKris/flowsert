@@ -76,7 +76,31 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
     // Send invitations to personnel marked for invitation
     if (createdProject && invitedPersonnelIds.length > 0) {
-      const result = await sendBulkInvitations(createdProject.id, invitedPersonnelIds);
+      // Get personnel data for email sending
+      const invitedPersonnelData = invitedPersonnelIds.map(id => {
+        const person = personnel.find(p => p.id === id);
+        return {
+          id,
+          email: person?.email || '',
+          name: person?.name || '',
+        };
+      }).filter(p => p.email);
+
+      const projectDetails = {
+        name: createdProject.name,
+        description: createdProject.description,
+        startDate: createdProject.startDate,
+        endDate: createdProject.endDate,
+        location: createdProject.location,
+        projectManager: createdProject.projectManager,
+      };
+
+      const result = await sendBulkInvitations(
+        createdProject.id, 
+        invitedPersonnelIds,
+        invitedPersonnelData,
+        projectDetails
+      );
       if (result.success > 0) {
         toast.success(`Sent ${result.success} project invitation${result.success > 1 ? 's' : ''}`);
       }
