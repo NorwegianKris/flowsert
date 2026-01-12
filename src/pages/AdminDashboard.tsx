@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Tag } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -246,9 +246,9 @@ export default function AdminDashboard() {
                       <Shield className="h-4 w-4" />
                       Admins
                     </TabsTrigger>
-                    <TabsTrigger value="categories" className="flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      Categories
+                    <TabsTrigger value="personnel" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Personnel
                     </TabsTrigger>
                   </TabsList>
                   
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
                     <AdminOverview />
                   </TabsContent>
                   
-                  <TabsContent value="categories" className="space-y-6">
+                  <TabsContent value="personnel" className="space-y-6">
                     <CertificateCategoriesManager />
                     <DocumentCategoriesManager />
                   </TabsContent>
