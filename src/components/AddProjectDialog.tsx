@@ -175,7 +175,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     if (!category) return null;
     const lowerCategory = category.toLowerCase();
     if (lowerCategory.includes('fixed') || lowerCategory.includes('employee')) {
-      return { label: 'Fixed', variant: 'default' as const };
+      return { label: 'Fixed Employee', variant: 'default' as const };
     }
     if (lowerCategory.includes('freelance') || lowerCategory.includes('contractor')) {
       return { label: 'Freelancer', variant: 'secondary' as const };
