@@ -36,13 +36,12 @@ import {
   Folder,
   Trash2,
   Download,
-  FolderPlus,
 } from 'lucide-react';
 
 interface DocumentCategory {
   id: string;
   name: string;
-  personnelId: string;
+  businessId: string;
 }
 
 interface PersonnelDocument {
@@ -65,13 +64,11 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   const [documents, setDocuments] = useState<PersonnelDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<PersonnelDocument | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [documentName, setDocumentName] = useState('');
-  const [newCategoryName, setNewCategoryName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
@@ -84,9 +81,8 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
     try {
       const [categoriesRes, documentsRes] = await Promise.all([
         supabase
-          .from('personnel_document_categories')
+          .from('document_categories')
           .select('*')
-          .eq('personnel_id', personnelId)
           .order('name'),
         supabase
           .from('personnel_documents')
@@ -102,7 +98,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
         categoriesRes.data.map((c) => ({
           id: c.id,
           name: c.name,
-          personnelId: c.personnel_id,
+          businessId: c.business_id,
         }))
       );
 
@@ -180,31 +176,6 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
     }
   };
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error('Please enter a category name');
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('personnel_document_categories')
-        .insert({
-          personnel_id: personnelId,
-          name: newCategoryName.trim(),
-        });
-
-      if (error) throw error;
-
-      toast.success('Category created');
-      setIsCategoryDialogOpen(false);
-      setNewCategoryName('');
-      fetchData();
-    } catch (error) {
-      console.error('Error creating category:', error);
-      toast.error('Failed to create category');
-    }
-  };
 
   const handleDeleteDocument = async () => {
     if (!documentToDelete) return;
@@ -285,26 +256,15 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
           <FileText className="h-5 w-5 text-primary" />
           Documents
         </CardTitle>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCategoryDialogOpen(true)}
-            className="gap-1"
-          >
-            <FolderPlus className="h-4 w-4" />
-            Category
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsUploadOpen(true)}
-            className="gap-1"
-          >
-            <Upload className="h-4 w-4" />
-            Upload
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsUploadOpen(true)}
+          className="gap-1"
+        >
+          <Upload className="h-4 w-4" />
+          Upload
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filter by category */}
@@ -441,32 +401,6 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
               <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
                 {isUploading ? 'Uploading...' : 'Upload'}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* New Category Dialog */}
-        <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Category</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoryName">Category Name</Label>
-                <Input
-                  id="categoryName"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="e.g., Contracts, ID Documents, Certifications"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateCategory}>Create</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
