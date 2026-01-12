@@ -20,6 +20,7 @@ export function DashboardHeader({ searchQuery, onSearchChange }: DashboardHeader
           </div>
           
           <div className="flex items-center gap-3">
+            <ReportFeedbackDialog />
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -30,7 +31,6 @@ export function DashboardHeader({ searchQuery, onSearchChange }: DashboardHeader
                 className="pl-10 bg-background border-border"
               />
             </div>
-            <ReportFeedbackDialog />
           </div>
         </div>
       </div>

@@ -65,7 +65,7 @@ export function ReportFeedbackDialog() {
       <DialogTrigger asChild>
         <Button variant="destructive" size="sm" className="gap-2">
           <Bug className="h-4 w-4" />
-          Report Issue
+          Report Improvement or Issue
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
