@@ -424,6 +424,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         onOpenChange={setIsRequestProjectOpen}
         personnelId={personnel.id}
         personnelName={personnel.name}
+        personnelEmail={personnel.email}
         projects={projects}
         existingInvitations={existingInvitationProjectIds}
       />
