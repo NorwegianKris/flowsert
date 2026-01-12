@@ -47,6 +47,8 @@ import {
   Tag,
   File,
   Image,
+  ExternalLink,
+  Calendar,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -79,6 +81,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   const [isRemoveSelectOpen, setIsRemoveSelectOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<PersonnelDocument | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<PersonnelDocument | null>(null);
   const [documentToEdit, setDocumentToEdit] = useState<PersonnelDocument | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -380,7 +383,8 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                   return (
                     <TableRow 
                       key={doc.id} 
-                      className="group hover:bg-muted/50 transition-colors"
+                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setSelectedDocument(doc)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -418,6 +422,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                             size="icon"
                             asChild
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
                               <Download className="h-4 w-4" />
@@ -426,7 +431,10 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => openEditDialog(doc)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditDialog(doc);
+                            }}
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
                           >
                             <Pencil className="h-4 w-4" />
@@ -434,7 +442,8 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setDocumentToDelete(doc);
                               setIsDeleteDialogOpen(true);
                             }}
@@ -461,6 +470,127 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
             <p className="text-xs mt-1">Upload contracts, ID documents, or other files</p>
           </div>
         )}
+
+        {/* Document Preview Dialog */}
+        <Dialog open={!!selectedDocument} onOpenChange={(open) => !open && setSelectedDocument(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Document Details
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedDocument && (
+              <div className="space-y-6">
+                {/* Document Preview */}
+                <div className="border rounded-lg overflow-hidden bg-muted/20">
+                  <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                    <span className="text-sm font-medium">Document Preview</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDocument(null);
+                          openEditDialog(selectedDocument);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(selectedDocument.fileUrl, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Open Full Size
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-4 flex justify-center">
+                    {selectedDocument.fileType?.startsWith('image/') ? (
+                      <img
+                        src={selectedDocument.fileUrl}
+                        alt={selectedDocument.name}
+                        className="max-h-[400px] object-contain rounded"
+                      />
+                    ) : selectedDocument.fileType === 'application/pdf' ? (
+                      <iframe
+                        src={selectedDocument.fileUrl}
+                        title={selectedDocument.name}
+                        className="w-full h-[500px] rounded"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 py-8">
+                        <File className="h-16 w-16 text-muted-foreground" />
+                        <p className="text-muted-foreground">Document available</p>
+                        <Button
+                          variant="outline"
+                          onClick={() => window.open(selectedDocument.fileUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Download Document
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Document Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
+                    <FileText className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Document Name</div>
+                      <div className="font-medium">{selectedDocument.name}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
+                    <Tag className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Category</div>
+                      <div className="font-medium">{getCategoryName(selectedDocument.categoryId)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
+                    <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Date Uploaded</div>
+                      <div className="font-medium">
+                        {format(parseISO(selectedDocument.createdAt), 'dd MMMM yyyy')}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
+                    <File className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">File Size</div>
+                      <div className="font-medium">{formatFileSize(selectedDocument.fileSize)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 col-span-2">
+                    <File className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">File Type</div>
+                      <div className="font-medium">{selectedDocument.fileType || 'Unknown'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Document ID */}
+                <div className="text-center text-xs text-muted-foreground border-t pt-4">
+                  Document ID: {selectedDocument.id}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Upload Dialog */}
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
