@@ -13,6 +13,7 @@ interface InvitationEmailRequest {
   workerName: string;
   inviteLink: string;
   businessName?: string;
+  isAdmin?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -24,11 +25,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, workerName, inviteLink, businessName }: InvitationEmailRequest = await req.json();
+    const { to, workerName, inviteLink, businessName, isAdmin }: InvitationEmailRequest = await req.json();
 
     console.log(`Sending invitation email to: ${to}`);
-    console.log(`Worker name: ${workerName}`);
+    console.log(`Name: ${workerName}`);
     console.log(`Invite link: ${inviteLink}`);
+    console.log(`Is admin invitation: ${isAdmin || false}`);
 
     if (!to || !workerName || !inviteLink) {
       console.error("Missing required fields");
@@ -53,6 +55,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const companyName = businessName || "Your Company";
+    const roleLabel = isAdmin ? "Administrator" : "team member";
+    const roleDescription = isAdmin 
+      ? "As an administrator, you'll have full access to manage team members, projects, and settings."
+      : "Click the button below to create your account and get started.";
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -63,7 +69,9 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: `FlowSert <noreply@flowsert.com>`,
         to: [to],
-        subject: `You've been invited to join ${companyName}`,
+        subject: isAdmin 
+          ? `You've been invited as an Admin to ${companyName}`
+          : `You've been invited to join ${companyName}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -74,12 +82,13 @@ const handler = async (req: Request): Promise<Response> => {
             <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
                 <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to ${companyName}!</h1>
+                ${isAdmin ? '<p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Administrator Invitation</p>' : ''}
               </div>
               
               <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
                 <p style="font-size: 16px;">Hi <strong>${workerName}</strong>,</p>
                 
-                <p style="font-size: 16px;">You've been invited to join ${companyName}'s team. Click the button below to create your account and get started.</p>
+                <p style="font-size: 16px;">You've been invited to join ${companyName} as a <strong>${roleLabel}</strong>. ${roleDescription}</p>
                 
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="${inviteLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
