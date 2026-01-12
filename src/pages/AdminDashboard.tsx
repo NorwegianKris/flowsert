@@ -27,6 +27,7 @@ export default function AdminDashboard() {
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [previousProject, setPreviousProject] = useState<Project | null>(null); // Track if coming from a project
+  const [activeTab, setActiveTab] = useState('personnel');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
@@ -120,7 +121,10 @@ export default function AdminDashboard() {
           <ProjectDetail
             project={selectedProject}
             personnel={personnel}
-            onBack={() => setSelectedProject(null)}
+            onBack={() => {
+              setSelectedProject(null);
+              setActiveTab('projects');
+            }}
             onUpdateProject={handleUpdateProject}
             onPersonnelClick={(person) => {
               setPreviousProject(selectedProject);
@@ -175,7 +179,7 @@ export default function AdminDashboard() {
 
         <DashboardStats personnel={personnel} />
         
-        <Tabs defaultValue="personnel" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-primary p-1.5 h-12">
             <TabsTrigger value="personnel" className="flex items-center gap-2 text-primary-foreground data-[state=active]:bg-primary-foreground data-[state=active]:text-primary text-base">
               <Users className="h-5 w-5" />
