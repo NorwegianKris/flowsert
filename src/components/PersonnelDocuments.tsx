@@ -516,12 +516,12 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                         alt={selectedDocument.name}
                         className="max-h-[400px] object-contain rounded"
                       />
-                    ) : selectedDocument.fileType === 'application/pdf' ? (
-                      <iframe
-                        src={selectedDocument.fileUrl}
-                        title={selectedDocument.name}
-                        className="w-full h-[500px] rounded"
-                      />
+                  ) : selectedDocument.fileType === 'application/pdf' ? (
+                    <iframe
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedDocument.fileUrl)}&embedded=true`}
+                      title={selectedDocument.name}
+                      className="w-full h-[500px] rounded border-0"
+                    />
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-muted-foreground" />
