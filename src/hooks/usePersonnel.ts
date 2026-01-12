@@ -137,86 +137,86 @@ export function useWorkerPersonnel() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchWorkerPersonnel = async () => {
-      if (!user) {
+  const fetchWorkerPersonnel = async () => {
+    if (!user) {
+      setPersonnel(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Fetch the worker's own personnel record (RLS enforces this)
+      const { data: personnelData, error: personnelError } = await supabase
+        .from('personnel')
+        .select('*')
+        .maybeSingle();
+
+      if (personnelError) throw personnelError;
+
+      if (!personnelData) {
         setPersonnel(null);
         setLoading(false);
         return;
       }
 
-      try {
-        // Fetch the worker's own personnel record (RLS enforces this)
-        const { data: personnelData, error: personnelError } = await supabase
-          .from('personnel')
-          .select('*')
-          .maybeSingle();
+      const p = personnelData as DbPersonnel;
 
-        if (personnelError) throw personnelError;
+      // Fetch certificates with category
+      const { data: certificatesData, error: certError } = await supabase
+        .from('certificates')
+        .select('*, certificate_categories(name)')
+        .eq('personnel_id', p.id);
 
-        if (!personnelData) {
-          setPersonnel(null);
-          setLoading(false);
-          return;
-        }
+      if (certError) throw certError;
 
-        const p = personnelData as DbPersonnel;
+      const mapped: Personnel = {
+        id: p.id,
+        name: p.name,
+        role: p.role,
+        location: p.location,
+        email: p.email,
+        phone: p.phone,
+        avatarUrl: p.avatar_url || undefined,
+        category: (p.category as PersonnelCategory) || undefined,
+        nationality: p.nationality || undefined,
+        gender: p.gender || undefined,
+        address: p.address || undefined,
+        postalCode: p.postal_code || undefined,
+        postalAddress: p.postal_address || undefined,
+        nationalId: p.national_id || undefined,
+        salaryAccountNumber: p.salary_account_number || undefined,
+        language: p.language || undefined,
+        nextOfKinName: p.next_of_kin_name || undefined,
+        nextOfKinRelation: p.next_of_kin_relation || undefined,
+        nextOfKinPhone: p.next_of_kin_phone || undefined,
+        certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
+          id: c.id,
+          name: c.name,
+          dateOfIssue: c.date_of_issue,
+          expiryDate: c.expiry_date,
+          placeOfIssue: c.place_of_issue,
+          issuingAuthority: c.issuing_authority || undefined,
+          documentUrl: c.document_url || undefined,
+          category: c.certificate_categories?.name || undefined,
+        })),
+      };
 
-        // Fetch certificates with category
-        const { data: certificatesData, error: certError } = await supabase
-          .from('certificates')
-          .select('*, certificate_categories(name)')
-          .eq('personnel_id', p.id);
+      setPersonnel(mapped);
+    } catch (error) {
+      console.error('Error fetching worker personnel:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load your profile',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        if (certError) throw certError;
-
-        const mapped: Personnel = {
-          id: p.id,
-          name: p.name,
-          role: p.role,
-          location: p.location,
-          email: p.email,
-          phone: p.phone,
-          avatarUrl: p.avatar_url || undefined,
-          category: (p.category as PersonnelCategory) || undefined,
-          nationality: p.nationality || undefined,
-          gender: p.gender || undefined,
-          address: p.address || undefined,
-          postalCode: p.postal_code || undefined,
-          postalAddress: p.postal_address || undefined,
-          nationalId: p.national_id || undefined,
-          salaryAccountNumber: p.salary_account_number || undefined,
-          language: p.language || undefined,
-          nextOfKinName: p.next_of_kin_name || undefined,
-          nextOfKinRelation: p.next_of_kin_relation || undefined,
-          nextOfKinPhone: p.next_of_kin_phone || undefined,
-          certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
-            id: c.id,
-            name: c.name,
-            dateOfIssue: c.date_of_issue,
-            expiryDate: c.expiry_date,
-            placeOfIssue: c.place_of_issue,
-            issuingAuthority: c.issuing_authority || undefined,
-            documentUrl: c.document_url || undefined,
-            category: c.certificate_categories?.name || undefined,
-          })),
-        };
-
-        setPersonnel(mapped);
-      } catch (error) {
-        console.error('Error fetching worker personnel:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load your profile',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchWorkerPersonnel();
   }, [user]);
 
-  return { personnel, loading };
+  return { personnel, loading, refetch: fetchWorkerPersonnel };
 }

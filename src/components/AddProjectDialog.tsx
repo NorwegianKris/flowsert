@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,12 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Personnel } from '@/types';
 import { Project } from '@/hooks/useProjects';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useProjectInvitations } from '@/hooks/useProjectInvitations';
+import { toast } from 'sonner';
 
 interface AddProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   personnel: Personnel[];
-  onProjectAdded: (project: Omit<Project, 'id' | 'calendarItems'>) => void;
+  onProjectAdded: (project: Omit<Project, 'id' | 'calendarItems'>) => Promise<Project | null>;
 }
 
 export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded }: AddProjectDialogProps) {
@@ -28,17 +30,22 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [projectNumber, setProjectNumber] = useState('');
   const [location, setLocation] = useState('');
   const [projectManager, setProjectManager] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { sendBulkInvitations } = useProjectInvitations();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setIsSubmitting(true);
+
     const newProject: Omit<Project, 'id' | 'calendarItems'> = {
       name,
       description,
       startDate,
       endDate: endDate || undefined,
       status: 'active',
-      assignedPersonnel: selectedPersonnel,
+      assignedPersonnel: [], // Start empty - personnel will be added when they accept
       customer: customer.trim() || undefined,
       workCategory: workCategory.trim() || undefined,
       projectNumber: projectNumber.trim() || undefined,
@@ -46,7 +53,20 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       projectManager: projectManager.trim() || undefined,
     };
 
-    onProjectAdded(newProject);
+    const createdProject = await onProjectAdded(newProject);
+
+    // Send invitations to selected personnel
+    if (createdProject && selectedPersonnel.length > 0) {
+      const result = await sendBulkInvitations(createdProject.id, selectedPersonnel);
+      if (result.success > 0) {
+        toast.success(`Sent ${result.success} project invitation${result.success > 1 ? 's' : ''}`);
+      }
+      if (result.failed > 0) {
+        toast.error(`Failed to send ${result.failed} invitation${result.failed > 1 ? 's' : ''}`);
+      }
+    }
+
+    setIsSubmitting(false);
     resetForm();
     onOpenChange(false);
   };
@@ -93,6 +113,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>New Project</DialogTitle>
+          <DialogDescription>
+            Create a new project and send invitations to personnel. Selected personnel will receive an invitation to accept or decline.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +217,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
           </div>
 
           <div className="space-y-2">
-            <Label>Assign Personnel</Label>
+            <Label>Invite Personnel</Label>
+            <p className="text-xs text-muted-foreground">
+              Selected personnel will receive an invitation to join this project.
+            </p>
             <ScrollArea className="h-48 border rounded-md p-2">
               {personnel.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
@@ -228,16 +254,18 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
             </ScrollArea>
             {selectedPersonnel.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                {selectedPersonnel.length} personnel selected
+                {selectedPersonnel.length} personnel will receive invitations
               </p>
             )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">Create Project</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Project'}
+            </Button>
           </div>
         </form>
       </DialogContent>

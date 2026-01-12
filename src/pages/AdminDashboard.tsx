@@ -48,8 +48,8 @@ export default function AdminDashboard() {
     );
   }, [searchQuery, personnel]);
 
-  const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>) => {
-    await addProject(projectData);
+  const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
+    return await addProject(projectData);
   };
 
   const handleUpdateProject = async (updatedProject: Project) => {

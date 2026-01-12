@@ -12,16 +12,18 @@ import { EditCertificateSelectDialog } from '@/components/EditCertificateSelectD
 import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
 import { AssignedProjects } from '@/components/AssignedProjects';
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
+import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { Personnel } from '@/types';
-import { Project } from '@/hooks/useProjects';
+import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
+import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
 import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send
 } from 'lucide-react';
 import { PersonnelDocuments } from './PersonnelDocuments';
 
@@ -38,10 +40,16 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
   const [isEditCertSelectOpen, setIsEditCertSelectOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isRequestProjectOpen, setIsRequestProjectOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   // Get all personnel for the project detail view
   const { personnel: allPersonnel } = usePersonnel();
+  const { projects } = useProjects();
+  const { getInvitationsForPersonnel } = useProjectInvitations();
+  
+  // Get existing invitation project IDs for this personnel
+  const existingInvitationProjectIds = getInvitationsForPersonnel(personnel.id).map(inv => inv.projectId);
   
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
@@ -81,16 +89,27 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
   return (
     <div className="space-y-6">
-      {!hideBackButton && (
+      <div className="flex items-center justify-between">
+        {!hideBackButton && (
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {backLabel || 'Back to Personnel'}
+          </Button>
+        )}
+        {hideBackButton && <div />}
+        
         <Button
-          variant="ghost"
-          onClick={onBack}
-          className="gap-2 text-muted-foreground hover:text-foreground"
+          onClick={() => setIsRequestProjectOpen(true)}
+          className="gap-2"
         >
-          <ArrowLeft className="h-4 w-4" />
-          {backLabel || 'Back to Personnel'}
+          <Send className="h-4 w-4" />
+          Request for Project
         </Button>
-      )}
+      </div>
 
       <Card className="border-border/50">
         <CardContent className="p-6">
@@ -390,6 +409,15 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         onOpenChange={setIsEditProfileOpen}
         personnel={personnel}
         onSuccess={handleProfileUpdate}
+      />
+
+      <RequestProjectDialog
+        open={isRequestProjectOpen}
+        onOpenChange={setIsRequestProjectOpen}
+        personnelId={personnel.id}
+        personnelName={personnel.name}
+        projects={projects}
+        existingInvitations={existingInvitationProjectIds}
       />
     </div>
   );
