@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO, isBefore } from 'date-fns';
 import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Certificate } from '@/types';
@@ -60,6 +60,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<Date | null>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
   // Fetch assigned projects for this personnel
@@ -186,13 +189,89 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const handleRangeSelect = (range: DateRange | undefined) => {
-    setSelectedRange(range);
+    // If we're not dragging, use the normal selection behavior
+    if (!isDragging) {
+      setSelectedRange(range);
+      
+      // When selecting dates, update defaults based on existing entries
+      if (range?.from) {
+        if (!range.to || isSameDay(range.from, range.to)) {
+          const existing = availability.find((a) =>
+            isSameDay(new Date(a.date), range.from!)
+          );
+          if (existing) {
+            setSelectedStatus(existing.status as AvailabilityStatus);
+            setNotes(existing.notes || '');
+          } else {
+            setSelectedStatus('available');
+            setNotes('');
+          }
+        } else {
+          // For range selection, reset to defaults
+          setSelectedStatus('available');
+          setNotes('');
+        }
+      }
+    }
+  };
+
+  // Get date from a calendar day button element
+  const getDateFromElement = useCallback((element: Element | null): Date | null => {
+    if (!element) return null;
     
-    // When selecting dates, update defaults based on existing entries
-    if (range?.from) {
-      if (!range.to || isSameDay(range.from, range.to)) {
+    // The button has a name attribute with the date in YYYY-MM-DD format
+    const button = element.closest('button[name]');
+    if (button) {
+      const dateStr = button.getAttribute('name');
+      if (dateStr) {
+        const date = parseISO(dateStr);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+    }
+    return null;
+  }, []);
+
+  // Handle mouse down on calendar to start drag selection
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const date = getDateFromElement(e.target as Element);
+    if (date) {
+      setIsDragging(true);
+      setDragStart(date);
+      setSelectedRange({ from: date, to: undefined });
+    }
+  }, [getDateFromElement]);
+
+  // Handle mouse move to extend the selection
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    
+    const date = getDateFromElement(e.target as Element);
+    if (date && !isSameDay(date, selectedRange?.to || dragStart)) {
+      // Ensure from is always before to
+      if (isBefore(date, dragStart)) {
+        setSelectedRange({ from: date, to: dragStart });
+      } else {
+        setSelectedRange({ from: dragStart, to: date });
+      }
+    }
+  }, [isDragging, dragStart, selectedRange, getDateFromElement]);
+
+  // Handle mouse up to finalize selection
+  const handleMouseUp = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+      
+      // Reset to defaults for range selection
+      if (selectedRange?.from && selectedRange?.to && !isSameDay(selectedRange.from, selectedRange.to)) {
+        setSelectedStatus('available');
+        setNotes('');
+      } else if (selectedRange?.from) {
+        // Single day selected, check for existing entry
         const existing = availability.find((a) =>
-          isSameDay(new Date(a.date), range.from!)
+          isSameDay(new Date(a.date), selectedRange.from!)
         );
         if (existing) {
           setSelectedStatus(existing.status as AvailabilityStatus);
@@ -201,13 +280,17 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           setSelectedStatus('available');
           setNotes('');
         }
-      } else {
-        // For range selection, reset to defaults
-        setSelectedStatus('available');
-        setNotes('');
       }
     }
-  };
+  }, [isDragging, selectedRange, availability]);
+
+  // Handle mouse leave to finalize if dragging
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+    }
+  }, [isDragging]);
 
   const getDatesInRange = (): Date[] => {
     if (!selectedRange?.from) return [];
@@ -402,15 +485,28 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               </div>
             </div>
 
-            <Calendar
-              mode="range"
-              selected={selectedRange}
-              onSelect={handleRangeSelect}
-              modifiers={modifiers}
-              modifiersStyles={modifiersStyles}
-              className="rounded-md border border-border"
-              numberOfMonths={1}
-            />
+            <div 
+              ref={calendarRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              className="select-none"
+            >
+              <Calendar
+                mode="range"
+                selected={selectedRange}
+                onSelect={handleRangeSelect}
+                modifiers={modifiers}
+                modifiersStyles={modifiersStyles}
+                className="rounded-md border border-border"
+                numberOfMonths={1}
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              💡 Tip: Click and drag to select a date range, or click two dates to define a period.
+            </p>
 
             {selectedRange?.from && (
               <Card className="mt-4 border-border/50">
