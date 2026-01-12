@@ -719,6 +719,18 @@ export type Database = {
         Args: { _personnel_id: string; _user_id: string }
         Returns: boolean
       }
+      get_invitation_by_token: {
+        Args: { lookup_token: string }
+        Returns: {
+          business_id: string
+          email: string
+          expires_at: string
+          id: string
+          personnel_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -729,6 +741,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      validate_invitation_token_access: {
+        Args: { invitation_token: string; lookup_token: string }
         Returns: boolean
       }
     }
