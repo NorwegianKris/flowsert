@@ -100,7 +100,17 @@ export function useProjectInvitations() {
 
   const sendInvitation = async (
     projectId: string,
-    personnelId: string
+    personnelId: string,
+    personnelEmail?: string,
+    personnelName?: string,
+    projectDetails?: {
+      name?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      location?: string;
+      projectManager?: string;
+    }
   ): Promise<boolean> => {
     try {
       // Check if an invitation already exists for this project/personnel combination
@@ -131,6 +141,20 @@ export function useProjectInvitations() {
 
         if (updateError) throw updateError;
         
+        // Send email notification for re-invitation
+        if (personnelEmail && personnelName && projectDetails?.name) {
+          await sendProjectInvitationEmail(
+            personnelEmail,
+            personnelName,
+            projectDetails.name,
+            projectDetails.description,
+            projectDetails.startDate,
+            projectDetails.endDate,
+            projectDetails.location,
+            projectDetails.projectManager
+          );
+        }
+        
         await fetchInvitations();
         toast.success('Invitation re-sent successfully');
         return true;
@@ -147,6 +171,20 @@ export function useProjectInvitations() {
 
       if (error) throw error;
 
+      // Send email notification for new invitation
+      if (personnelEmail && personnelName && projectDetails?.name) {
+        await sendProjectInvitationEmail(
+          personnelEmail,
+          personnelName,
+          projectDetails.name,
+          projectDetails.description,
+          projectDetails.startDate,
+          projectDetails.endDate,
+          projectDetails.location,
+          projectDetails.projectManager
+        );
+      }
+
       await fetchInvitations();
       return true;
     } catch (error) {
@@ -156,9 +194,52 @@ export function useProjectInvitations() {
     }
   };
 
+  const sendProjectInvitationEmail = async (
+    to: string,
+    personnelName: string,
+    projectName: string,
+    projectDescription?: string,
+    projectStartDate?: string,
+    projectEndDate?: string,
+    projectLocation?: string,
+    projectManager?: string
+  ) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-project-invitation', {
+        body: {
+          to,
+          personnelName,
+          projectName,
+          projectDescription,
+          projectStartDate,
+          projectEndDate,
+          projectLocation,
+          projectManager,
+        },
+      });
+
+      if (error) {
+        console.error('Failed to send invitation email:', error);
+      } else {
+        console.log('Project invitation email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error invoking send-project-invitation function:', error);
+    }
+  };
+
   const sendBulkInvitations = async (
     projectId: string,
-    personnelIds: string[]
+    personnelIds: string[],
+    personnelData?: Array<{ id: string; email: string; name: string }>,
+    projectDetails?: {
+      name?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      location?: string;
+      projectManager?: string;
+    }
   ): Promise<{ success: number; failed: number }> => {
     let success = 0;
     let failed = 0;
@@ -177,6 +258,21 @@ export function useProjectInvitations() {
           failed++;
         } else {
           success++;
+          
+          // Send email if personnel data and project details are provided
+          const person = personnelData?.find(p => p.id === personnelId);
+          if (person && projectDetails?.name) {
+            await sendProjectInvitationEmail(
+              person.email,
+              person.name,
+              projectDetails.name,
+              projectDetails.description,
+              projectDetails.startDate,
+              projectDetails.endDate,
+              projectDetails.location,
+              projectDetails.projectManager
+            );
+          }
         }
       } catch {
         failed++;

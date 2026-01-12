@@ -53,6 +53,7 @@ export default function WorkerDashboard() {
               hideBackButton
               onRefresh={refetch}
               showRequestProject={false}
+              hideInvitations
             />
           </>
         ) : (

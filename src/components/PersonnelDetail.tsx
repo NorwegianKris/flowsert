@@ -35,9 +35,10 @@ interface PersonnelDetailProps {
   onRefresh?: () => void;
   backLabel?: string;
   showRequestProject?: boolean;
+  hideInvitations?: boolean;
 }
 
-export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel, showRequestProject = true }: PersonnelDetailProps) {
+export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel, showRequestProject = true, hideInvitations = false }: PersonnelDetailProps) {
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
   const [isEditCertSelectOpen, setIsEditCertSelectOpen] = useState(false);
@@ -260,7 +261,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       </Card>
 
       {/* Pending Invitations Section */}
-      <PersonnelInvitations personnelId={personnel.id} />
+      {!hideInvitations && <PersonnelInvitations personnelId={personnel.id} />}
 
       {/* Assigned Projects Section - moved up */}
       <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />
