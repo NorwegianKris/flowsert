@@ -57,10 +57,6 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
     return null;
   }
 
-  if (pendingInvitations.length === 0) {
-    return null;
-  }
-
   return (
     <>
       <Card className="border-border/50 border-primary/30 bg-primary/5">
@@ -74,53 +70,59 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {pendingInvitations.map((invitation) => (
-              <div
-                key={invitation.id}
-                onClick={() => setSelectedInvitation(invitation)}
-                className="flex items-center justify-between gap-4 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <FolderOpen className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {invitation.projectName || 'Project Invitation'}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        Invited {new Date(invitation.invitedAt).toLocaleDateString()}
-                      </span>
+          {pendingInvitations.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No pending invitations
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {pendingInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  onClick={() => setSelectedInvitation(invitation)}
+                  className="flex items-center justify-between gap-4 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FolderOpen className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {invitation.projectName || 'Project Invitation'}
+                      </p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          Invited {new Date(invitation.invitedAt).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleRespond(invitation.id, false, e)}
+                      disabled={respondingId === invitation.id}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Decline
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => handleRespond(invitation.id, true, e)}
+                      disabled={respondingId === invitation.id}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Accept
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => handleRespond(invitation.id, false, e)}
-                    disabled={respondingId === invitation.id}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Decline
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={(e) => handleRespond(invitation.id, true, e)}
-                    disabled={respondingId === invitation.id}
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Accept
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
