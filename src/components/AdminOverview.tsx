@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Mail, Loader2 } from 'lucide-react';
+import { Shield, Mail, Loader2, UserPlus } from 'lucide-react';
+import { InviteAdminDialog } from './InviteAdminDialog';
 
 interface AdminUser {
   id: string;
@@ -15,6 +17,7 @@ interface AdminUser {
 export function AdminOverview() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const { profile } = useAuth();
 
   useEffect(() => {
@@ -96,16 +99,25 @@ export function AdminOverview() {
   }
 
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          Admin Users
-          <Badge variant="secondary" className="ml-2">
-            {admins.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
+    <>
+      <Card className="border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            Admin Users
+            <Badge variant="secondary" className="ml-2">
+              {admins.length}
+            </Badge>
+          </CardTitle>
+          <Button
+            size="sm"
+            onClick={() => setInviteDialogOpen(true)}
+            className="gap-1"
+          >
+            <UserPlus className="h-4 w-4" />
+            Invite Admin
+          </Button>
+        </CardHeader>
       <CardContent>
         {admins.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">
@@ -141,7 +153,13 @@ export function AdminOverview() {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <InviteAdminDialog
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+      />
+    </>
   );
 }
