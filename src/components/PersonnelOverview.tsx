@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Personnel } from '@/types';
-import { Users, Briefcase } from 'lucide-react';
+import { Users, Mail } from 'lucide-react';
 
 interface PersonnelOverviewProps {
   personnel: Personnel[];
@@ -53,8 +53,8 @@ export function PersonnelOverview({ personnel }: PersonnelOverviewProps) {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{person.name}</p>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Briefcase className="h-3 w-3" />
-                      <span className="truncate">{person.role}</span>
+                      <Mail className="h-3 w-3" />
+                      <span className="truncate">{person.email}</span>
                     </div>
                   </div>
 
