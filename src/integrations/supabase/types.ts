@@ -255,6 +255,7 @@ export type Database = {
           business_id: string | null
           category: string | null
           created_at: string
+          department: string | null
           email: string
           gender: string | null
           id: string
@@ -280,6 +281,7 @@ export type Database = {
           business_id?: string | null
           category?: string | null
           created_at?: string
+          department?: string | null
           email: string
           gender?: string | null
           id?: string
@@ -305,6 +307,7 @@ export type Database = {
           business_id?: string | null
           category?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           gender?: string | null
           id?: string

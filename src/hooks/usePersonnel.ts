@@ -16,6 +16,7 @@ interface DbPersonnel {
   user_id: string | null;
   category: string | null;
   nationality: string | null;
+  department: string | null;
   gender: string | null;
   address: string | null;
   postal_code: string | null;
@@ -87,6 +88,7 @@ export function usePersonnel() {
         avatarUrl: p.avatar_url || undefined,
         category: (p.category as PersonnelCategory) || undefined,
         nationality: p.nationality || undefined,
+        department: p.department || undefined,
         gender: p.gender || undefined,
         address: p.address || undefined,
         postalCode: p.postal_code || undefined,
@@ -179,6 +181,7 @@ export function useWorkerPersonnel() {
         avatarUrl: p.avatar_url || undefined,
         category: (p.category as PersonnelCategory) || undefined,
         nationality: p.nationality || undefined,
+        department: p.department || undefined,
         gender: p.gender || undefined,
         address: p.address || undefined,
         postalCode: p.postal_code || undefined,
