@@ -162,6 +162,38 @@ export type Database = {
           },
         ]
       }
+      document_categories: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_categories_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           business_id: string
@@ -373,7 +405,7 @@ export type Database = {
             foreignKeyName: "personnel_documents_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "personnel_document_categories"
+            referencedRelation: "document_categories"
             referencedColumns: ["id"]
           },
           {

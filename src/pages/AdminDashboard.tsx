@@ -11,6 +11,7 @@ import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
+import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
@@ -237,8 +238,9 @@ export default function AdminDashboard() {
                   ✕
                 </Button>
               </div>
-              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
+              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)] space-y-6">
                 <CertificateCategoriesManager />
+                <DocumentCategoriesManager />
               </div>
             </div>
           </div>
