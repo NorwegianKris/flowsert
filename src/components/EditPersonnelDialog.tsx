@@ -30,6 +30,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     location: '',
     category: 'fixed_employee' as 'fixed_employee' | 'freelancer',
     nationality: '',
+    department: '',
     gender: '',
     address: '',
     postalCode: '',
@@ -52,6 +53,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         location: personnel.location || '',
         category: personnel.category || 'fixed_employee',
         nationality: personnel.nationality || '',
+        department: personnel.department || '',
         gender: personnel.gender || '',
         address: personnel.address || '',
         postalCode: personnel.postalCode || '',
@@ -145,6 +147,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           location: formData.location.trim(),
           category: formData.category,
           nationality: formData.nationality.trim() || null,
+          department: formData.department.trim() || null,
           gender: formData.gender.trim() || null,
           address: formData.address.trim() || null,
           postal_code: formData.postalCode.trim() || null,
@@ -285,6 +288,15 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 value={formData.nationality}
                 onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
                 placeholder="Norwegian"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-department">Department</Label>
+              <Input
+                id="edit-department"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                placeholder="Engineering"
               />
             </div>
             <div className="space-y-2">

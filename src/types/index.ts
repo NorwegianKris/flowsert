@@ -23,6 +23,7 @@ export interface Personnel {
   avatarUrl?: string;
   category?: PersonnelCategory;
   nationality?: string;
+  department?: string;
   gender?: string;
   address?: string;
   postalCode?: string;

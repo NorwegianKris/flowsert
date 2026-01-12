@@ -293,6 +293,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   <p className="text-sm font-medium text-foreground truncate">{personnel.nationality || '—'}</p>
                 </div>
                 <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Department</p>
+                  <p className="text-sm font-medium text-foreground truncate">{personnel.department || '—'}</p>
+                </div>
+                <div className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">Gender</p>
                   <p className="text-sm font-medium text-foreground truncate">{personnel.gender || '—'}</p>
                 </div>
@@ -307,10 +311,6 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                 <div className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">Postal Code</p>
                   <p className="text-sm font-medium text-foreground truncate">{personnel.postalCode || '—'}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Postal Address</p>
-                  <p className="text-sm font-medium text-foreground truncate">{personnel.postalAddress || '—'}</p>
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">Phone</p>
