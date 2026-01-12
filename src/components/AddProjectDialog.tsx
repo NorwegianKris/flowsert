@@ -342,6 +342,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 {globalMode === 'invite' ? 'Personnel will receive invitations' : 'Personnel will be directly assigned'}
               </p>
             </div>
+            <p className="text-xs text-muted-foreground italic">
+              Tip: Click the Invite/Assign button on each selected person to toggle their mode individually.
+            </p>
 
             <ScrollArea className="h-48 border rounded-md p-2">
               {personnel.length === 0 ? (
