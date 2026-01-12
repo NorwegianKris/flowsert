@@ -722,6 +722,10 @@ export type Database = {
         Args: { _personnel_id: string; _user_id: string }
         Returns: boolean
       }
+      can_worker_access_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_invitation_by_token: {
         Args: { lookup_token: string }
         Returns: {
