@@ -195,7 +195,7 @@ export default function Auth() {
       <div className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-slate-400/30 rounded-full blur-2xl" />
       
       {/* Left side - Login form */}
-      <div className="flex-1 flex flex-col items-center justify-start pt-8 px-4 relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-8 relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-primary text-4xl font-bold mb-2 whitespace-nowrap">Personnel Compliance Simplified</h1>
           <p className="text-slate-900 text-xl">A Leverage Solution for Industrial SMBs</p>
@@ -344,7 +344,7 @@ export default function Auth() {
       </div>
 
       {/* Right side - Tab-based content */}
-      <div className="hidden lg:flex flex-1 items-start justify-center pt-32 relative z-10">
+      <div className="hidden lg:flex flex-1 items-center justify-center px-8 py-8 relative z-10">
         <Tabs defaultValue="how-it-works" className="w-full max-w-xl">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="how-it-works">How It Works</TabsTrigger>
