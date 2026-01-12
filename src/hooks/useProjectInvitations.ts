@@ -13,6 +13,11 @@ export interface ProjectInvitation {
   respondedAt: string | null;
   // Joined data
   projectName?: string;
+  projectDescription?: string;
+  projectStartDate?: string;
+  projectEndDate?: string;
+  projectLocation?: string;
+  projectStatus?: string;
   personnelName?: string;
 }
 
@@ -48,7 +53,7 @@ export function useProjectInvitations() {
         .from('project_invitations')
         .select(`
           *,
-          projects:project_id (name),
+          projects:project_id (name, description, start_date, end_date, location, status),
           personnel:personnel_id (name)
         `)
         .order('invited_at', { ascending: false });
@@ -64,6 +69,11 @@ export function useProjectInvitations() {
         invitedAt: inv.invited_at,
         respondedAt: inv.responded_at,
         projectName: inv.projects?.name,
+        projectDescription: inv.projects?.description,
+        projectStartDate: inv.projects?.start_date,
+        projectEndDate: inv.projects?.end_date,
+        projectLocation: inv.projects?.location,
+        projectStatus: inv.projects?.status,
         personnelName: inv.personnel?.name,
       }));
 
