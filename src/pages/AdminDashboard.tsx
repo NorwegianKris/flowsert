@@ -13,6 +13,7 @@ import { ProjectsTab } from '@/components/ProjectsTab';
 import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
 import { AdminOverview } from '@/components/AdminOverview';
+import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
@@ -239,7 +240,7 @@ export default function AdminDashboard() {
                   ✕
                 </Button>
               </div>
-              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
+              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)] space-y-6">
                 <Tabs defaultValue="admins" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
                     <TabsTrigger value="admins" className="flex items-center gap-2">
@@ -252,15 +253,17 @@ export default function AdminDashboard() {
                     </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="admins" className="space-y-4">
+                  <TabsContent value="admins">
                     <AdminOverview />
                   </TabsContent>
                   
-                  <TabsContent value="personnel" className="space-y-6">
-                    <CertificateCategoriesManager />
-                    <DocumentCategoriesManager />
+                  <TabsContent value="personnel">
+                    <PersonnelOverview personnel={personnel} />
                   </TabsContent>
                 </Tabs>
+                
+                <CertificateCategoriesManager />
+                <DocumentCategoriesManager />
               </div>
             </div>
           </div>
