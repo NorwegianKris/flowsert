@@ -103,6 +103,40 @@ export function useProjectInvitations() {
     personnelId: string
   ): Promise<boolean> => {
     try {
+      // Check if an invitation already exists for this project/personnel combination
+      const { data: existingInvitation } = await supabase
+        .from('project_invitations')
+        .select('id, status')
+        .eq('project_id', projectId)
+        .eq('personnel_id', personnelId)
+        .maybeSingle();
+
+      if (existingInvitation) {
+        // If invitation exists and is pending, don't send again
+        if (existingInvitation.status === 'pending') {
+          toast.error('Invitation already pending for this personnel');
+          return false;
+        }
+        
+        // If invitation was declined or accepted, reset it to pending
+        const { error: updateError } = await supabase
+          .from('project_invitations')
+          .update({
+            status: 'pending',
+            invited_at: new Date().toISOString(),
+            invited_by: profile?.id,
+            responded_at: null,
+          })
+          .eq('id', existingInvitation.id);
+
+        if (updateError) throw updateError;
+        
+        await fetchInvitations();
+        toast.success('Invitation re-sent successfully');
+        return true;
+      }
+
+      // No existing invitation, create a new one
       const { error } = await supabase
         .from('project_invitations')
         .insert({
@@ -111,14 +145,7 @@ export function useProjectInvitations() {
           invited_by: profile?.id,
         });
 
-      if (error) {
-        // Handle duplicate invitation
-        if (error.code === '23505') {
-          toast.error('Invitation already sent to this personnel');
-          return false;
-        }
-        throw error;
-      }
+      if (error) throw error;
 
       await fetchInvitations();
       return true;
