@@ -239,6 +239,78 @@ export function useProjectInvitations() {
     );
   };
 
+  const updateInvitationStatus = async (
+    invitationId: string,
+    newStatus: 'pending' | 'accepted' | 'declined'
+  ): Promise<boolean> => {
+    try {
+      const { data: invitation, error: fetchError } = await supabase
+        .from('project_invitations')
+        .select('project_id, personnel_id, status')
+        .eq('id', invitationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const oldStatus = invitation.status;
+
+      // Update invitation status
+      const { error: updateError } = await supabase
+        .from('project_invitations')
+        .update({
+          status: newStatus,
+          responded_at: newStatus !== 'pending' ? new Date().toISOString() : null,
+        })
+        .eq('id', invitationId);
+
+      if (updateError) throw updateError;
+
+      // Handle assigned_personnel updates based on status change
+      const { data: project, error: projectFetchError } = await supabase
+        .from('projects')
+        .select('assigned_personnel')
+        .eq('id', invitation.project_id)
+        .single();
+
+      if (projectFetchError) throw projectFetchError;
+
+      const currentPersonnel = project.assigned_personnel || [];
+      let updatedPersonnel = [...currentPersonnel];
+
+      if (newStatus === 'accepted') {
+        // Add to project if not already there
+        if (!currentPersonnel.includes(invitation.personnel_id)) {
+          updatedPersonnel = [...currentPersonnel, invitation.personnel_id];
+        }
+      } else {
+        // Remove from project if previously accepted
+        if (oldStatus === 'accepted') {
+          updatedPersonnel = currentPersonnel.filter(
+            (id: string) => id !== invitation.personnel_id
+          );
+        }
+      }
+
+      // Only update if personnel list changed
+      if (JSON.stringify(updatedPersonnel) !== JSON.stringify(currentPersonnel)) {
+        const { error: projectUpdateError } = await supabase
+          .from('projects')
+          .update({ assigned_personnel: updatedPersonnel })
+          .eq('id', invitation.project_id);
+
+        if (projectUpdateError) throw projectUpdateError;
+      }
+
+      await fetchInvitations();
+      toast.success(`Invitation status updated to ${newStatus}`);
+      return true;
+    } catch (error) {
+      console.error('Error updating invitation status:', error);
+      toast.error('Failed to update invitation status');
+      return false;
+    }
+  };
+
   return {
     invitations,
     loading,
@@ -246,6 +318,7 @@ export function useProjectInvitations() {
     sendInvitation,
     sendBulkInvitations,
     respondToInvitation,
+    updateInvitationStatus,
     getInvitationsForProject,
     getInvitationsForPersonnel,
     getPendingInvitationsForPersonnel,
