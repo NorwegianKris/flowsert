@@ -12,13 +12,14 @@ import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
+import { AdminOverview } from '@/components/AdminOverview';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen, Settings } from 'lucide-react';
+import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Tag } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -238,9 +239,28 @@ export default function AdminDashboard() {
                   ✕
                 </Button>
               </div>
-              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)] space-y-6">
-                <CertificateCategoriesManager />
-                <DocumentCategoriesManager />
+              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
+                <Tabs defaultValue="admins" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="admins" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Admins
+                    </TabsTrigger>
+                    <TabsTrigger value="categories" className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Categories
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="admins" className="space-y-4">
+                    <AdminOverview />
+                  </TabsContent>
+                  
+                  <TabsContent value="categories" className="space-y-6">
+                    <CertificateCategoriesManager />
+                    <DocumentCategoriesManager />
+                  </TabsContent>
+                </Tabs>
               </div>
             </div>
           </div>
