@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { useProjectInvitations, ProjectInvitation } from '@/hooks/useProjectInvitations';
-import { Mail, Check, X, FolderOpen, Clock, MapPin, Calendar, FileText } from 'lucide-react';
+import { Mail, Check, X, FolderOpen, Clock, MapPin, Calendar, FileText, Hash, Building, User, Briefcase } from 'lucide-react';
 import { useState } from 'react';
 import { format, differenceInDays } from 'date-fns';
 
@@ -20,7 +21,10 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
     (inv) => inv.personnelId === personnelId && inv.status === 'pending'
   );
 
-  const handleRespond = async (invitationId: string, accept: boolean) => {
+  const handleRespond = async (invitationId: string, accept: boolean, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     setRespondingId(invitationId);
     await respondToInvitation(invitationId, accept);
     setRespondingId(null);
@@ -94,8 +98,25 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                   </div>
                 </div>
                 
-                <div className="text-xs text-muted-foreground shrink-0">
-                  Click to view details
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => handleRespond(invitation.id, false, e)}
+                    disabled={respondingId === invitation.id}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Decline
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={(e) => handleRespond(invitation.id, true, e)}
+                    disabled={respondingId === invitation.id}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Accept
+                  </Button>
                 </div>
               </div>
             ))}
@@ -105,7 +126,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
 
       {/* Invitation Detail Dialog */}
       <Dialog open={!!selectedInvitation} onOpenChange={(open) => !open && setSelectedInvitation(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-primary" />
@@ -119,10 +140,18 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
           {selectedInvitation && (
             <div className="space-y-4">
               {/* Project Name and Status */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
-                  {selectedInvitation.projectName || 'Unnamed Project'}
-                </h3>
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {selectedInvitation.projectName || 'Unnamed Project'}
+                  </h3>
+                  {selectedInvitation.projectNumber && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Hash className="h-3 w-3" />
+                      {selectedInvitation.projectNumber}
+                    </p>
+                  )}
+                </div>
                 {selectedInvitation.projectStatus && (
                   <Badge variant={getStatusBadgeVariant(selectedInvitation.projectStatus)}>
                     {selectedInvitation.projectStatus.charAt(0).toUpperCase() + selectedInvitation.projectStatus.slice(1)}
@@ -132,41 +161,69 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
 
               {/* Project Description */}
               {selectedInvitation.projectDescription && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    <span className="font-medium">Description</span>
+                <div className="space-y-1.5 p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Description
                   </div>
-                  <p className="text-sm text-foreground pl-6">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedInvitation.projectDescription}
                   </p>
                 </div>
               )}
 
+              <Separator />
+
               {/* Project Details Grid */}
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Customer */}
+                {selectedInvitation.projectCustomer && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Building className="h-3.5 w-3.5" />
+                      Customer
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedInvitation.projectCustomer}
+                    </p>
+                  </div>
+                )}
+
+                {/* Project Manager */}
+                {selectedInvitation.projectManager && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <User className="h-3.5 w-3.5" />
+                      Project Manager
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedInvitation.projectManager}
+                    </p>
+                  </div>
+                )}
+
                 {/* Location */}
                 {selectedInvitation.projectLocation && (
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span className="font-medium">Location</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Location
                     </div>
-                    <p className="text-sm text-foreground pl-6">
+                    <p className="text-sm font-medium text-foreground">
                       {selectedInvitation.projectLocation}
                     </p>
                   </div>
                 )}
 
-                {/* Duration */}
-                {selectedInvitation.projectStartDate && (
+                {/* Work Category */}
+                {selectedInvitation.projectWorkCategory && (
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">Duration</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Briefcase className="h-3.5 w-3.5" />
+                      Work Category
                     </div>
-                    <p className="text-sm text-foreground pl-6">
-                      {getProjectDuration(selectedInvitation.projectStartDate, selectedInvitation.projectEndDate)}
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedInvitation.projectWorkCategory}
                     </p>
                   </div>
                 )}
@@ -174,11 +231,11 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                 {/* Start Date */}
                 {selectedInvitation.projectStartDate && (
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span className="font-medium">Start Date</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Start Date
                     </div>
-                    <p className="text-sm text-foreground pl-6">
+                    <p className="text-sm font-medium text-foreground">
                       {format(new Date(selectedInvitation.projectStartDate), 'MMM d, yyyy')}
                     </p>
                   </div>
@@ -187,22 +244,35 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                 {/* End Date */}
                 {selectedInvitation.projectEndDate && (
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span className="font-medium">End Date</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      End Date
                     </div>
-                    <p className="text-sm text-foreground pl-6">
+                    <p className="text-sm font-medium text-foreground">
                       {format(new Date(selectedInvitation.projectEndDate), 'MMM d, yyyy')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Duration */}
+                {selectedInvitation.projectStartDate && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" />
+                      Duration
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      {getProjectDuration(selectedInvitation.projectStartDate, selectedInvitation.projectEndDate)}
                     </p>
                   </div>
                 )}
               </div>
 
+              <Separator />
+
               {/* Invited Date */}
-              <div className="pt-2 border-t border-border">
-                <p className="text-xs text-muted-foreground">
-                  Invited on {format(new Date(selectedInvitation.invitedAt), 'MMMM d, yyyy')}
-                </p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Invited on {format(new Date(selectedInvitation.invitedAt), 'MMMM d, yyyy')}</span>
               </div>
             </div>
           )}
