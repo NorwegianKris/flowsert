@@ -299,6 +299,92 @@ export type Database = {
           },
         ]
       }
+      personnel_document_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          personnel_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          personnel_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          personnel_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnel_document_categories_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personnel_documents: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          name: string
+          personnel_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          name: string
+          personnel_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          personnel_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnel_documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "personnel_document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personnel_documents_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           business_id: string | null
