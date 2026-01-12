@@ -104,7 +104,7 @@ export default function AdminDashboard() {
             backLabel={previousProject ? `Back to ${previousProject.name}` : undefined}
           />
         </main>
-        <ChatBot />
+        <ChatBot isAdmin />
       </div>
     );
   }
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
             }}
           />
         </main>
-        <ChatBot />
+        <ChatBot isAdmin />
       </div>
     );
   }
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
         )}
       </main>
       
-      <ChatBot />
+      <ChatBot isAdmin />
       
       <AddPersonnelDialog
         open={addPersonnelOpen}

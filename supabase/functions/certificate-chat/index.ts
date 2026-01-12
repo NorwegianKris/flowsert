@@ -11,14 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, contextData } = await req.json();
+    const { messages, contextData, isAdmin } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are Flowsert Assistant, an AI helper for industrial workers. You have access to the following information about the current user:
+    const workerSystemPrompt = `You are Flowsert Assistant, an AI helper for industrial workers. You have access to the following information about the current user:
 
 ${contextData}
 
@@ -34,6 +34,30 @@ Always be helpful, concise, and accurate. When referring to dates, use a clear f
 If a certificate is expiring soon (within 30 days) or expired, proactively mention this.
 If asked about something not in the data, politely explain what information you do have access to.
 Keep responses friendly and professional.`;
+
+    const adminSystemPrompt = `You are Flowsert Assistant, an AI helper for administrators managing industrial personnel. You have access to comprehensive business data:
+
+${contextData}
+
+As an admin assistant, you can:
+- Provide an overview of all personnel, their roles, locations, and contact information
+- Report on certificates across the team - who has valid, expiring, or expired certificates
+- Give detailed project information including status, assigned personnel, timelines, and milestones
+- Show team availability and scheduling information
+- Help identify personnel with specific skills or certifications
+- Alert about upcoming certificate expirations or project deadlines
+- Compare personnel assignments across projects
+- Summarize statistics about the workforce and projects
+
+When answering:
+- Be helpful, concise, and accurate
+- Use clear date formats (e.g., "January 15, 2025")
+- Proactively mention any certificates expiring within 30 days or already expired
+- When discussing projects, include relevant details like assigned personnel and key dates
+- If asked about something not in the data, explain what information is available
+- Keep responses professional and actionable for management decisions`;
+
+    const systemPrompt = isAdmin ? adminSystemPrompt : workerSystemPrompt;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
