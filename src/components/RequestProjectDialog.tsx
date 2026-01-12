@@ -13,6 +13,7 @@ interface RequestProjectDialogProps {
   onOpenChange: (open: boolean) => void;
   personnelId: string;
   personnelName: string;
+  personnelEmail: string;
   projects: Project[];
   existingInvitations: string[]; // project IDs that already have invitations
 }
@@ -28,6 +29,7 @@ export function RequestProjectDialog({
   onOpenChange,
   personnelId,
   personnelName,
+  personnelEmail,
   projects,
   existingInvitations,
 }: RequestProjectDialogProps) {
@@ -42,8 +44,24 @@ export function RequestProjectDialog({
   const handleSend = async () => {
     if (!selectedProject) return;
 
+    const project = projects.find(p => p.id === selectedProject);
+    if (!project) return;
+
     setIsSending(true);
-    const success = await sendInvitation(selectedProject, personnelId);
+    const success = await sendInvitation(
+      selectedProject, 
+      personnelId,
+      personnelEmail,
+      personnelName,
+      {
+        name: project.name,
+        description: project.description,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        location: project.location,
+        projectManager: project.projectManager,
+      }
+    );
     setIsSending(false);
 
     if (success) {
