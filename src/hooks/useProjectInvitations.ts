@@ -18,6 +18,10 @@ export interface ProjectInvitation {
   projectEndDate?: string;
   projectLocation?: string;
   projectStatus?: string;
+  projectNumber?: string;
+  projectCustomer?: string;
+  projectManager?: string;
+  projectWorkCategory?: string;
   personnelName?: string;
 }
 
@@ -53,7 +57,7 @@ export function useProjectInvitations() {
         .from('project_invitations')
         .select(`
           *,
-          projects:project_id (name, description, start_date, end_date, location, status),
+          projects:project_id (name, description, start_date, end_date, location, status, project_number, customer, project_manager, work_category),
           personnel:personnel_id (name)
         `)
         .order('invited_at', { ascending: false });
@@ -74,6 +78,10 @@ export function useProjectInvitations() {
         projectEndDate: inv.projects?.end_date,
         projectLocation: inv.projects?.location,
         projectStatus: inv.projects?.status,
+        projectNumber: inv.projects?.project_number,
+        projectCustomer: inv.projects?.customer,
+        projectManager: inv.projects?.project_manager,
+        projectWorkCategory: inv.projects?.work_category,
         personnelName: inv.personnel?.name,
       }));
 
