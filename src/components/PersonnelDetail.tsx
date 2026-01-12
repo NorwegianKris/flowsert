@@ -13,6 +13,7 @@ import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
 import { AssignedProjects } from '@/components/AssignedProjects';
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { RequestProjectDialog } from '@/components/RequestProjectDialog';
+import { PersonnelInvitations } from '@/components/PersonnelInvitations';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -257,6 +258,9 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <CertificateTable certificates={personnel.certificates} onCertificateUpdated={handleCertificateChange} />
         </CardContent>
       </Card>
+
+      {/* Pending Invitations Section */}
+      <PersonnelInvitations personnelId={personnel.id} />
 
       {/* Assigned Projects Section - moved up */}
       <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />
