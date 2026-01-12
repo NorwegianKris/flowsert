@@ -36,6 +36,7 @@ import {
   Folder,
   Trash2,
   Download,
+  Pencil,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -64,12 +65,17 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   const [documents, setDocuments] = useState<PersonnelDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<PersonnelDocument | null>(null);
+  const [documentToEdit, setDocumentToEdit] = useState<PersonnelDocument | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [documentName, setDocumentName] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   useEffect(() => {
@@ -176,6 +182,40 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
     }
   };
 
+
+  const openEditDialog = (doc: PersonnelDocument) => {
+    setDocumentToEdit(doc);
+    setEditName(doc.name);
+    setEditCategory(doc.categoryId || 'uncategorized');
+    setIsEditOpen(true);
+  };
+
+  const handleEditDocument = async () => {
+    if (!documentToEdit || !editName.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('personnel_documents')
+        .update({
+          name: editName.trim(),
+          category_id: editCategory && editCategory !== 'uncategorized' ? editCategory : null,
+        })
+        .eq('id', documentToEdit.id);
+
+      if (error) throw error;
+
+      toast.success('Document updated');
+      setIsEditOpen(false);
+      setDocumentToEdit(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating document:', error);
+      toast.error('Failed to update document');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDeleteDocument = async () => {
     if (!documentToDelete) return;
@@ -324,6 +364,14 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => openEditDialog(doc)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setDocumentToDelete(doc);
                       setIsDeleteDialogOpen(true);
@@ -400,6 +448,50 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
               </Button>
               <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
                 {isUploading ? 'Uploading...' : 'Upload'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Document Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Document</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editName">Document Name</Label>
+                <Input
+                  id="editName"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter document name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editCategory">Category</Label>
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditDocument} disabled={!editName.trim() || isSaving}>
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </DialogContent>
