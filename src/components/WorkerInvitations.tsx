@@ -101,11 +101,10 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                   
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={(e) => handleRespond(invitation.id, false, e)}
                       disabled={respondingId === invitation.id}
-                      className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                     >
                       <X className="h-4 w-4 mr-1" />
                       Decline
@@ -266,10 +265,9 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
-              variant="outline"
               onClick={() => selectedInvitation && handleRespond(selectedInvitation.id, false)}
               disabled={respondingId === selectedInvitation?.id}
-              className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               <X className="h-4 w-4 mr-2" />
               Decline
