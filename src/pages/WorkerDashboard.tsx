@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkerPersonnel } from '@/hooks/usePersonnel';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
+import { WorkerInvitations } from '@/components/WorkerInvitations';
 import { ChatBot } from '@/components/ChatBot';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Loader2, LogOut, User } from 'lucide-react';
 
 export default function WorkerDashboard() {
   const { signOut, profile } = useAuth();
-  const { personnel, loading } = useWorkerPersonnel();
+  const { personnel, loading, refetch } = useWorkerPersonnel();
 
   if (loading) {
     return (
@@ -40,13 +41,19 @@ export default function WorkerDashboard() {
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 space-y-6">
         {personnel ? (
-          <PersonnelDetail
-            personnel={personnel}
-            onBack={() => {}}
-            hideBackButton
-          />
+          <>
+            {/* Show pending invitations at the top */}
+            <WorkerInvitations personnelId={personnel.id} />
+            
+            <PersonnelDetail
+              personnel={personnel}
+              onBack={() => {}}
+              hideBackButton
+              onRefresh={refetch}
+            />
+          </>
         ) : (
           <Card className="max-w-md mx-auto">
             <CardHeader>

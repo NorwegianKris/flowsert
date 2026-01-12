@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FolderOpen, Clock, CheckCircle } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
+import { InvitationLog } from '@/components/InvitationLog';
 
 interface ProjectsTabProps {
   projects: Project[];
@@ -77,6 +78,9 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           <p className="text-muted-foreground text-center py-8">No completed projects</p>
         )}
       </div>
+
+      {/* Invitation Log Section */}
+      <InvitationLog projects={projects} personnel={personnel} />
     </div>
   );
 }
