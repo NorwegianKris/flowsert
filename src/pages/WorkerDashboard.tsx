@@ -52,6 +52,7 @@ export default function WorkerDashboard() {
               onBack={() => {}}
               hideBackButton
               onRefresh={refetch}
+              showRequestProject={false}
             />
           </>
         ) : (
