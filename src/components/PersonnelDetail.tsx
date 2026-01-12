@@ -33,9 +33,10 @@ interface PersonnelDetailProps {
   hideBackButton?: boolean;
   onRefresh?: () => void;
   backLabel?: string;
+  showRequestProject?: boolean;
 }
 
-export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel }: PersonnelDetailProps) {
+export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel, showRequestProject = true }: PersonnelDetailProps) {
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
   const [isEditCertSelectOpen, setIsEditCertSelectOpen] = useState(false);
@@ -102,13 +103,15 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         )}
         {hideBackButton && <div />}
         
-        <Button
-          onClick={() => setIsRequestProjectOpen(true)}
-          className="gap-2"
-        >
-          <Send className="h-4 w-4" />
-          Request for Project
-        </Button>
+        {showRequestProject && (
+          <Button
+            onClick={() => setIsRequestProjectOpen(true)}
+            className="gap-2"
+          >
+            <Send className="h-4 w-4" />
+            Request for Project
+          </Button>
+        )}
       </div>
 
       <Card className="border-border/50">
