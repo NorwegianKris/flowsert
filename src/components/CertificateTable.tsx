@@ -208,12 +208,12 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
                         alt={`${selectedCertificate.name} document`}
                         className="max-h-[400px] object-contain rounded"
                       />
-                    ) : isPdfFile(selectedCertificate.documentUrl) ? (
-                      <iframe
-                        src={selectedCertificate.documentUrl}
-                        title={`${selectedCertificate.name} document`}
-                        className="w-full h-[500px] rounded"
-                      />
+                  ) : isPdfFile(selectedCertificate.documentUrl) ? (
+                    <iframe
+                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedCertificate.documentUrl)}&embedded=true`}
+                      title={`${selectedCertificate.name} document`}
+                      className="w-full h-[500px] rounded border-0"
+                    />
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-muted-foreground" />
