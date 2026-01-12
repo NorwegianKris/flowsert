@@ -105,7 +105,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                       size="sm"
                       onClick={(e) => handleRespond(invitation.id, false, e)}
                       disabled={respondingId === invitation.id}
-                      className="text-destructive hover:text-destructive"
+                      className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     >
                       <X className="h-4 w-4 mr-1" />
                       Decline
@@ -114,6 +114,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                       size="sm"
                       onClick={(e) => handleRespond(invitation.id, true, e)}
                       disabled={respondingId === invitation.id}
+                      className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
                     >
                       <Check className="h-4 w-4 mr-1" />
                       Accept
@@ -268,7 +269,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
               variant="outline"
               onClick={() => selectedInvitation && handleRespond(selectedInvitation.id, false)}
               disabled={respondingId === selectedInvitation?.id}
-              className="text-destructive hover:text-destructive"
+              className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
             >
               <X className="h-4 w-4 mr-2" />
               Decline
@@ -276,6 +277,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
             <Button
               onClick={() => selectedInvitation && handleRespond(selectedInvitation.id, true)}
               disabled={respondingId === selectedInvitation?.id}
+              className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
             >
               <Check className="h-4 w-4 mr-2" />
               Accept Invitation
