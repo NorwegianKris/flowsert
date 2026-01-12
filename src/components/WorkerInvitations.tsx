@@ -130,7 +130,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-primary" />
-              Project Invitation
+              {selectedInvitation?.projectName || 'Project'} - Invitation
             </DialogTitle>
             <DialogDescription>
               You have been invited to join this project
@@ -139,19 +139,15 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
 
           {selectedInvitation && (
             <div className="space-y-4">
-              {/* Project Name and Status */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {selectedInvitation.projectName || 'Unnamed Project'}
-                  </h3>
-                  {selectedInvitation.projectNumber && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Hash className="h-3 w-3" />
-                      {selectedInvitation.projectNumber}
-                    </p>
-                  )}
-                </div>
+              {/* Project Number and Status */}
+              <div className="flex items-center justify-between gap-4">
+                {selectedInvitation.projectNumber && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Hash className="h-3 w-3" />
+                    Project #{selectedInvitation.projectNumber}
+                  </p>
+                )}
+                {!selectedInvitation.projectNumber && <div />}
                 {selectedInvitation.projectStatus && (
                   <Badge variant={getStatusBadgeVariant(selectedInvitation.projectStatus)}>
                     {selectedInvitation.projectStatus.charAt(0).toUpperCase() + selectedInvitation.projectStatus.slice(1)}
@@ -160,112 +156,100 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
               </div>
 
               {/* Project Description */}
-              {selectedInvitation.projectDescription && (
-                <div className="space-y-1.5 p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <FileText className="h-4 w-4 text-primary" />
-                    Description
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedInvitation.projectDescription}
-                  </p>
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Description
                 </div>
-              )}
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {selectedInvitation.projectDescription || 'No description provided'}
+                </p>
+              </div>
 
               <Separator />
 
               {/* Project Details Grid */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Customer */}
-                {selectedInvitation.projectCustomer && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Building className="h-3.5 w-3.5" />
-                      Customer
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {selectedInvitation.projectCustomer}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Building className="h-3.5 w-3.5" />
+                    Customer
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedInvitation.projectCustomer || '—'}
+                  </p>
+                </div>
 
                 {/* Project Manager */}
-                {selectedInvitation.projectManager && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <User className="h-3.5 w-3.5" />
-                      Project Manager
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {selectedInvitation.projectManager}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <User className="h-3.5 w-3.5" />
+                    Project Manager
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedInvitation.projectManager || '—'}
+                  </p>
+                </div>
 
                 {/* Location */}
-                {selectedInvitation.projectLocation && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Location
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {selectedInvitation.projectLocation}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Location
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedInvitation.projectLocation || '—'}
+                  </p>
+                </div>
 
                 {/* Work Category */}
-                {selectedInvitation.projectWorkCategory && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Briefcase className="h-3.5 w-3.5" />
-                      Work Category
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {selectedInvitation.projectWorkCategory}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    Work Category
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedInvitation.projectWorkCategory || '—'}
+                  </p>
+                </div>
 
                 {/* Start Date */}
-                {selectedInvitation.projectStartDate && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      Start Date
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {format(new Date(selectedInvitation.projectStartDate), 'MMM d, yyyy')}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Start Date
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedInvitation.projectStartDate 
+                      ? format(new Date(selectedInvitation.projectStartDate), 'MMM d, yyyy')
+                      : '—'}
+                  </p>
+                </div>
 
                 {/* End Date */}
-                {selectedInvitation.projectEndDate && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
-                      End Date
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {format(new Date(selectedInvitation.projectEndDate), 'MMM d, yyyy')}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5" />
+                    End Date
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedInvitation.projectEndDate 
+                      ? format(new Date(selectedInvitation.projectEndDate), 'MMM d, yyyy')
+                      : '—'}
+                  </p>
+                </div>
 
                 {/* Duration */}
-                {selectedInvitation.projectStartDate && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5" />
-                      Duration
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      {getProjectDuration(selectedInvitation.projectStartDate, selectedInvitation.projectEndDate)}
-                    </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    Duration
                   </div>
-                )}
+                  <p className="text-sm font-medium text-foreground">
+                    {getProjectDuration(selectedInvitation.projectStartDate, selectedInvitation.projectEndDate) || '—'}
+                  </p>
+                </div>
               </div>
 
               <Separator />
