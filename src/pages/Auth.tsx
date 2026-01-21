@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -27,7 +28,10 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [demoDialogOpen, setDemoDialogOpen] = useState(false);
+  const [demoName, setDemoName] = useState('');
   const [demoEmail, setDemoEmail] = useState('');
+  const [demoMessage, setDemoMessage] = useState('');
   const [demoSubmitting, setDemoSubmitting] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
@@ -213,11 +217,24 @@ export default function Auth() {
       return;
     }
 
+    if (!demoName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Name required',
+        description: 'Please enter your name.',
+      });
+      return;
+    }
+
     setDemoSubmitting(true);
     
     const { error } = await (supabase as any)
       .from('demo_requests')
-      .insert({ email: demoEmail });
+      .insert({ 
+        email: demoEmail,
+        name: demoName,
+        message: demoMessage || null
+      });
 
     setDemoSubmitting(false);
 
@@ -232,7 +249,10 @@ export default function Auth() {
         title: 'Demo request submitted',
         description: "We'll be in touch soon!",
       });
+      setDemoName('');
       setDemoEmail('');
+      setDemoMessage('');
+      setDemoDialogOpen(false);
     }
   };
 
@@ -347,8 +367,8 @@ export default function Auth() {
               <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8 text-base gap-2">
                 Sign up for Free <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/contact')} className="h-12 px-8 text-base">
-                Book a Tour
+              <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-12 px-8 text-base">
+                Book a Demo
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
@@ -444,46 +464,11 @@ export default function Auth() {
         </div>
       </section>
 
-      {/* Why It Matters Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold font-rajdhani text-foreground mb-4 text-center">Why Certificate Tracking Matters</h2>
-            <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-              For industrial businesses, maintaining proper certifications isn't just about compliance—it's about safety, efficiency, and peace of mind.
-            </p>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
-                <Shield className="h-10 w-10 text-primary mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Safety First</h3>
-                <p className="text-muted-foreground text-sm">
-                  Ensure every worker has valid credentials before stepping on site. Protect your team with verified qualifications.
-                </p>
-              </div>
-              <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
-                <CheckCircle className="h-10 w-10 text-primary mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Stay Compliant</h3>
-                <p className="text-muted-foreground text-sm">
-                  Meet regulatory requirements and pass audits with confidence. Keep documentation organized and accessible.
-                </p>
-              </div>
-              <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
-                <Clock className="h-10 w-10 text-primary mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Save Time</h3>
-                <p className="text-muted-foreground text-sm">
-                  Stop chasing certificates and renewal dates. Automated tracking lets you focus on what matters.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Features Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="py-16">
+        <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold font-rajdhani text-foreground mb-12 text-center">Platform Features</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-12 text-center">Platform Features</h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="flex items-start gap-4 p-4">
                 <div className="p-2 bg-primary/10 rounded-lg shrink-0">
@@ -520,6 +505,41 @@ export default function Auth() {
                   <h4 className="font-semibold text-foreground">Project Assignment</h4>
                   <p className="text-sm text-muted-foreground mt-1">Assign personnel to projects and track requirements.</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why It Matters Section */}
+      <section className="py-16 bg-muted/20">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4 text-center">Why Certificate Tracking Matters</h2>
+            <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+              For industrial businesses, maintaining proper certifications isn't just about compliance—it's about safety, efficiency, and peace of mind.
+            </p>
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
+                <Shield className="h-10 w-10 text-primary mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Safety First</h3>
+                <p className="text-muted-foreground text-sm">
+                  Ensure every worker has valid credentials before stepping on site. Protect your team with verified qualifications.
+                </p>
+              </div>
+              <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
+                <CheckCircle className="h-10 w-10 text-primary mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Stay Compliant</h3>
+                <p className="text-muted-foreground text-sm">
+                  Meet regulatory requirements and pass audits with confidence. Keep documentation organized and accessible.
+                </p>
+              </div>
+              <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
+                <Clock className="h-10 w-10 text-primary mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Save Time</h3>
+                <p className="text-muted-foreground text-sm">
+                  Stop chasing certificates and renewal dates. Automated tracking lets you focus on what matters.
+                </p>
               </div>
             </div>
           </div>
@@ -694,6 +714,56 @@ export default function Auth() {
               </p>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Demo Dialog */}
+      <Dialog open={demoDialogOpen} onOpenChange={setDemoDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center font-rajdhani text-2xl">Book a Demo</DialogTitle>
+            <DialogDescription className="text-center">
+              Fill in your details and we'll get in touch to schedule a demo.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleDemoSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="demo-name">Name</Label>
+              <Input
+                id="demo-name"
+                type="text"
+                placeholder="Your name"
+                value={demoName}
+                onChange={(e) => setDemoName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="demo-email">Email</Label>
+              <Input
+                id="demo-email"
+                type="email"
+                placeholder="you@example.com"
+                value={demoEmail}
+                onChange={(e) => setDemoEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="demo-message">Message (optional)</Label>
+              <Textarea
+                id="demo-message"
+                placeholder="Tell us about your needs..."
+                value={demoMessage}
+                onChange={(e) => setDemoMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={demoSubmitting}>
+              {demoSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Request
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
