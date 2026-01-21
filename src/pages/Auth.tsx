@@ -351,8 +351,8 @@ export default function Auth() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-16 pb-8 md:pt-24 md:pb-12 relative overflow-hidden">
+      {/* Hero + Product Preview with Background */}
+      <div className="relative overflow-hidden">
         {/* Background Pattern */}
         <div 
           className="absolute inset-0 opacity-40"
@@ -362,32 +362,35 @@ export default function Auth() {
             backgroundPosition: 'center',
           }}
         />
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
-              Make personnel
-              <span className="block">
-                compliance <span className="text-primary">flow</span>
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
-              Transform your operations with smart certificate management software—built for industrial SMEs.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8 text-base gap-2">
-                Sign up for Free <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-12 px-8 text-base">
-                Book a Demo
-              </Button>
+        
+        {/* Hero Section */}
+        <section className="pt-16 pb-8 md:pt-24 md:pb-12 relative z-10">
+          <div className="container mx-auto px-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
+                Make personnel
+                <span className="block">
+                  compliance <span className="text-primary">flow</span>
+                </span>
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
+                Transform your operations with smart certificate management software—built for industrial SMEs.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8 text-base gap-2">
+                  Sign up for Free <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-12 px-8 text-base">
+                  Book a Demo
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
             </div>
-            <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Product Preview */}
-      <section className="pb-16 md:pb-24">
+        {/* Product Preview */}
+        <section className="pb-16 md:pb-24 relative z-10">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
@@ -428,7 +431,8 @@ export default function Auth() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      </div>
 
       {/* How It Works Section */}
       <section className="py-20 bg-muted/20">
