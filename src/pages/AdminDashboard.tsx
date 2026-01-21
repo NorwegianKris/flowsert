@@ -353,7 +353,14 @@ export default function AdminDashboard() {
                   </TabsContent>
                   
                   <TabsContent value="personnel">
-                    <PersonnelOverview personnel={personnel} />
+                    <PersonnelOverview 
+                      personnel={personnel} 
+                      onEditPersonnel={(person) => {
+                        setSettingsOpen(false);
+                        setSelectedPersonnel(person);
+                      }}
+                      onPersonnelRemoved={refetch}
+                    />
                   </TabsContent>
                 </Tabs>
                 
