@@ -36,14 +36,15 @@ export function WorkerCategoriesManager() {
     if (!businessId) return;
 
     try {
-      const { data, error } = await supabase
-        .from('worker_categories')
+      // Use type assertion since worker_categories table was just added
+      const { data, error } = await (supabase
+        .from('worker_categories' as any)
         .select('id, name, created_at')
         .eq('business_id', businessId)
-        .order('name');
+        .order('name') as any);
 
       if (error) throw error;
-      setCategories(data || []);
+      setCategories((data as WorkerCategory[]) || []);
     } catch (error) {
       console.error('Error fetching worker categories:', error);
       toast.error('Failed to load worker categories');
@@ -61,12 +62,12 @@ export function WorkerCategoriesManager() {
 
     setAdding(true);
     try {
-      const { error } = await supabase
-        .from('worker_categories')
+      const { error } = await (supabase
+        .from('worker_categories' as any)
         .insert({
           business_id: businessId,
           name: newCategoryName.trim(),
-        });
+        }) as any);
 
       if (error) {
         if (error.code === '23505') {
@@ -93,10 +94,10 @@ export function WorkerCategoriesManager() {
 
     setDeleting(true);
     try {
-      const { error } = await supabase
-        .from('worker_categories')
+      const { error } = await (supabase
+        .from('worker_categories' as any)
         .delete()
-        .eq('id', categoryToDelete.id);
+        .eq('id', categoryToDelete.id) as any);
 
       if (error) throw error;
 
