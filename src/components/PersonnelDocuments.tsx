@@ -478,7 +478,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <div className="text-4xl mb-3">📁</div>
             <p className="text-sm">
               {filterCategory === 'all'
                 ? 'No documents uploaded yet'

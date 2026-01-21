@@ -148,9 +148,10 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
       </CardHeader>
       <CardContent>
         {filteredInvitations.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            No invitations found
-          </p>
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">📨</div>
+            <p className="text-muted-foreground">No invitations found</p>
+          </div>
         ) : (
           <ScrollArea className="h-[400px]">
             <div className="space-y-3">

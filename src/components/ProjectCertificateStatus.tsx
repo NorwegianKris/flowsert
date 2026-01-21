@@ -90,7 +90,7 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Award className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <div className="text-4xl mb-3">🏅</div>
             <p className="text-muted-foreground text-sm">
               No certificates found for assigned personnel
             </p>

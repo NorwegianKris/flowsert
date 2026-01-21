@@ -267,6 +267,7 @@ export function AddCertificateDialog({
                 </div>
               ) : certificates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-4xl mb-3">📋</div>
                   <p>No certificate categories defined.</p>
                   <p className="text-sm">Add a custom certificate below or contact your administrator.</p>
                 </div>

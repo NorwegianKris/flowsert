@@ -429,7 +429,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground text-sm py-8">
-              <Bot className="h-12 w-12 mx-auto mb-3 text-primary/40" />
+              <div className="text-4xl mb-3">🤖</div>
               <p className="font-medium mb-1">Hi! I'm your {isAdmin ? 'Admin' : 'Personal'} Assistant</p>
               <p className="text-xs">
                 {isAdmin 

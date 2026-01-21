@@ -142,8 +142,9 @@ export function RemoveCertificateDialog({
         </DialogHeader>
 
         {certificates.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            No certificates to remove
+          <div className="py-8 text-center">
+            <div className="text-4xl mb-3">🎓</div>
+            <p className="text-muted-foreground">No certificates to remove</p>
           </div>
         ) : (
           <>

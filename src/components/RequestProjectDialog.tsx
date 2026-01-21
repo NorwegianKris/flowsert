@@ -93,9 +93,12 @@ export function RequestProjectDialog({
 
         <div className="space-y-4">
           {availableProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No available projects to invite to. All active projects already have invitations sent.
-            </p>
+            <div className="text-center py-8">
+              <div className="text-4xl mb-3">📭</div>
+              <p className="text-sm text-muted-foreground">
+                No available projects to invite to. All active projects already have invitations sent.
+              </p>
+            </div>
           ) : (
             <ScrollArea className="h-64 border rounded-md p-2">
               <div className="space-y-2">

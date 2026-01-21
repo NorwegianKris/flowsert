@@ -169,6 +169,7 @@ export function CertificateCategoriesManager() {
           {/* Categories list */}
           {categories.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
+              <div className="text-4xl mb-3">📜</div>
               <p>No certificate categories defined yet.</p>
               <p className="text-sm">Add your first category above.</p>
             </div>
