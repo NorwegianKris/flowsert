@@ -674,7 +674,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
               <Button variant="outline" onClick={() => setIsUploadOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="active" onClick={handleUpload} disabled={!selectedFile || isUploading}>
+              <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
                 {isUploading ? 'Uploading...' : 'Upload'}
               </Button>
             </DialogFooter>
@@ -718,7 +718,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="active" onClick={handleEditDocument} disabled={!editName.trim() || isSaving}>
+              <Button onClick={handleEditDocument} disabled={!editName.trim() || isSaving}>
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>

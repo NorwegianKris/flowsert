@@ -237,7 +237,7 @@ export function InviteWorkerDialog({
               <Button type="button" variant="outline" onClick={() => handleClose(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="active" disabled={isLoading || availablePersonnel.length === 0}>
+              <Button type="submit" disabled={isLoading || availablePersonnel.length === 0}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Invitation
               </Button>

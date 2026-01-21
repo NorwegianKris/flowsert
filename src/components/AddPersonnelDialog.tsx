@@ -466,7 +466,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
             <Button type="button" variant="outline" onClick={() => handleClose(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="active" disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {sendInvitation ? 'Add & Send Invitation' : 'Add Personnel'}
             </Button>

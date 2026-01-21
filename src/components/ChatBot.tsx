@@ -489,7 +489,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
               disabled={isLoading}
               className="flex-1"
             />
-            <Button variant="active" onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon">
+            <Button onClick={sendMessage} disabled={isLoading || !input.trim()} size="icon">
               <Send className="h-4 w-4" />
             </Button>
           </div>

@@ -401,7 +401,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="active" disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>

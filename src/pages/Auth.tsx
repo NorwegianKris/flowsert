@@ -427,7 +427,7 @@ export default function Auth() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                <Button type="submit" variant="active" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Send Reset Link
                 </Button>
@@ -489,7 +489,7 @@ export default function Auth() {
                     </Button>
                   </CardContent>
                   <CardFooter>
-                    <Button type="submit" variant="active" className="w-full" disabled={isLoading}>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Sign In
                     </Button>
@@ -545,7 +545,7 @@ export default function Auth() {
                     )}
                   </CardContent>
                   <CardFooter>
-                    <Button type="submit" variant="active" className="w-full" disabled={isLoading}>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Create Account
                     </Button>

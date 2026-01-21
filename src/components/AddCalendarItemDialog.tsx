@@ -99,7 +99,7 @@ export function AddCalendarItemDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="active">Add Item</Button>
+            <Button type="submit">Add Item</Button>
           </DialogFooter>
         </form>
       </DialogContent>
