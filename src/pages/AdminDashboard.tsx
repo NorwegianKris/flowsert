@@ -34,10 +34,10 @@ export default function AdminDashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [companyCardOpen, setCompanyCardOpen] = useState(false);
   
-  // Filter states
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [locationFilter, setLocationFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  // Filter states (arrays for multi-select)
+  const [roleFilters, setRoleFilters] = useState<string[]>([]);
+  const [locationFilters, setLocationFilters] = useState<string[]>([]);
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -64,18 +64,18 @@ export default function AdminDashboard() {
         if (!matchesSearch) return false;
       }
       
-      // Role filter
-      if (roleFilter !== 'all' && p.role !== roleFilter) return false;
+      // Role filter (multi-select)
+      if (roleFilters.length > 0 && !roleFilters.includes(p.role)) return false;
       
-      // Location filter
-      if (locationFilter !== 'all' && p.location !== locationFilter) return false;
+      // Location filter (multi-select)
+      if (locationFilters.length > 0 && !locationFilters.includes(p.location)) return false;
       
-      // Category filter (fixed_employee or freelancer)
-      if (categoryFilter !== 'all' && p.category !== categoryFilter) return false;
+      // Category filter (multi-select: fixed_employee or freelancer)
+      if (categoryFilters.length > 0 && (!p.category || !categoryFilters.includes(p.category))) return false;
       
       return true;
     });
-  }, [searchQuery, personnel, roleFilter, locationFilter, categoryFilter]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -223,12 +223,12 @@ export default function AdminDashboard() {
           
           <TabsContent value="personnel" className="mt-6">
             <PersonnelFilters
-              roleFilter={roleFilter}
-              onRoleFilterChange={setRoleFilter}
-              locationFilter={locationFilter}
-              onLocationFilterChange={setLocationFilter}
-              categoryFilter={categoryFilter}
-              onCategoryFilterChange={setCategoryFilter}
+              roleFilters={roleFilters}
+              onRoleFiltersChange={setRoleFilters}
+              locationFilters={locationFilters}
+              onLocationFiltersChange={setLocationFilters}
+              categoryFilters={categoryFilters}
+              onCategoryFiltersChange={setCategoryFilters}
               locations={uniqueLocations}
             />
             
@@ -246,7 +246,7 @@ export default function AdminDashboard() {
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">👤</div>
                 <p className="text-muted-foreground">
-                  {searchQuery || roleFilter !== 'all' || locationFilter !== 'all' || categoryFilter !== 'all'
+                  {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0
                     ? 'No personnel found matching your filters'
                     : 'No personnel yet. Add your first team member to get started.'}
                 </p>
