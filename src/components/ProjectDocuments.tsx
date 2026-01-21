@@ -274,7 +274,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
     <div className="space-y-4">
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => setIsUploadOpen(true)} className="gap-2">
+        <Button variant="active" size="sm" onClick={() => setIsUploadOpen(true)} className="gap-2">
           <Upload className="h-4 w-4" />
           Upload Document
         </Button>
@@ -420,7 +420,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
             <Button variant="outline" onClick={() => setIsUploadOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
+            <Button variant="active" onClick={handleUpload} disabled={!selectedFile || isUploading}>
               {isUploading ? 'Uploading...' : 'Upload'}
             </Button>
           </DialogFooter>
@@ -448,7 +448,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateCategory}>Create</Button>
+            <Button variant="active" onClick={handleCreateCategory}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

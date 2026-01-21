@@ -110,6 +110,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
                     Decline
                   </Button>
                   <Button
+                    variant="active"
                     size="sm"
                     onClick={(e) => handleStatusChange(invitation.id, true, e)}
                     disabled={respondingId === invitation.id}
@@ -272,6 +273,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
               Decline
             </Button>
             <Button
+              variant="active"
               onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, true)}
               disabled={respondingId === selectedInvitation?.id}
             >

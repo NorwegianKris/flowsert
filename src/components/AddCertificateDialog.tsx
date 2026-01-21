@@ -420,6 +420,7 @@ export function AddCertificateDialog({
             Cancel
           </Button>
           <Button
+            variant="active"
             onClick={handleSubmit}
             disabled={isSubmitting || selectedCertificates.length === 0}
           >

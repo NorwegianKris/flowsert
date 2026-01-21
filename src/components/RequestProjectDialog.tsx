@@ -147,6 +147,7 @@ export function RequestProjectDialog({
               Cancel
             </Button>
             <Button
+              variant="active"
               onClick={handleSend}
               disabled={!selectedProject || isSending}
             >

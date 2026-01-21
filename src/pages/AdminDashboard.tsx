@@ -155,11 +155,11 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setAddPersonnelOpen(true)}>
+            <Button variant="active" onClick={() => setAddPersonnelOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Personnel
             </Button>
-            <Button onClick={() => setAddProjectOpen(true)}>
+            <Button variant="active" onClick={() => setAddProjectOpen(true)}>
               <FolderOpen className="h-4 w-4 mr-2" />
               New Project
             </Button>
