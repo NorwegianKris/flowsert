@@ -405,7 +405,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 px-6 rounded-full shadow-xl z-50 gap-3 bg-red-600 hover:bg-red-700 text-white text-lg font-bold animate-pulse hover:animate-none"
+        className="fixed bottom-6 right-6 h-16 px-6 rounded-full shadow-xl z-50 gap-3 text-lg font-bold animate-pulse hover:animate-none"
       >
         <MessageCircle className="h-6 w-6" />
         <span>Chat</span>
