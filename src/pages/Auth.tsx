@@ -380,7 +380,23 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-300 via-slate-200 to-slate-400 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-300 via-slate-200 to-slate-400 relative overflow-hidden">
+      {/* Top Navigation Bar */}
+      <nav className="w-full px-6 py-4 flex items-center justify-between relative z-20">
+        <h1 className="font-rajdhani text-2xl font-bold text-primary">FlowSert</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => navigate('/about')}>
+            About
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/faq')}>
+            FAQ
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/contact')}>
+            Contact Us
+          </Button>
+        </div>
+      </nav>
+
       {/* Industrial-style decorative background elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-slate-500/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-slate-600/25 rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />

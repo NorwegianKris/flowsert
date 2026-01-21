@@ -7,6 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import RoleRedirect from "./pages/RoleRedirect";
 import Auth from "./pages/Auth";
+import About from "./pages/About";
+import FAQ from "./pages/FAQ";
+import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import Unauthorized from "./pages/Unauthorized";
@@ -24,6 +27,9 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
             {/* Role-based redirect */}
