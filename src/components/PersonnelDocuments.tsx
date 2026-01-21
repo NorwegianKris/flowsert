@@ -307,7 +307,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
       <Card className="border-border/50">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
+            <FileText className="h-5 w-5 text-amber-500" />
             Documents
           </CardTitle>
         </CardHeader>
@@ -323,7 +323,10 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   return (
     <Card className="border-border/50">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold">Documents</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <FileText className="h-5 w-5 text-amber-500" />
+          Documents
+        </CardTitle>
         <div className="flex gap-2">
           <Button
             variant="outline"

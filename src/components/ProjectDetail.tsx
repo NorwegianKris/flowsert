@@ -186,18 +186,18 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4 text-primary" />
+                  <Calendar className="h-4 w-4 text-sky-500" />
                   <span>Start: {format(projectStart, 'MMM d, yyyy')}</span>
                 </div>
                 {projectEnd && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4 text-primary" />
+                    <Calendar className="h-4 w-4 text-sky-500" />
                     <span>End: {format(projectEnd, 'MMM d, yyyy')}</span>
                   </div>
                 )}
                 {duration && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-4 w-4 text-primary" />
+                    <Clock className="h-4 w-4 text-amber-500" />
                     <span>{duration} days</span>
                   </div>
                 )}
@@ -211,8 +211,8 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Users className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-violet-500/10">
+              <Users className="h-5 w-5 text-violet-500" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -225,8 +225,8 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
 
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Calendar className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-sky-500/10">
+              <Calendar className="h-5 w-5 text-sky-500" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -239,8 +239,8 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
 
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileText className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-emerald-500/10">
+              <FileText className="h-5 w-5 text-emerald-500" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground capitalize">
@@ -270,15 +270,15 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
               <CardHeader className="pb-0">
                 <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="personnel" className="gap-1.5 text-xs sm:text-sm">
-                    <Users className="h-4 w-4" />
+                    <Users className="h-4 w-4 text-violet-500" />
                     <span className="hidden sm:inline">Personnel</span>
                   </TabsTrigger>
                   <TabsTrigger value="calendar" className="gap-1.5 text-xs sm:text-sm">
-                    <Calendar className="h-4 w-4" />
+                    <Calendar className="h-4 w-4 text-sky-500" />
                     <span className="hidden sm:inline">Calendar</span>
                   </TabsTrigger>
                   <TabsTrigger value="documents" className="gap-1.5 text-xs sm:text-sm">
-                    <FolderOpen className="h-4 w-4" />
+                    <FolderOpen className="h-4 w-4 text-amber-500" />
                     <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
                 </TabsList>
@@ -395,7 +395,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       <Card className="border-border/50">
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
+            <FileText className="h-5 w-5 text-teal-500" />
             Project Information
           </CardTitle>
         </CardHeader>

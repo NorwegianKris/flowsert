@@ -56,19 +56,19 @@ export function PersonnelCard({ personnel, onClick }: PersonnelCardProps) {
             
             <div className="space-y-1.5 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
+                <Briefcase className="h-3.5 w-3.5 flex-shrink-0 text-indigo-500" />
                 <span className="truncate">{personnel.role}</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-rose-500" />
                 <span className="truncate">{personnel.location}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                <Mail className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
                 <span className="truncate">{personnel.email}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                <Phone className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
                 <span>{personnel.phone}</span>
               </div>
             </div>
@@ -78,7 +78,7 @@ export function PersonnelCard({ personnel, onClick }: PersonnelCardProps) {
         <div className="mt-4 pt-4 border-t border-border/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileCheck className="h-4 w-4" />
+              <FileCheck className="h-4 w-4 text-blue-500" />
               <span>{personnel.certificates.length} Certificates</span>
             </div>
             

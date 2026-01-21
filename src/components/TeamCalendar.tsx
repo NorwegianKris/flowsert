@@ -378,7 +378,7 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-primary" />
+              <CalendarDays className="h-5 w-5 text-sky-500" />
               Master Calendar
             </CardTitle>
             
