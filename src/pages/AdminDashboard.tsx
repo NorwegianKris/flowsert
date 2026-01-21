@@ -13,6 +13,7 @@ import { CategoriesSection } from '@/components/CategoriesSection';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
+import { PersonnelFilters } from '@/components/PersonnelFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,30 +27,55 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [previousProject, setPreviousProject] = useState<Project | null>(null); // Track if coming from a project
+  const [previousProject, setPreviousProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState('personnel');
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [companyCardOpen, setCompanyCardOpen] = useState(false);
+  
+  // Filter states
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { signOut, profile } = useAuth();
   
   const loading = personnelLoading || projectsLoading;
 
+  // Get unique locations for filter dropdown
+  const uniqueLocations = useMemo(() => {
+    const locations = [...new Set(personnel.map(p => p.location))].filter(Boolean).sort();
+    return locations;
+  }, [personnel]);
+
   const filteredPersonnel = useMemo(() => {
-    if (!searchQuery.trim()) return personnel;
-    
-    const query = searchQuery.toLowerCase();
-    return personnel.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        p.role.toLowerCase().includes(query) ||
-        p.location.toLowerCase().includes(query) ||
-        p.certificates.some((c) => c.name.toLowerCase().includes(query))
-    );
-  }, [searchQuery, personnel]);
+    return personnel.filter((p) => {
+      // Search query filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          p.name.toLowerCase().includes(query) ||
+          p.role.toLowerCase().includes(query) ||
+          p.location.toLowerCase().includes(query) ||
+          p.certificates.some((c) => c.name.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
+      
+      // Role filter
+      if (roleFilter !== 'all' && p.role !== roleFilter) return false;
+      
+      // Location filter
+      if (locationFilter !== 'all' && p.location !== locationFilter) return false;
+      
+      // Category filter (fixed_employee or freelancer)
+      if (categoryFilter !== 'all' && p.category !== categoryFilter) return false;
+      
+      return true;
+    });
+  }, [searchQuery, personnel, roleFilter, locationFilter, categoryFilter]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -196,6 +222,16 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
+            <PersonnelFilters
+              roleFilter={roleFilter}
+              onRoleFilterChange={setRoleFilter}
+              locationFilter={locationFilter}
+              onLocationFilterChange={setLocationFilter}
+              categoryFilter={categoryFilter}
+              onCategoryFilterChange={setCategoryFilter}
+              locations={uniqueLocations}
+            />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredPersonnel.map((p) => (
                 <PersonnelCard
@@ -210,8 +246,8 @@ export default function AdminDashboard() {
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">👤</div>
                 <p className="text-muted-foreground">
-                  {searchQuery 
-                    ? `No personnel found matching "${searchQuery}"`
+                  {searchQuery || roleFilter !== 'all' || locationFilter !== 'all' || categoryFilter !== 'all'
+                    ? 'No personnel found matching your filters'
                     : 'No personnel yet. Add your first team member to get started.'}
                 </p>
               </div>
