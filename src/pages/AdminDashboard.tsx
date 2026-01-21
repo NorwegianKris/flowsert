@@ -9,8 +9,7 @@ import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
-import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
-import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
+import { CategoriesSection } from '@/components/CategoriesSection';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
@@ -268,8 +267,7 @@ export default function AdminDashboard() {
                   </TabsContent>
                 </Tabs>
                 
-                <CertificateCategoriesManager />
-                <DocumentCategoriesManager />
+                <CategoriesSection />
                 
                 <FeedbackList />
               </div>

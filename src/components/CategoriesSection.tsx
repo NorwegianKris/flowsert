@@ -1,0 +1,405 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
+import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
+import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
+import { Award, FileText, Users } from 'lucide-react';
+
+export function CategoriesSection() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Categories</CardTitle>
+        <CardDescription>
+          Manage the categories used throughout your organization for workers, certificates, and documents.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="workers" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="workers" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Workers
+            </TabsTrigger>
+            <TabsTrigger value="certificates" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Certificates
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documents
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="workers">
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Define job role categories for personnel. These will appear as options when adding new workers.
+              </p>
+            </div>
+            <WorkerCategoriesManager />
+          </TabsContent>
+          
+          <TabsContent value="certificates">
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Define certificate categories that personnel can upload.
+              </p>
+            </div>
+            <CertificateCategoriesContent />
+          </TabsContent>
+          
+          <TabsContent value="documents">
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Define document categories for personnel uploads.
+              </p>
+            </div>
+            <DocumentCategoriesContent />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Inline versions without the Card wrapper for use in tabs
+function CertificateCategoriesContent() {
+  return <CertificateCategoriesInner />;
+}
+
+function DocumentCategoriesContent() {
+  return <DocumentCategoriesInner />;
+}
+
+// These are simplified inline components that reuse the logic from the managers
+// but without the Card wrapper
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+interface Category {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+function CertificateCategoriesInner() {
+  const { businessId } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchCategories = async () => {
+    if (!businessId) return;
+    try {
+      const { data, error } = await supabase
+        .from('certificate_categories')
+        .select('id, name, created_at')
+        .eq('business_id', businessId)
+        .order('name');
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to load certificate categories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, [businessId]);
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim() || !businessId) return;
+    setAdding(true);
+    try {
+      const { error } = await supabase
+        .from('certificate_categories')
+        .insert({ business_id: businessId, name: newCategoryName.trim() });
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('This category already exists');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      toast.success('Category added successfully');
+      setNewCategoryName('');
+      fetchCategories();
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast.error('Failed to add category');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('certificate_categories').delete().eq('id', categoryToDelete.id);
+      if (error) throw error;
+      toast.success('Category deleted successfully');
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter new category name..."
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+            disabled={adding}
+          />
+          <Button onClick={handleAddCategory} disabled={adding || !newCategoryName.trim()}>
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            <span className="ml-2">Add</span>
+          </Button>
+        </div>
+
+        {categories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="text-4xl mb-3">📜</div>
+            <p>No certificate categories defined yet.</p>
+            <p className="text-sm">Add your first category above.</p>
+          </div>
+        ) : (
+          <div className="border rounded-lg divide-y">
+            {categories.map((category) => (
+              <div key={category.id} className="flex items-center justify-between p-3 hover:bg-muted/50">
+                <span className="font-medium">{category.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setCategoryToDelete(category); setDeleteDialogOpen(true); }}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {categories.length} category{categories.length !== 1 ? 'ies' : 'y'} defined
+        </p>
+      </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Certificate Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{categoryToDelete?.name}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Deleting...</> : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function DocumentCategoriesInner() {
+  const { businessId } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchCategories = async () => {
+    if (!businessId) return;
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('id, name, created_at')
+        .eq('business_id', businessId)
+        .order('name');
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching document categories:', error);
+      toast.error('Failed to load document categories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, [businessId]);
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim() || !businessId) return;
+    setAdding(true);
+    try {
+      const { error } = await supabase
+        .from('document_categories')
+        .insert({ business_id: businessId, name: newCategoryName.trim() });
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('This category already exists');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      toast.success('Category added successfully');
+      setNewCategoryName('');
+      fetchCategories();
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast.error('Failed to add category');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('document_categories').delete().eq('id', categoryToDelete.id);
+      if (error) throw error;
+      toast.success('Category deleted successfully');
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter new category name..."
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+            disabled={adding}
+          />
+          <Button onClick={handleAddCategory} disabled={adding || !newCategoryName.trim()}>
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            <span className="ml-2">Add</span>
+          </Button>
+        </div>
+
+        {categories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="text-4xl mb-3">🗂️</div>
+            <p>No document categories defined yet.</p>
+            <p className="text-sm">Add your first category above.</p>
+          </div>
+        ) : (
+          <div className="border rounded-lg divide-y">
+            {categories.map((category) => (
+              <div key={category.id} className="flex items-center justify-between p-3 hover:bg-muted/50">
+                <span className="font-medium">{category.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setCategoryToDelete(category); setDeleteDialogOpen(true); }}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {categories.length} category{categories.length !== 1 ? 'ies' : 'y'} defined
+        </p>
+      </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{categoryToDelete?.name}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Deleting...</> : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
