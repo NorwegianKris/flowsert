@@ -21,6 +21,7 @@ export interface Personnel {
   email: string;
   phone: string;
   avatarUrl?: string;
+  businessId?: string;
   category?: PersonnelCategory;
   nationality?: string;
   department?: string;

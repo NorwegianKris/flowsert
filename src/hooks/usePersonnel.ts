@@ -179,6 +179,7 @@ export function useWorkerPersonnel() {
         email: p.email,
         phone: p.phone,
         avatarUrl: p.avatar_url || undefined,
+        businessId: p.business_id || undefined,
         category: (p.category as PersonnelCategory) || undefined,
         nationality: p.nationality || undefined,
         department: p.department || undefined,

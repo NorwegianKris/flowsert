@@ -4,6 +4,7 @@ import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { WorkerInvitations } from '@/components/WorkerInvitations';
 import { ChatBot } from '@/components/ChatBot';
 import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
+import { WelcomeDialog } from '@/components/WelcomeDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,6 +53,9 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-6 space-y-6">
         {personnel ? (
           <>
+            {/* Welcome dialog for new workers */}
+            <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} />
+            
             {/* Show pending invitations at the top */}
             <WorkerInvitations personnelId={personnel.id} />
             
