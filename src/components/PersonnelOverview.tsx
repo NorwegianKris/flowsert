@@ -124,17 +124,20 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
                       </div>
                     </div>
 
-                    <Badge variant="outline" className="shrink-0">
+                    <Badge variant="outline" className="shrink-0 hidden sm:inline-flex">
                       {person.role}
                     </Badge>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       {onEditPersonnel && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => onEditPersonnel(person)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditPersonnel(person);
+                          }}
                           title="Edit personnel"
                         >
                           <Pencil className="h-4 w-4" />
@@ -144,7 +147,10 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeleteClick(person)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(person);
+                        }}
                         title="Remove personnel"
                       >
                         <Trash2 className="h-4 w-4" />
