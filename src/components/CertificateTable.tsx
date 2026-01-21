@@ -239,12 +239,22 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
                         alt={`${selectedCertificate.name} document`}
                         className="max-h-[400px] object-contain rounded"
                       />
-                  ) : signedUrl && isPdfFile(selectedCertificate.documentUrl) ? (
-                    <iframe
-                      src={signedUrl}
-                      title={`${selectedCertificate.name} document`}
-                      className="w-full h-[500px] rounded border-0"
-                    />
+                    ) : signedUrl && isPdfFile(selectedCertificate.documentUrl) ? (
+                      <div className="flex flex-col items-center gap-4 py-8 w-full">
+                        <File className="h-16 w-16 text-primary" />
+                        <p className="text-muted-foreground text-center">
+                          PDF document attached
+                        </p>
+                        <p className="text-xs text-muted-foreground text-center max-w-md">
+                          For security reasons, PDF previews open in a new tab.
+                        </p>
+                        <Button
+                          onClick={() => window.open(signedUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View PDF Document
+                        </Button>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-muted-foreground" />

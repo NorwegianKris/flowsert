@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -23,8 +23,9 @@ import {
   getDaysUntilExpiry,
   formatExpiryText,
 } from '@/lib/certificateUtils';
+import { getCertificateDocumentUrl } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, ShieldAlert, User } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, ShieldAlert, User, Loader2 } from 'lucide-react';
 
 interface CertificateWithPersonnel extends Certificate {
   personnelId: string;
@@ -39,6 +40,20 @@ interface ProjectCertificateStatusProps {
 
 export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatusProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<CertificateWithPersonnel | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingUrl, setLoadingUrl] = useState(false);
+
+  // Load signed URL when certificate is selected
+  useEffect(() => {
+    if (selectedCertificate?.documentUrl) {
+      setLoadingUrl(true);
+      getCertificateDocumentUrl(selectedCertificate.documentUrl)
+        .then(url => setSignedUrl(url))
+        .finally(() => setLoadingUrl(false));
+    } else {
+      setSignedUrl(null);
+    }
+  }, [selectedCertificate?.documentUrl]);
 
   // Collect all certificates from assigned personnel with personnel info
   const allCertificates: CertificateWithPersonnel[] = personnel.flatMap((person) =>
@@ -260,32 +275,52 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                      onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                      disabled={!signedUrl || loadingUrl}
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      {loadingUrl ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                      )}
                       Open Full Size
                     </Button>
                   </div>
                   <div className="p-4 flex justify-center">
-                    {isImageFile(selectedCertificate.documentUrl) ? (
+                    {loadingUrl ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : signedUrl && isImageFile(selectedCertificate.documentUrl) ? (
                       <img
-                        src={selectedCertificate.documentUrl}
+                        src={signedUrl}
                         alt={`${selectedCertificate.name} document`}
                         className="max-h-[400px] object-contain rounded"
                       />
-                    ) : isPdfFile(selectedCertificate.documentUrl) ? (
-                      <iframe
-                        src={selectedCertificate.documentUrl}
-                        title={`${selectedCertificate.name} document`}
-                        className="w-full h-[500px] rounded"
-                      />
+                    ) : signedUrl && isPdfFile(selectedCertificate.documentUrl) ? (
+                      <div className="flex flex-col items-center gap-4 py-8 w-full">
+                        <File className="h-16 w-16 text-primary" />
+                        <p className="text-muted-foreground text-center">
+                          PDF document attached
+                        </p>
+                        <p className="text-xs text-muted-foreground text-center max-w-md">
+                          For security reasons, PDF previews open in a new tab.
+                        </p>
+                        <Button
+                          onClick={() => window.open(signedUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View PDF Document
+                        </Button>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-muted-foreground" />
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                          disabled={!signedUrl}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Download Document
