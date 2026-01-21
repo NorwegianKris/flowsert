@@ -20,14 +20,15 @@ export function useWorkerCategories() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('worker_categories')
+      // Use type assertion since worker_categories table was just added
+      const { data, error } = await (supabase
+        .from('worker_categories' as any)
         .select('id, name, created_at')
         .eq('business_id', businessId)
-        .order('name');
+        .order('name') as any);
 
       if (error) throw error;
-      setCategories(data || []);
+      setCategories((data as WorkerCategory[]) || []);
     } catch (error) {
       console.error('Error fetching worker categories:', error);
     } finally {
