@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Shield, FileCheck, Users, BarChart3, Calendar, Bell } from 'lucide-react';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -86,6 +87,21 @@ const StepImageFrame = ({
   );
 };
 
+// Feature card component
+const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) => (
+  <div className="bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-border/50 shadow-sm">
+    <div className="flex items-start gap-3">
+      <div className="p-2 bg-primary/10 rounded-lg">
+        <Icon className="w-5 h-5 text-primary" />
+      </div>
+      <div>
+        <h4 className="font-semibold text-foreground">{title}</h4>
+        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+      </div>
+    </div>
+  </div>
+);
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -94,17 +110,32 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [stepImages, setStepImages] = useState<(string | null)[]>([null, null, null]);
+  const [demoEmail, setDemoEmail] = useState('');
+  const [demoSubmitting, setDemoSubmitting] = useState(false);
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const inviteToken = searchParams.get('invite');
+  // FIXED: Changed from 'invite' to 'token' to match InviteWorkerDialog/InviteAdminDialog
+  const inviteToken = searchParams.get('token');
+  const isPasswordReset = searchParams.get('type') === 'recovery';
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !isPasswordReset) {
       navigate('/');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isPasswordReset]);
+
+  // Handle password reset mode
+  useEffect(() => {
+    if (isPasswordReset) {
+      setResetPasswordMode(true);
+    }
+  }, [isPasswordReset]);
 
   const handleImageUpload = (index: number, file: File) => {
     const reader = new FileReader();
@@ -124,9 +155,11 @@ export default function Auth() {
       newErrors.email = emailResult.error.errors[0].message;
     }
 
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      newErrors.password = passwordResult.error.errors[0].message;
+    if (!forgotPasswordMode) {
+      const passwordResult = passwordSchema.safeParse(password);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
     }
 
     setErrors(newErrors);
@@ -178,10 +211,170 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      setErrors({ email: emailResult.error.errors[0].message });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?type=recovery`,
+    });
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: 'Reset email sent',
+        description: 'Check your inbox for the password reset link.',
+      });
+      setForgotPasswordMode(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+        description: 'Please make sure both passwords are identical.',
+      });
+      return;
+    }
+
+    const passwordResult = passwordSchema.safeParse(newPassword);
+    if (!passwordResult.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid password',
+        description: passwordResult.error.errors[0].message,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: 'Password updated',
+        description: 'Your password has been reset successfully.',
+      });
+      setResetPasswordMode(false);
+      navigate('/');
+    }
+  };
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailResult = emailSchema.safeParse(demoEmail);
+    if (!emailResult.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
+      });
+      return;
+    }
+
+    setDemoSubmitting(true);
+    
+    // Use type assertion since demo_requests was just added and types haven't regenerated
+    const { error } = await (supabase as any)
+      .from('demo_requests')
+      .insert({ email: demoEmail });
+
+    setDemoSubmitting(false);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to submit demo request. Please try again.',
+      });
+    } else {
+      toast({
+        title: 'Demo request submitted',
+        description: "We'll be in touch soon!",
+      });
+      setDemoEmail('');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Password Reset Mode
+  if (resetPasswordMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-300 via-slate-200 to-slate-400 p-4">
+        <Card className="w-full max-w-md shadow-lg backdrop-blur-sm bg-card/95">
+          <CardHeader className="text-center">
+            <h1 className="font-rajdhani text-4xl font-bold text-primary mb-2">
+              FlowSert
+            </h1>
+            <CardTitle className="text-2xl">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your new password below
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleResetPassword}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Password
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
       </div>
     );
   }
@@ -209,113 +402,158 @@ export default function Auth() {
             <CardDescription>
               {inviteToken 
                 ? 'Complete your registration to access your profile'
+                : forgotPasswordMode
+                ? 'Enter your email to reset your password'
                 : 'Sign in to your account or create a new one'}
             </CardDescription>
           </CardHeader>
 
-          <Tabs defaultValue={inviteToken ? 'signup' : 'signin'} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mx-4" style={{ width: 'calc(100% - 2rem)' }}>
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive">{errors.email}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    {errors.password && (
-                      <p className="text-sm text-destructive">{errors.password}</p>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
-                  </Button>
-                </CardFooter>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive">{errors.email}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    {errors.password && (
-                      <p className="text-sm text-destructive">{errors.password}</p>
-                    )}
-                  </div>
-                  {!inviteToken && (
-                    <p className="text-sm text-muted-foreground">
-                      By signing up, you'll create a new business account as an admin.
-                    </p>
+          {forgotPasswordMode ? (
+            <form onSubmit={handleForgotPassword}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email}</p>
                   )}
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
-                  </Button>
-                </CardFooter>
-              </form>
-            </TabsContent>
-          </Tabs>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Send Reset Link
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setForgotPasswordMode(false)}
+                >
+                  Back to Sign In
+                </Button>
+              </CardFooter>
+            </form>
+          ) : (
+            <Tabs defaultValue={inviteToken ? 'signup' : 'signin'} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mx-4" style={{ width: 'calc(100% - 2rem)' }}>
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                      {errors.email && (
+                        <p className="text-sm text-destructive">{errors.email}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="px-0 text-sm text-muted-foreground hover:text-primary"
+                      onClick={() => setForgotPasswordMode(true)}
+                    >
+                      Forgot password?
+                    </Button>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign In
+                    </Button>
+                  </CardFooter>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Full Name</Label>
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                      {errors.email && (
+                        <p className="text-sm text-destructive">{errors.email}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password}</p>
+                      )}
+                    </div>
+                    {!inviteToken && (
+                      <p className="text-sm text-muted-foreground">
+                        By signing up, you'll create a new business account as an admin.
+                      </p>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Create Account
+                    </Button>
+                  </CardFooter>
+                </form>
+              </TabsContent>
+            </Tabs>
+          )}
         </Card>
 
         {/* Book a Demo section */}
@@ -328,16 +566,18 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <form onSubmit={handleDemoSubmit} className="flex gap-2">
                 <Input
                   type="email"
                   placeholder="your@email.com"
                   className="flex-1"
+                  value={demoEmail}
+                  onChange={(e) => setDemoEmail(e.target.value)}
                 />
-                <Button type="button">
-                  Submit
+                <Button type="submit" disabled={demoSubmitting}>
+                  {demoSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit'}
                 </Button>
-              </div>
+              </form>
             </CardContent>
           </Card>
         </div>
@@ -435,8 +675,48 @@ export default function Auth() {
           </TabsContent>
           
           <TabsContent value="functionality">
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-              <p className="text-slate-500 text-lg">Functionality content coming soon...</p>
+            <div className="flex flex-col gap-4">
+              <h3 className="text-2xl font-bold text-slate-700 text-center mb-4">
+                Platform Features
+              </h3>
+              
+              <div className="grid gap-4">
+                <FeatureCard
+                  icon={FileCheck}
+                  title="Certificate Management"
+                  description="Track all personnel certificates with automatic expiry alerts. Upload, categorize, and manage documentation in one place."
+                />
+                
+                <FeatureCard
+                  icon={Users}
+                  title="Personnel Profiles"
+                  description="Comprehensive worker profiles with contact info, next-of-kin details, and complete certificate history."
+                />
+                
+                <FeatureCard
+                  icon={Shield}
+                  title="Compliance Tracking"
+                  description="At-a-glance compliance status for every team member. Know instantly who needs certificate renewals."
+                />
+                
+                <FeatureCard
+                  icon={Calendar}
+                  title="Project Assignment"
+                  description="Assign personnel to projects and track certificate requirements. Ensure every project has qualified workers."
+                />
+                
+                <FeatureCard
+                  icon={Bell}
+                  title="Automated Notifications"
+                  description="Receive alerts before certificates expire. Never miss a renewal deadline again."
+                />
+                
+                <FeatureCard
+                  icon={BarChart3}
+                  title="Dashboard Analytics"
+                  description="Visual overview of your workforce compliance. Track expiring certificates and personnel availability."
+                />
+              </div>
             </div>
           </TabsContent>
         </Tabs>
