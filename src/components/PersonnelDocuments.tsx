@@ -38,6 +38,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import { getPersonnelDocumentUrl } from '@/lib/storageUtils';
 import {
   Plus,
   FileText,
@@ -49,6 +50,7 @@ import {
   Image,
   ExternalLink,
   Calendar,
+  Loader2,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -91,11 +93,25 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
   const [editCategory, setEditCategory] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingUrl, setLoadingUrl] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   useEffect(() => {
     fetchData();
   }, [personnelId]);
+
+  // Load signed URL when document is selected
+  useEffect(() => {
+    if (selectedDocument?.fileUrl) {
+      setLoadingUrl(true);
+      getPersonnelDocumentUrl(selectedDocument.fileUrl)
+        .then(url => setSignedUrl(url))
+        .finally(() => setLoadingUrl(false));
+    } else {
+      setSignedUrl(null);
+    }
+  }, [selectedDocument?.fileUrl]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -420,13 +436,14 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            asChild
                             className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const url = await getPersonnelDocumentUrl(doc.fileUrl);
+                              if (url) window.open(url, '_blank');
+                            }}
                           >
-                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                              <Download className="h-4 w-4" />
-                            </a>
+                            <Download className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -502,23 +519,34 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(selectedDocument.fileUrl, '_blank')}
+                        onClick={async () => {
+                          if (signedUrl) window.open(signedUrl, '_blank');
+                        }}
+                        disabled={!signedUrl || loadingUrl}
                       >
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                        {loadingUrl ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                        )}
                         Open Full Size
                       </Button>
                     </div>
                   </div>
                   <div className="p-4 flex justify-center">
-                    {selectedDocument.fileType?.startsWith('image/') ? (
+                    {loadingUrl ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : signedUrl && selectedDocument.fileType?.startsWith('image/') ? (
                       <img
-                        src={selectedDocument.fileUrl}
+                        src={signedUrl}
                         alt={selectedDocument.name}
                         className="max-h-[400px] object-contain rounded"
                       />
-                  ) : selectedDocument.fileType === 'application/pdf' ? (
+                  ) : signedUrl && selectedDocument.fileType === 'application/pdf' ? (
                     <iframe
-                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedDocument.fileUrl)}&embedded=true`}
+                      src={signedUrl}
                       title={selectedDocument.name}
                       className="w-full h-[500px] rounded border-0"
                     />
@@ -528,7 +556,8 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => window.open(selectedDocument.fileUrl, '_blank')}
+                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                          disabled={!signedUrl}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Download Document

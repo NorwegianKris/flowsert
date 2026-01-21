@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -21,8 +21,9 @@ import {
   getDaysUntilExpiry,
   formatExpiryText,
 } from '@/lib/certificateUtils';
+import { getCertificateDocumentUrl } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2 } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
 
 interface CertificateTableProps {
@@ -33,6 +34,8 @@ interface CertificateTableProps {
 export function CertificateTable({ certificates, onCertificateUpdated }: CertificateTableProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [editCertificate, setEditCertificate] = useState<Certificate | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingUrl, setLoadingUrl] = useState(false);
 
   const sortedCertificates = [...certificates].sort((a, b) => {
     const statusOrder = { expired: 0, expiring: 1, valid: 2 };
@@ -52,6 +55,25 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
   const handleEditClick = (e: React.MouseEvent, cert: Certificate) => {
     e.stopPropagation();
     setEditCertificate(cert);
+  };
+
+  // Load signed URL when certificate is selected
+  useEffect(() => {
+    if (selectedCertificate?.documentUrl) {
+      setLoadingUrl(true);
+      getCertificateDocumentUrl(selectedCertificate.documentUrl)
+        .then(url => setSignedUrl(url))
+        .finally(() => setLoadingUrl(false));
+    } else {
+      setSignedUrl(null);
+    }
+  }, [selectedCertificate?.documentUrl]);
+
+  const handleOpenDocument = async (documentUrl: string) => {
+    const url = await getCertificateDocumentUrl(documentUrl);
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   return (
@@ -194,23 +216,32 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                        onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                        disabled={!signedUrl || loadingUrl}
                       >
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                        {loadingUrl ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                        )}
                         Open Full Size
                       </Button>
                     </div>
                   </div>
                   <div className="p-4 flex justify-center">
-                    {isImageFile(selectedCertificate.documentUrl) ? (
+                    {loadingUrl ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : signedUrl && isImageFile(selectedCertificate.documentUrl) ? (
                       <img
-                        src={selectedCertificate.documentUrl}
+                        src={signedUrl}
                         alt={`${selectedCertificate.name} document`}
                         className="max-h-[400px] object-contain rounded"
                       />
-                  ) : isPdfFile(selectedCertificate.documentUrl) ? (
+                  ) : signedUrl && isPdfFile(selectedCertificate.documentUrl) ? (
                     <iframe
-                      src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedCertificate.documentUrl)}&embedded=true`}
+                      src={signedUrl}
                       title={`${selectedCertificate.name} document`}
                       className="w-full h-[500px] rounded border-0"
                     />
@@ -220,7 +251,8 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => window.open(selectedCertificate.documentUrl, '_blank')}
+                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                          disabled={!signedUrl}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Download Document

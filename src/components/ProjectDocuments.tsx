@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getProjectDocumentUrl } from '@/lib/storageUtils';
 import {
   Upload,
   FileText,
@@ -335,12 +336,13 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  asChild
                   className="text-muted-foreground hover:text-foreground"
+                  onClick={async () => {
+                    const url = await getProjectDocumentUrl(doc.fileUrl);
+                    if (url) window.open(url, '_blank');
+                  }}
                 >
-                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                    <Download className="h-4 w-4" />
-                  </a>
+                  <Download className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
