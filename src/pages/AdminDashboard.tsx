@@ -16,12 +16,14 @@ import { FeedbackList } from '@/components/FeedbackList';
 import { PersonnelFilters } from '@/components/PersonnelFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
+import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2 } from 'lucide-react';
 import { CompanyCard } from '@/components/CompanyCard';
+import { DateRange } from 'react-day-picker';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,9 +40,11 @@ export default function AdminDashboard() {
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
   const [locationFilters, setLocationFilters] = useState<string[]>([]);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
+  const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
   const { signOut, profile } = useAuth();
   
   const loading = personnelLoading || projectsLoading;
@@ -73,9 +77,12 @@ export default function AdminDashboard() {
       // Category filter (multi-select: fixed_employee or freelancer)
       if (categoryFilters.length > 0 && (!p.category || !categoryFilters.includes(p.category))) return false;
       
+      // Availability filter
+      if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
+      
       return true;
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, availabilityDateRange, isAvailable]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -230,6 +237,8 @@ export default function AdminDashboard() {
               categoryFilters={categoryFilters}
               onCategoryFiltersChange={setCategoryFilters}
               locations={uniqueLocations}
+              availabilityDateRange={availabilityDateRange}
+              onAvailabilityDateRangeChange={setAvailabilityDateRange}
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -246,7 +255,7 @@ export default function AdminDashboard() {
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">👤</div>
                 <p className="text-muted-foreground">
-                  {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0
+                  {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0 || availabilityDateRange?.from
                     ? 'No personnel found matching your filters'
                     : 'No personnel yet. Add your first team member to get started.'}
                 </p>
