@@ -417,7 +417,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     <Card className="fixed bottom-6 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b border-border">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
+          <Bot className="h-5 w-5 text-cyan-500" />
           Flowsert Assistant
         </CardTitle>
         <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>

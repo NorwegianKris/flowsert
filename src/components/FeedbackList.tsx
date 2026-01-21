@@ -81,7 +81,7 @@ export function FeedbackList() {
       <CollapsibleTrigger asChild>
         <Button variant="ghost" className="w-full justify-between p-4 h-auto">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+            <MessageSquare className="h-5 w-5 text-emerald-500" />
             <span className="font-semibold">User Feedback</span>
             {feedback.length > 0 && (
               <Badge variant="secondary" className="ml-2">

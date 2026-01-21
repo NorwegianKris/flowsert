@@ -96,7 +96,7 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
       <Card className="border-border/50">
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
+            <ClipboardList className="h-5 w-5 text-purple-500" />
             Invitation Log
           </CardTitle>
         </CardHeader>
@@ -112,7 +112,7 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
+            <ClipboardList className="h-5 w-5 text-purple-500" />
             Invitation Log
           </CardTitle>
           

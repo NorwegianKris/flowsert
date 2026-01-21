@@ -107,7 +107,7 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
       <Card className="border-border/50">
         <CardHeader className="py-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-primary" />
+            <Briefcase className="h-4 w-4 text-amber-500" />
             Assigned Projects
           </CardTitle>
         </CardHeader>
@@ -120,10 +120,10 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
 
   return (
     <Card className="border-border/50">
-      <CardHeader className="py-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Briefcase className="h-4 w-4 text-primary" />
-          Assigned Projects
+        <CardHeader className="py-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-amber-500" />
+            Assigned Projects
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
@@ -152,7 +152,7 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
                             {project.name}
                           </p>
                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
+                            <Calendar className="h-3 w-3 text-sky-500" />
                             <span>{formatDateRange(project.startDate, project.endDate)}</span>
                           </div>
                         </div>
@@ -187,7 +187,7 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
                             {project.name}
                           </p>
                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
+                            <Calendar className="h-3 w-3 text-sky-500" />
                             <span>{formatDateRange(project.startDate, project.endDate)}</span>
                           </div>
                         </div>

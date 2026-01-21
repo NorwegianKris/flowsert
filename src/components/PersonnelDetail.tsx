@@ -143,15 +143,15 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4 text-primary" />
+                  <MapPin className="h-4 w-4 text-rose-500" />
                   <span>{personnel.location}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4 text-primary" />
+                  <Mail className="h-4 w-4 text-blue-500" />
                   <span>{personnel.email}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4 text-primary" />
+                  <Phone className="h-4 w-4 text-emerald-500" />
                   <span>{personnel.phone}</span>
                 </div>
               </div>
@@ -164,8 +164,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileCheck className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <FileCheck className="h-5 w-5 text-blue-500" />
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
@@ -273,7 +273,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <Card className="border-border/50">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" />
+                <User className="h-4 w-4 text-indigo-500" />
                 Personal Information
               </CardTitle>
               <Button
@@ -344,7 +344,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <Card className="border-border/50">
             <CardHeader className="flex flex-row items-center justify-between py-3">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
+                <Users className="h-4 w-4 text-pink-500" />
                 Next of Kin
               </CardTitle>
               <Button

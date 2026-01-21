@@ -103,7 +103,7 @@ export function AdminOverview() {
       <Card className="border-border/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
+            <Shield className="h-5 w-5 text-indigo-500" />
             Admin Users
             <Badge variant="secondary" className="ml-2">
               {admins.length}

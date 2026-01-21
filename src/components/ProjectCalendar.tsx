@@ -88,7 +88,7 @@ export function ProjectCalendar({ project, onUpdateDates, editable = true }: Pro
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-primary" />
+            <CalendarIcon className="h-5 w-5 text-sky-500" />
             Project Timeline
           </CardTitle>
           {editable && !isEditing && (
