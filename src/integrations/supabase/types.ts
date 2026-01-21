@@ -52,24 +52,95 @@ export type Database = {
           },
         ]
       }
-      businesses: {
+      business_documents: {
         Row: {
+          business_id: string
           created_at: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
           id: string
           name: string
           updated_at: string
+          uploaded_by: string | null
         }
         Insert: {
+          business_id: string
           created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
           id?: string
           name: string
           updated_at?: string
+          uploaded_by?: string | null
         }
         Update: {
+          business_id?: string
           created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
           id?: string
           name?: string
           updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_documents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      businesses: {
+        Row: {
+          address: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          org_number: string | null
+          phone: string | null
+          postal_address: string | null
+          postal_code: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          org_number?: string | null
+          phone?: string | null
+          postal_address?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          org_number?: string | null
+          phone?: string | null
+          postal_address?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
