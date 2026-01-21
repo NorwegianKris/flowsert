@@ -136,21 +136,23 @@ export function usePersonnel() {
 export function useWorkerPersonnel() {
   const [personnel, setPersonnel] = useState<Personnel | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
 
   const fetchWorkerPersonnel = async () => {
-    if (!user) {
+    // Skip if no user OR if user is not a worker
+    if (!user || role !== 'worker') {
       setPersonnel(null);
       setLoading(false);
       return;
     }
 
     try {
-      // Fetch the worker's own personnel record (RLS enforces this)
+      // Fetch the worker's own personnel record by user_id
       const { data: personnelData, error: personnelError } = await supabase
         .from('personnel')
         .select('*')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (personnelError) throw personnelError;
