@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, X } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { ChevronDown, X, CalendarIcon } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
-import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
 interface PersonnelFiltersProps {
   roleFilters: string[];
@@ -15,6 +17,8 @@ interface PersonnelFiltersProps {
   categoryFilters: string[];
   onCategoryFiltersChange: (values: string[]) => void;
   locations: string[];
+  availabilityDateRange: DateRange | undefined;
+  onAvailabilityDateRangeChange: (range: DateRange | undefined) => void;
 }
 
 export function PersonnelFilters({
@@ -25,18 +29,26 @@ export function PersonnelFilters({
   categoryFilters,
   onCategoryFiltersChange,
   locations,
+  availabilityDateRange,
+  onAvailabilityDateRangeChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const [roleOpen, setRoleOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
 
-  const hasActiveFilters = roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0;
+  const hasActiveFilters = 
+    roleFilters.length > 0 || 
+    locationFilters.length > 0 || 
+    categoryFilters.length > 0 ||
+    availabilityDateRange?.from !== undefined;
 
   const clearAllFilters = () => {
     onRoleFiltersChange([]);
     onLocationFiltersChange([]);
     onCategoryFiltersChange([]);
+    onAvailabilityDateRangeChange(undefined);
   };
 
   const toggleFilter = (
@@ -56,11 +68,62 @@ export function PersonnelFilters({
     { value: 'freelancer', label: 'Freelancer' },
   ];
 
+  const formatDateRange = () => {
+    if (!availabilityDateRange?.from) return 'Availability';
+    if (!availabilityDateRange.to) {
+      return format(availabilityDateRange.from, 'MMM d, yyyy');
+    }
+    return `${format(availabilityDateRange.from, 'MMM d')} - ${format(availabilityDateRange.to, 'MMM d, yyyy')}`;
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Filter by:</span>
       </div>
+
+      {/* Availability Date Range Filter */}
+      <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            <span className="truncate">{formatDateRange()}</span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 bg-popover border shadow-md z-50" align="start">
+          <div className="p-3 border-b">
+            <p className="text-sm font-medium">Select dates to find available workers</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Workers marked as unavailable on these dates will be hidden
+            </p>
+          </div>
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={availabilityDateRange?.from}
+            selected={availabilityDateRange}
+            onSelect={onAvailabilityDateRangeChange}
+            numberOfMonths={2}
+          />
+          <div className="p-3 border-t flex justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onAvailabilityDateRangeChange(undefined)}
+              disabled={!availabilityDateRange?.from}
+            >
+              Clear
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setAvailabilityOpen(false)}
+            >
+              Apply
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Job Role Filter */}
       <Popover open={roleOpen} onOpenChange={setRoleOpen}>
@@ -216,6 +279,18 @@ export function PersonnelFilters({
       {/* Active filter badges */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-1 ml-2">
+          {availabilityDateRange?.from && (
+            <Badge variant="secondary" className="text-xs">
+              <CalendarIcon className="h-3 w-3 mr-1" />
+              {formatDateRange()}
+              <button
+                className="ml-1 hover:text-destructive"
+                onClick={() => onAvailabilityDateRangeChange(undefined)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
           {roleFilters.map((role) => (
             <Badge key={role} variant="secondary" className="text-xs">
               {role}
