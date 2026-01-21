@@ -17,6 +17,7 @@ import { PersonnelFilters } from '@/components/PersonnelFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
+import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
+  const { business } = useBusinessInfo();
   const { signOut, profile } = useAuth();
   
   const loading = personnelLoading || projectsLoading;
@@ -179,6 +181,29 @@ export default function AdminDashboard() {
       />
       
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Business Header */}
+        {business && (
+          <div className="flex items-center gap-4 mb-2">
+            {business.logo_url ? (
+              <img 
+                src={business.logo_url} 
+                alt={`${business.name} logo`}
+                className="h-14 w-14 object-contain rounded-lg border bg-background"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-lg border bg-muted flex items-center justify-center">
+                <Building2 className="h-7 w-7 text-muted-foreground" />
+              </div>
+            )}
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">{business.name}</h2>
+              {business.org_number && (
+                <p className="text-sm text-muted-foreground">Org. {business.org_number}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
