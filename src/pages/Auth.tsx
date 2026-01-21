@@ -335,11 +335,13 @@ export default function Auth() {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
-              Bring certificate chaos
-              <span className="block text-primary">to zero</span>
+              Make personnel compliance
+              <span className="block">
+                <span className="text-primary">flow</span>
+              </span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
-              Transform your operations with smart certificate management software—built for the industrial frontline.
+              Transform your operations with smart certificate management software—built for industrial SMEs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8 text-base gap-2">
