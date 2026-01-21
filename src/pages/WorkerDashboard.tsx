@@ -31,7 +31,7 @@ export default function WorkerDashboard() {
             <div>
               <h1 className="font-semibold text-foreground">My Profile</h1>
               <p className="text-sm text-muted-foreground">
-                {profile?.full_name || profile?.email}
+                {personnel?.name || profile?.full_name || profile?.email}
               </p>
             </div>
           </div>
