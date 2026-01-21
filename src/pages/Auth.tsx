@@ -303,23 +303,24 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold font-rajdhani text-primary">FlowSert</h1>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/about')}>
+            <h1 className="text-2xl font-bold font-rajdhani text-primary">FlowSert</h1>
+            <div className="hidden md:flex items-center gap-6">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/about')}>
                 About
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/faq')}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/faq')}>
                 FAQ
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/contact')}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/contact')}>
                 Contact
               </Button>
-              <div className="w-px h-6 bg-border mx-2" />
-              <Button variant="outline" size="sm" onClick={() => openAuthDialog('signin')}>
-                Sign In
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={() => openAuthDialog('signin')}>
+                Log In
               </Button>
               <Button size="sm" onClick={() => openAuthDialog('signup')}>
                 Sign Up
@@ -330,62 +331,109 @@ export default function Auth() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-28">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold font-rajdhani text-foreground mb-6 leading-tight">
-              Personnel Compliance
-              <span className="block text-primary">Simplified</span>
+      <section className="pt-16 pb-8 md:pt-24 md:pb-12">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
+              Bring certificate chaos
+              <span className="block text-primary">to zero</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8">
-              The smart platform for tracking certifications, managing personnel, 
-              and ensuring your workforce stays compliant and qualified.
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
+              Transform your operations with smart certificate management software—built for the industrial frontline.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => openAuthDialog('signup')} className="gap-2">
-                Get Started Free <ArrowRight className="h-4 w-4" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8 text-base gap-2">
+                Sign up for Free <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/about')}>
-                Learn More
+              <Button size="lg" variant="outline" onClick={() => navigate('/contact')} className="h-12 px-8 text-base">
+                Book a Tour
               </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Product Preview */}
+      <section className="pb-16 md:pb-24">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
+              <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
+              </div>
+              <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="bg-background rounded-lg p-4 border border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-foreground">Personnel</span>
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">24</p>
+                    <p className="text-xs text-muted-foreground mt-1">Active workers</p>
+                  </div>
+                  <div className="bg-background rounded-lg p-4 border border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-foreground">Certificates</span>
+                      <FileCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-3xl font-bold text-foreground">156</p>
+                    <p className="text-xs text-muted-foreground mt-1">Total tracked</p>
+                  </div>
+                  <div className="bg-background rounded-lg p-4 border border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-foreground">Expiring Soon</span>
+                      <Clock className="h-4 w-4 text-destructive" />
+                    </div>
+                    <p className="text-3xl font-bold text-destructive">3</p>
+                    <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold font-rajdhani text-foreground mb-12 text-center">How It Works</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                  <Users className="h-8 w-8 text-primary" />
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">1</div>
+            <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4 text-center">How It Works</h2>
+            <p className="text-muted-foreground text-center mb-14 max-w-xl mx-auto">
+              Get your team up and running in minutes with our simple three-step process.
+            </p>
+            <div className="grid md:grid-cols-3 gap-12">
+              <div className="text-center group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:bg-primary/15 transition-colors">
+                  <Users className="h-9 w-9 text-primary" />
+                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm shadow-lg">1</div>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Set Up Your Team</h3>
-                <p className="text-muted-foreground text-sm">
+                <h3 className="text-xl font-semibold text-foreground mb-3">Set Up Your Team</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Create your business account and invite your personnel to join the platform.
                 </p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                  <FileCheck className="h-8 w-8 text-primary" />
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">2</div>
+              <div className="text-center group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:bg-primary/15 transition-colors">
+                  <FileCheck className="h-9 w-9 text-primary" />
+                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm shadow-lg">2</div>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Upload Certificates</h3>
-                <p className="text-muted-foreground text-sm">
+                <h3 className="text-xl font-semibold text-foreground mb-3">Upload Certificates</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Workers upload their certificates and documentation to their personal profiles.
                 </p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                  <Shield className="h-8 w-8 text-primary" />
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">3</div>
+              <div className="text-center group">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:bg-primary/15 transition-colors">
+                  <Shield className="h-9 w-9 text-primary" />
+                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm shadow-lg">3</div>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Stay Compliant</h3>
-                <p className="text-muted-foreground text-sm">
+                <h3 className="text-xl font-semibold text-foreground mb-3">Stay Compliant</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Get full visibility into certification status and never miss a renewal.
                 </p>
               </div>
@@ -477,30 +525,21 @@ export default function Auth() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary/5">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold font-rajdhani text-foreground mb-4">Ready to Get Started?</h2>
-          <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+      <section className="py-24 bg-primary/5">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4">Ready to Get Started?</h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
             Join businesses managing their certifications smarter with FlowSert.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" onClick={() => openAuthDialog('signup')}>
+            <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8">
               Create Free Account
             </Button>
-            <span className="text-muted-foreground">or</span>
-            <div className="flex items-center gap-2">
-              <Input
-                type="email"
-                placeholder="your@email.com"
-                className="w-64"
-                value={demoEmail}
-                onChange={(e) => setDemoEmail(e.target.value)}
-              />
-              <Button variant="outline" onClick={handleDemoSubmit} disabled={demoSubmitting}>
-                {demoSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Book a Demo'}
-              </Button>
-            </div>
+            <Button size="lg" variant="outline" onClick={() => navigate('/contact')} className="h-12 px-8">
+              Book a Demo
+            </Button>
           </div>
+          <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
         </div>
       </section>
 
