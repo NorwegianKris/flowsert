@@ -517,7 +517,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Project compliance</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Verify required competencies and certificates per project at a glance.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Verify required competencies and certificates per project at a glance - for internal control and external sharing.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
