@@ -395,7 +395,7 @@ export type Database = {
           gender?: string | null
           id?: string
           language?: string | null
-          location: string
+          location?: string
           name: string
           national_id?: string | null
           nationality?: string | null
