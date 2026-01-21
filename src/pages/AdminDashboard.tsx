@@ -20,7 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2 } from 'lucide-react';
+import { CompanyCard } from '@/components/CompanyCard';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +32,7 @@ export default function AdminDashboard() {
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [companyCardOpen, setCompanyCardOpen] = useState(false);
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { signOut, profile } = useAuth();
@@ -161,6 +163,10 @@ export default function AdminDashboard() {
               <FolderOpen className="h-4 w-4 mr-2" />
               New Project
             </Button>
+            <Button variant="outline" onClick={() => setCompanyCardOpen(true)}>
+              <Building2 className="h-4 w-4 mr-2" />
+              Company Card
+            </Button>
             <Button variant="outline" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -265,6 +271,26 @@ export default function AdminDashboard() {
                 <DocumentCategoriesManager />
                 
                 <FeedbackList />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {companyCardOpen && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+            <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-background border-l shadow-lg">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Company Card
+                </h2>
+                <Button variant="ghost" size="icon" onClick={() => setCompanyCardOpen(false)}>
+                  <span className="sr-only">Close</span>
+                  ✕
+                </Button>
+              </div>
+              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
+                <CompanyCard isAdmin onClose={() => setCompanyCardOpen(false)} />
               </div>
             </div>
           </div>
