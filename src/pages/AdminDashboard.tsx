@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
-  const { business } = useBusinessInfo();
+  const { business, refetch: refetchBusiness } = useBusinessInfo();
   const { signOut, profile } = useAuth();
   
   const loading = personnelLoading || projectsLoading;
@@ -359,7 +359,10 @@ export default function AdminDashboard() {
                 </Button>
               </div>
               <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
-                <CompanyCard isAdmin onClose={() => setCompanyCardOpen(false)} />
+                <CompanyCard isAdmin onClose={() => {
+                  setCompanyCardOpen(false);
+                  refetchBusiness();
+                }} />
               </div>
             </div>
           </div>
