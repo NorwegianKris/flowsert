@@ -77,11 +77,11 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'active':
-        return 'default';
+        return 'active';
       case 'pending':
         return 'secondary';
       case 'completed':
-        return 'outline';
+        return 'completed';
       default:
         return 'secondary';
     }

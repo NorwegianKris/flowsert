@@ -43,9 +43,9 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
   const getStatusBadgeVariant = (status?: string) => {
     switch (status) {
       case 'active':
-        return 'default';
+        return 'active';
       case 'completed':
-        return 'secondary';
+        return 'completed';
       case 'pending':
         return 'outline';
       default:
@@ -110,7 +110,6 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
                     Decline
                   </Button>
                   <Button
-                    variant="active"
                     size="sm"
                     onClick={(e) => handleStatusChange(invitation.id, true, e)}
                     disabled={respondingId === invitation.id}
@@ -273,7 +272,6 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
               Decline
             </Button>
             <Button
-              variant="active"
               onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, true)}
               disabled={respondingId === selectedInvitation?.id}
             >

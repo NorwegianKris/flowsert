@@ -19,8 +19,8 @@ interface RequestProjectDialogProps {
 }
 
 const statusConfig = {
-  active: { label: 'Active', variant: 'default' as const, icon: Clock },
-  completed: { label: 'Completed', variant: 'secondary' as const, icon: CheckCircle },
+  active: { label: 'Active', variant: 'active' as const, icon: Clock },
+  completed: { label: 'Completed', variant: 'completed' as const, icon: CheckCircle },
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock },
 };
 
@@ -147,7 +147,6 @@ export function RequestProjectDialog({
               Cancel
             </Button>
             <Button
-              variant="active"
               onClick={handleSend}
               disabled={!selectedProject || isSending}
             >

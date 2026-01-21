@@ -156,7 +156,7 @@ export function DocumentCategoriesManager() {
               onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
               disabled={adding}
             />
-            <Button variant="active" onClick={handleAddCategory} disabled={adding || !newCategoryName.trim()}>
+            <Button onClick={handleAddCategory} disabled={adding || !newCategoryName.trim()}>
               {adding ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

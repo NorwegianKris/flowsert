@@ -118,7 +118,7 @@ export function ReportFeedbackDialog() {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button variant="active" onClick={handleSubmit} disabled={loading}>
+          <Button onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Submit
           </Button>
