@@ -6,6 +6,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, LogOut, User } from 'lucide-react';
 
 export default function WorkerDashboard() {
@@ -25,9 +26,12 @@ export default function WorkerDashboard() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-5 w-5 text-primary" />
-            </div>
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {personnel?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || <User className="h-5 w-5" />}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <h1 className="font-semibold text-foreground">My Profile</h1>
               <p className="text-sm text-muted-foreground">
