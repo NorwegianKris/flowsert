@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -16,7 +16,10 @@ interface PersonnelFiltersProps {
   onLocationFiltersChange: (values: string[]) => void;
   categoryFilters: string[];
   onCategoryFiltersChange: (values: string[]) => void;
+  certificateFilters: string[];
+  onCertificateFiltersChange: (values: string[]) => void;
   locations: string[];
+  certificates: string[];
   availabilityDateRange: DateRange | undefined;
   onAvailabilityDateRangeChange: (range: DateRange | undefined) => void;
 }
@@ -28,7 +31,10 @@ export function PersonnelFilters({
   onLocationFiltersChange,
   categoryFilters,
   onCategoryFiltersChange,
+  certificateFilters,
+  onCertificateFiltersChange,
   locations,
+  certificates,
   availabilityDateRange,
   onAvailabilityDateRangeChange,
 }: PersonnelFiltersProps) {
@@ -36,18 +42,21 @@ export function PersonnelFilters({
   const [roleOpen, setRoleOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [certificateOpen, setCertificateOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
 
   const hasActiveFilters = 
     roleFilters.length > 0 || 
     locationFilters.length > 0 || 
     categoryFilters.length > 0 ||
+    certificateFilters.length > 0 ||
     availabilityDateRange?.from !== undefined;
 
   const clearAllFilters = () => {
     onRoleFiltersChange([]);
     onLocationFiltersChange([]);
     onCategoryFiltersChange([]);
+    onCertificateFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
   };
 
@@ -263,6 +272,54 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
+      {/* Certificate Filter */}
+      <Popover open={certificateOpen} onOpenChange={setCertificateOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+            <Award className="mr-2 h-4 w-4" />
+            <span className="truncate">
+              {certificateFilters.length === 0
+                ? 'Certificates'
+                : certificateFilters.length === 1
+                ? certificateFilters[0]
+                : `${certificateFilters.length} certs`}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[250px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
+          <div className="space-y-1">
+            {certificates.map((cert) => (
+              <label
+                key={cert}
+                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+              >
+                <Checkbox
+                  checked={certificateFilters.includes(cert)}
+                  onCheckedChange={() =>
+                    toggleFilter(cert, certificateFilters, onCertificateFiltersChange)
+                  }
+                />
+                <span className="text-sm truncate">{cert}</span>
+              </label>
+            ))}
+            {certificates.length === 0 && (
+              <p className="text-sm text-muted-foreground px-2 py-1">No certificates</p>
+            )}
+          </div>
+          {certificateFilters.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full mt-2"
+              onClick={() => onCertificateFiltersChange([])}
+            >
+              Clear
+            </Button>
+          )}
+        </PopoverContent>
+      </Popover>
+
       {/* Clear Filters Button */}
       {hasActiveFilters && (
         <Button
@@ -319,6 +376,18 @@ export function PersonnelFilters({
               <button
                 className="ml-1 hover:text-destructive"
                 onClick={() => toggleFilter(cat, categoryFilters, onCategoryFiltersChange)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          {certificateFilters.map((cert) => (
+            <Badge key={cert} variant="secondary" className="text-xs">
+              <Award className="h-3 w-3 mr-1" />
+              {cert}
+              <button
+                className="ml-1 hover:text-destructive"
+                onClick={() => toggleFilter(cert, certificateFilters, onCertificateFiltersChange)}
               >
                 <X className="h-3 w-3" />
               </button>
