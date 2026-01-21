@@ -128,9 +128,10 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
         {projects.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No projects assigned yet
-          </p>
+          <div className="text-center py-4">
+            <div className="text-3xl mb-2">📋</div>
+            <p className="text-sm text-muted-foreground">No projects assigned yet</p>
+          </div>
         ) : (
           <>
             {activeProjects.length > 0 && (

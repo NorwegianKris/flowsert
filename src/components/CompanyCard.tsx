@@ -578,7 +578,7 @@ export function CompanyCard({ isAdmin = false, onClose }: CompanyCardProps) {
 
         {documents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <div className="text-4xl mb-2">📋</div>
             <p>No documents uploaded yet</p>
           </div>
         ) : (

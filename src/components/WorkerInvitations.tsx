@@ -71,9 +71,10 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
         </CardHeader>
         <CardContent>
           {pendingInvitations.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No pending invitations
-            </p>
+            <div className="text-center py-4">
+              <div className="text-3xl mb-2">✉️</div>
+              <p className="text-sm text-muted-foreground">No pending invitations</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {pendingInvitations.map((invitation) => (

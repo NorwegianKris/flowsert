@@ -32,9 +32,10 @@ export function PersonnelOverview({ personnel }: PersonnelOverviewProps) {
       </CardHeader>
       <CardContent>
         {personnel.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">
-            No personnel found
-          </p>
+          <div className="text-center py-4">
+            <div className="text-3xl mb-2">👤</div>
+            <p className="text-muted-foreground">No personnel found</p>
+          </div>
         ) : (
           <ScrollArea className="h-[300px]">
             <div className="space-y-3">

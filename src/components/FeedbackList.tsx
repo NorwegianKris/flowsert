@@ -102,9 +102,10 @@ export function FeedbackList() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : feedback.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No feedback submitted yet.
-          </p>
+          <div className="text-center py-4">
+            <div className="text-3xl mb-2">💬</div>
+            <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
+          </div>
         ) : (
           feedback.map((item) => (
             <Card key={item.id}>

@@ -209,6 +209,7 @@ export default function AdminDashboard() {
             
             {filteredPersonnel.length === 0 && !loading && (
               <div className="text-center py-12">
+                <div className="text-5xl mb-4">👤</div>
                 <p className="text-muted-foreground">
                   {searchQuery 
                     ? `No personnel found matching "${searchQuery}"`

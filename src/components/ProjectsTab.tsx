@@ -53,7 +53,10 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           ))}
         </div>
         {activeProjects.length === 0 && (
-          <p className="text-muted-foreground text-center py-8">No active projects</p>
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">🚀</div>
+            <p className="text-muted-foreground">No active projects</p>
+          </div>
         )}
       </div>
 
@@ -75,7 +78,10 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           ))}
         </div>
         {completedProjects.length === 0 && (
-          <p className="text-muted-foreground text-center py-8">No completed projects</p>
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">✅</div>
+            <p className="text-muted-foreground">No completed projects</p>
+          </div>
         )}
       </div>
 

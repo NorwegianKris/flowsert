@@ -685,9 +685,10 @@ export function TeamCalendar({ personnel, projects = [], onAddCalendarItem }: Te
                       </div>
                     ))}
                     {upcomingCertificateExpiries.length === 0 && (
-                      <p className="text-sm text-muted-foreground italic">
-                        No certificates with expiry dates
-                      </p>
+                      <div className="text-center py-2">
+                        <span className="text-lg mr-2">📋</span>
+                        <span className="text-sm text-muted-foreground italic">No certificates with expiry dates</span>
+                      </div>
                     )}
                   </div>
                 </div>

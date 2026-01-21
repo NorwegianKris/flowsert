@@ -120,9 +120,10 @@ export function AdminOverview() {
         </CardHeader>
       <CardContent>
         {admins.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">
-            No admin users found
-          </p>
+          <div className="text-center py-4">
+            <div className="text-3xl mb-2">👔</div>
+            <p className="text-muted-foreground">No admin users found</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {admins.map((admin) => (
