@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -351,8 +352,17 @@ export default function Auth() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-16 pb-8 md:pt-24 md:pb-12">
-        <div className="container mx-auto px-6">
+      <section className="pt-16 pb-8 md:pt-24 md:pb-12 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
               Make personnel
