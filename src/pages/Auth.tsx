@@ -485,39 +485,57 @@ export default function Auth() {
             <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-12 text-center">Platform Features</h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="flex items-start gap-4 p-4">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                  <FileCheck className="w-5 h-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">
+                  👥
                 </div>
                 <div>
-                  <h4 className="font-semibold text-foreground">Certificate Management</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Track all personnel certificates with automatic expiry alerts.</p>
+                  <h4 className="font-semibold text-foreground">Personnel overview</h4>
+                  <p className="text-sm text-muted-foreground mt-1">See your workforce, roles, and competencies in one structured view.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                  <Users className="w-5 h-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">
+                  📜
                 </div>
                 <div>
-                  <h4 className="font-semibold text-foreground">Personnel Profiles</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Comprehensive worker profiles with complete certificate history.</p>
+                  <h4 className="font-semibold text-foreground">Certificate tracking</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Track certificates with issue and expiry dates, clearly marked as valid, expiring, or expired.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                  <BarChart3 className="w-5 h-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">
+                  🙋
                 </div>
                 <div>
-                  <h4 className="font-semibold text-foreground">Dashboard Analytics</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Visual overview of your workforce compliance status.</p>
+                  <h4 className="font-semibold text-foreground">Worker self-service</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Workers upload and update their own certificates, keeping data accurate and up to date.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                  <Shield className="w-5 h-5 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">
+                  ✅
                 </div>
                 <div>
-                  <h4 className="font-semibold text-foreground">Project Assignment</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Assign personnel to projects and track requirements.</p>
+                  <h4 className="font-semibold text-foreground">Project compliance</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Verify required competencies and certificates per project at a glance.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4">
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">
+                  🤖
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground">AI-assisted support</h4>
+                  <p className="text-sm text-muted-foreground mt-1">An AI chatbot helps identify certificate details and answer document-related questions, with human confirmation.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-4">
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">
+                  📥
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground">Job applicant funnel</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Receive job seekers and certificate submissions in one structured flow, instead of emails and cold calls.</p>
                 </div>
               </div>
             </div>
