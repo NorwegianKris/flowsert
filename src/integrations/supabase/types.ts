@@ -859,6 +859,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_personnel_to_project: {
+        Args: { _personnel_id: string; _project_id: string }
+        Returns: boolean
+      }
       can_access_personnel: {
         Args: { _personnel_id: string; _user_id: string }
         Returns: boolean
@@ -889,6 +893,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      remove_personnel_from_project: {
+        Args: { _personnel_id: string; _project_id: string }
         Returns: boolean
       }
       validate_invitation_token_access: {

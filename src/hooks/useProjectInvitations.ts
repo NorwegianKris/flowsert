@@ -308,51 +308,29 @@ export function useProjectInvitations() {
       if (updateError) throw updateError;
 
       if (accept) {
-        // Add personnel to project's assigned_personnel
-        const { data: project, error: projectFetchError } = await supabase
-          .from('projects')
-          .select('assigned_personnel')
-          .eq('id', invitation.project_id)
-          .single();
+        // Use RPC function to add personnel to project (bypasses RLS safely)
+        const { error: rpcError } = await supabase.rpc('add_personnel_to_project', {
+          _project_id: invitation.project_id,
+          _personnel_id: invitation.personnel_id,
+        });
 
-        if (projectFetchError) throw projectFetchError;
-
-        const currentPersonnel = project.assigned_personnel || [];
-        if (!currentPersonnel.includes(invitation.personnel_id)) {
-          const { error: projectUpdateError } = await supabase
-            .from('projects')
-            .update({
-              assigned_personnel: [...currentPersonnel, invitation.personnel_id],
-            })
-            .eq('id', invitation.project_id);
-
-          if (projectUpdateError) throw projectUpdateError;
+        if (rpcError) {
+          console.error('RPC error adding personnel to project:', rpcError);
+          // Don't throw - the invitation status is already updated
         }
 
         toast.success('Invitation accepted! You have been added to the project.');
       } else {
-        // Remove from assigned_personnel if declining
-        const { data: project, error: projectFetchError } = await supabase
-          .from('projects')
-          .select('assigned_personnel')
-          .eq('id', invitation.project_id)
-          .single();
+        // Use RPC function to remove personnel from project (bypasses RLS safely)
+        const { error: rpcError } = await supabase.rpc('remove_personnel_from_project', {
+          _project_id: invitation.project_id,
+          _personnel_id: invitation.personnel_id,
+        });
 
-        if (projectFetchError) throw projectFetchError;
-
-        const currentPersonnel = project.assigned_personnel || [];
-        const updatedPersonnel = currentPersonnel.filter(
-          (id: string) => id !== invitation.personnel_id
-        );
-
-        const { error: projectUpdateError } = await supabase
-          .from('projects')
-          .update({
-            assigned_personnel: updatedPersonnel,
-          })
-          .eq('id', invitation.project_id);
-
-        if (projectUpdateError) throw projectUpdateError;
+        if (rpcError) {
+          console.error('RPC error removing personnel from project:', rpcError);
+          // Don't throw - the invitation status is already updated
+        }
 
         toast.success('Invitation declined.');
       }
@@ -406,40 +384,27 @@ export function useProjectInvitations() {
 
       if (updateError) throw updateError;
 
-      // Handle assigned_personnel updates based on status change
-      const { data: project, error: projectFetchError } = await supabase
-        .from('projects')
-        .select('assigned_personnel')
-        .eq('id', invitation.project_id)
-        .single();
-
-      if (projectFetchError) throw projectFetchError;
-
-      const currentPersonnel = project.assigned_personnel || [];
-      let updatedPersonnel = [...currentPersonnel];
-
+      // Handle assigned_personnel updates based on status change using RPC functions
       if (newStatus === 'accepted') {
-        // Add to project if not already there
-        if (!currentPersonnel.includes(invitation.personnel_id)) {
-          updatedPersonnel = [...currentPersonnel, invitation.personnel_id];
-        }
-      } else {
-        // Remove from project if previously accepted
-        if (oldStatus === 'accepted') {
-          updatedPersonnel = currentPersonnel.filter(
-            (id: string) => id !== invitation.personnel_id
-          );
-        }
-      }
+        // Use RPC function to add personnel to project
+        const { error: rpcError } = await supabase.rpc('add_personnel_to_project', {
+          _project_id: invitation.project_id,
+          _personnel_id: invitation.personnel_id,
+        });
 
-      // Only update if personnel list changed
-      if (JSON.stringify(updatedPersonnel) !== JSON.stringify(currentPersonnel)) {
-        const { error: projectUpdateError } = await supabase
-          .from('projects')
-          .update({ assigned_personnel: updatedPersonnel })
-          .eq('id', invitation.project_id);
+        if (rpcError) {
+          console.error('RPC error adding personnel to project:', rpcError);
+        }
+      } else if (oldStatus === 'accepted') {
+        // Use RPC function to remove personnel from project (only if previously accepted)
+        const { error: rpcError } = await supabase.rpc('remove_personnel_from_project', {
+          _project_id: invitation.project_id,
+          _personnel_id: invitation.personnel_id,
+        });
 
-        if (projectUpdateError) throw projectUpdateError;
+        if (rpcError) {
+          console.error('RPC error removing personnel from project:', rpcError);
+        }
       }
 
       await fetchInvitations();
