@@ -125,7 +125,7 @@ export function ProjectCalendar({ project, onUpdateDates, editable = true }: Pro
               <Button variant="outline" size="sm" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleSave}>
+              <Button size="sm" variant="active" onClick={handleSave}>
                 Save Changes
               </Button>
             </div>

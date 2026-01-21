@@ -460,7 +460,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" variant="active" disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : 'Create Project'}
             </Button>
           </div>

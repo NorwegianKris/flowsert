@@ -109,7 +109,7 @@ export function AddMasterCalendarItemDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedProjectId || !date || !description}>
+            <Button type="submit" variant="active" disabled={!selectedProjectId || !date || !description}>
               Add Item
             </Button>
           </DialogFooter>

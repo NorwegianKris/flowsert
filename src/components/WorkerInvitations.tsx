@@ -112,9 +112,9 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                     </Button>
                     <Button
                       size="sm"
+                      variant="active"
                       onClick={(e) => handleRespond(invitation.id, true, e)}
                       disabled={respondingId === invitation.id}
-                      className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
                     >
                       <Check className="h-4 w-4 mr-1" />
                       Accept
@@ -274,9 +274,9 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
               Decline
             </Button>
             <Button
+              variant="active"
               onClick={() => selectedInvitation && handleRespond(selectedInvitation.id, true)}
               disabled={respondingId === selectedInvitation?.id}
-              className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
             >
               <Check className="h-4 w-4 mr-2" />
               Accept Invitation
