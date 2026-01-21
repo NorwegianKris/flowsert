@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Mail, Copy, Check, Link } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 
 interface AddPersonnelDialogProps {
   open: boolean;
@@ -17,12 +19,14 @@ interface AddPersonnelDialogProps {
 
 export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: AddPersonnelDialogProps) {
   const { businessId, user } = useAuth();
+  const { categories: workerCategories, loading: categoriesLoading } = useWorkerCategories();
   const [loading, setLoading] = useState(false);
   
   // Invitation state
   const [sendInvitation, setSendInvitation] = useState(true);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [customRole, setCustomRole] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -43,6 +47,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
     setSendInvitation(true);
     setInviteLink('');
     setCopied(false);
+    setCustomRole('');
   };
 
   const handleClose = (openState: boolean) => {
@@ -215,13 +220,57 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Job Role *</Label>
-              <Input
-                id="role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                placeholder="Marine Engineer"
-                required
-              />
+              {workerCategories.length > 0 ? (
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => {
+                    if (value === '__custom__') {
+                      setFormData({ ...formData, role: '' });
+                    } else {
+                      setFormData({ ...formData, role: value });
+                      setCustomRole('');
+                    }
+                  }}
+                  disabled={categoriesLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a job role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workerCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__custom__">Other (custom role)</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="Marine Engineer"
+                  required
+                />
+              )}
+              {formData.role === '' && workerCategories.length > 0 && (
+                <Input
+                  id="customRole"
+                  value={customRole}
+                  onChange={(e) => {
+                    setCustomRole(e.target.value);
+                    setFormData({ ...formData, role: e.target.value });
+                  }}
+                  placeholder="Enter custom job role"
+                  className="mt-2"
+                />
+              )}
+              {workerCategories.length === 0 && !categoriesLoading && (
+                <p className="text-xs text-muted-foreground">
+                  Tip: Define job role categories in Settings → Categories → Workers
+                </p>
+              )}
             </div>
           </div>
 
