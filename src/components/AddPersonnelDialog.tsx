@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Upload, User } from 'lucide-react';
+import { Loader2, Upload, User, Mail, Copy, Check, Link } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AddPersonnelDialogProps {
   open: boolean;
@@ -17,12 +18,18 @@ interface AddPersonnelDialogProps {
 }
 
 export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: AddPersonnelDialogProps) {
-  const { businessId } = useAuth();
+  const { businessId, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Invitation state
+  const [sendInvitation, setSendInvitation] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [copied, setCopied] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -91,6 +98,34 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
     .toUpperCase()
     .slice(0, 2);
 
+  const copyToClipboard = async () => {
+    await navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success('Invite link copied to clipboard');
+  };
+
+  const resetForm = () => {
+    setFormData({ 
+      name: '', email: '', phone: '', role: '', location: '',
+      category: 'fixed_employee',
+      nationality: '', gender: '', address: '', postalCode: '', 
+      postalAddress: '', nationalId: '', salaryAccountNumber: '', language: 'Norwegian'
+    });
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setSendInvitation(false);
+    setInviteLink('');
+    setCopied(false);
+  };
+
+  const handleClose = (openState: boolean) => {
+    if (!openState) {
+      resetForm();
+    }
+    onOpenChange(openState);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -136,16 +171,48 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
         }
       }
 
-      toast.success('Personnel record created successfully');
-      setFormData({ 
-        name: '', email: '', phone: '', role: '', location: '',
-        category: 'fixed_employee',
-        nationality: '', gender: '', address: '', postalCode: '', 
-        postalAddress: '', nationalId: '', salaryAccountNumber: '', language: 'Norwegian'
-      });
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      onOpenChange(false);
+      // Send invitation if checkbox is checked
+      if (sendInvitation && newPersonnel) {
+        const { data: inviteData, error: insertError } = await supabase
+          .from('invitations')
+          .insert({
+            business_id: businessId,
+            personnel_id: newPersonnel.id,
+            email: formData.email.toLowerCase().trim(),
+            invited_by: user?.id,
+          })
+          .select('token')
+          .single();
+
+        if (insertError) {
+          console.error('Error creating invitation:', insertError);
+          toast.error('Personnel created but invitation failed');
+        } else {
+          const signupUrl = `${window.location.origin}/auth?token=${inviteData.token}`;
+          setInviteLink(signupUrl);
+
+          // Send invitation email
+          const { error: emailError } = await supabase.functions.invoke('send-invitation', {
+            body: {
+              to: formData.email.toLowerCase().trim(),
+              workerName: formData.name.trim(),
+              inviteLink: signupUrl,
+            },
+          });
+
+          if (emailError) {
+            console.error('Failed to send email:', emailError);
+            toast.success('Personnel created. Email could not be sent - please share the link manually.');
+          } else {
+            toast.success(`Personnel created and invitation sent to ${formData.email}`);
+          }
+        }
+      } else {
+        toast.success('Personnel record created successfully');
+        resetForm();
+        onOpenChange(false);
+      }
+
       onPersonnelAdded();
     } catch (error: any) {
       console.error('Error creating personnel:', error);
@@ -154,8 +221,52 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
       setLoading(false);
     }
   };
+
+  // Show invite link success screen
+  if (inviteLink) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Invitation Sent
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              <strong>{formData.name}</strong> has been added and an invitation email has been sent.
+            </p>
+            <div className="space-y-2">
+              <Label>Worker Email</Label>
+              <p className="text-sm text-muted-foreground">{formData.email}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Link className="h-4 w-4" />
+                Signup Link
+              </Label>
+              <div className="flex gap-2">
+                <Input value={inviteLink} readOnly className="font-mono text-sm" />
+                <Button type="button" variant="outline" size="icon" onClick={copyToClipboard}>
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The worker must sign up with the exact email address: <strong>{formData.email}</strong>
+              </p>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => handleClose(false)}>Done</Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Personnel</DialogTitle>
@@ -330,13 +441,34 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
               />
             </div>
           </div>
+
+          {/* Invite Worker Section */}
+          <div className="border-t border-border pt-4 mt-4">
+            <div className="flex items-center space-x-3">
+              <Checkbox 
+                id="sendInvitation" 
+                checked={sendInvitation}
+                onCheckedChange={(checked) => setSendInvitation(checked === true)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="sendInvitation" className="flex items-center gap-2 cursor-pointer">
+                  <Mail className="h-4 w-4" />
+                  Send invitation to create account
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  An email with a signup link will be sent to {formData.email || 'the email above'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleClose(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Personnel
+              {sendInvitation ? 'Add & Send Invitation' : 'Add Personnel'}
             </Button>
           </DialogFooter>
         </form>

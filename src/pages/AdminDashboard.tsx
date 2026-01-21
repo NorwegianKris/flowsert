@@ -5,7 +5,6 @@ import { PersonnelCard } from '@/components/PersonnelCard';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { ProjectDetail } from '@/components/ProjectDetail';
 import { ChatBot } from '@/components/ChatBot';
-import { InviteWorkerDialog } from '@/components/InviteWorkerDialog';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
@@ -21,7 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, UserPlus, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +28,6 @@ export default function AdminDashboard() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [previousProject, setPreviousProject] = useState<Project | null>(null); // Track if coming from a project
   const [activeTab, setActiveTab] = useState('personnel');
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -163,10 +161,6 @@ export default function AdminDashboard() {
               <FolderOpen className="h-4 w-4 mr-2" />
               New Project
             </Button>
-            <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Invite Worker
-            </Button>
             <Button variant="outline" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -290,13 +284,6 @@ export default function AdminDashboard() {
         onOpenChange={setAddProjectOpen}
         personnel={personnel}
         onProjectAdded={handleProjectAdded}
-      />
-      
-      <InviteWorkerDialog 
-        open={inviteDialogOpen} 
-        onOpenChange={setInviteDialogOpen}
-        personnel={personnel}
-        onInviteSent={refetch}
       />
     </div>
   );
