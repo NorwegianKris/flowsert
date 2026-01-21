@@ -26,7 +26,6 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
   const [sendInvitation, setSendInvitation] = useState(true);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
-  const [customRole, setCustomRole] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -47,7 +46,6 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
     setSendInvitation(true);
     setInviteLink('');
     setCopied(false);
-    setCustomRole('');
   };
 
   const handleClose = (openState: boolean) => {
@@ -223,14 +221,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
               {workerCategories.length > 0 ? (
                 <Select
                   value={formData.role}
-                  onValueChange={(value) => {
-                    if (value === '__custom__') {
-                      setFormData({ ...formData, role: '' });
-                    } else {
-                      setFormData({ ...formData, role: value });
-                      setCustomRole('');
-                    }
-                  }}
+                  onValueChange={(value) => setFormData({ ...formData, role: value })}
                   disabled={categoriesLoading}
                 >
                   <SelectTrigger>
@@ -242,33 +233,11 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
                         {category.name}
                       </SelectItem>
                     ))}
-                    <SelectItem value="__custom__">Other (custom role)</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
-                <Input
-                  id="role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  placeholder="Marine Engineer"
-                  required
-                />
-              )}
-              {formData.role === '' && workerCategories.length > 0 && (
-                <Input
-                  id="customRole"
-                  value={customRole}
-                  onChange={(e) => {
-                    setCustomRole(e.target.value);
-                    setFormData({ ...formData, role: e.target.value });
-                  }}
-                  placeholder="Enter custom job role"
-                  className="mt-2"
-                />
-              )}
-              {workerCategories.length === 0 && !categoriesLoading && (
-                <p className="text-xs text-muted-foreground">
-                  Tip: Define job role categories in Settings → Categories → Workers
+                <p className="text-sm text-muted-foreground py-2">
+                  No job roles defined. Please add worker categories in Settings → Categories → Workers first.
                 </p>
               )}
             </div>
