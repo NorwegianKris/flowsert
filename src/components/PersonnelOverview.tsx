@@ -103,13 +103,13 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
             </div>
           ) : (
             <ScrollArea className="h-[300px]">
-              <div className="space-y-3">
+              <div className="space-y-3 pr-4">
                 {personnel.map((person) => (
                   <div
                     key={person.id}
-                    className="flex items-center gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
                   >
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-10 w-10 shrink-0">
                       <AvatarImage src={person.avatarUrl} alt={person.name} />
                       <AvatarFallback className="bg-primary/10 text-primary text-sm">
                         {getInitials(person.name)}
@@ -119,16 +119,12 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{person.name}</p>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Mail className="h-3 w-3" />
+                        <Mail className="h-3 w-3 shrink-0" />
                         <span className="truncate">{person.email}</span>
                       </div>
                     </div>
 
-                    <Badge variant="outline" className="shrink-0 hidden sm:inline-flex">
-                      {person.role}
-                    </Badge>
-
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {onEditPersonnel && (
                         <Button
                           variant="ghost"
