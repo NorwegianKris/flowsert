@@ -1,10 +1,18 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ProjectCalendar } from '@/components/ProjectCalendar';
+import { CompanyCard } from '@/components/CompanyCard';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   ArrowLeft,
   Clock,
@@ -13,6 +21,8 @@ import {
   FileText,
   Calendar,
   MapPin,
+  Building2,
+  ChevronRight,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
@@ -29,6 +39,7 @@ const statusConfig = {
 };
 
 export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjectDetailProps) {
+  const [companyCardOpen, setCompanyCardOpen] = useState(false);
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
   
@@ -194,8 +205,30 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
           )}
         </div>
 
-        {/* Assigned Personnel Section */}
-        <div>
+        {/* Right Sidebar */}
+        <div className="space-y-4">
+          {/* Company Card Section */}
+          <Card 
+            className="border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => setCompanyCardOpen(true)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Company Info</p>
+                    <p className="text-sm text-muted-foreground">View company details & documents</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Team Members Card */}
           <Card className="border-border/50">
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -309,6 +342,19 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
           </div>
         </CardContent>
       </Card>
+
+      {/* Company Card Dialog */}
+      <Dialog open={companyCardOpen} onOpenChange={setCompanyCardOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Company Information
+            </DialogTitle>
+          </DialogHeader>
+          <CompanyCard isAdmin={false} onClose={() => setCompanyCardOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
