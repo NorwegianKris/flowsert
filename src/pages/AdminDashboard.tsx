@@ -292,6 +292,7 @@ export default function AdminDashboard() {
                   key={p.id}
                   personnel={p}
                   onClick={() => setSelectedPersonnel(p)}
+                  onRemoved={refetch}
                 />
               ))}
             </div>
