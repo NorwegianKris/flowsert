@@ -355,9 +355,9 @@ export default function Auth() {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
-              Make personnel compliance
+              Make personnel
               <span className="block">
-                <span className="text-primary">flow</span>
+                compliance <span className="text-primary">flow</span>
               </span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
