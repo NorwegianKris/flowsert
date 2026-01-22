@@ -24,13 +24,17 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Check if this is a job seeker profile
+  const isJobSeeker = personnel.isJobSeeker === true;
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     role: '',
     location: '',
-    category: 'fixed_employee' as 'fixed_employee' | 'freelancer',
+    category: 'fixed_employee' as 'fixed_employee' | 'freelancer' | 'job_seeker',
     nationality: '',
     department: '',
     gender: '',
@@ -288,21 +292,24 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 placeholder="Oslo, Norway"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value: 'fixed_employee' | 'freelancer') => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger id="edit-category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed_employee">Fixed Employee</SelectItem>
-                  <SelectItem value="freelancer">Freelancer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Category - locked for job seekers */}
+            {!isJobSeeker && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value: 'fixed_employee' | 'freelancer') => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger id="edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed_employee">Fixed Employee</SelectItem>
+                    <SelectItem value="freelancer">Freelancer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="edit-nationality">Nationality</Label>
               <Input
@@ -357,24 +364,29 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 placeholder="City, Country"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-nationalId">Norwegian ID Number</Label>
-              <Input
-                id="edit-nationalId"
-                value={formData.nationalId}
-                onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
-                placeholder="11 digits"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-salaryAccountNumber">Salary Account Number</Label>
-              <Input
-                id="edit-salaryAccountNumber"
-                value={formData.salaryAccountNumber}
-                onChange={(e) => setFormData({ ...formData, salaryAccountNumber: e.target.value })}
-                placeholder="Bank account number"
-              />
-            </div>
+            {/* Norwegian ID and Salary Account - hidden for job seekers */}
+            {!isJobSeeker && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nationalId">Norwegian ID Number</Label>
+                  <Input
+                    id="edit-nationalId"
+                    value={formData.nationalId}
+                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
+                    placeholder="11 digits"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-salaryAccountNumber">Salary Account Number</Label>
+                  <Input
+                    id="edit-salaryAccountNumber"
+                    value={formData.salaryAccountNumber}
+                    onChange={(e) => setFormData({ ...formData, salaryAccountNumber: e.target.value })}
+                    placeholder="Bank account number"
+                  />
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <Label htmlFor="edit-language">Language</Label>
               <Input
@@ -386,39 +398,41 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
           </div>
 
-          {/* Next of Kin Section */}
-          <div className="pt-4 border-t">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-nextOfKinName">Name</Label>
-                <Input
-                  id="edit-nextOfKinName"
-                  value={formData.nextOfKinName}
-                  onChange={(e) => setFormData({ ...formData, nextOfKinName: e.target.value })}
-                  placeholder="Contact name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-nextOfKinRelation">Relation</Label>
-                <Input
-                  id="edit-nextOfKinRelation"
-                  value={formData.nextOfKinRelation}
-                  onChange={(e) => setFormData({ ...formData, nextOfKinRelation: e.target.value })}
-                  placeholder="Spouse, Parent, etc."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-nextOfKinPhone">Phone Number</Label>
-                <Input
-                  id="edit-nextOfKinPhone"
-                  value={formData.nextOfKinPhone}
-                  onChange={(e) => setFormData({ ...formData, nextOfKinPhone: e.target.value })}
-                  placeholder="+47 123 45 678"
-                />
+          {/* Next of Kin Section - hidden for job seekers */}
+          {!isJobSeeker && (
+            <div className="pt-4 border-t">
+              <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nextOfKinName">Name</Label>
+                  <Input
+                    id="edit-nextOfKinName"
+                    value={formData.nextOfKinName}
+                    onChange={(e) => setFormData({ ...formData, nextOfKinName: e.target.value })}
+                    placeholder="Contact name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nextOfKinRelation">Relation</Label>
+                  <Input
+                    id="edit-nextOfKinRelation"
+                    value={formData.nextOfKinRelation}
+                    onChange={(e) => setFormData({ ...formData, nextOfKinRelation: e.target.value })}
+                    placeholder="Spouse, Parent, etc."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nextOfKinPhone">Phone Number</Label>
+                  <Input
+                    id="edit-nextOfKinPhone"
+                    value={formData.nextOfKinPhone}
+                    onChange={(e) => setFormData({ ...formData, nextOfKinPhone: e.target.value })}
+                    placeholder="+47 123 45 678"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

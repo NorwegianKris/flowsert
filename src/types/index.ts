@@ -11,7 +11,7 @@ export interface Certificate {
   category?: string; // Category name from certificate_categories
 }
 
-export type PersonnelCategory = 'fixed_employee' | 'freelancer';
+export type PersonnelCategory = 'fixed_employee' | 'freelancer' | 'job_seeker';
 
 export interface Personnel {
   id: string;

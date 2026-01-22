@@ -14,9 +14,10 @@ import { CheckCircle, FileText, User, Award } from 'lucide-react';
 interface WelcomeDialogProps {
   personnelId: string | undefined;
   businessId: string | null | undefined;
+  isJobSeeker?: boolean;
 }
 
-export function WelcomeDialog({ personnelId, businessId }: WelcomeDialogProps) {
+export function WelcomeDialog({ personnelId, businessId, isJobSeeker = false }: WelcomeDialogProps) {
   const [open, setOpen] = useState(false);
   const [businessName, setBusinessName] = useState<string>('');
 
@@ -79,7 +80,10 @@ export function WelcomeDialog({ personnelId, businessId }: WelcomeDialogProps) {
             <div>
               <p className="font-medium text-sm">Complete Your Profile</p>
               <p className="text-xs text-muted-foreground">
-                Fill in your personal information, contact details, and next of kin.
+                {isJobSeeker 
+                  ? 'Fill in your personal information and contact details.'
+                  : 'Fill in your personal information, contact details, and next of kin.'
+                }
               </p>
             </div>
           </div>
