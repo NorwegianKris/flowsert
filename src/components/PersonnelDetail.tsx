@@ -15,6 +15,7 @@ import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
+import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -25,7 +26,7 @@ import {
 } from '@/lib/certificateUtils';
 import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus
 } from 'lucide-react';
 import { PersonnelDocuments } from './PersonnelDocuments';
 
@@ -45,6 +46,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
   const [isEditCertSelectOpen, setIsEditCertSelectOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRequestProjectOpen, setIsRequestProjectOpen] = useState(false);
+  const [isSendInvitationOpen, setIsSendInvitationOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   // Get all personnel for the project detail view
@@ -106,15 +108,29 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         )}
         {hideBackButton && <div />}
         
-        {showRequestProject && (
-          <Button
-            onClick={() => setIsRequestProjectOpen(true)}
-            className="gap-2"
-          >
-            <Send className="h-4 w-4" />
-            Request for Project
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {/* Show invitation button only if profile is not yet linked to a user account */}
+          {showRequestProject && !personnel.userId && (
+            <Button
+              variant="outline"
+              onClick={() => setIsSendInvitationOpen(true)}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Send Invitation
+            </Button>
+          )}
+          
+          {showRequestProject && (
+            <Button
+              onClick={() => setIsRequestProjectOpen(true)}
+              className="gap-2"
+            >
+              <Send className="h-4 w-4" />
+              Request for Project
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="border-border/50">
@@ -436,6 +452,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         personnelEmail={personnel.email}
         projects={projects}
         existingInvitations={existingInvitationProjectIds}
+      />
+
+      <SendProfileInvitationDialog
+        open={isSendInvitationOpen}
+        onOpenChange={setIsSendInvitationOpen}
+        personnel={personnel}
+        onInvitationSent={onRefresh}
       />
     </div>
   );

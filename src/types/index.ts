@@ -22,6 +22,7 @@ export interface Personnel {
   phone: string;
   avatarUrl?: string;
   businessId?: string;
+  userId?: string; // The linked auth user ID, null if not yet linked
   category?: PersonnelCategory;
   nationality?: string;
   department?: string;
