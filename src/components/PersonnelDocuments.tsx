@@ -46,6 +46,7 @@ import {
   Download,
   Pencil,
   Tag,
+  Lock,
   File,
   Image,
   ExternalLink,
@@ -72,9 +73,11 @@ interface PersonnelDocument {
 
 interface PersonnelDocumentsProps {
   personnelId: string;
+  isProfileActivated?: boolean;
 }
 
-export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
+export function PersonnelDocuments({ personnelId, isProfileActivated = true }: PersonnelDocumentsProps) {
+  const canAccessDocuments = isProfileActivated;
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [documents, setDocuments] = useState<PersonnelDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,9 +104,9 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
     fetchData();
   }, [personnelId]);
 
-  // Load signed URL when document is selected
+  // Load signed URL when document is selected (only if activated)
   useEffect(() => {
-    if (selectedDocument?.fileUrl) {
+    if (selectedDocument?.fileUrl && canAccessDocuments) {
       setLoadingUrl(true);
       getPersonnelDocumentUrl(selectedDocument.fileUrl)
         .then(url => setSignedUrl(url))
@@ -111,7 +114,7 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
     } else {
       setSignedUrl(null);
     }
-  }, [selectedDocument?.fileUrl]);
+  }, [selectedDocument?.fileUrl, canAccessDocuments]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -436,18 +439,30 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const url = await getPersonnelDocumentUrl(doc.fileUrl);
-                              if (url) window.open(url, '_blank');
-                            }}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          {canAccessDocuments ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const url = await getPersonnelDocumentUrl(doc.fileUrl);
+                                if (url) window.open(url, '_blank');
+                              }}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-amber-500 cursor-not-allowed"
+                              disabled
+                              title="Document access locked - activate profile first"
+                            >
+                              <Lock className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -519,25 +534,40 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          if (signedUrl) window.open(signedUrl, '_blank');
-                        }}
-                        disabled={!signedUrl || loadingUrl}
-                      >
-                        {loadingUrl ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                        )}
-                        Open Full Size
-                      </Button>
+                      {canAccessDocuments && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            if (signedUrl) window.open(signedUrl, '_blank');
+                          }}
+                          disabled={!signedUrl || loadingUrl}
+                        >
+                          {loadingUrl ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                          )}
+                          Open Full Size
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="p-4 flex justify-center">
-                    {loadingUrl ? (
+                    {!canAccessDocuments ? (
+                      <div className="flex flex-col items-center gap-4 py-8 text-center">
+                        <div className="p-4 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                          <Lock className="h-12 w-12 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="font-medium text-foreground">Document Access Locked</p>
+                          <p className="text-sm text-muted-foreground max-w-sm">
+                            Activate this profile to view and download documents. 
+                            Activated profiles count toward billing.
+                          </p>
+                        </div>
+                      </div>
+                    ) : loadingUrl ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
@@ -547,12 +577,12 @@ export function PersonnelDocuments({ personnelId }: PersonnelDocumentsProps) {
                         alt={selectedDocument.name}
                         className="max-h-[400px] object-contain rounded"
                       />
-                  ) : signedUrl && selectedDocument.fileType === 'application/pdf' ? (
-                    <iframe
-                      src={signedUrl}
-                      title={selectedDocument.name}
-                      className="w-full h-[500px] rounded border-0"
-                    />
+                    ) : signedUrl && selectedDocument.fileType === 'application/pdf' ? (
+                      <iframe
+                        src={signedUrl}
+                        title={selectedDocument.name}
+                        className="w-full h-[500px] rounded border-0"
+                      />
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-muted-foreground" />
