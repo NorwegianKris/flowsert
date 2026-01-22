@@ -18,7 +18,6 @@ import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, Arrow
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
-import flowsertLogo from '@/assets/flowsert_logo.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -281,7 +280,7 @@ export default function Auth() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader className="text-center">
-            <img src={flowsertLogo} alt="FlowSert" className="h-10 w-auto mx-auto mb-2" />
+            <h1 className="font-rajdhani text-3xl font-bold text-primary mb-2">FlowSert</h1>
             <CardTitle className="text-xl">Reset Password</CardTitle>
             <CardDescription>Enter your new password below</CardDescription>
           </CardHeader>
@@ -328,7 +327,7 @@ export default function Auth() {
       <header className="border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
+            <h1 className="text-2xl font-bold font-rajdhani text-primary">FlowSert</h1>
             <div className="hidden md:flex items-center gap-6">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/about')}>
                 About
