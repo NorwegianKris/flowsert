@@ -721,12 +721,12 @@ export default function Auth() {
           <DialogHeader>
             <DialogTitle className="text-center font-rajdhani text-2xl">
               {authMode === 'signin' && 'Welcome Back'}
-              {authMode === 'signup' && (inviteToken ? 'Complete Registration' : 'Create Account')}
+              {authMode === 'signup' && (inviteToken ? 'Complete Registration' : jobSeekerToken ? 'Job Seeker Registration' : 'Create Account')}
               {authMode === 'forgot' && 'Reset Password'}
             </DialogTitle>
             <DialogDescription className="text-center">
               {authMode === 'signin' && 'Sign in to access your dashboard'}
-              {authMode === 'signup' && (inviteToken ? 'Complete your registration to join' : 'Start managing your certifications')}
+              {authMode === 'signup' && (inviteToken ? 'Complete your registration to join' : jobSeekerToken ? 'Create your profile to showcase your skills and experience' : 'Start managing your certifications')}
               {authMode === 'forgot' && 'Enter your email to receive a reset link'}
             </DialogDescription>
           </DialogHeader>
@@ -823,6 +823,16 @@ export default function Auth() {
                   </p>
                 </div>
               )}
+              {jobSeekerToken && jobSeekerDetails && (
+                <div className="rounded-lg bg-sky-100 dark:bg-sky-900/30 p-4 text-center space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Register as a Job Seeker with <strong>{jobSeekerDetails.businessName}</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Create your profile, upload your certificates and documents, and let employers discover your skills.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signup-name">Full Name</Label>
                 <Input
@@ -864,9 +874,14 @@ export default function Auth() {
                 />
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
-              {!inviteToken && (
+              {!inviteToken && !jobSeekerToken && (
                 <p className="text-sm text-muted-foreground">
                   By signing up, you'll create a new business account as an admin.
+                </p>
+              )}
+              {jobSeekerToken && (
+                <p className="text-sm text-muted-foreground">
+                  After registration, you can upload certificates and documents to your profile.
                 </p>
               )}
               <Button type="submit" className="w-full" disabled={isLoading || (!!inviteToken && !invitationDetails)}>

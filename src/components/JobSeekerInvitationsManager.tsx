@@ -123,8 +123,8 @@ export function JobSeekerInvitationsManager() {
                         {inv.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {getSignupUrl(inv.token)}
+                    <p className="text-xs text-muted-foreground mt-1 truncate font-mono">
+                      ...?job_seeker_token={inv.token.slice(0, 8)}...
                     </p>
                   </div>
 
