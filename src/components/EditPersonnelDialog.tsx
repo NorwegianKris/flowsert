@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Loader2, Camera } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Personnel } from '@/types';
+import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 
 interface EditPersonnelDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface EditPersonnelDialogProps {
 }
 
 export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }: EditPersonnelDialogProps) {
+  const { categories: workerCategories, loading: categoriesLoading } = useWorkerCategories();
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -250,12 +252,32 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-role">Job Role</Label>
-              <Input
-                id="edit-role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                placeholder="Marine Engineer"
-              />
+              {workerCategories.length > 0 ? (
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => setFormData({ ...formData, role: value })}
+                  disabled={categoriesLoading}
+                >
+                  <SelectTrigger id="edit-role">
+                    <SelectValue placeholder="Select a job role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workerCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="edit-role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="Marine Engineer"
+                  disabled
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-location">Location</Label>
