@@ -73,7 +73,8 @@ export function RegistrationLinkCard() {
   };
 
   const getQrCodeUrl = () => {
-    const url = encodeURIComponent(registrationUrl);
+    // Use actualUrl for QR code so it works when scanned
+    const url = encodeURIComponent(actualUrl);
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
   };
 
