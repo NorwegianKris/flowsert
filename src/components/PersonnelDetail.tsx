@@ -16,10 +16,12 @@ import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
+import { ConvertJobSeekerDialog } from '@/components/ConvertJobSeekerDialog';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjectInvitations } from '@/hooks/useProjectInvitations';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
@@ -47,7 +49,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRequestProjectOpen, setIsRequestProjectOpen] = useState(false);
   const [isSendInvitationOpen, setIsSendInvitationOpen] = useState(false);
+  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  
+  const { isAdmin } = useAuth();
   
   // Get all personnel for the project detail view
   const { personnel: allPersonnel } = usePersonnel();
@@ -109,6 +114,18 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         {hideBackButton && <div />}
         
         <div className="flex gap-2">
+          {/* Add to main pool button for admins viewing job seeker profiles */}
+          {isAdmin && personnel.isJobSeeker && (
+            <Button
+              variant="default"
+              onClick={() => setIsConvertDialogOpen(true)}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add to Main Pool
+            </Button>
+          )}
+          
           {/* Show invitation button only if profile is not yet linked to a user account */}
           {showRequestProject && !personnel.userId && (
             <Button
@@ -468,6 +485,14 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         onOpenChange={setIsSendInvitationOpen}
         personnel={personnel}
         onInvitationSent={onRefresh}
+      />
+
+      <ConvertJobSeekerDialog
+        open={isConvertDialogOpen}
+        onOpenChange={setIsConvertDialogOpen}
+        personnelId={personnel.id}
+        personnelName={personnel.name}
+        onSuccess={() => onRefresh?.()}
       />
     </div>
   );
