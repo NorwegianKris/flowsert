@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -190,44 +190,27 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
     m => !m.read_at && m.sender_id !== user?.id
   ).length;
 
-  const lastMessage = messages[messages.length - 1];
-
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
       <Card className="border-border/50">
         <SheetTrigger asChild>
           <button className="w-full text-left">
-            <CardHeader className="py-3">
+            <CardContent className="py-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <MessageCircle className="h-4 w-4 text-blue-500" />
-                  Messages
+                  <span className="text-sm font-medium text-foreground">Messages</span>
                   {unreadCount > 0 && (
-                    <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                    <span className="bg-destructive text-destructive-foreground text-xs min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full font-medium">
                       {unreadCount}
                     </span>
                   )}
-                </CardTitle>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                  <span className="text-sm">Send a message</span>
+                  <Send className="h-4 w-4" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0 pb-3">
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading...
-                </div>
-              ) : lastMessage ? (
-                <div className="space-y-1">
-                  <p className="text-sm text-foreground line-clamp-2">
-                    {lastMessage.content}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {lastMessage.sender_role === 'admin' ? 'Admin' : 'Worker'} · {formatMessageDate(lastMessage.created_at)}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No messages yet. Click to start chatting.</p>
-              )}
             </CardContent>
           </button>
         </SheetTrigger>
