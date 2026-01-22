@@ -26,19 +26,8 @@ export function RegistrationLinkCard() {
 
   const companyCode = business?.company_code || '';
   
-  // Use the primary domain if available, otherwise use window.location.origin
-  const getBaseUrl = () => {
-    // Check for common custom domains first
-    const origin = window.location.origin;
-    if (origin.includes('lovable.app')) {
-      // Replace preview URL with the published URL pattern
-      return origin.replace('-preview--', '').replace('id-preview--', '');
-    }
-    return origin;
-  };
-  
-  const registrationUrl = `${getBaseUrl()}/register/jobseeker/${companyCode}`;
-  const fallbackUrl = `${window.location.origin}/register/jobseeker/${companyCode}`;
+  // Use window.location.origin directly - will be correct on custom domain
+  const registrationUrl = `${window.location.origin}/register/jobseeker/${companyCode}`;
 
   const copyToClipboard = async (text: string, type: 'code' | 'link') => {
     try {
