@@ -26,8 +26,28 @@ export function RegistrationLinkCard() {
 
   const companyCode = business?.company_code || '';
   
-  // Use window.location.origin directly - will be correct on custom domain
-  const registrationUrl = `${window.location.origin}/register/jobseeker/${companyCode}`;
+  // Get clean URL for display - handle preview URLs
+  const getDisplayUrl = () => {
+    const origin = window.location.origin;
+    // If on preview, show the published lovable.app URL
+    if (origin.includes('id-preview--')) {
+      // Extract project ID and construct published URL
+      const match = origin.match(/id-preview--([^.]+)/);
+      if (match) {
+        return `https://${match[1]}.lovable.app`;
+      }
+    }
+    if (origin.includes('-preview--')) {
+      return origin.replace('-preview--', '');
+    }
+    return origin;
+  };
+  
+  const displayUrl = getDisplayUrl();
+  const registrationUrl = `${displayUrl}/register/jobseeker/${companyCode}`;
+  
+  // Use actual origin for opening/testing
+  const actualUrl = `${window.location.origin}/register/jobseeker/${companyCode}`;
 
   const copyToClipboard = async (text: string, type: 'code' | 'link') => {
     try {
@@ -124,7 +144,7 @@ export function RegistrationLinkCard() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => window.open(registrationUrl, '_blank')}
+                onClick={() => window.open(actualUrl, '_blank')}
                 title="Open link"
               >
                 <ExternalLink className="h-4 w-4" />
