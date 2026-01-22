@@ -54,7 +54,7 @@ export default function WorkerDashboard() {
         {personnel ? (
           <>
             {/* Welcome dialog for new workers */}
-            <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} />
+            <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
             
             {/* Show pending invitations at the top */}
             <WorkerInvitations personnelId={personnel.id} />
