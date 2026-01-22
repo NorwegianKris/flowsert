@@ -14,6 +14,7 @@ export interface BusinessInfo {
   description: string | null;
   postal_address: string | null;
   postal_code: string | null;
+  company_code: string;
 }
 
 export function useBusinessInfo() {
@@ -35,7 +36,7 @@ export function useBusinessInfo() {
         .single();
 
       if (error) throw error;
-      setBusiness(data as BusinessInfo);
+      setBusiness(data as unknown as BusinessInfo);
     } catch (error) {
       console.error('Error fetching business info:', error);
     } finally {

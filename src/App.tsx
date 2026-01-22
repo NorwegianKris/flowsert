@@ -28,7 +28,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
-            <Route path="/register/jobseeker" element={<JobSeekerRedirect />} />
+            <Route path="/register/jobseeker/:companyCode" element={<JobSeekerRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />

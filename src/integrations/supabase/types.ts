@@ -99,6 +99,7 @@ export type Database = {
       businesses: {
         Row: {
           address: string | null
+          company_code: string
           created_at: string
           description: string | null
           email: string | null
@@ -114,6 +115,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          company_code?: string
           created_at?: string
           description?: string | null
           email?: string | null
@@ -129,6 +131,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          company_code?: string
           created_at?: string
           description?: string | null
           email?: string | null
@@ -1015,6 +1018,14 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+        }[]
+      }
+      get_job_seeker_registration_by_code: {
+        Args: { lookup_code: string }
+        Returns: {
+          business_id: string
+          business_name: string
+          token: string
         }[]
       }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
