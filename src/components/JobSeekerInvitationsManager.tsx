@@ -28,9 +28,9 @@ export function JobSeekerInvitationsManager() {
   const [showQrFor, setShowQrFor] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const getSignupUrl = (token: string) => {
+  const getSignupUrl = (id: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/auth?job_seeker_token=${token}`;
+    return `${baseUrl}/r/${id}`;
   };
 
   const handleCreate = async () => {
@@ -41,9 +41,9 @@ export function JobSeekerInvitationsManager() {
     setIsCreating(false);
   };
 
-  const copyToClipboard = async (token: string) => {
+  const copyToClipboard = async (id: string) => {
     try {
-      await navigator.clipboard.writeText(getSignupUrl(token));
+      await navigator.clipboard.writeText(getSignupUrl(id));
       toast({
         title: 'Link Copied',
         description: 'Job seeker signup link copied to clipboard.',
@@ -57,8 +57,8 @@ export function JobSeekerInvitationsManager() {
     }
   };
 
-  const getQrCodeUrl = (token: string) => {
-    const url = encodeURIComponent(getSignupUrl(token));
+  const getQrCodeUrl = (id: string) => {
+    const url = encodeURIComponent(getSignupUrl(id));
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
   };
 
@@ -140,7 +140,7 @@ export function JobSeekerInvitationsManager() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copyToClipboard(inv.token)}
+                      onClick={() => copyToClipboard(inv.id)}
                       title="Copy link"
                     >
                       <Copy className="h-4 w-4" />
@@ -149,7 +149,7 @@ export function JobSeekerInvitationsManager() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowQrFor(inv.token)}
+                      onClick={() => setShowQrFor(inv.id)}
                       title="Show QR code"
                     >
                       <QrCode className="h-4 w-4" />
@@ -158,7 +158,7 @@ export function JobSeekerInvitationsManager() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => window.open(getSignupUrl(inv.token), '_blank')}
+                      onClick={() => window.open(getSignupUrl(inv.id), '_blank')}
                       title="Open link"
                     >
                       <ExternalLink className="h-4 w-4" />

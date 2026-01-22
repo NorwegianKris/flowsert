@@ -12,6 +12,7 @@ import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
+import JobSeekerRedirect from "./pages/JobSeekerRedirect";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/r/:id" element={<JobSeekerRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />
