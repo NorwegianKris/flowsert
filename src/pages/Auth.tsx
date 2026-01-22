@@ -343,7 +343,7 @@ export default function Auth() {
               <Button variant="ghost" size="sm" onClick={() => openAuthDialog('signin')}>
                 Log In
               </Button>
-              <Button size="sm" onClick={() => openAuthDialog('signup')}>
+              <Button size="sm" onClick={() => navigate('/contact')}>
                 Sign Up
               </Button>
             </div>
@@ -377,8 +377,8 @@ export default function Auth() {
                 Transform your operations with smart certificate management software—built for industrial SMEs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8 text-base gap-2">
-                  Sign up for Free <ArrowRight className="h-4 w-4" />
+                <Button size="lg" onClick={() => navigate('/contact')} className="h-12 px-8 text-base gap-2">
+                  Get in Touch <ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-12 px-8 text-base">
                   Book a Demo
