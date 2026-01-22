@@ -382,11 +382,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         
         {/* Right column: Compact Chat notification + Calendar */}
         <div className="space-y-6">
-          {/* Direct Messages - Compact notification card */}
-          <DirectMessageChat 
-            personnelId={personnel.id} 
-            personnelName={personnel.name}
-          />
+          {/* Direct Messages - Compact notification card with spacer to align calendar with documents */}
+          <div className="min-h-[280px]">
+            <DirectMessageChat 
+              personnelId={personnel.id} 
+              personnelName={personnel.name}
+            />
+          </div>
           
           {/* Availability Calendar */}
           <AvailabilityCalendar 
