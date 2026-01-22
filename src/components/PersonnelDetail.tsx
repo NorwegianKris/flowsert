@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CertificateTable } from '@/components/CertificateTable';
+import { CertificateSummaryTable } from '@/components/CertificateSummaryTable';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
@@ -283,44 +284,54 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </Card>
       )}
 
-      {/* Certificates Table */}
+      {/* Certificates Section - Restricted for job seekers (applicants) */}
       <Card className="border-border/50">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddCertOpen(true)}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Add
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditCertSelectOpen(true)}
-              className="gap-1"
-              disabled={personnel.certificates.length === 0}
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsRemoveCertOpen(true)}
-              className="gap-1 text-destructive hover:text-destructive"
-              disabled={personnel.certificates.length === 0}
-            >
-              <Trash2 className="h-4 w-4" />
-              Remove
-            </Button>
-          </div>
+          <CardTitle className="text-lg font-semibold">
+            {personnel.isJobSeeker ? 'Certificate Summary' : 'Certificates'}
+          </CardTitle>
+          {/* Only show certificate management buttons for non-job-seekers */}
+          {!personnel.isJobSeeker && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAddCertOpen(true)}
+                className="gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Add
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditCertSelectOpen(true)}
+                className="gap-1"
+                disabled={personnel.certificates.length === 0}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsRemoveCertOpen(true)}
+                className="gap-1 text-destructive hover:text-destructive"
+                disabled={personnel.certificates.length === 0}
+              >
+                <Trash2 className="h-4 w-4" />
+                Remove
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          <CertificateTable certificates={personnel.certificates} onCertificateUpdated={handleCertificateChange} />
+          {/* Use restricted summary table for job seekers, full table for active personnel */}
+          {personnel.isJobSeeker ? (
+            <CertificateSummaryTable certificates={personnel.certificates} />
+          ) : (
+            <CertificateTable certificates={personnel.certificates} onCertificateUpdated={handleCertificateChange} />
+          )}
         </CardContent>
       </Card>
 
@@ -446,8 +457,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             </Card>
           )}
 
-          {/* Documents Section */}
-          <PersonnelDocuments personnelId={personnel.id} />
+          {/* Documents Section - hidden for job seekers (applicants) */}
+          {!personnel.isJobSeeker && (
+            <PersonnelDocuments personnelId={personnel.id} />
+          )}
         </div>
         
         {/* Right column: Compact Chat notification + Calendar */}
