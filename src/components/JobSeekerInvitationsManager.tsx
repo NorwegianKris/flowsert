@@ -30,7 +30,7 @@ export function JobSeekerInvitationsManager() {
 
   const getSignupUrl = () => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/register`;
+    return `${baseUrl}/register/jobseeker`;
   };
 
   const handleCreate = async () => {
