@@ -10,6 +10,7 @@ import { Loader2, Camera } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Personnel } from '@/types';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { useDepartments } from '@/hooks/useDepartments';
 
 interface EditPersonnelDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface EditPersonnelDialogProps {
 
 export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }: EditPersonnelDialogProps) {
   const { categories: workerCategories, loading: categoriesLoading } = useWorkerCategories();
+  const { departments, loading: departmentsLoading } = useDepartments();
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -321,12 +323,32 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-department">Department</Label>
-              <Input
-                id="edit-department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                placeholder="Engineering"
-              />
+              {departments.length > 0 ? (
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  disabled={departmentsLoading}
+                >
+                  <SelectTrigger id="edit-department">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.name}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="edit-department"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  placeholder="Engineering"
+                  disabled
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-gender">Gender</Label>
