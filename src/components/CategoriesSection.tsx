@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
 import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
-import { Award, FileText, Users } from 'lucide-react';
+import { DepartmentsManager } from '@/components/DepartmentsManager';
+import { Award, FileText, Users, Building2 } from 'lucide-react';
 
 export function CategoriesSection() {
   return (
@@ -16,10 +17,14 @@ export function CategoriesSection() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="workers" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="workers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Workers
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Departments
             </TabsTrigger>
             <TabsTrigger value="certificates" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
@@ -38,6 +43,15 @@ export function CategoriesSection() {
               </p>
             </div>
             <WorkerCategoriesManager />
+          </TabsContent>
+          
+          <TabsContent value="departments">
+            <div className="space-y-2 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Define departments within your organization. These will appear as options when adding new workers.
+              </p>
+            </div>
+            <DepartmentsManager />
           </TabsContent>
           
           <TabsContent value="certificates">

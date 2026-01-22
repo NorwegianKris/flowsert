@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const [locationFilters, setLocationFilters] = useState<string[]>([]);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
+  const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
@@ -96,12 +97,15 @@ export default function AdminDashboard() {
         if (!hasAllCerts) return false;
       }
       
+      // Department filter (multi-select)
+      if (departmentFilters.length > 0 && (!p.department || !departmentFilters.includes(p.department))) return false;
+      
       // Availability filter
       if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
       
       return true;
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, availabilityDateRange, isAvailable]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -280,6 +284,8 @@ export default function AdminDashboard() {
               onCategoryFiltersChange={setCategoryFilters}
               certificateFilters={certificateFilters}
               onCertificateFiltersChange={setCertificateFilters}
+              departmentFilters={departmentFilters}
+              onDepartmentFiltersChange={setDepartmentFilters}
               locations={uniqueLocations}
               certificates={uniqueCertificates}
               availabilityDateRange={availabilityDateRange}
@@ -301,7 +307,7 @@ export default function AdminDashboard() {
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">👤</div>
                 <p className="text-muted-foreground">
-                  {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0 || certificateFilters.length > 0 || availabilityDateRange?.from
+                  {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from
                     ? 'No personnel found matching your filters'
                     : 'No personnel yet. Add your first team member to get started.'}
                 </p>

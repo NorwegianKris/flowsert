@@ -112,12 +112,19 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
                 <StatusBadge status={overallStatus} size="sm" />
               </div>
               
-              <Badge 
-                variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
-                className="mb-3 font-normal"
-              >
-                {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
-              </Badge>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Badge 
+                  variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
+                  className="font-normal"
+                >
+                  {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
+                </Badge>
+                {personnel.department && (
+                  <Badge variant="outline" className="font-normal text-muted-foreground">
+                    {personnel.department}
+                  </Badge>
+                )}
+              </div>
               
               <div className="space-y-1.5 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
