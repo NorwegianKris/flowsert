@@ -116,8 +116,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         {hideBackButton && <div />}
         
         <div className="flex gap-2">
-          {/* Activate/Deactivate button for admins */}
-          {isAdmin && (
+          {/* Activate/Deactivate button for admins - only for job seekers */}
+          {isAdmin && personnel.isJobSeeker && (
             <Button
               variant={isActivated ? 'outline' : 'default'}
               onClick={() => setIsActivateDialogOpen(true)}
@@ -162,8 +162,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </div>
       </div>
 
-      {/* Activation Status Banner */}
-      {isAdmin && !isActivated && (
+      {/* Activation Status Banner - only for job seekers */}
+      {isAdmin && personnel.isJobSeeker && !isActivated && (
         <Alert className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
           <Lock className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800 dark:text-amber-200">
@@ -346,7 +346,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <CertificateTable 
             certificates={personnel.certificates} 
             onCertificateUpdated={handleCertificateChange}
-            isProfileActivated={isActivated}
+            isProfileActivated={!personnel.isJobSeeker || isActivated}
           />
         </CardContent>
       </Card>

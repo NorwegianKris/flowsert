@@ -171,18 +171,18 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const selectAllPersonnel = () => {
-    // Only select activated personnel
-    const activatedPersonnel = personnel.filter(p => p.activated);
-    setPersonnelSelections(activatedPersonnel.map(p => ({ id: p.id, mode: globalMode })));
+    // Only select non-job-seekers and activated job seekers
+    const selectable = personnel.filter(p => !p.isJobSeeker || p.activated);
+    setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: globalMode })));
   };
 
   const deselectAllPersonnel = () => {
     setPersonnelSelections([]);
   };
 
-  // Separate activated and non-activated personnel
-  const activatedPersonnel = personnel.filter(p => p.activated);
-  const nonActivatedPersonnel = personnel.filter(p => !p.activated);
+  // Separate selectable (non-job-seekers + activated job seekers) and non-selectable personnel
+  const selectablePersonnel = personnel.filter(p => !p.isJobSeeker || p.activated);
+  const nonSelectablePersonnel = personnel.filter(p => p.isJobSeeker && !p.activated);
 
   const getInitials = (name: string) => {
     return name
@@ -382,14 +382,14 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No personnel available
                 </p>
-              ) : activatedPersonnel.length === 0 ? (
+              ) : selectablePersonnel.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No activated personnel available. Activate profiles to assign them to projects.
+                  No personnel available for project assignment. Activate job seeker profiles first.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {/* Activated personnel - can be selected */}
-                  {activatedPersonnel.map((person) => {
+                  {/* Selectable personnel - non-job-seekers and activated job seekers */}
+                  {selectablePersonnel.map((person) => {
                     const selected = isSelected(person.id);
                     const mode = getPersonnelMode(person.id);
                     const categoryInfo = getCategoryLabel(person.category);
@@ -448,16 +448,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     );
                   })}
                   
-                  {/* Non-activated personnel - shown but disabled */}
-                  {nonActivatedPersonnel.length > 0 && (
+                  {/* Non-selectable personnel - inactive job seekers */}
+                  {nonSelectablePersonnel.length > 0 && (
                     <>
                       <div className="border-t my-2 pt-2">
                         <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                           <ShieldOff className="h-3 w-3" />
-                          Not activated ({nonActivatedPersonnel.length})
+                          Not activated ({nonSelectablePersonnel.length})
                         </p>
                       </div>
-                      {nonActivatedPersonnel.map((person) => {
+                      {nonSelectablePersonnel.map((person) => {
                         const categoryInfo = getCategoryLabel(person.category);
                         
                         return (
