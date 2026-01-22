@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -193,27 +193,32 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
       <Card className="border-border/50">
-        <SheetTrigger asChild>
-          <button className="w-full text-left">
-            <CardContent className="py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-medium text-foreground">Messages</span>
-                  {unreadCount > 0 && (
-                    <span className="bg-destructive text-destructive-foreground text-xs min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full font-medium">
-                      {unreadCount}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                  <span className="text-sm">Send a message</span>
-                  <Send className="h-4 w-4" />
+        <CardHeader className="flex flex-row items-center justify-between py-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-blue-500" />
+            Messages
+            {unreadCount > 0 && (
+              <span className="bg-destructive text-destructive-foreground text-xs min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full font-medium">
+                {unreadCount}
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <SheetTrigger asChild>
+            <button className="w-full text-left">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-3 space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Click to open chat</p>
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5 hover:text-primary transition-colors">
+                    <Send className="h-3.5 w-3.5" />
+                    Send a message
+                  </p>
                 </div>
               </div>
-            </CardContent>
-          </button>
-        </SheetTrigger>
+            </button>
+          </SheetTrigger>
+        </CardContent>
       </Card>
 
       <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col">
