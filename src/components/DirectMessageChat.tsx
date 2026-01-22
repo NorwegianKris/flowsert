@@ -192,7 +192,7 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
 
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-      <Card className="border-border/50 h-[200px] flex flex-col justify-center">
+      <Card className="border-border/50">
         <SheetTrigger asChild>
           <button className="w-full text-left">
             <CardContent className="py-3">
