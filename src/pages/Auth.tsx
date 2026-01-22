@@ -44,12 +44,16 @@ export default function Auth() {
     role: string;
     businessName: string;
   } | null>(null);
+  const [jobSeekerDetails, setJobSeekerDetails] = useState<{
+    businessName: string;
+  } | null>(null);
   const [invitationLoading, setInvitationLoading] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const inviteToken = searchParams.get('token');
+  const jobSeekerToken = searchParams.get('job_seeker_token');
   const isPasswordReset = searchParams.get('type') === 'recovery';
 
   useEffect(() => {
@@ -118,6 +122,56 @@ export default function Auth() {
     }
   }, [inviteToken, toast]);
 
+  // Handle job seeker token
+  useEffect(() => {
+    if (jobSeekerToken) {
+      setAuthMode('signup');
+      setAuthDialogOpen(true);
+      setInvitationLoading(true);
+      
+      const fetchJobSeekerInvitation = async () => {
+        try {
+          const { data, error } = await (supabase as any).rpc('get_job_seeker_invitation_by_token', {
+            lookup_token: jobSeekerToken
+          });
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            const invitation = data[0];
+            // Fetch business name
+            const { data: businessData } = await supabase
+              .from('businesses')
+              .select('name')
+              .eq('id', invitation.business_id)
+              .single();
+            
+            setJobSeekerDetails({
+              businessName: businessData?.name || 'Unknown Business'
+            });
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Invalid Link',
+              description: 'This job seeker signup link is invalid or inactive.',
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching job seeker invitation:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to load signup details.',
+          });
+        } finally {
+          setInvitationLoading(false);
+        }
+      };
+      
+      fetchJobSeekerInvitation();
+    }
+  }, [jobSeekerToken, toast]);
+
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
     
@@ -173,7 +227,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(email, password, fullName, inviteToken || undefined);
+    const { error } = await signUp(email, password, fullName, inviteToken || undefined, jobSeekerToken || undefined);
     setIsLoading(false);
 
     if (error) {

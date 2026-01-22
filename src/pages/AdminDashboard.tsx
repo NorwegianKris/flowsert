@@ -14,6 +14,7 @@ import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
 import { PersonnelFilters } from '@/components/PersonnelFilters';
+import { JobSeekerFilters } from '@/components/JobSeekerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
@@ -44,6 +45,8 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
+  const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
+  const [showJobSeekersOnly, setShowJobSeekersOnly] = useState(false);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -70,6 +73,15 @@ export default function AdminDashboard() {
 
   const filteredPersonnel = useMemo(() => {
     return personnel.filter((p) => {
+      // Job seeker filter logic
+      const isJobSeeker = p.isJobSeeker || false;
+      
+      // If showing job seekers only, filter out non-job seekers
+      if (showJobSeekersOnly && !isJobSeeker) return false;
+      
+      // If not including job seekers and not showing only, exclude job seekers
+      if (!includeJobSeekers && !showJobSeekersOnly && isJobSeeker) return false;
+      
       // Search query filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -105,7 +117,7 @@ export default function AdminDashboard() {
       
       return true;
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -291,6 +303,15 @@ export default function AdminDashboard() {
               availabilityDateRange={availabilityDateRange}
               onAvailabilityDateRangeChange={setAvailabilityDateRange}
             />
+            
+            <div className="mt-4 mb-4">
+              <JobSeekerFilters
+                includeJobSeekers={includeJobSeekers}
+                onIncludeJobSeekersChange={setIncludeJobSeekers}
+                showJobSeekersOnly={showJobSeekersOnly}
+                onShowJobSeekersOnlyChange={setShowJobSeekersOnly}
+              />
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredPersonnel.map((p) => (

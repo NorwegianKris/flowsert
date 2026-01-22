@@ -19,7 +19,7 @@ interface AuthContextType {
   businessId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName?: string, inviteToken?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, inviteToken?: string, jobSeekerToken?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isWorker: boolean;
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, fullName?: string, inviteToken?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, inviteToken?: string, jobSeekerToken?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
       email,
@@ -110,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: { 
           full_name: fullName,
-          invite_token: inviteToken || undefined
+          invite_token: inviteToken || undefined,
+          job_seeker_token: jobSeekerToken || undefined
         }
       }
     });
