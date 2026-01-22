@@ -244,12 +244,20 @@ ${availabilitySection}`;
 }
 
 export function ChatBot({ isAdmin = false }: ChatBotProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(() => {
+    const stored = localStorage.getItem('chatbot-open');
+    return stored === null ? true : stored === 'true';
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Persist open/closed state
+  useEffect(() => {
+    localStorage.setItem('chatbot-open', String(isOpen));
+  }, [isOpen]);
   const { toast } = useToast();
   
   // Worker data hooks
