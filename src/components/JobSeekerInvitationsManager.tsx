@@ -28,9 +28,9 @@ export function JobSeekerInvitationsManager() {
   const [showQrFor, setShowQrFor] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const getSignupUrl = (id: string) => {
+  const getSignupUrl = () => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/r/${id}`;
+    return `${baseUrl}/register`;
   };
 
   const handleCreate = async () => {
@@ -41,9 +41,9 @@ export function JobSeekerInvitationsManager() {
     setIsCreating(false);
   };
 
-  const copyToClipboard = async (id: string) => {
+  const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(getSignupUrl(id));
+      await navigator.clipboard.writeText(getSignupUrl());
       toast({
         title: 'Link Copied',
         description: 'Job seeker signup link copied to clipboard.',
@@ -57,8 +57,8 @@ export function JobSeekerInvitationsManager() {
     }
   };
 
-  const getQrCodeUrl = (id: string) => {
-    const url = encodeURIComponent(getSignupUrl(id));
+  const getQrCodeUrl = () => {
+    const url = encodeURIComponent(getSignupUrl());
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
   };
 
@@ -140,7 +140,7 @@ export function JobSeekerInvitationsManager() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copyToClipboard(inv.id)}
+                      onClick={() => copyToClipboard()}
                       title="Copy link"
                     >
                       <Copy className="h-4 w-4" />
@@ -158,7 +158,7 @@ export function JobSeekerInvitationsManager() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => window.open(getSignupUrl(inv.id), '_blank')}
+                      onClick={() => window.open(getSignupUrl(), '_blank')}
                       title="Open link"
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -191,9 +191,9 @@ export function JobSeekerInvitationsManager() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-center py-4">
-            {showQrFor && (
+          {showQrFor && (
               <img
-                src={getQrCodeUrl(showQrFor)}
+                src={getQrCodeUrl()}
                 alt="QR Code"
                 className="w-48 h-48 border rounded-lg"
               />
@@ -205,7 +205,7 @@ export function JobSeekerInvitationsManager() {
               onClick={() => {
                 if (showQrFor) {
                   const link = document.createElement('a');
-                  link.href = getQrCodeUrl(showQrFor);
+                  link.href = getQrCodeUrl();
                   link.download = 'job-seeker-qr.png';
                   link.click();
                 }

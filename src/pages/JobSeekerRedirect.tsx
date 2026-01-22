@@ -1,32 +1,23 @@
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 export default function JobSeekerRedirect() {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAndRedirect = async () => {
-      if (!id) {
-        navigate('/auth');
-        return;
-      }
-
       try {
+        // Get the first active job seeker invitation
         const { data, error } = await supabase
           .from('job_seeker_invitations')
-          .select('token, is_active')
-          .eq('id', id)
+          .select('token')
+          .eq('is_active', true)
+          .limit(1)
           .single();
 
         if (error || !data) {
-          navigate('/auth');
-          return;
-        }
-
-        if (!data.is_active) {
           navigate('/auth');
           return;
         }
@@ -39,7 +30,7 @@ export default function JobSeekerRedirect() {
     };
 
     fetchAndRedirect();
-  }, [id, navigate]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
