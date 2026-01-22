@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     nextOfKinName: '',
     nextOfKinRelation: '',
     nextOfKinPhone: '',
+    bio: '',
   });
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         nextOfKinName: personnel.nextOfKinName || '',
         nextOfKinRelation: personnel.nextOfKinRelation || '',
         nextOfKinPhone: personnel.nextOfKinPhone || '',
+        bio: personnel.bio || '',
       });
       setAvatarUrl(personnel.avatarUrl || null);
     }
@@ -166,6 +169,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           next_of_kin_name: formData.nextOfKinName.trim() || null,
           next_of_kin_relation: formData.nextOfKinRelation.trim() || null,
           next_of_kin_phone: formData.nextOfKinPhone.trim() || null,
+          bio: formData.bio.trim() || null,
         })
         .eq('id', personnel.id);
 
@@ -419,6 +423,20 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               />
             </div>
           </div>
+          {/* Bio Section - only for job seekers */}
+          {isJobSeeker && (
+            <div className="pt-4 border-t">
+              <h3 className="text-sm font-semibold text-foreground mb-2">Tell me about yourself</h3>
+              <p className="text-xs text-muted-foreground mb-3">Write freely about why you're applying for a job and what makes you a great candidate.</p>
+              <Textarea
+                id="edit-bio"
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                placeholder="I am an experienced professional with a passion for..."
+                rows={5}
+              />
+            </div>
+          )}
 
           {/* Next of Kin Section - hidden for job seekers */}
           {!isJobSeeker && (

@@ -253,6 +253,36 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </Card>
       </div>
 
+      {/* Tell me about yourself - only for job seekers */}
+      {personnel.isJobSeeker && (
+        <Card className="border-border/50 border-sky-200 bg-sky-50/50">
+          <CardHeader className="flex flex-row items-center justify-between py-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <User className="h-4 w-4 text-sky-500" />
+              Tell me about yourself
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditProfileOpen(true)}
+              className="gap-1 h-8"
+            >
+              <Pencil className="h-3 w-3" />
+              Edit
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {personnel.bio ? (
+              <p className="text-sm text-foreground whitespace-pre-wrap">{personnel.bio}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                No introduction yet. Click Edit to tell potential employers about yourself.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Certificates Table */}
       <Card className="border-border/50">
         <CardHeader className="flex flex-row items-center justify-between">
