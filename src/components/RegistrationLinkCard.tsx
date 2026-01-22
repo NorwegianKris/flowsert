@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useBusinessInfo } from '@/hooks/useBusinessInfo';
-import { supabase } from '@/integrations/supabase/client';
-import { Copy, Check, ExternalLink, Link2, QrCode, Save, Loader2 } from 'lucide-react';
+import { Copy, Check, ExternalLink, Link2, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -19,30 +18,14 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export function RegistrationLinkCard() {
-  const { business, loading, refetch } = useBusinessInfo();
+  const { business, loading } = useBusinessInfo();
   const { toast } = useToast();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const [customDomain, setCustomDomain] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
   const companyCode = business?.company_code || '';
-  const savedDomain = business?.custom_domain || '';
-  
-  // Use custom domain if set, otherwise fallback to current origin
-  const getBaseUrl = () => {
-    if (savedDomain) {
-      // Ensure proper format
-      const domain = savedDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-      return `https://${domain}`;
-    }
-    return window.location.origin;
-  };
-  
-  const baseUrl = getBaseUrl();
-  const registrationUrl = `${baseUrl}/register/jobseeker/${companyCode}`;
+  const registrationUrl = `https://flowsert.com/register/jobseeker/${companyCode}`;
 
   const copyToClipboard = async (text: string, type: 'code' | 'link') => {
     try {
@@ -72,47 +55,6 @@ export function RegistrationLinkCard() {
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
   };
 
-  const handleSaveDomain = async () => {
-    if (!business?.id) return;
-    
-    setIsSaving(true);
-    try {
-      // Clean the domain input
-      const cleanDomain = customDomain.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-      
-      const { error } = await (supabase as any)
-        .from('businesses')
-        .update({ custom_domain: cleanDomain || null })
-        .eq('id', business.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Domain Saved',
-        description: cleanDomain 
-          ? 'Your custom domain has been saved. The registration link and QR code will now use this domain.'
-          : 'Custom domain removed.',
-      });
-      
-      await refetch();
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error saving custom domain:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save custom domain.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const startEditing = () => {
-    setCustomDomain(savedDomain);
-    setIsEditing(true);
-  };
-
   if (loading) {
     return (
       <Card>
@@ -140,57 +82,6 @@ export function RegistrationLinkCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Custom Domain Setting */}
-          <div className="space-y-2">
-            <Label htmlFor="custom-domain">Custom Domain (optional)</Label>
-            {isEditing ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  id="custom-domain"
-                  value={customDomain}
-                  onChange={(e) => setCustomDomain(e.target.value)}
-                  placeholder="e.g., flowsert.com"
-                  className="text-sm"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleSaveDomain}
-                  disabled={isSaving}
-                  title="Save domain"
-                >
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input
-                  id="custom-domain-display"
-                  value={savedDomain || 'Not set'}
-                  readOnly
-                  className="text-sm bg-muted"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={startEditing}
-                >
-                  {savedDomain ? 'Edit' : 'Set Domain'}
-                </Button>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Set your custom domain so the registration link and QR code work correctly.
-            </p>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="company-code">Company Code</Label>
             <div className="flex items-center gap-2">
@@ -247,11 +138,9 @@ export function RegistrationLinkCard() {
             </div>
           </div>
 
-          {!savedDomain && (
-            <p className="text-xs text-amber-600">
-              ⚠️ Set your custom domain above to ensure the QR code works correctly when scanned.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Job seekers can use this link to register and be automatically associated with your company.
+          </p>
         </CardContent>
       </Card>
 
