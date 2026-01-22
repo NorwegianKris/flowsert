@@ -39,6 +39,12 @@ export default function Auth() {
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [invitationDetails, setInvitationDetails] = useState<{
+    email: string;
+    role: string;
+    businessName: string;
+  } | null>(null);
+  const [invitationLoading, setInvitationLoading] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -58,13 +64,59 @@ export default function Auth() {
     }
   }, [isPasswordReset]);
 
-  // Auto-open dialog for invite tokens
+  // Auto-open dialog and fetch invitation details for invite tokens
   useEffect(() => {
     if (inviteToken) {
       setAuthMode('signup');
       setAuthDialogOpen(true);
+      setInvitationLoading(true);
+      
+      // Fetch invitation details using the RPC function
+      const fetchInvitation = async () => {
+        try {
+          const { data, error } = await supabase.rpc('get_invitation_by_token', {
+            lookup_token: inviteToken
+          });
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            const invitation = data[0];
+            // Fetch business name
+            const { data: businessData } = await supabase
+              .from('businesses')
+              .select('name')
+              .eq('id', invitation.business_id)
+              .single();
+            
+            setInvitationDetails({
+              email: invitation.email,
+              role: invitation.role,
+              businessName: businessData?.name || 'Unknown Business'
+            });
+            setEmail(invitation.email);
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Invalid Invitation',
+              description: 'This invitation link is invalid or has expired.',
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching invitation:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to load invitation details.',
+          });
+        } finally {
+          setInvitationLoading(false);
+        }
+      };
+      
+      fetchInvitation();
     }
-  }, [inviteToken]);
+  }, [inviteToken, toast]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -110,8 +162,18 @@ export default function Auth() {
     e.preventDefault();
     if (!validateForm()) return;
 
+    // Validate email matches invitation if using invite token
+    if (inviteToken && invitationDetails && email !== invitationDetails.email) {
+      toast({
+        variant: 'destructive',
+        title: 'Email mismatch',
+        description: 'Please use the email address the invitation was sent to.',
+      });
+      return;
+    }
+
     setIsLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName, inviteToken || undefined);
     setIsLoading(false);
 
     if (error) {
@@ -690,6 +752,20 @@ export default function Auth() {
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="space-y-4">
+              {/* Show invitation context */}
+              {inviteToken && invitationLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              )}
+              {inviteToken && invitationDetails && (
+                <div className="rounded-lg bg-primary/10 p-4 text-center">
+                  <p className="text-sm text-foreground">
+                    You're joining <strong>{invitationDetails.businessName}</strong> as{' '}
+                    <span className="capitalize">{invitationDetails.role}</span>
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signup-name">Full Name</Label>
                 <Input
@@ -709,7 +785,14 @@ export default function Auth() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  readOnly={!!invitationDetails}
+                  className={invitationDetails ? 'bg-muted cursor-not-allowed' : ''}
                 />
+                {invitationDetails && (
+                  <p className="text-xs text-muted-foreground">
+                    This email is linked to your invitation and cannot be changed.
+                  </p>
+                )}
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
               <div className="space-y-2">
@@ -729,7 +812,7 @@ export default function Auth() {
                   By signing up, you'll create a new business account as an admin.
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || (!!inviteToken && !invitationDetails)}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
