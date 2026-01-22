@@ -118,21 +118,23 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
                   {personnel.name}
                 </h3>
                 <StatusBadge status={overallStatus} size="sm" />
-                {/* Activation status indicator */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className={`p-0.5 rounded ${isActivated ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {isActivated ? (
-                        <ShieldCheck className="h-4 w-4" />
-                      ) : (
-                        <ShieldOff className="h-4 w-4" />
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isActivated ? 'Profile activated' : 'Profile not activated'}
-                  </TooltipContent>
-                </Tooltip>
+                {/* Activation status indicator - only for job seekers */}
+                {isJobSeeker && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={`p-0.5 rounded ${isActivated ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {isActivated ? (
+                          <ShieldCheck className="h-4 w-4" />
+                        ) : (
+                          <ShieldOff className="h-4 w-4" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isActivated ? 'Profile activated' : 'Profile not activated'}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
               
               <div className="flex items-center gap-2 mb-3 flex-wrap">
