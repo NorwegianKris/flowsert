@@ -280,8 +280,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       {/* Pending Invitations Section */}
       {!hideInvitations && <PersonnelInvitations personnelId={personnel.id} />}
 
-      {/* Assigned Projects Section - moved up */}
-      <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />
+      {/* Assigned Projects Section - hidden for job seekers */}
+      {!personnel.isJobSeeker && <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />}
 
       {/* Personal Info + Next of Kin + Documents on left, Chat + Calendar on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -345,52 +345,59 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   <p className="text-xs text-muted-foreground">Email</p>
                   <p className="text-sm font-medium text-foreground truncate">{personnel.email}</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Norwegian ID</p>
-                  <p className="text-sm font-medium text-foreground truncate">{personnel.nationalId || '—'}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Salary Account</p>
-                  <p className="text-sm font-medium text-foreground truncate">{personnel.salaryAccountNumber || '—'}</p>
-                </div>
+                {/* Norwegian ID and Salary Account - hidden for job seekers */}
+                {!personnel.isJobSeeker && (
+                  <>
+                    <div className="space-y-0.5">
+                      <p className="text-xs text-muted-foreground">Norwegian ID</p>
+                      <p className="text-sm font-medium text-foreground truncate">{personnel.nationalId || '—'}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs text-muted-foreground">Salary Account</p>
+                      <p className="text-sm font-medium text-foreground truncate">{personnel.salaryAccountNumber || '—'}</p>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Next of Kin Section */}
-          <Card className="border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between py-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4 text-pink-500" />
-                Next of Kin
-              </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditProfileOpen(true)}
-                className="gap-1 h-8"
-              >
-                <Pencil className="h-3 w-3" />
-                Edit
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Name</p>
-                  <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinName || '—'}</p>
+          {/* Next of Kin Section - hidden for job seekers */}
+          {!personnel.isJobSeeker && (
+            <Card className="border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between py-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Users className="h-4 w-4 text-pink-500" />
+                  Next of Kin
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditProfileOpen(true)}
+                  className="gap-1 h-8"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </Button>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-muted-foreground">Name</p>
+                    <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinName || '—'}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-muted-foreground">Relation</p>
+                    <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinRelation || '—'}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-muted-foreground">Phone</p>
+                    <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinPhone || '—'}</p>
+                  </div>
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Relation</p>
-                  <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinRelation || '—'}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <p className="text-sm font-medium text-foreground truncate">{personnel.nextOfKinPhone || '—'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Documents Section */}
           <PersonnelDocuments personnelId={personnel.id} />
@@ -398,11 +405,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         
         {/* Right column: Compact Chat notification + Calendar */}
         <div className="space-y-6">
-          {/* Direct Messages - Compact notification card */}
-          <DirectMessageChat 
-            personnelId={personnel.id} 
-            personnelName={personnel.name}
-          />
+          {/* Direct Messages - hidden for job seekers */}
+          {!personnel.isJobSeeker && (
+            <DirectMessageChat 
+              personnelId={personnel.id} 
+              personnelName={personnel.name}
+            />
+          )}
           
           {/* Availability Calendar */}
           <AvailabilityCalendar 

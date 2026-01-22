@@ -56,8 +56,8 @@ export default function WorkerDashboard() {
             {/* Welcome dialog for new workers */}
             <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
             
-            {/* Show pending invitations at the top */}
-            <WorkerInvitations personnelId={personnel.id} />
+            {/* Show pending invitations at the top - not for job seekers */}
+            {!personnel.isJobSeeker && <WorkerInvitations personnelId={personnel.id} />}
             
             <PersonnelDetail
               personnel={personnel}
@@ -85,7 +85,8 @@ export default function WorkerDashboard() {
         )}
       </main>
       
-      <ChatBot />
+      {/* Chat bot - only for regular workers, not job seekers */}
+      {personnel && !personnel.isJobSeeker && <ChatBot />}
     </div>
   );
 }
