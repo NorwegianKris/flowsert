@@ -4,8 +4,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2 } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
@@ -18,6 +19,8 @@ interface PersonnelFiltersProps {
   onCategoryFiltersChange: (values: string[]) => void;
   certificateFilters: string[];
   onCertificateFiltersChange: (values: string[]) => void;
+  departmentFilters: string[];
+  onDepartmentFiltersChange: (values: string[]) => void;
   locations: string[];
   certificates: string[];
   availabilityDateRange: DateRange | undefined;
@@ -33,16 +36,20 @@ export function PersonnelFilters({
   onCategoryFiltersChange,
   certificateFilters,
   onCertificateFiltersChange,
+  departmentFilters,
+  onDepartmentFiltersChange,
   locations,
   certificates,
   availabilityDateRange,
   onAvailabilityDateRangeChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
+  const { departments } = useDepartments();
   const [roleOpen, setRoleOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [certificateOpen, setCertificateOpen] = useState(false);
+  const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
 
   const hasActiveFilters = 
@@ -50,6 +57,7 @@ export function PersonnelFilters({
     locationFilters.length > 0 || 
     categoryFilters.length > 0 ||
     certificateFilters.length > 0 ||
+    departmentFilters.length > 0 ||
     availabilityDateRange?.from !== undefined;
 
   const clearAllFilters = () => {
@@ -57,6 +65,7 @@ export function PersonnelFilters({
     onLocationFiltersChange([]);
     onCategoryFiltersChange([]);
     onCertificateFiltersChange([]);
+    onDepartmentFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
   };
 
@@ -320,6 +329,54 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
+      {/* Department Filter */}
+      <Popover open={departmentOpen} onOpenChange={setDepartmentOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+            <Building2 className="mr-2 h-4 w-4" />
+            <span className="truncate">
+              {departmentFilters.length === 0
+                ? 'Department'
+                : departmentFilters.length === 1
+                ? departmentFilters[0]
+                : `${departmentFilters.length} depts`}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
+          <div className="space-y-1">
+            {departments.map((dept) => (
+              <label
+                key={dept.id}
+                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+              >
+                <Checkbox
+                  checked={departmentFilters.includes(dept.name)}
+                  onCheckedChange={() =>
+                    toggleFilter(dept.name, departmentFilters, onDepartmentFiltersChange)
+                  }
+                />
+                <span className="text-sm">{dept.name}</span>
+              </label>
+            ))}
+            {departments.length === 0 && (
+              <p className="text-sm text-muted-foreground px-2 py-1">No departments defined</p>
+            )}
+          </div>
+          {departmentFilters.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full mt-2"
+              onClick={() => onDepartmentFiltersChange([])}
+            >
+              Clear
+            </Button>
+          )}
+        </PopoverContent>
+      </Popover>
+
       {/* Clear Filters Button */}
       {hasActiveFilters && (
         <Button
@@ -388,6 +445,18 @@ export function PersonnelFilters({
               <button
                 className="ml-1 hover:text-destructive"
                 onClick={() => toggleFilter(cert, certificateFilters, onCertificateFiltersChange)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          {departmentFilters.map((dept) => (
+            <Badge key={dept} variant="secondary" className="text-xs">
+              <Building2 className="h-3 w-3 mr-1" />
+              {dept}
+              <button
+                className="ml-1 hover:text-destructive"
+                onClick={() => toggleFilter(dept, departmentFilters, onDepartmentFiltersChange)}
               >
                 <X className="h-3 w-3" />
               </button>
