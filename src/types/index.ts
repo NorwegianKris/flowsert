@@ -37,5 +37,6 @@ export interface Personnel {
   nextOfKinRelation?: string;
   nextOfKinPhone?: string;
   isJobSeeker?: boolean;
+  bio?: string;
   certificates: Certificate[];
 }

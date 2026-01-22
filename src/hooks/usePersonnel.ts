@@ -28,6 +28,7 @@ interface DbPersonnel {
   next_of_kin_relation: string | null;
   next_of_kin_phone: string | null;
   is_job_seeker: boolean | null;
+  bio: string | null;
 }
 
 interface DbCertificate {
@@ -103,6 +104,7 @@ export function usePersonnel() {
         nextOfKinRelation: p.next_of_kin_relation || undefined,
         nextOfKinPhone: p.next_of_kin_phone || undefined,
         isJobSeeker: p.is_job_seeker || false,
+        bio: p.bio || undefined,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -201,6 +203,7 @@ export function useWorkerPersonnel() {
         nextOfKinRelation: p.next_of_kin_relation || undefined,
         nextOfKinPhone: p.next_of_kin_phone || undefined,
         isJobSeeker: p.is_job_seeker || false,
+        bio: p.bio || undefined,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.name,
