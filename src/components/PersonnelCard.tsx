@@ -76,10 +76,16 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
     }
   };
 
+  const isJobSeeker = personnel.isJobSeeker || false;
+
   return (
     <>
       <Card
-        className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 border-border/50 group relative"
+        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group relative ${
+          isJobSeeker 
+            ? 'border-sky-300 bg-sky-50/50 dark:bg-sky-950/20 dark:border-sky-800' 
+            : 'border-border/50'
+        }`}
         onClick={onClick}
       >
         {/* Remove button - visible on hover */}
@@ -113,12 +119,18 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
               </div>
               
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <Badge 
-                  variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
-                  className="font-normal"
-                >
-                  {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
-                </Badge>
+                {isJobSeeker ? (
+                  <Badge className="font-normal bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900 dark:text-sky-300 dark:border-sky-700">
+                    Job Seeker
+                  </Badge>
+                ) : (
+                  <Badge 
+                    variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
+                    className="font-normal"
+                  >
+                    {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
+                  </Badge>
+                )}
                 {personnel.department && (
                   <Badge variant="outline" className="font-normal text-muted-foreground">
                     {personnel.department}

@@ -411,6 +411,36 @@ export type Database = {
           },
         ]
       }
+      job_seeker_invitations: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       personnel: {
         Row: {
           address: string | null
@@ -422,6 +452,7 @@ export type Database = {
           email: string
           gender: string | null
           id: string
+          is_job_seeker: boolean
           language: string | null
           location: string
           name: string
@@ -448,6 +479,7 @@ export type Database = {
           email: string
           gender?: string | null
           id?: string
+          is_job_seeker?: boolean
           language?: string | null
           location?: string
           name: string
@@ -474,6 +506,7 @@ export type Database = {
           email?: string
           gender?: string | null
           id?: string
+          is_job_seeker?: boolean
           language?: string | null
           location?: string
           name?: string
@@ -973,6 +1006,15 @@ export type Database = {
           personnel_id: string
           role: Database["public"]["Enums"]["app_role"]
           status: string
+        }[]
+      }
+      get_job_seeker_invitation_by_token: {
+        Args: { lookup_token: string }
+        Returns: {
+          business_id: string
+          id: string
+          is_active: boolean
+          name: string
         }[]
       }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }

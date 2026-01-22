@@ -27,6 +27,7 @@ interface DbPersonnel {
   next_of_kin_name: string | null;
   next_of_kin_relation: string | null;
   next_of_kin_phone: string | null;
+  is_job_seeker: boolean | null;
 }
 
 interface DbCertificate {
@@ -64,7 +65,7 @@ export function usePersonnel() {
       if (personnelError) throw personnelError;
 
       // Fetch certificates for all accessible personnel
-      const personnelIds = (personnelData || []).map((p: DbPersonnel) => p.id);
+      const personnelIds = ((personnelData || []) as any[]).map((p) => p.id);
       
       let certificatesData: DbCertificate[] = [];
       if (personnelIds.length > 0) {
@@ -78,7 +79,7 @@ export function usePersonnel() {
       }
 
       // Map to Personnel type with certificates
-      const mappedPersonnel: Personnel[] = (personnelData || []).map((p: DbPersonnel) => ({
+      const mappedPersonnel: Personnel[] = ((personnelData || []) as any[]).map((p) => ({
         id: p.id,
         name: p.name,
         role: p.role,
@@ -101,6 +102,7 @@ export function usePersonnel() {
         nextOfKinName: p.next_of_kin_name || undefined,
         nextOfKinRelation: p.next_of_kin_relation || undefined,
         nextOfKinPhone: p.next_of_kin_phone || undefined,
+        isJobSeeker: p.is_job_seeker || false,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -165,7 +167,7 @@ export function useWorkerPersonnel() {
         return;
       }
 
-      const p = personnelData as DbPersonnel;
+      const p = personnelData as any;
 
       // Fetch certificates with category
       const { data: certificatesData, error: certError } = await supabase
@@ -198,6 +200,7 @@ export function useWorkerPersonnel() {
         nextOfKinName: p.next_of_kin_name || undefined,
         nextOfKinRelation: p.next_of_kin_relation || undefined,
         nextOfKinPhone: p.next_of_kin_phone || undefined,
+        isJobSeeker: p.is_job_seeker || false,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.name,
