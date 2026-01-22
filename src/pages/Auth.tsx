@@ -384,7 +384,6 @@ export default function Auth() {
                   Book a Demo
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
             </div>
           </div>
         </section>
@@ -593,7 +592,7 @@ export default function Auth() {
               Book a Demo
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground mt-4">No credit card required.</p>
+          
         </div>
       </section>
 
