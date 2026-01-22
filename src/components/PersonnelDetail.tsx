@@ -16,7 +16,7 @@ import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
-import { ConvertJobSeekerDialog } from '@/components/ConvertJobSeekerDialog';
+import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -28,9 +28,10 @@ import {
 } from '@/lib/certificateUtils';
 import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock
 } from 'lucide-react';
 import { PersonnelDocuments } from './PersonnelDocuments';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PersonnelDetailProps {
   personnel: Personnel;
@@ -49,7 +50,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRequestProjectOpen, setIsRequestProjectOpen] = useState(false);
   const [isSendInvitationOpen, setIsSendInvitationOpen] = useState(false);
-  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   const { isAdmin } = useAuth();
@@ -64,6 +65,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
   
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
+  const isActivated = personnel.activated || false;
   
   const handleCertificateChange = () => {
     if (onRefresh) {
@@ -114,15 +116,24 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         {hideBackButton && <div />}
         
         <div className="flex gap-2">
-          {/* Add to main pool button for admins viewing job seeker profiles */}
-          {isAdmin && personnel.isJobSeeker && (
+          {/* Activate/Deactivate button for admins */}
+          {isAdmin && (
             <Button
-              variant="default"
-              onClick={() => setIsConvertDialogOpen(true)}
+              variant={isActivated ? 'outline' : 'default'}
+              onClick={() => setIsActivateDialogOpen(true)}
               className="gap-2"
             >
-              <UserPlus className="h-4 w-4" />
-              Add to Main Pool
+              {isActivated ? (
+                <>
+                  <ShieldOff className="h-4 w-4" />
+                  Deactivate
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="h-4 w-4" />
+                  Activate Profile
+                </>
+              )}
             </Button>
           )}
           
@@ -138,7 +149,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             </Button>
           )}
           
-          {showRequestProject && (
+          {/* Request for Project button - only for activated profiles */}
+          {showRequestProject && isActivated && (
             <Button
               onClick={() => setIsRequestProjectOpen(true)}
               className="gap-2"
@@ -149,6 +161,17 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           )}
         </div>
       </div>
+
+      {/* Activation Status Banner */}
+      {isAdmin && !isActivated && (
+        <Alert className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
+          <Lock className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Profile not activated.</strong> Activate profile to unlock documents and project assignment. 
+            Activated profiles count toward billing.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card className="border-border/50">
         <CardContent className="p-6">
@@ -320,7 +343,11 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           </div>
         </CardHeader>
         <CardContent>
-          <CertificateTable certificates={personnel.certificates} onCertificateUpdated={handleCertificateChange} />
+          <CertificateTable 
+            certificates={personnel.certificates} 
+            onCertificateUpdated={handleCertificateChange}
+            isProfileActivated={isActivated}
+          />
         </CardContent>
       </Card>
 
@@ -515,11 +542,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         onInvitationSent={onRefresh}
       />
 
-      <ConvertJobSeekerDialog
-        open={isConvertDialogOpen}
-        onOpenChange={setIsConvertDialogOpen}
+      <ActivateProfileDialog
+        open={isActivateDialogOpen}
+        onOpenChange={setIsActivateDialogOpen}
         personnelId={personnel.id}
         personnelName={personnel.name}
+        isCurrentlyActivated={isActivated}
+        isJobSeeker={personnel.isJobSeeker || false}
         onSuccess={() => onRefresh?.()}
       />
     </div>

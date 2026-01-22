@@ -105,6 +105,7 @@ export function usePersonnel() {
         nextOfKinPhone: p.next_of_kin_phone || undefined,
         isJobSeeker: p.is_job_seeker || false,
         bio: p.bio || undefined,
+        activated: p.activated || false,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -204,6 +205,7 @@ export function useWorkerPersonnel() {
         nextOfKinPhone: p.next_of_kin_phone || undefined,
         isJobSeeker: p.is_job_seeker || false,
         bio: p.bio || undefined,
+        activated: p.activated || false,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.name,

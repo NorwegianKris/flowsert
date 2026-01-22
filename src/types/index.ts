@@ -38,5 +38,6 @@ export interface Personnel {
   nextOfKinPhone?: string;
   isJobSeeker?: boolean;
   bio?: string;
+  activated?: boolean; // When true, full document access is enabled and profile counts toward billing
   certificates: Certificate[];
 }

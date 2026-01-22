@@ -23,19 +23,24 @@ import {
 } from '@/lib/certificateUtils';
 import { getCertificateDocumentUrl } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2 } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CertificateTableProps {
   certificates: Certificate[];
   onCertificateUpdated?: () => void;
+  isProfileActivated?: boolean; // When false, document access is restricted
 }
 
-export function CertificateTable({ certificates, onCertificateUpdated }: CertificateTableProps) {
+export function CertificateTable({ certificates, onCertificateUpdated, isProfileActivated = true }: CertificateTableProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [editCertificate, setEditCertificate] = useState<Certificate | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
+  
+  // Only load document URLs if profile is activated
+  const canAccessDocuments = isProfileActivated;
 
   const sortedCertificates = [...certificates].sort((a, b) => {
     const statusOrder = { expired: 0, expiring: 1, valid: 2 };
@@ -57,9 +62,9 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
     setEditCertificate(cert);
   };
 
-  // Load signed URL when certificate is selected
+  // Load signed URL when certificate is selected (only if activated)
   useEffect(() => {
-    if (selectedCertificate?.documentUrl) {
+    if (selectedCertificate?.documentUrl && canAccessDocuments) {
       setLoadingUrl(true);
       getCertificateDocumentUrl(selectedCertificate.documentUrl)
         .then(url => setSignedUrl(url))
@@ -67,9 +72,10 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
     } else {
       setSignedUrl(null);
     }
-  }, [selectedCertificate?.documentUrl]);
+  }, [selectedCertificate?.documentUrl, canAccessDocuments]);
 
   const handleOpenDocument = async (documentUrl: string) => {
+    if (!canAccessDocuments) return;
     const url = await getCertificateDocumentUrl(documentUrl);
     if (url) {
       window.open(url, '_blank');
@@ -213,23 +219,38 @@ export function CertificateTable({ certificates, onCertificateUpdated }: Certifi
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => signedUrl && window.open(signedUrl, '_blank')}
-                        disabled={!signedUrl || loadingUrl}
-                      >
-                        {loadingUrl ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                        )}
-                        Open Full Size
-                      </Button>
+                      {canAccessDocuments && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
+                          disabled={!signedUrl || loadingUrl}
+                        >
+                          {loadingUrl ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                          )}
+                          Open Full Size
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="p-4 flex justify-center">
-                    {loadingUrl ? (
+                    {!canAccessDocuments ? (
+                      <div className="flex flex-col items-center gap-4 py-8 text-center">
+                        <div className="p-4 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                          <Lock className="h-12 w-12 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="font-medium text-foreground">Document Access Locked</p>
+                          <p className="text-sm text-muted-foreground max-w-sm">
+                            Activate this profile to view and download certificate documents. 
+                            Activated profiles count toward billing.
+                          </p>
+                        </div>
+                      </div>
+                    ) : loadingUrl ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>

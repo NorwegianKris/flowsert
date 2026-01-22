@@ -19,9 +19,10 @@ import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
-import { MapPin, Mail, Phone, FileCheck, Briefcase, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, Mail, Phone, FileCheck, Briefcase, Trash2, Loader2, ShieldCheck, ShieldOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -77,6 +78,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
   };
 
   const isJobSeeker = personnel.isJobSeeker || false;
+  const isActivated = personnel.activated || false;
 
   return (
     <>
@@ -116,6 +118,21 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
                   {personnel.name}
                 </h3>
                 <StatusBadge status={overallStatus} size="sm" />
+                {/* Activation status indicator */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`p-0.5 rounded ${isActivated ? 'text-primary' : 'text-muted-foreground'}`}>
+                      {isActivated ? (
+                        <ShieldCheck className="h-4 w-4" />
+                      ) : (
+                        <ShieldOff className="h-4 w-4" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isActivated ? 'Profile activated' : 'Profile not activated'}
+                  </TooltipContent>
+                </Tooltip>
               </div>
               
               <div className="flex items-center gap-2 mb-3 flex-wrap">
