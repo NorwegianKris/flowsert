@@ -452,13 +452,11 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         
         {/* Right column: Compact Chat notification + Calendar */}
         <div className="space-y-6">
-          {/* Direct Messages - hidden for job seekers */}
-          {!personnel.isJobSeeker && (
-            <DirectMessageChat 
-              personnelId={personnel.id} 
-              personnelName={personnel.name}
-            />
-          )}
+          {/* Direct Messages */}
+          <DirectMessageChat 
+            personnelId={personnel.id} 
+            personnelName={personnel.name}
+          />
           
           {/* Availability Calendar */}
           <AvailabilityCalendar 

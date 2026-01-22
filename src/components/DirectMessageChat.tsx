@@ -119,13 +119,15 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
     if (!newMessage.trim() || !user) return;
 
     setIsSending(true);
+    const messageContent = newMessage.trim();
+    
     const { error } = await supabase
       .from('direct_messages')
       .insert({
         personnel_id: personnelId,
         sender_id: user.id,
         sender_role: senderRole,
-        content: newMessage.trim()
+        content: messageContent
       });
 
     if (error) {
@@ -133,6 +135,22 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
       toast.error('Failed to send message');
     } else {
       setNewMessage('');
+      
+      // Send email notification if admin is messaging a worker
+      if (isAdmin) {
+        try {
+          await supabase.functions.invoke('send-dm-notification', {
+            body: {
+              personnelId,
+              messageContent,
+              senderName: 'Your employer'
+            }
+          });
+        } catch (notifError) {
+          console.error('Error sending notification:', notifError);
+          // Don't show error to user - message was sent successfully
+        }
+      }
     }
     setIsSending(false);
   };
