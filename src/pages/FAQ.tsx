@@ -7,7 +7,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import flowsertLogo from '@/assets/flowsert_logo.png';
 
 const faqs = [
   {
@@ -57,7 +56,7 @@ export default function FAQ() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/auth')}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
+              <h1 className="text-2xl font-semibold font-rajdhani text-primary">FlowSert</h1>
             </div>
           </div>
         </div>
