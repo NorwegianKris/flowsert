@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Contact() {
   const navigate = useNavigate();
@@ -21,12 +22,26 @@ export default function Contact() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast.success('Message sent successfully! We\'ll get back to you soon.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setIsSubmitting(false);
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Message sent successfully! We\'ll get back to you soon.');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message. Please try again or email us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -75,7 +90,7 @@ export default function Contact() {
                       </div>
                       <div>
                         <h3 className="font-medium text-foreground">Email</h3>
-                        <p className="text-muted-foreground text-sm">support@flowsert.com</p>
+                        <p className="text-muted-foreground text-sm">kmu@techno-dive.no</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -84,7 +99,7 @@ export default function Contact() {
                       </div>
                       <div>
                         <h3 className="font-medium text-foreground">Phone</h3>
-                        <p className="text-muted-foreground text-sm">+47 123 45 678</p>
+                        <p className="text-muted-foreground text-sm">+47 930 88 152</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -93,7 +108,7 @@ export default function Contact() {
                       </div>
                       <div>
                         <h3 className="font-medium text-foreground">Location</h3>
-                        <p className="text-muted-foreground text-sm">Oslo, Norway</p>
+                        <p className="text-muted-foreground text-sm">Husøyvegen 153, 4262 Avaldsnes, Norway</p>
                       </div>
                     </div>
                   </div>
