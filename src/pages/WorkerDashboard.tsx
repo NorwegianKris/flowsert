@@ -41,7 +41,8 @@ export default function WorkerDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <ReportFeedbackDialog />
+            {/* Report button only for regular workers, not job seekers */}
+            {personnel && !personnel.isJobSeeker && <ReportFeedbackDialog />}
             <Button variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
