@@ -10,6 +10,7 @@ import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
 import { ProjectDocuments } from '@/components/ProjectDocuments';
+import { ProjectChat } from '@/components/ProjectChat';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import {
@@ -255,12 +256,15 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       {/* Main Content - Calendar with Side Tabs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar Section */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           <ProjectCalendar 
             project={project} 
             onUpdateDates={handleUpdateDates}
             editable={!!onUpdateProject}
           />
+          
+          {/* Project Chat */}
+          <ProjectChat projectId={project.id} projectName={project.name} />
         </div>
 
         {/* Right Side Tabs - Personnel & Calendar Items */}
