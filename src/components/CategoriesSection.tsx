@@ -4,8 +4,7 @@ import { CertificateCategoriesManager } from '@/components/CertificateCategories
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
 import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
-import { JobSeekerInvitationsManager } from '@/components/JobSeekerInvitationsManager';
-import { Award, FileText, Users, Building2, Briefcase } from 'lucide-react';
+import { Award, FileText, Users, Building2 } from 'lucide-react';
 
 export function CategoriesSection() {
   return (
@@ -18,7 +17,7 @@ export function CategoriesSection() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="workers" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="workers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Workers
@@ -34,10 +33,6 @@ export function CategoriesSection() {
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Documents
-            </TabsTrigger>
-            <TabsTrigger value="job-seekers" className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              Job Seekers
             </TabsTrigger>
           </TabsList>
           
@@ -75,15 +70,6 @@ export function CategoriesSection() {
               </p>
             </div>
             <DocumentCategoriesContent />
-          </TabsContent>
-          
-          <TabsContent value="job-seekers">
-            <div className="space-y-2 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Create and manage invitation links for job seekers to register their profiles.
-              </p>
-            </div>
-            <JobSeekerInvitationsManager />
           </TabsContent>
         </Tabs>
       </CardContent>
