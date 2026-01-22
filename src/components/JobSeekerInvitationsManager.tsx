@@ -16,12 +16,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useJobSeekerInvitations } from '@/hooks/useJobSeekerInvitations';
+import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 import { Plus, Copy, Trash2, QrCode, Loader2, Link2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function JobSeekerInvitationsManager() {
   const { invitations, loading, createInvitation, toggleInvitation, deleteInvitation } =
     useJobSeekerInvitations();
+  const { business } = useBusinessInfo();
   const [newName, setNewName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -30,7 +32,8 @@ export function JobSeekerInvitationsManager() {
 
   const getSignupUrl = () => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/register/jobseeker`;
+    const companyCode = business?.company_code || '';
+    return `${baseUrl}/register/jobseeker/${companyCode}`;
   };
 
   const handleCreate = async () => {
