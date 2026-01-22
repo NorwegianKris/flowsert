@@ -35,8 +35,8 @@ export default function JobSeekerRedirect() {
 
         const invitation = data[0];
 
-        // Redirect to auth with the token
-        navigate(`/auth?job_seeker_token=${invitation.token}`);
+        // Redirect to auth with the token and business name
+        navigate(`/auth?job_seeker_token=${invitation.token}&business_name=${encodeURIComponent(invitation.business_name)}`);
       } catch {
         setError('Something went wrong. Please try again.');
       }
