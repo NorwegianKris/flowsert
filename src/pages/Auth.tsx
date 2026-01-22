@@ -291,23 +291,17 @@ export default function Auth() {
 
     setDemoSubmitting(true);
     
-    const { error } = await (supabase as any)
-      .from('demo_requests')
-      .insert({ 
-        email: demoEmail,
-        name: demoName,
-        message: demoMessage || null
+    try {
+      const { error } = await supabase.functions.invoke('send-demo-request', {
+        body: {
+          name: demoName,
+          email: demoEmail,
+          message: demoMessage || undefined
+        }
       });
 
-    setDemoSubmitting(false);
+      if (error) throw error;
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to submit demo request. Please try again.',
-      });
-    } else {
       toast({
         title: 'Demo request submitted',
         description: "We'll be in touch soon!",
@@ -316,6 +310,15 @@ export default function Auth() {
       setDemoEmail('');
       setDemoMessage('');
       setDemoDialogOpen(false);
+    } catch (error) {
+      console.error('Error submitting demo request:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to submit demo request. Please try again.',
+      });
+    } finally {
+      setDemoSubmitting(false);
     }
   };
 
