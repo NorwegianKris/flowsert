@@ -14,6 +14,7 @@ import { AssignedProjects } from '@/components/AssignedProjects';
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
+import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -266,7 +267,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       {/* Assigned Projects Section - moved up */}
       <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />
 
-      {/* Personal Info + Next of Kin on left, Calendar on right */}
+      {/* Personal Info + Next of Kin + Documents on left, Chat + Calendar on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Information Section */}
@@ -379,7 +380,17 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <PersonnelDocuments personnelId={personnel.id} />
         </div>
         
-        <div>
+        {/* Right column: Chat above Calendar */}
+        <div className="space-y-6">
+          {/* Direct Messages Chat */}
+          <div className="h-[400px]">
+            <DirectMessageChat 
+              personnelId={personnel.id} 
+              personnelName={personnel.name}
+            />
+          </div>
+          
+          {/* Availability Calendar */}
           <AvailabilityCalendar 
             personnelId={personnel.id} 
             personnelName={personnel.name}
