@@ -10,7 +10,7 @@ import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
-import { JobSeekerInvitationsManager } from '@/components/JobSeekerInvitationsManager';
+
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
@@ -397,8 +397,6 @@ export default function AdminDashboard() {
                 <CategoriesSection />
                 
                 <RegistrationLinkCard />
-                
-                <JobSeekerInvitationsManager />
                 
                 <FeedbackList />
               </div>
