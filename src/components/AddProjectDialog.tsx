@@ -13,7 +13,8 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -170,12 +171,18 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const selectAllPersonnel = () => {
-    setPersonnelSelections(personnel.map(p => ({ id: p.id, mode: globalMode })));
+    // Only select activated personnel
+    const activatedPersonnel = personnel.filter(p => p.activated);
+    setPersonnelSelections(activatedPersonnel.map(p => ({ id: p.id, mode: globalMode })));
   };
 
   const deselectAllPersonnel = () => {
     setPersonnelSelections([]);
   };
+
+  // Separate activated and non-activated personnel
+  const activatedPersonnel = personnel.filter(p => p.activated);
+  const nonActivatedPersonnel = personnel.filter(p => !p.activated);
 
   const getInitials = (name: string) => {
     return name
@@ -375,9 +382,14 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No personnel available
                 </p>
+              ) : activatedPersonnel.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No activated personnel available. Activate profiles to assign them to projects.
+                </p>
               ) : (
                 <div className="space-y-2">
-                  {personnel.map((person) => {
+                  {/* Activated personnel - can be selected */}
+                  {activatedPersonnel.map((person) => {
                     const selected = isSelected(person.id);
                     const mode = getPersonnelMode(person.id);
                     const categoryInfo = getCategoryLabel(person.category);
@@ -435,6 +447,53 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                       </div>
                     );
                   })}
+                  
+                  {/* Non-activated personnel - shown but disabled */}
+                  {nonActivatedPersonnel.length > 0 && (
+                    <>
+                      <div className="border-t my-2 pt-2">
+                        <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                          <ShieldOff className="h-3 w-3" />
+                          Not activated ({nonActivatedPersonnel.length})
+                        </p>
+                      </div>
+                      {nonActivatedPersonnel.map((person) => {
+                        const categoryInfo = getCategoryLabel(person.category);
+                        
+                        return (
+                          <Tooltip key={person.id}>
+                            <TooltipTrigger asChild>
+                              <div
+                                className="flex items-center gap-3 p-2 rounded-md opacity-50 cursor-not-allowed"
+                              >
+                                <Checkbox disabled checked={false} />
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={person.avatarUrl} alt={person.name} />
+                                  <AvatarFallback className="text-xs">
+                                    {getInitials(person.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium truncate">{person.name}</p>
+                                    {categoryInfo && (
+                                      <Badge variant={categoryInfo.variant} className="text-[10px] px-1.5 py-0">
+                                        {categoryInfo.label}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground truncate">{person.role}</p>
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Activate this profile to assign to projects</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               )}
             </ScrollArea>

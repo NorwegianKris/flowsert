@@ -449,6 +449,7 @@ export type Database = {
       }
       personnel: {
         Row: {
+          activated: boolean
           address: string | null
           avatar_url: string | null
           bio: string | null
@@ -477,6 +478,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          activated?: boolean
           address?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -505,6 +507,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          activated?: boolean
           address?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -1001,6 +1004,10 @@ export type Database = {
         Args: { _personnel_id: string; _user_id: string }
         Returns: boolean
       }
+      can_assign_personnel_to_project: {
+        Args: { _personnel_id: string }
+        Returns: boolean
+      }
       can_worker_access_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
@@ -1047,6 +1054,10 @@ export type Database = {
         Returns: boolean
       }
       is_job_seeker_personnel: {
+        Args: { _personnel_id: string }
+        Returns: boolean
+      }
+      is_personnel_activated: {
         Args: { _personnel_id: string }
         Returns: boolean
       }
