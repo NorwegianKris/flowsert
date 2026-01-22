@@ -715,8 +715,8 @@ export default function Auth() {
             Join businesses managing their certifications smarter with FlowSert.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" onClick={() => openAuthDialog('signup')} className="h-12 px-8">
-              Create Free Account
+            <Button size="lg" onClick={() => navigate('/contact')} className="h-12 px-8">
+              Get in Touch
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate('/contact')} className="h-12 px-8">
               Book a Demo

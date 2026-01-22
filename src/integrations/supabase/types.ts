@@ -1046,6 +1046,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_job_seeker_personnel: {
+        Args: { _personnel_id: string }
+        Returns: boolean
+      }
       remove_personnel_from_project: {
         Args: { _personnel_id: string; _project_id: string }
         Returns: boolean
