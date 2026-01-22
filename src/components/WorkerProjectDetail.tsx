@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ProjectCalendar } from '@/components/ProjectCalendar';
 import { CompanyCard } from '@/components/CompanyCard';
+import { ProjectChat } from '@/components/ProjectChat';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import {
@@ -169,6 +170,9 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
             project={project} 
             editable={false}
           />
+          
+          {/* Project Chat */}
+          <ProjectChat projectId={project.id} projectName={project.name} />
 
           {/* Calendar Items List */}
           {project.calendarItems && project.calendarItems.length > 0 && (
