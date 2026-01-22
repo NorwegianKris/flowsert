@@ -15,6 +15,7 @@ export interface BusinessInfo {
   postal_address: string | null;
   postal_code: string | null;
   company_code: string;
+  custom_domain: string | null;
 }
 
 export function useBusinessInfo() {
