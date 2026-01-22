@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { MessageCircle, Send, Expand, Loader2, ChevronDown } from 'lucide-react';
+import { MessageCircle, Send, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday, isYesterday } from 'date-fns';
 import { toast } from 'sonner';
@@ -34,7 +34,6 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
   const [isSending, setIsSending] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const senderRole = isAdmin ? 'admin' : 'worker';
@@ -54,7 +53,6 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
         console.error('Error fetching messages:', error);
         toast.error('Failed to load messages');
       } else {
-        // Cast to Message[] since we know sender_role is constrained
         setMessages((data as Message[]) || []);
         setHasMore((data?.length || 0) >= 100);
       }
@@ -86,15 +84,17 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
     };
   }, [personnelId]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change and sheet is open
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (isSheetOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isSheetOpen]);
 
-  // Mark messages as read
+  // Mark messages as read when sheet opens
   useEffect(() => {
     const markAsRead = async () => {
-      if (!user) return;
+      if (!user || !isSheetOpen) return;
       
       const unreadMessages = messages.filter(
         m => !m.read_at && m.sender_id !== user.id
@@ -113,7 +113,7 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
     };
 
     markAsRead();
-  }, [messages, user]);
+  }, [messages, user, isSheetOpen]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user) return;
@@ -186,107 +186,116 @@ export function DirectMessageChat({ personnelId, personnelName }: DirectMessageC
     );
   };
 
-  const ChatContent = ({ expanded = false }: { expanded?: boolean }) => (
-    <div className={cn("flex flex-col", expanded ? "h-[70vh]" : "h-full")}>
-      <ScrollArea className="flex-1 pr-2" ref={scrollRef}>
-        <div className="space-y-3 py-2">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No messages yet</p>
-              <p className="text-xs mt-1">Start the conversation!</p>
-            </div>
-          ) : (
-            <>
-              {hasMore && (
-                <p className="text-xs text-center text-muted-foreground py-2">
-                  Showing last 100 messages
-                </p>
-              )}
-              {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
-              ))}
-            </>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-      
-      <div className="pt-3 border-t border-border mt-2">
-        <div className="flex gap-2">
-          <Textarea
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className={cn(
-              "resize-none text-sm",
-              expanded ? "min-h-[80px]" : "min-h-[60px] max-h-[80px]"
-            )}
-            disabled={isSending}
-          />
-          <Button 
-            size="icon" 
-            onClick={handleSend} 
-            disabled={!newMessage.trim() || isSending}
-            className="shrink-0 self-end"
-          >
-            {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-
   const unreadCount = messages.filter(
     m => !m.read_at && m.sender_id !== user?.id
   ).length;
 
+  const lastMessage = messages[messages.length - 1];
+
   return (
-    <Card className="border-border/50 h-full flex flex-col">
-      <CardHeader className="py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-blue-500" />
-            Messages
-            {unreadCount > 0 && (
-              <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </CardTitle>
-          
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Expand className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-lg">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-blue-500" />
-                  Chat with {personnelName}
-                </SheetTitle>
-              </SheetHeader>
-              <div className="mt-4">
-                <ChatContent expanded />
+    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <Card className="border-border/50">
+        <SheetTrigger asChild>
+          <button className="w-full text-left">
+            <CardHeader className="py-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-blue-500" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </CardTitle>
               </div>
-            </SheetContent>
-          </Sheet>
+            </CardHeader>
+            <CardContent className="pt-0 pb-3">
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading...
+                </div>
+              ) : lastMessage ? (
+                <div className="space-y-1">
+                  <p className="text-sm text-foreground line-clamp-2">
+                    {lastMessage.content}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {lastMessage.sender_role === 'admin' ? 'Admin' : 'Worker'} · {formatMessageDate(lastMessage.created_at)}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No messages yet. Click to start chatting.</p>
+              )}
+            </CardContent>
+          </button>
+        </SheetTrigger>
+      </Card>
+
+      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-blue-500" />
+            Chat with {personnelName}
+          </SheetTitle>
+        </SheetHeader>
+        
+        <div className="flex-1 flex flex-col min-h-0 mt-4">
+          <ScrollArea className="flex-1 pr-2">
+            <div className="space-y-3 py-2">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No messages yet</p>
+                  <p className="text-xs mt-1">Start the conversation!</p>
+                </div>
+              ) : (
+                <>
+                  {hasMore && (
+                    <p className="text-xs text-center text-muted-foreground py-2">
+                      Showing last 100 messages
+                    </p>
+                  )}
+                  {messages.map((message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  ))}
+                </>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+          
+          <div className="pt-3 border-t border-border mt-2">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="resize-none text-sm min-h-[80px]"
+                disabled={isSending}
+              />
+              <Button 
+                size="icon" 
+                onClick={handleSend} 
+                disabled={!newMessage.trim() || isSending}
+                className="shrink-0 self-end"
+              >
+                {isSending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 min-h-0 pt-0">
-        <ChatContent />
-      </CardContent>
-    </Card>
+      </SheetContent>
+    </Sheet>
   );
 }

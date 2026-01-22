@@ -380,15 +380,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <PersonnelDocuments personnelId={personnel.id} />
         </div>
         
-        {/* Right column: Chat above Calendar */}
+        {/* Right column: Compact Chat notification + Calendar */}
         <div className="space-y-6">
-          {/* Direct Messages Chat */}
-          <div className="h-[400px]">
-            <DirectMessageChat 
-              personnelId={personnel.id} 
-              personnelName={personnel.name}
-            />
-          </div>
+          {/* Direct Messages - Compact notification card */}
+          <DirectMessageChat 
+            personnelId={personnel.id} 
+            personnelName={personnel.name}
+          />
           
           {/* Availability Calendar */}
           <AvailabilityCalendar 
