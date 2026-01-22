@@ -54,6 +54,7 @@ export default function Auth() {
 
   const inviteToken = searchParams.get('token');
   const jobSeekerToken = searchParams.get('job_seeker_token');
+  const businessNameParam = searchParams.get('business_name');
   const isPasswordReset = searchParams.get('type') === 'recovery';
 
   useEffect(() => {
@@ -127,6 +128,16 @@ export default function Auth() {
     if (jobSeekerToken) {
       setAuthMode('signup');
       setAuthDialogOpen(true);
+      
+      // If business name is provided in URL, use it directly
+      if (businessNameParam) {
+        setJobSeekerDetails({
+          businessName: businessNameParam
+        });
+        setInvitationLoading(false);
+        return;
+      }
+      
       setInvitationLoading(true);
       
       const fetchJobSeekerInvitation = async () => {
@@ -170,7 +181,7 @@ export default function Auth() {
       
       fetchJobSeekerInvitation();
     }
-  }, [jobSeekerToken, toast]);
+  }, [jobSeekerToken, businessNameParam, toast]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
