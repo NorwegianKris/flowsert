@@ -506,7 +506,7 @@ export default function Auth() {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
-                Transform your operations with smart certificate management software—built for industrial SMEs.
+                Transform your work, hiring and compliance operations with smart certificate management software—built for industrial SMEs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button size="lg" onClick={() => navigate('/contact')} className="h-12 px-8 text-base gap-2">
