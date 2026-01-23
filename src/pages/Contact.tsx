@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import flowsertLogo from '@/assets/flowsert-logo.png';
 
 export default function Contact() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function Contact() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/auth')}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-semibold font-rajdhani text-primary">FlowSert</h1>
+              <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
             </div>
           </div>
         </div>

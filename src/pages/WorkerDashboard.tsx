@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, LogOut, User } from 'lucide-react';
+import flowsertLogo from '@/assets/flowsert-logo.png';
 
 export default function WorkerDashboard() {
   const { signOut, profile } = useAuth();
@@ -27,18 +28,21 @@ export default function WorkerDashboard() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {personnel?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || <User className="h-5 w-5" />}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="font-semibold text-foreground">My Profile</h1>
-              <p className="text-sm text-muted-foreground">
-                {personnel?.name || profile?.full_name || profile?.email}
-              </p>
+          <div className="flex items-center gap-4">
+            <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {personnel?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || <User className="h-5 w-5" />}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="font-semibold text-foreground">My Profile</h1>
+                <p className="text-sm text-muted-foreground">
+                  {personnel?.name || profile?.full_name || profile?.email}
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">

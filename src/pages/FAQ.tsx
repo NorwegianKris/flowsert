@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import flowsertLogo from '@/assets/flowsert-logo.png';
 import {
   Accordion,
   AccordionContent,
@@ -56,7 +57,7 @@ export default function FAQ() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/auth')}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-semibold font-rajdhani text-primary">FlowSert</h1>
+              <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
             </div>
           </div>
         </div>

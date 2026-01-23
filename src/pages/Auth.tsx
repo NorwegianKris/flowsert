@@ -18,6 +18,7 @@ import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, Arrow
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
+import flowsertLogo from '@/assets/flowsert-logo.png';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -459,7 +460,7 @@ export default function Auth() {
       <header className="border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold font-rajdhani text-primary">FlowSert</h1>
+            <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
             <div className="hidden md:flex items-center gap-6">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/about')}>
                 About
