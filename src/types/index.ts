@@ -39,5 +39,7 @@ export interface Personnel {
   isJobSeeker?: boolean;
   bio?: string;
   activated?: boolean; // When true, full document access is enabled and profile counts toward billing
+  lastLoginAt?: string; // Timestamp of last user login
+  updatedAt?: string; // Timestamp of last profile update
   certificates: Certificate[];
 }

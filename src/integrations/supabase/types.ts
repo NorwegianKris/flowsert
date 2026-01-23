@@ -462,6 +462,7 @@ export type Database = {
           id: string
           is_job_seeker: boolean
           language: string | null
+          last_login_at: string | null
           location: string
           name: string
           national_id: string | null
@@ -491,6 +492,7 @@ export type Database = {
           id?: string
           is_job_seeker?: boolean
           language?: string | null
+          last_login_at?: string | null
           location?: string
           name: string
           national_id?: string | null
@@ -520,6 +522,7 @@ export type Database = {
           id?: string
           is_job_seeker?: boolean
           language?: string | null
+          last_login_at?: string | null
           location?: string
           name?: string
           national_id?: string | null
