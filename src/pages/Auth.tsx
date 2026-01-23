@@ -46,6 +46,7 @@ export default function Auth() {
   } | null>(null);
   const [jobSeekerDetails, setJobSeekerDetails] = useState<{
     businessName: string;
+    logoUrl: string | null;
   } | null>(null);
   const [invitationLoading, setInvitationLoading] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
@@ -129,14 +130,8 @@ export default function Auth() {
       setAuthMode('signup');
       setAuthDialogOpen(true);
       
-      // If business name is provided in URL, use it directly
-      if (businessNameParam) {
-        setJobSeekerDetails({
-          businessName: businessNameParam
-        });
-        setInvitationLoading(false);
-        return;
-      }
+      // If business name is provided in URL, we still need to fetch the logo
+      // So we continue to fetch the invitation details
       
       setInvitationLoading(true);
       
@@ -150,15 +145,22 @@ export default function Auth() {
           
           if (data && data.length > 0) {
             const invitation = data[0];
-            // Fetch business name
+            // Fetch business name and logo
             const { data: businessData } = await supabase
               .from('businesses')
-              .select('name')
+              .select('name, logo_url')
               .eq('id', invitation.business_id)
               .single();
             
             setJobSeekerDetails({
-              businessName: businessData?.name || 'Unknown Business'
+              businessName: businessData?.name || businessNameParam || 'Unknown Business',
+              logoUrl: businessData?.logo_url || null
+            });
+          } else if (businessNameParam) {
+            // Fallback if no invitation data but we have business name from URL
+            setJobSeekerDetails({
+              businessName: businessNameParam,
+              logoUrl: null
             });
           } else {
             toast({
@@ -835,12 +837,21 @@ export default function Auth() {
                 </div>
               )}
               {jobSeekerToken && jobSeekerDetails && (
-                <div className="rounded-lg bg-sky-100 dark:bg-sky-900/30 p-4 text-center space-y-2">
+                <div className="rounded-lg bg-primary/5 border border-border p-4 text-center space-y-3">
+                  {jobSeekerDetails.logoUrl && (
+                    <div className="flex justify-center">
+                      <img 
+                        src={jobSeekerDetails.logoUrl} 
+                        alt={`${jobSeekerDetails.businessName} logo`}
+                        className="h-12 w-auto object-contain"
+                      />
+                    </div>
+                  )}
                   <p className="text-sm font-medium text-foreground">
                     Register as a Job Seeker with <strong>{jobSeekerDetails.businessName}</strong>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Create your profile, upload your certificates and documents, and let employers discover your skills.
+                    Complete your profile with all relevant certificates and documents to increase your chances of being hired. A detailed profile helps employers see your qualifications quickly.
                   </p>
                 </div>
               )}
@@ -892,7 +903,7 @@ export default function Auth() {
               )}
               {jobSeekerToken && (
                 <p className="text-sm text-muted-foreground">
-                  After registration, you can upload certificates and documents to your profile.
+                  After registration, upload your certificates and documents to stand out to employers.
                 </p>
               )}
               <Button type="submit" className="w-full" disabled={isLoading || (!!inviteToken && !invitationDetails)}>
