@@ -85,7 +85,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
       <Card
         className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group relative ${
           isJobSeeker 
-            ? 'border-sky-300 bg-sky-50/50 dark:bg-sky-950/20 dark:border-sky-800' 
+            ? 'border-[#C4B5FD] bg-[#C4B5FD]/10 dark:bg-[#C4B5FD]/10 dark:border-[#C4B5FD]/50' 
             : 'border-border/50'
         }`}
         onClick={onClick}
@@ -139,7 +139,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
               
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 {isJobSeeker ? (
-                  <Badge className="font-normal bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900 dark:text-sky-300 dark:border-sky-700">
+                  <Badge className="font-normal bg-[#C4B5FD]/20 text-[#4338CA] border-[#C4B5FD] dark:bg-[#C4B5FD]/20 dark:text-[#C4B5FD] dark:border-[#C4B5FD]/50">
                     Job Seeker
                   </Badge>
                 ) : (
