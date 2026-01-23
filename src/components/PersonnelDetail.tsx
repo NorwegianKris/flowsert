@@ -365,6 +365,15 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           </div>
         </CardHeader>
         <CardContent>
+          {/* Encouraging message for job seekers */}
+          {personnel.isJobSeeker && (
+            <Alert className="mb-4 bg-[#C4B5FD]/10 border-[#C4B5FD]/50">
+              <FileCheck className="h-4 w-4 text-[#4338CA]" />
+              <AlertDescription className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Tip:</span> Uploading certificates increases your chances of getting hired. Employers prioritize candidates with verified qualifications.
+              </AlertDescription>
+            </Alert>
+          )}
           <CertificateTable 
             certificates={personnel.certificates} 
             onCertificateUpdated={handleCertificateChange}
