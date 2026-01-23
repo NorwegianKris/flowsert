@@ -584,9 +584,9 @@ export default function Auth() {
             </p>
             <div className="grid md:grid-cols-3 gap-12">
               <div className="text-center group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:bg-primary/15 transition-colors">
-                  <Users className="h-9 w-9 text-primary" />
-                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm shadow-lg">1</div>
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:opacity-90 transition-opacity" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
+                  <Users className="h-9 w-9 text-white" />
+                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>1</div>
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Set Up Your Team</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
@@ -594,9 +594,9 @@ export default function Auth() {
                 </p>
               </div>
               <div className="text-center group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:bg-primary/15 transition-colors">
-                  <FileCheck className="h-9 w-9 text-primary" />
-                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm shadow-lg">2</div>
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:opacity-90 transition-opacity" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
+                  <FileCheck className="h-9 w-9 text-white" />
+                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>2</div>
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Upload Certificates</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
@@ -604,9 +604,9 @@ export default function Auth() {
                 </p>
               </div>
               <div className="text-center group">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:bg-primary/15 transition-colors">
-                  <Shield className="h-9 w-9 text-primary" />
-                  <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm shadow-lg">3</div>
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:opacity-90 transition-opacity" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
+                  <Shield className="h-9 w-9 text-white" />
+                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>3</div>
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Stay Compliant</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
@@ -693,21 +693,27 @@ export default function Auth() {
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
-                <Shield className="h-10 w-10 text-primary mb-4" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Safety First</h3>
                 <p className="text-muted-foreground text-sm">
                   Ensure every worker has valid credentials before stepping on site. Protect your team with verified qualifications.
                 </p>
               </div>
               <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
-                <CheckCircle className="h-10 w-10 text-primary mb-4" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
+                  <CheckCircle className="h-6 w-6 text-white" />
+                </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Stay Compliant</h3>
                 <p className="text-muted-foreground text-sm">
                   Meet regulatory requirements and pass audits with confidence. Keep documentation organized and accessible.
                 </p>
               </div>
               <div className="bg-card rounded-xl p-6 border border-border/50 shadow-sm">
-                <Clock className="h-10 w-10 text-primary mb-4" />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
+                  <Clock className="h-6 w-6 text-white" />
+                </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Save Time</h3>
                 <p className="text-muted-foreground text-sm">
                   Stop chasing certificates and renewal dates. Automated tracking lets you focus on what matters.
