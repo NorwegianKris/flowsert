@@ -474,7 +474,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           )}
 
           {/* Documents Section */}
-          <PersonnelDocuments personnelId={personnel.id} isProfileActivated={!personnel.isJobSeeker || isActivated} />
+          <PersonnelDocuments personnelId={personnel.id} isProfileActivated={personnel.isJobSeeker || isActivated} />
         </div>
         
         {/* Right column: Compact Chat notification + Calendar */}
