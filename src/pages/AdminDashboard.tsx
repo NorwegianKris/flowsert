@@ -163,12 +163,13 @@ export default function AdminDashboard() {
     };
     
     return (
-      <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
-        <main className="container mx-auto px-4 py-6">
+      <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+        <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+          <DashboardHeader
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+          <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <PersonnelDetail
             personnel={currentPersonnel}
             onBack={handleBack}
@@ -177,18 +178,20 @@ export default function AdminDashboard() {
           />
         </main>
         <ChatBot isAdmin />
+        </div>
       </div>
     );
   }
 
   if (selectedProject) {
     return (
-      <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
-        <main className="container mx-auto px-4 py-6">
+      <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+        <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+          <DashboardHeader
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+          <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <ProjectDetail
             project={selectedProject}
             personnel={personnel}
@@ -205,18 +208,20 @@ export default function AdminDashboard() {
           />
         </main>
         <ChatBot isAdmin />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <DashboardHeader
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+    <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+        <DashboardHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
       
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
         {business && (
           <div className="flex items-center gap-4 mb-2">
@@ -427,22 +432,23 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-      </main>
+        </main>
       
-      <ChatBot isAdmin />
+        <ChatBot isAdmin />
       
-      <AddPersonnelDialog
-        open={addPersonnelOpen}
-        onOpenChange={setAddPersonnelOpen}
-        onPersonnelAdded={refetch}
-      />
+        <AddPersonnelDialog
+          open={addPersonnelOpen}
+          onOpenChange={setAddPersonnelOpen}
+          onPersonnelAdded={refetch}
+        />
       
-      <AddProjectDialog
-        open={addProjectOpen}
-        onOpenChange={setAddProjectOpen}
-        personnel={personnel}
-        onProjectAdded={handleProjectAdded}
-      />
+        <AddProjectDialog
+          open={addProjectOpen}
+          onOpenChange={setAddProjectOpen}
+          personnel={personnel}
+          onProjectAdded={handleProjectAdded}
+        />
+      </div>
     </div>
   );
 }
