@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { FolderOpen, Clock, CheckCircle } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { FolderOpen, Clock, CheckCircle, ChevronDown } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
-
 interface ProjectsTabProps {
   projects: Project[];
   personnel: Personnel[];
@@ -19,6 +20,7 @@ const statusConfig = {
 };
 
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
+  const [previousOpen, setPreviousOpen] = useState(false);
   const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'pending');
   const completedProjects = projects.filter((p) => p.status === 'completed');
 
@@ -60,30 +62,34 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
         )}
       </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-4">
+      <Collapsible open={previousOpen} onOpenChange={setPreviousOpen}>
+        <CollapsibleTrigger className="flex items-center gap-2 mb-4 w-full group">
           <CheckCircle className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Previous Projects</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {completedProjects.map((project) => (
-            <ProjectCard 
-              key={project.id} 
-              project={project}
-              personnel={personnel}
-              getPersonnelById={getPersonnelById}
-              getInitials={getInitials}
-              onClick={() => onSelectProject(project)}
-            />
-          ))}
-        </div>
-        {completedProjects.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-3">✅</div>
-            <p className="text-muted-foreground">No completed projects</p>
+          <Badge variant="secondary" className="ml-1">{completedProjects.length}</Badge>
+          <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {completedProjects.map((project) => (
+              <ProjectCard 
+                key={project.id} 
+                project={project}
+                personnel={personnel}
+                getPersonnelById={getPersonnelById}
+                getInitials={getInitials}
+                onClick={() => onSelectProject(project)}
+              />
+            ))}
           </div>
-        )}
-      </div>
+          {completedProjects.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-3">✅</div>
+              <p className="text-muted-foreground">No completed projects</p>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Invitation Log Section */}
       <InvitationLog projects={projects} personnel={personnel} />
