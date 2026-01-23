@@ -29,7 +29,7 @@ export default function WorkerDashboard() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src={flowsertLogo} alt="FlowSert" className="h-24 w-auto" />
+            <img src={flowsertLogo} alt="FlowSert" className="h-12 w-auto" />
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />
