@@ -138,8 +138,11 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
               </div>
               
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                {/* Show category badge - job seekers won't have a category until activated */}
-                {!isJobSeeker && (
+                {isJobSeeker ? (
+                  <Badge className="font-normal bg-[#C4B5FD]/20 text-[#4338CA] border-[#C4B5FD] dark:bg-[#C4B5FD]/20 dark:text-[#C4B5FD] dark:border-[#C4B5FD]/50">
+                    Job Seeker
+                  </Badge>
+                ) : (
                   <Badge 
                     variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
                     className="font-normal"
