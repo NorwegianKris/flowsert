@@ -473,6 +473,7 @@ export type Database = {
           phone: string
           postal_address: string | null
           postal_code: string | null
+          profile_code: string
           role: string
           salary_account_number: string | null
           updated_at: string
@@ -503,6 +504,7 @@ export type Database = {
           phone: string
           postal_address?: string | null
           postal_code?: string | null
+          profile_code?: string
           role: string
           salary_account_number?: string | null
           updated_at?: string
@@ -533,6 +535,7 @@ export type Database = {
           phone?: string
           postal_address?: string | null
           postal_code?: string | null
+          profile_code?: string
           role?: string
           salary_account_number?: string | null
           updated_at?: string
