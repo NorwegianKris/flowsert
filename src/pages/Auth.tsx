@@ -13,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
@@ -49,6 +56,8 @@ export default function Auth() {
     businessName: string;
     logoUrl: string | null;
   } | null>(null);
+  const [workerCategories, setWorkerCategories] = useState<{ id: string; name: string }[]>([]);
+  const [selectedRole, setSelectedRole] = useState('');
   const [invitationLoading, setInvitationLoading] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -157,6 +166,15 @@ export default function Auth() {
               businessName: businessData?.name || businessNameParam || 'Unknown Business',
               logoUrl: businessData?.logo_url || null
             });
+            
+            // Fetch worker categories for role dropdown
+            const { data: categoriesData } = await (supabase as any).rpc('get_worker_categories_for_job_seeker_token', {
+              lookup_token: jobSeekerToken
+            });
+            
+            if (categoriesData && Array.isArray(categoriesData)) {
+              setWorkerCategories(categoriesData);
+            }
           } else if (businessNameParam) {
             // Fallback if no invitation data but we have business name from URL
             setJobSeekerDetails({
@@ -241,7 +259,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(email, password, fullName, inviteToken || undefined, jobSeekerToken || undefined);
+    const { error } = await signUp(email, password, fullName, inviteToken || undefined, jobSeekerToken || undefined, selectedRole || undefined);
     setIsLoading(false);
 
     if (error) {
@@ -880,6 +898,27 @@ export default function Auth() {
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
+              {/* Job Role dropdown for job seekers */}
+              {jobSeekerToken && workerCategories.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-role">Job Role</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger id="signup-role">
+                      <SelectValue placeholder="Select your job role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workerCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select the role that best matches your expertise
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signup-email">Email</Label>
                 <Input

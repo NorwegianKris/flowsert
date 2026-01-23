@@ -1049,6 +1049,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_worker_categories_for_job_seeker_token: {
+        Args: { lookup_token: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
