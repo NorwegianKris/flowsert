@@ -203,7 +203,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                 {/* Profile Code and Timestamps - Top Right */}
                 <div className="text-right space-y-1">
                   <div className="flex items-center justify-end gap-1.5">
-                    <Hash className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs text-muted-foreground">Profile Reference Code:</span>
                     <span className="text-sm font-mono font-semibold text-primary">
                       {personnel.profileCode || '------'}
                     </span>
