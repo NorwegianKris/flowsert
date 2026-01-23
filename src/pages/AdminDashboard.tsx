@@ -164,12 +164,11 @@ export default function AdminDashboard() {
     
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-          <DashboardHeader
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-          <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+        <DashboardHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <PersonnelDetail
             personnel={currentPersonnel}
             onBack={handleBack}
@@ -178,7 +177,6 @@ export default function AdminDashboard() {
           />
         </main>
         <ChatBot isAdmin />
-        </div>
       </div>
     );
   }
@@ -186,12 +184,11 @@ export default function AdminDashboard() {
   if (selectedProject) {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-          <DashboardHeader
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-          <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+        <DashboardHeader
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <ProjectDetail
             project={selectedProject}
             personnel={personnel}
@@ -208,18 +205,16 @@ export default function AdminDashboard() {
           />
         </main>
         <ChatBot isAdmin />
-        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-        <DashboardHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+      <DashboardHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       
       <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
@@ -448,7 +443,6 @@ export default function AdminDashboard() {
           personnel={personnel}
           onProjectAdded={handleProjectAdded}
         />
-      </div>
     </div>
   );
 }
