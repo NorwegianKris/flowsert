@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
 import { PersonnelCard } from '@/components/PersonnelCard';
@@ -162,7 +163,7 @@ export default function AdminDashboard() {
     };
     
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <DashboardHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -182,7 +183,7 @@ export default function AdminDashboard() {
 
   if (selectedProject) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <DashboardHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -209,7 +210,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <DashboardHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
