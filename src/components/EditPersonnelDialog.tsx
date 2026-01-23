@@ -261,15 +261,15 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-role">Job Role</Label>
+              <Label htmlFor="edit-role">Job Role *</Label>
               {workerCategories.length > 0 ? (
                 <Select
-                  value={formData.role}
+                  value={workerCategories.some(c => c.name === formData.role) ? formData.role : ''}
                   onValueChange={(value) => setFormData({ ...formData, role: value })}
                   disabled={categoriesLoading}
                 >
                   <SelectTrigger id="edit-role">
-                    <SelectValue placeholder="Select a job role" />
+                    <SelectValue placeholder={formData.role && !workerCategories.some(c => c.name === formData.role) ? `${formData.role} (please update)` : "Select a job role"} />
                   </SelectTrigger>
                   <SelectContent>
                     {workerCategories.map((category) => (
