@@ -12,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Personnel } from '@/types';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input';
+import { useLocations, useNationalities, useLanguages } from '@/hooks/useLocations';
+import { normalizeText } from '@/lib/stringUtils';
 
 interface EditPersonnelDialogProps {
   open: boolean;
@@ -23,6 +26,9 @@ interface EditPersonnelDialogProps {
 export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }: EditPersonnelDialogProps) {
   const { categories: workerCategories, loading: categoriesLoading } = useWorkerCategories();
   const { departments, loading: departmentsLoading } = useDepartments();
+  const { locations } = useLocations();
+  const { nationalities } = useNationalities();
+  const { languages } = useLanguages();
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -155,9 +161,9 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           role: formData.role.trim(),
-          location: formData.location.trim(),
+          location: normalizeText(formData.location) || null,
           category: formData.category,
-          nationality: formData.nationality.trim() || null,
+          nationality: normalizeText(formData.nationality) || null,
           department: formData.department.trim() || null,
           gender: formData.gender.trim() || null,
           address: formData.address.trim() || null,
@@ -165,7 +171,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           postal_address: formData.postalAddress.trim() || null,
           national_id: formData.nationalId.trim() || null,
           salary_account_number: formData.salaryAccountNumber.trim() || null,
-          language: formData.language.trim() || 'Norwegian',
+          language: normalizeText(formData.language) || 'Norwegian',
           next_of_kin_name: formData.nextOfKinName.trim() || null,
           next_of_kin_relation: formData.nextOfKinRelation.trim() || null,
           next_of_kin_phone: formData.nextOfKinPhone.trim() || null,
@@ -291,10 +297,11 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-location">Location</Label>
-              <Input
+              <AutocompleteInput
                 id="edit-location"
+                options={locations}
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, location: value })}
                 placeholder="Oslo, Norway"
               />
             </div>
@@ -318,10 +325,11 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             )}
             <div className="space-y-2">
               <Label htmlFor="edit-nationality">Nationality</Label>
-              <Input
+              <AutocompleteInput
                 id="edit-nationality"
+                options={nationalities}
                 value={formData.nationality}
-                onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, nationality: value })}
                 placeholder="Norwegian"
               />
             </div>
@@ -415,10 +423,11 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             )}
             <div className="space-y-2">
               <Label htmlFor="edit-language">Language</Label>
-              <Input
+              <AutocompleteInput
                 id="edit-language"
+                options={languages}
                 value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, language: value })}
                 placeholder="Norwegian"
               />
             </div>
