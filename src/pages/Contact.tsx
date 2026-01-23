@@ -55,7 +55,7 @@ export default function Contact() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/auth')}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <img src={flowsertLogo} alt="FlowSert" className="h-24 w-auto" />
+              <img src={flowsertLogo} alt="FlowSert" className="h-12 w-auto" />
             </div>
           </div>
         </div>

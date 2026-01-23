@@ -13,11 +13,8 @@ export function DashboardHeader({ searchQuery, onSearchChange }: DashboardHeader
     <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col items-start">
-            <img src={flowsertLogo} alt="FlowSert" className="h-24 w-auto" />
-            <p className="text-sm text-muted-foreground">
-              Personnel Certificate Management
-            </p>
+          <div className="flex items-center gap-3">
+            <img src={flowsertLogo} alt="FlowSert" className="h-12 w-auto" />
           </div>
           
           <div className="flex items-center gap-3">
