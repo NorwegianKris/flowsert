@@ -27,8 +27,7 @@ export default function WorkerDashboard() {
 
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-        <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Logo />
@@ -100,7 +99,6 @@ export default function WorkerDashboard() {
         
         {/* Chat bot - only for regular workers, not job seekers */}
         {personnel && !personnel.isJobSeeker && <ChatBot />}
-      </div>
     </div>
   );
 }
