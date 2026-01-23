@@ -20,9 +20,19 @@ export function Logo({ className = '' }: LogoProps) {
           }}
         />
       </div>
-      {/* Crisp text matching original logo style */}
-      <span className="text-2xl font-semibold text-[#1e293b] tracking-tight" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-        FlowSert
+      {/* Crisp text with gradient on "Flow" */}
+      <span className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+        <span 
+          style={{ 
+            background: 'linear-gradient(to right, #C4B5FD, #6366F1, #4338CA)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}
+        >
+          Flow
+        </span>
+        <span className="text-[#1e293b]">Sert</span>
       </span>
     </div>
   );
