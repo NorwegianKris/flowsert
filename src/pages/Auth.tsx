@@ -510,7 +510,7 @@ export default function Auth() {
                       backgroundImage: 'linear-gradient(to right, #C4B5FD, #6366F1, #4338CA)',
                     }}
                   >
-                    flow
+                    Flow
                   </span>
                 </span>
               </h1>
