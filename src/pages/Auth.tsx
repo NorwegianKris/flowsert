@@ -503,7 +503,15 @@ export default function Auth() {
               <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
                 Make personnel
                 <span className="block">
-                  compliance <span className="text-primary">flow</span>
+                  compliance{' '}
+                  <span 
+                    className="bg-clip-text text-transparent"
+                    style={{
+                      backgroundImage: 'linear-gradient(to right, #C4B5FD, #6366F1, #4338CA)',
+                    }}
+                  >
+                    flow
+                  </span>
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
