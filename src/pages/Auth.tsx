@@ -460,7 +460,7 @@ export default function Auth() {
       <header className="border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <img src={flowsertLogo} alt="FlowSert" className="h-8 w-auto" />
+            <img src={flowsertLogo} alt="FlowSert" className="h-24 w-auto" />
             <div className="hidden md:flex items-center gap-6">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/about')}>
                 About
