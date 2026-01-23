@@ -28,7 +28,7 @@ import {
 } from '@/lib/certificateUtils';
 import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock, Clock, RefreshCw
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock, Clock, RefreshCw, Hash
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { PersonnelDocuments } from './PersonnelDocuments';
@@ -187,16 +187,44 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             </Avatar>
 
             <div className="flex-1 space-y-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-foreground">
-                    {personnel.name}
-                  </h1>
-                  <StatusBadge status={overallStatus} showLabel size="lg" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-2xl font-bold text-foreground">
+                      {personnel.name}
+                    </h1>
+                    <StatusBadge status={overallStatus} showLabel size="lg" />
+                  </div>
+                  <Badge variant="secondary" className="text-sm font-normal">
+                    {personnel.role}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="text-sm font-normal">
-                  {personnel.role}
-                </Badge>
+                
+                {/* Profile Code and Timestamps - Top Right */}
+                <div className="text-right space-y-1">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Hash className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-sm font-mono font-semibold text-primary">
+                      {personnel.profileCode || '------'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-end gap-1.5 text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span className="text-xs">
+                      {personnel.lastLoginAt 
+                        ? format(new Date(personnel.lastLoginAt), 'MMM d, yyyy HH:mm')
+                        : 'Never logged in'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-end gap-1.5 text-muted-foreground">
+                    <RefreshCw className="h-3 w-3" />
+                    <span className="text-xs">
+                      {personnel.updatedAt 
+                        ? format(new Date(personnel.updatedAt), 'MMM d, yyyy HH:mm')
+                        : 'Never updated'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
@@ -211,27 +239,6 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="h-4 w-4 text-emerald-500" />
                   <span>{personnel.phone}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm pt-2 border-t border-border/50">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4 text-indigo-500" />
-                  <span className="text-xs">Last logged in:</span>
-                  <span className="text-xs font-medium text-foreground">
-                    {personnel.lastLoginAt 
-                      ? format(new Date(personnel.lastLoginAt), 'MMM d, yyyy HH:mm')
-                      : 'Never'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <RefreshCw className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs">Last updated:</span>
-                  <span className="text-xs font-medium text-foreground">
-                    {personnel.updatedAt 
-                      ? format(new Date(personnel.updatedAt), 'MMM d, yyyy HH:mm')
-                      : 'Never'}
-                  </span>
                 </div>
               </div>
             </div>

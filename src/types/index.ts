@@ -41,5 +41,6 @@ export interface Personnel {
   activated?: boolean; // When true, full document access is enabled and profile counts toward billing
   lastLoginAt?: string; // Timestamp of last user login
   updatedAt?: string; // Timestamp of last profile update
+  profileCode?: string; // Unique 6-character registration code
   certificates: Certificate[];
 }

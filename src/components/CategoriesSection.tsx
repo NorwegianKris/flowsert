@@ -16,11 +16,11 @@ export function CategoriesSection() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="workers" className="w-full">
+        <Tabs defaultValue="roles" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="workers" className="flex items-center gap-2">
+            <TabsTrigger value="roles" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Workers
+              Roles
             </TabsTrigger>
             <TabsTrigger value="departments" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
@@ -36,7 +36,7 @@ export function CategoriesSection() {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="workers">
+          <TabsContent value="roles">
             <div className="space-y-2 mb-4">
               <p className="text-sm text-muted-foreground">
                 Define job role categories for personnel. These will appear as options when adding new workers.
