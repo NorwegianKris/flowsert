@@ -26,8 +26,9 @@ export default function WorkerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <header className="border-b border-border bg-card">
+    <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+        <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Logo />
@@ -57,7 +58,7 @@ export default function WorkerDashboard() {
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {personnel ? (
           <>
             {/* Welcome dialog for new workers */}
@@ -95,10 +96,11 @@ export default function WorkerDashboard() {
             </CardContent>
           </Card>
         )}
-      </main>
-      
-      {/* Chat bot - only for regular workers, not job seekers */}
-      {personnel && !personnel.isJobSeeker && <ChatBot />}
+        </main>
+        
+        {/* Chat bot - only for regular workers, not job seekers */}
+        {personnel && !personnel.isJobSeeker && <ChatBot />}
+      </div>
     </div>
   );
 }
