@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { useWorkerPersonnel } from '@/hooks/usePersonnel';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { WorkerInvitations } from '@/components/WorkerInvitations';
@@ -25,7 +26,7 @@ export default function WorkerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
