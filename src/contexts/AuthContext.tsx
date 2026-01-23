@@ -89,6 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (roleError) throw roleError;
       setRole(roleData?.role as AppRole || null);
+
+      // Update last_login_at for the personnel record if user is a worker
+      if (roleData?.role === 'worker') {
+        await supabase
+          .from('personnel')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('user_id', userId);
+      }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {

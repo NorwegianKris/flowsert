@@ -29,6 +29,9 @@ interface DbPersonnel {
   next_of_kin_phone: string | null;
   is_job_seeker: boolean | null;
   bio: string | null;
+  activated: boolean | null;
+  last_login_at: string | null;
+  updated_at: string | null;
 }
 
 interface DbCertificate {
@@ -106,6 +109,8 @@ export function usePersonnel() {
         isJobSeeker: p.is_job_seeker || false,
         bio: p.bio || undefined,
         activated: p.activated || false,
+        lastLoginAt: p.last_login_at || undefined,
+        updatedAt: p.updated_at || undefined,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -206,6 +211,8 @@ export function useWorkerPersonnel() {
         isJobSeeker: p.is_job_seeker || false,
         bio: p.bio || undefined,
         activated: p.activated || false,
+        lastLoginAt: p.last_login_at || undefined,
+        updatedAt: p.updated_at || undefined,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.name,
