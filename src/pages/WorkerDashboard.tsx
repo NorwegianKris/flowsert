@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, LogOut, User } from 'lucide-react';
-import flowsertLogo from '@/assets/flowsert-logo.png';
+import { Logo } from '@/components/Logo';
 
 export default function WorkerDashboard() {
   const { signOut, profile } = useAuth();
@@ -29,7 +29,7 @@ export default function WorkerDashboard() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src={flowsertLogo} alt="FlowSert" className="h-12 w-auto" />
+            <Logo />
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />

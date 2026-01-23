@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Shield, Users, Award, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import flowsertLogo from '@/assets/flowsert-logo.png';
+import { Logo } from '@/components/Logo';
 
 export default function About() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function About() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/auth')}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <img src={flowsertLogo} alt="FlowSert" className="h-12 w-auto" />
+              <Logo />
             </div>
           </div>
         </div>
