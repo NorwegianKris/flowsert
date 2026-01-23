@@ -5,6 +5,7 @@ import { WorkerInvitations } from '@/components/WorkerInvitations';
 import { ChatBot } from '@/components/ChatBot';
 import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
 import { WelcomeDialog } from '@/components/WelcomeDialog';
+import { ProfileCompletionIndicator } from '@/components/ProfileCompletionIndicator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -56,6 +57,11 @@ export default function WorkerDashboard() {
           <>
             {/* Welcome dialog for new workers */}
             <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
+            
+            {/* Profile completion indicator for job seekers */}
+            {personnel.isJobSeeker && (
+              <ProfileCompletionIndicator personnel={personnel} />
+            )}
             
             {/* Show pending invitations at the top - not for job seekers */}
             {!personnel.isJobSeeker && <WorkerInvitations personnelId={personnel.id} />}
