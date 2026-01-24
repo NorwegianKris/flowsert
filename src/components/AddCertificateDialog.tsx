@@ -13,8 +13,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText, Loader2 } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { SmartCertificateUpload } from './SmartCertificateUpload';
+import { ExtractionResult } from '@/types/certificateExtraction';
+import { cn } from '@/lib/utils';
 
 interface AddCertificateDialogProps {
   open: boolean;
@@ -33,6 +36,14 @@ interface CertificateEntry {
   issuingAuthority: string;
   selected: boolean;
   file: File | null;
+  // OCR tracking
+  wasAutoFilled?: boolean;
+  fieldConfidence?: {
+    dateOfIssue?: 'high' | 'medium' | 'low';
+    expiryDate?: 'high' | 'medium' | 'low';
+    placeOfIssue?: 'high' | 'medium' | 'low';
+    issuingAuthority?: 'high' | 'medium' | 'low';
+  };
 }
 
 interface CertificateCategory {
@@ -54,6 +65,7 @@ export function AddCertificateDialog({
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [customName, setCustomName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastExtractionResult, setLastExtractionResult] = useState<ExtractionResult | null>(null);
 
   // Fetch certificate categories from database
   useEffect(() => {
@@ -97,6 +109,7 @@ export function AddCertificateDialog({
 
     if (open) {
       fetchCategories();
+      setLastExtractionResult(null);
     }
   }, [businessId, open]);
 
@@ -147,6 +160,83 @@ export function AddCertificateDialog({
     };
     setCertificates((prev) => [newCert, ...prev]);
     setCustomName('');
+  };
+
+  // Handle OCR extraction result
+  const handleExtractionComplete = (result: ExtractionResult, file: File) => {
+    setLastExtractionResult(result);
+    const { extractedData } = result;
+
+    // Determine confidence levels based on overall result
+    const getConfidence = (status: string): 'high' | 'medium' | 'low' => {
+      if (result.status === 'green') return 'high';
+      if (result.status === 'amber') return 'medium';
+      return 'low';
+    };
+
+    if (result.status === 'red') {
+      // Red status - create a new custom entry with the file but no data
+      const newCert: CertificateEntry = {
+        id: `custom-${Date.now()}`,
+        name: '',
+        dateOfIssue: '',
+        expiryDate: '',
+        placeOfIssue: '',
+        issuingAuthority: '',
+        selected: true,
+        file,
+      };
+      setCertificates((prev) => [newCert, ...prev]);
+      return;
+    }
+
+    // Check if we have a matched category
+    if (extractedData.matchedCategoryId) {
+      // Update the matching category entry
+      setCertificates((prev) =>
+        prev.map((c) => {
+          if (c.id === extractedData.matchedCategoryId) {
+            return {
+              ...c,
+              selected: true,
+              dateOfIssue: extractedData.dateOfIssue || '',
+              expiryDate: extractedData.expiryDate || '',
+              placeOfIssue: extractedData.placeOfIssue || '',
+              issuingAuthority: extractedData.issuingAuthority || '',
+              file,
+              wasAutoFilled: true,
+              fieldConfidence: {
+                dateOfIssue: extractedData.dateOfIssue ? getConfidence(result.status) : undefined,
+                expiryDate: extractedData.expiryDate ? getConfidence(result.status) : undefined,
+                placeOfIssue: extractedData.placeOfIssue ? getConfidence(result.status) : undefined,
+                issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
+              },
+            };
+          }
+          return c;
+        })
+      );
+    } else {
+      // Create a new custom certificate with extracted data
+      const newCert: CertificateEntry = {
+        id: `custom-${Date.now()}`,
+        name: extractedData.certificateName || '',
+        dateOfIssue: extractedData.dateOfIssue || '',
+        expiryDate: extractedData.expiryDate || '',
+        placeOfIssue: extractedData.placeOfIssue || '',
+        issuingAuthority: extractedData.issuingAuthority || '',
+        selected: true,
+        file,
+        wasAutoFilled: true,
+        fieldConfidence: {
+          dateOfIssue: extractedData.dateOfIssue ? getConfidence(result.status) : undefined,
+          expiryDate: extractedData.expiryDate ? getConfidence(result.status) : undefined,
+          placeOfIssue: extractedData.placeOfIssue ? getConfidence(result.status) : undefined,
+          issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
+        },
+      };
+      setCertificates((prev) => [newCert, ...prev]);
+    }
   };
 
   const handleSubmit = async () => {
@@ -225,12 +315,26 @@ export function AddCertificateDialog({
           file: null,
         }))
       );
+      setLastExtractionResult(null);
     } catch (error) {
       console.error('Error adding certificates:', error);
       toast.error('Failed to add certificates');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Helper to render field confidence indicator
+  const renderFieldIndicator = (confidence?: 'high' | 'medium' | 'low') => {
+    if (!confidence) return null;
+    
+    if (confidence === 'high') {
+      return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
+    }
+    if (confidence === 'medium') {
+      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />;
+    }
+    return null;
   };
 
   return (
@@ -244,6 +348,25 @@ export function AddCertificateDialog({
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+          {/* Smart Upload Section */}
+          <SmartCertificateUpload
+            existingCategories={categories}
+            onExtractionComplete={handleExtractionComplete}
+            disabled={loadingCategories}
+          />
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or select from categories
+              </span>
+            </div>
+          </div>
+
           {/* Custom certificate input */}
           <div className="flex gap-2">
             <Input
@@ -269,16 +392,19 @@ export function AddCertificateDialog({
                 <div className="text-center py-8 text-muted-foreground">
                   <div className="text-4xl mb-3">📋</div>
                   <p>No certificate categories defined.</p>
-                  <p className="text-sm">Add a custom certificate below or contact your administrator.</p>
+                  <p className="text-sm">Add a custom certificate above or contact your administrator.</p>
                 </div>
               ) : certificates.map((cert) => (
                 <div
                   key={cert.id}
-                  className={`p-4 rounded-lg border transition-colors ${
+                  className={cn(
+                    "p-4 rounded-lg border transition-colors",
                     cert.selected
-                      ? 'border-primary bg-primary/5'
+                      ? cert.wasAutoFilled
+                        ? 'border-green-500/50 bg-green-500/5'
+                        : 'border-primary bg-primary/5'
                       : 'border-border/50 hover:border-border'
-                  }`}
+                  )}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox
@@ -287,14 +413,42 @@ export function AddCertificateDialog({
                       className="mt-1"
                     />
                     <div className="flex-1 space-y-3">
-                      <span className="font-medium">{cert.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{cert.name || 'New Certificate'}</span>
+                        {cert.wasAutoFilled && (
+                          <span className="text-xs bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
+                            Auto-filled
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Editable name for custom certificates */}
+                      {cert.id.startsWith('custom-') && cert.selected && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">
+                            Certificate Name *
+                          </Label>
+                          <Input
+                            value={cert.name}
+                            onChange={(e) =>
+                              setCertificates((prev) =>
+                                prev.map((c) =>
+                                  c.id === cert.id ? { ...c, name: e.target.value } : c
+                                )
+                              )
+                            }
+                            placeholder="Certificate name"
+                          />
+                        </div>
+                      )}
 
                       {cert.selected && (
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Date of Issue *
+                                {renderFieldIndicator(cert.fieldConfidence?.dateOfIssue)}
                               </Label>
                               <Input
                                 type="date"
@@ -309,8 +463,9 @@ export function AddCertificateDialog({
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Expiry Date
+                                {renderFieldIndicator(cert.fieldConfidence?.expiryDate)}
                               </Label>
                               <Input
                                 type="date"
@@ -325,8 +480,9 @@ export function AddCertificateDialog({
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Place of Issue *
+                                {renderFieldIndicator(cert.fieldConfidence?.placeOfIssue)}
                               </Label>
                               <Input
                                 placeholder="e.g., Norway"
@@ -341,8 +497,9 @@ export function AddCertificateDialog({
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Issuing Authority *
+                                {renderFieldIndicator(cert.fieldConfidence?.issuingAuthority)}
                               </Label>
                               <Input
                                 placeholder="e.g., DNV, Lloyd's Register"
