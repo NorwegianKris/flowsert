@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -380,10 +380,9 @@ export function AddCertificateDialog({
             </Button>
           </div>
 
-          {/* Certificate list */}
-          <div className="flex-1 min-h-0 overflow-hidden border rounded-lg">
-            <ScrollArea className="h-full">
-              <div className="p-4 space-y-4">
+          {/* Certificate list - using native scroll for reliability */}
+          <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg">
+            <div className="p-4 space-y-4">
               {loadingCategories ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -565,8 +564,7 @@ export function AddCertificateDialog({
                   </div>
                 </div>
               ))}
-              </div>
-            </ScrollArea>
+            </div>
           </div>
 
           <div className="text-sm text-muted-foreground">
