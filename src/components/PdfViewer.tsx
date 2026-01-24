@@ -28,7 +28,15 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
         setLoading(true);
         setError(null);
         
-        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+        // Clone the ArrayBuffer to prevent "detached" errors
+        let dataToUse: Uint8Array;
+        if (pdfData instanceof ArrayBuffer) {
+          dataToUse = new Uint8Array(pdfData.slice(0));
+        } else {
+          dataToUse = new Uint8Array(pdfData);
+        }
+        
+        const loadingTask = pdfjsLib.getDocument({ data: dataToUse });
         const pdfDoc = await loadingTask.promise;
         
         setPdf(pdfDoc);
