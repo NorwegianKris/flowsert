@@ -65,9 +65,16 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
         
         if (!context) return;
 
-        const viewport = page.getViewport({ scale });
+        // Get the page's rotation and apply it to the viewport
+        // This ensures documents are displayed in the correct orientation
+        const rotation = page.rotate || 0;
+        const viewport = page.getViewport({ scale, rotation });
+        
         canvas.height = viewport.height;
         canvas.width = viewport.width;
+
+        // Clear the canvas before rendering
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
         const renderContext = {
           canvasContext: context,
