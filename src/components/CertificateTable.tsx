@@ -325,22 +325,14 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         className="max-h-[400px] object-contain rounded"
                       />
                     ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
-                      <div className="flex flex-col items-center gap-4 w-full">
-                        {/* Inline PDF viewer */}
-                        <object
-                          data={displayUrl}
-                          type="application/pdf"
-                          className="w-full h-[400px] rounded border"
-                        >
-                          {/* Fallback if object doesn't work */}
-                          <div className="flex flex-col items-center gap-4 py-8">
-                            <File className="h-16 w-16 text-primary" />
-                            <p className="text-muted-foreground text-center">
-                              PDF preview not available in this browser.
-                            </p>
-                          </div>
-                        </object>
-                        <div className="flex gap-2">
+                      <div className="flex flex-col gap-4 w-full">
+                        {/* Embedded PDF viewer */}
+                        <iframe
+                          src={displayUrl}
+                          title={`${selectedCertificate.name} document`}
+                          className="w-full h-[500px] rounded border bg-white"
+                        />
+                        <div className="flex justify-center">
                           <Button
                             variant="outline"
                             onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
