@@ -381,7 +381,7 @@ export function AddCertificateDialog({
           </div>
 
           {/* Certificate list */}
-          <ScrollArea className="flex-1 border rounded-lg">
+          <ScrollArea className="flex-1 min-h-0 border rounded-lg">
             <div className="p-4 space-y-4">
               {loadingCategories ? (
                 <div className="flex items-center justify-center py-8">
