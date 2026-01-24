@@ -98,7 +98,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     };
   }, [selectedCertificate?.documentUrl, canAccessDocuments]);
 
-  const handleOpenDocument = async (documentUrl: string) => {
+  const handleOpenDocument = async (documentUrl: string, download = false) => {
     if (!canAccessDocuments) return;
     
     // Try blob download first (bypasses ad blockers)
@@ -108,8 +108,24 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     
     const result = await downloadAsBlob('certificate-documents', path);
     if (result) {
-      window.open(result.blobUrl, '_blank');
-      // Revoke after a delay to allow the new tab to load
+      // Create a temporary link and click it to trigger download/open
+      const link = document.createElement('a');
+      link.href = result.blobUrl;
+      
+      if (download) {
+        // Extract filename from path
+        const filename = path.split('/').pop() || 'document';
+        link.download = filename;
+      } else {
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Revoke after a delay to allow the download/view to complete
       setTimeout(() => result.revoke(), 60000);
       return;
     }
@@ -117,7 +133,13 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     // Fallback to signed URL
     const url = await getCertificateDocumentUrl(documentUrl);
     if (url) {
-      window.open(url, '_blank');
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -261,11 +283,11 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
-                      {canAccessDocuments && (
+                      {canAccessDocuments && selectedCertificate.documentUrl && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => displayUrl && window.open(displayUrl, '_blank')}
+                          onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
                           disabled={!displayUrl || loadingUrl}
                         >
                           {loadingUrl ? (
@@ -273,7 +295,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                           ) : (
                             <ExternalLink className="h-4 w-4 mr-2" />
                           )}
-                          Open Full Size
+                          Download
                         </Button>
                       )}
                     </div>
@@ -303,20 +325,30 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         className="max-h-[400px] object-contain rounded"
                       />
                     ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
-                      <div className="flex flex-col items-center gap-4 py-8 w-full">
-                        <File className="h-16 w-16 text-primary" />
-                        <p className="text-muted-foreground text-center">
-                          PDF document attached
-                        </p>
-                        <p className="text-xs text-muted-foreground text-center max-w-md">
-                          Click the button below to view the PDF document.
-                        </p>
-                        <Button
-                          onClick={() => window.open(displayUrl, '_blank')}
+                      <div className="flex flex-col items-center gap-4 w-full">
+                        {/* Inline PDF viewer */}
+                        <object
+                          data={displayUrl}
+                          type="application/pdf"
+                          className="w-full h-[400px] rounded border"
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View PDF Document
-                        </Button>
+                          {/* Fallback if object doesn't work */}
+                          <div className="flex flex-col items-center gap-4 py-8">
+                            <File className="h-16 w-16 text-primary" />
+                            <p className="text-muted-foreground text-center">
+                              PDF preview not available in this browser.
+                            </p>
+                          </div>
+                        </object>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
@@ -324,7 +356,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => displayUrl && window.open(displayUrl, '_blank')}
+                          onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
                           disabled={!displayUrl}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
