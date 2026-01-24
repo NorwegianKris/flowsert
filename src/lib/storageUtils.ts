@@ -45,6 +45,50 @@ export async function getSignedUrl(
 }
 
 /**
+ * Download a file as a blob and return a blob URL.
+ * This bypasses ad blockers that may block Supabase URLs.
+ * 
+ * @param bucket - The storage bucket name
+ * @param path - The file path within the bucket
+ * @returns Object with blob URL and cleanup function, or null on failure
+ */
+export async function downloadAsBlob(
+  bucket: string,
+  path: string
+): Promise<{ blobUrl: string; revoke: () => void } | null> {
+  if (!path) return null;
+
+  // If it's already a full URL, extract the path
+  let filePath = path;
+  if (path.includes(`${bucket}/`)) {
+    const match = path.match(new RegExp(`${bucket}/(.+)`));
+    if (match) {
+      filePath = match[1];
+    }
+  }
+
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .download(filePath);
+
+    if (error) {
+      console.error(`Failed to download ${bucket}/${filePath}:`, error.message);
+      return null;
+    }
+
+    const blobUrl = URL.createObjectURL(data);
+    return {
+      blobUrl,
+      revoke: () => URL.revokeObjectURL(blobUrl),
+    };
+  } catch (err) {
+    console.error('Error downloading file:', err);
+    return null;
+  }
+}
+
+/**
  * Get a signed URL for a certificate document
  */
 export async function getCertificateDocumentUrl(documentUrl: string | null | undefined): Promise<string | null> {

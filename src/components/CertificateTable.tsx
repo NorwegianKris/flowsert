@@ -21,7 +21,7 @@ import {
   getDaysUntilExpiry,
   formatExpiryText,
 } from '@/lib/certificateUtils';
-import { getCertificateDocumentUrl } from '@/lib/storageUtils';
+import { getCertificateDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
 import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
@@ -37,6 +37,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [editCertificate, setEditCertificate] = useState<Certificate | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   
   // Only load document URLs if profile is activated
@@ -62,25 +63,66 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     setEditCertificate(cert);
   };
 
-  // Load signed URL when certificate is selected (only if activated)
+  // Load signed URL and blob URL when certificate is selected (only if activated)
   useEffect(() => {
     if (selectedCertificate?.documentUrl && canAccessDocuments) {
       setLoadingUrl(true);
+      setBlobUrl(null);
+      
+      // Load signed URL for fallback
       getCertificateDocumentUrl(selectedCertificate.documentUrl)
-        .then(url => setSignedUrl(url))
+        .then(url => setSignedUrl(url));
+      
+      // Load blob URL for viewing (bypasses ad blockers)
+      const path = selectedCertificate.documentUrl.includes('certificate-documents/')
+        ? selectedCertificate.documentUrl.match(/certificate-documents\/(.+)/)?.[1] || selectedCertificate.documentUrl
+        : selectedCertificate.documentUrl;
+      
+      downloadAsBlob('certificate-documents', path)
+        .then(result => {
+          if (result) {
+            setBlobUrl(result.blobUrl);
+          }
+        })
         .finally(() => setLoadingUrl(false));
     } else {
       setSignedUrl(null);
+      setBlobUrl(null);
     }
+    
+    // Cleanup blob URL when component unmounts or certificate changes
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
   }, [selectedCertificate?.documentUrl, canAccessDocuments]);
 
   const handleOpenDocument = async (documentUrl: string) => {
     if (!canAccessDocuments) return;
+    
+    // Try blob download first (bypasses ad blockers)
+    const path = documentUrl.includes('certificate-documents/')
+      ? documentUrl.match(/certificate-documents\/(.+)/)?.[1] || documentUrl
+      : documentUrl;
+    
+    const result = await downloadAsBlob('certificate-documents', path);
+    if (result) {
+      window.open(result.blobUrl, '_blank');
+      // Revoke after a delay to allow the new tab to load
+      setTimeout(() => result.revoke(), 60000);
+      return;
+    }
+    
+    // Fallback to signed URL
     const url = await getCertificateDocumentUrl(documentUrl);
     if (url) {
       window.open(url, '_blank');
     }
   };
+
+  // Get the URL to use for display (prefer blob URL)
+  const displayUrl = blobUrl || signedUrl;
 
   return (
     <>
@@ -223,8 +265,8 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
-                          disabled={!signedUrl || loadingUrl}
+                          onClick={() => displayUrl && window.open(displayUrl, '_blank')}
+                          disabled={!displayUrl || loadingUrl}
                         >
                           {loadingUrl ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -254,23 +296,23 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
-                    ) : signedUrl && isImageFile(selectedCertificate.documentUrl) ? (
+                    ) : displayUrl && isImageFile(selectedCertificate.documentUrl) ? (
                       <img
-                        src={signedUrl}
+                        src={displayUrl}
                         alt={`${selectedCertificate.name} document`}
                         className="max-h-[400px] object-contain rounded"
                       />
-                    ) : signedUrl && isPdfFile(selectedCertificate.documentUrl) ? (
+                    ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
                       <div className="flex flex-col items-center gap-4 py-8 w-full">
                         <File className="h-16 w-16 text-primary" />
                         <p className="text-muted-foreground text-center">
                           PDF document attached
                         </p>
                         <p className="text-xs text-muted-foreground text-center max-w-md">
-                          For security reasons, PDF previews open in a new tab.
+                          Click the button below to view the PDF document.
                         </p>
                         <Button
-                          onClick={() => window.open(signedUrl, '_blank')}
+                          onClick={() => window.open(displayUrl, '_blank')}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           View PDF Document
@@ -282,8 +324,8 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
-                          disabled={!signedUrl}
+                          onClick={() => displayUrl && window.open(displayUrl, '_blank')}
+                          disabled={!displayUrl}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Download Document
