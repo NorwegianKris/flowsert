@@ -39,6 +39,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { getPersonnelDocumentUrl } from '@/lib/storageUtils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Plus,
   FileText,
@@ -52,6 +53,7 @@ import {
   ExternalLink,
   Calendar,
   Loader2,
+  Info,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -363,6 +365,15 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Tip message for documents section */}
+        <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-blue-800 dark:text-blue-300 text-sm">
+            <strong>Tip:</strong> This section is for supporting documents only (e.g., CV, ID, contracts). 
+            Certificates should be uploaded in the <strong>Certificates</strong> section above for proper tracking and expiry notifications.
+          </AlertDescription>
+        </Alert>
+
         {/* Filter by category */}
         {categories.length > 0 && (
           <div className="flex items-center gap-2">
