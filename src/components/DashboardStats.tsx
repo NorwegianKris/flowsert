@@ -8,11 +8,9 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ personnel }: DashboardStatsProps) {
-  const totalPersonnel = personnel.length;
-  const totalCertificates = personnel.reduce(
-    (acc, p) => acc + p.certificates.length,
-    0
-  );
+  // Split counts: Personnel = non-job seekers, Job Seekers = is_job_seeker true
+  const personnelCount = personnel.filter(p => !p.isJobSeeker).length;
+  const jobSeekerCount = personnel.filter(p => p.isJobSeeker).length;
 
   const personnelByStatus = personnel.reduce(
     (acc, p) => {
@@ -24,13 +22,6 @@ export function DashboardStats({ personnel }: DashboardStatsProps) {
   );
 
   const stats = [
-    {
-      label: 'Total Personnel',
-      value: totalPersonnel,
-      icon: Users,
-      iconBg: 'bg-primary/10',
-      iconColor: 'text-primary',
-    },
     {
       label: 'All Valid',
       value: personnelByStatus.valid,
@@ -56,6 +47,25 @@ export function DashboardStats({ personnel }: DashboardStatsProps) {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Personnel & Job Seekers combined card */}
+      <Card className="border-border/50">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-primary/10">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex gap-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">{personnelCount}</p>
+              <p className="text-xs text-muted-foreground">Personnel</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">{jobSeekerCount}</p>
+              <p className="text-xs text-muted-foreground">Job Seekers</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {stats.map((stat) => (
         <Card key={stat.label} className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
