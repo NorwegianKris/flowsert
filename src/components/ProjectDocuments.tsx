@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -29,7 +30,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProjectDocumentUrl } from '@/lib/storageUtils';
+import { getProjectDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
+import { PdfViewer } from '@/components/PdfViewer';
 import {
   Upload,
   FileText,
@@ -39,6 +41,9 @@ import {
   Download,
   FolderPlus,
   X,
+  File,
+  Image,
+  Loader2,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -76,6 +81,85 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [selectedDocument, setSelectedDocument] = useState<ProjectDocument | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [blobRevoke, setBlobRevoke] = useState<(() => void) | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingDocument, setLoadingDocument] = useState(false);
+
+  // Load document data when document is selected
+  useEffect(() => {
+    // Cleanup previous blob URL
+    if (blobRevoke) {
+      blobRevoke();
+      setBlobRevoke(null);
+    }
+    setBlobUrl(null);
+    setPdfData(null);
+    setSignedUrl(null);
+
+    if (!selectedDocument?.fileUrl) {
+      return;
+    }
+
+    setLoadingDocument(true);
+
+    const loadDocument = async () => {
+      try {
+        // Extract file path from URL
+        const url = new URL(selectedDocument.fileUrl);
+        const pathParts = url.pathname.split('/');
+        const filePath = pathParts.slice(pathParts.indexOf('project-documents') + 1).join('/');
+
+        const isPdf = selectedDocument.fileType === 'application/pdf';
+        const isImage = selectedDocument.fileType?.startsWith('image/');
+
+        if (isPdf) {
+          // Download PDF as ArrayBuffer for PdfViewer
+          const { data, error } = await supabase.storage
+            .from('project-documents')
+            .download(filePath);
+
+          if (error) throw error;
+
+          const arrayBuffer = await data.arrayBuffer();
+          setPdfData(arrayBuffer);
+        } else if (isImage) {
+          // Use blob URL for images (bypasses ad blockers)
+          const result = await downloadAsBlob('project-documents', filePath);
+          if (result) {
+            setBlobUrl(result.blobUrl);
+            setBlobRevoke(() => result.revoke);
+          } else {
+            // Fallback to signed URL
+            const signedUrlResult = await getProjectDocumentUrl(selectedDocument.fileUrl);
+            setSignedUrl(signedUrlResult);
+          }
+        } else {
+          // For other files, get signed URL
+          const signedUrlResult = await getProjectDocumentUrl(selectedDocument.fileUrl);
+          setSignedUrl(signedUrlResult);
+        }
+      } catch (error) {
+        console.error('Error loading document:', error);
+        // Fallback to signed URL
+        const signedUrlResult = await getProjectDocumentUrl(selectedDocument.fileUrl);
+        setSignedUrl(signedUrlResult);
+      } finally {
+        setLoadingDocument(false);
+      }
+    };
+
+    loadDocument();
+
+    // Cleanup on unmount
+    return () => {
+      if (blobRevoke) {
+        blobRevoke();
+      }
+    };
+  }, [selectedDocument?.fileUrl, selectedDocument?.fileType]);
 
   useEffect(() => {
     fetchData();
@@ -313,51 +397,62 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
       {/* Documents List */}
       {filteredDocuments.length > 0 ? (
         <div className="space-y-2">
-          {filteredDocuments.map((doc) => (
-            <div
-              key={doc.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
-            >
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{doc.name}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{formatFileSize(doc.fileSize)}</span>
-                  <span>•</span>
-                  <Badge variant="secondary" className="text-xs">
-                    <Folder className="h-3 w-3 mr-1" />
-                    {getCategoryName(doc.categoryId)}
-                  </Badge>
+          {filteredDocuments.map((doc) => {
+            const isImage = doc.fileType?.startsWith('image/');
+            
+            return (
+              <div
+                key={doc.id}
+                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group cursor-pointer"
+                onClick={() => setSelectedDocument(doc)}
+              >
+                <div className="p-2 rounded-lg bg-primary/10">
+                  {isImage ? (
+                    <Image className="h-5 w-5 text-primary" />
+                  ) : (
+                    <FileText className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{doc.name}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{formatFileSize(doc.fileSize)}</span>
+                    <span>•</span>
+                    <Badge variant="secondary" className="text-xs">
+                      <Folder className="h-3 w-3 mr-1" />
+                      {getCategoryName(doc.categoryId)}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const url = await getProjectDocumentUrl(doc.fileUrl);
+                      if (url) window.open(url, '_blank');
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDocumentToDelete(doc);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={async () => {
-                    const url = await getProjectDocumentUrl(doc.fileUrl);
-                    if (url) window.open(url, '_blank');
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDocumentToDelete(doc);
-                    setIsDeleteDialogOpen(true);
-                  }}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-8">
@@ -369,6 +464,86 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
           </p>
         </div>
       )}
+
+      {/* Document Preview Dialog */}
+      <Dialog open={!!selectedDocument} onOpenChange={(open) => !open && setSelectedDocument(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {selectedDocument?.name || 'Document Preview'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedDocument?.fileType ? `${selectedDocument.fileType} • ` : ''}
+              {selectedDocument && formatFileSize(selectedDocument.fileSize)}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDocument && (
+            <div className="space-y-4">
+              {/* Document Preview */}
+              <div className="border rounded-lg overflow-hidden bg-muted/20">
+                <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                  <span className="text-sm font-medium">Document Preview</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const url = await getProjectDocumentUrl(selectedDocument.fileUrl);
+                      if (url) window.open(url, '_blank');
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+                <div className="p-4 flex justify-center">
+                  {loadingDocument ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : selectedDocument.fileType?.startsWith('image/') && (blobUrl || signedUrl) ? (
+                    <img
+                      src={blobUrl || signedUrl || ''}
+                      alt={selectedDocument.name}
+                      className="max-h-[400px] object-contain rounded"
+                    />
+                  ) : pdfData && selectedDocument.fileType === 'application/pdf' ? (
+                    <div className="flex flex-col gap-4 w-full">
+                      <PdfViewer pdfData={pdfData} />
+                    </div>
+                  ) : signedUrl ? (
+                    <div className="flex flex-col items-center gap-4 py-8">
+                      <File className="h-16 w-16 text-muted-foreground" />
+                      <p className="text-muted-foreground">Document available for download</p>
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(signedUrl, '_blank')}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Document
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-4 py-8">
+                      <File className="h-16 w-16 text-muted-foreground" />
+                      <p className="text-muted-foreground">Loading document...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Document Details */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="secondary">
+                  <Folder className="h-3 w-3 mr-1" />
+                  {getCategoryName(selectedDocument.categoryId)}
+                </Badge>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Upload Dialog */}
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>

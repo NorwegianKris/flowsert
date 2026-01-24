@@ -38,8 +38,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { getPersonnelDocumentUrl } from '@/lib/storageUtils';
+import { getPersonnelDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PdfViewer } from '@/components/PdfViewer';
 import {
   Plus,
   FileText,
@@ -101,22 +102,86 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [blobRevoke, setBlobRevoke] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     fetchData();
   }, [personnelId]);
 
-  // Load signed URL when document is selected (only if activated)
+  // Load document data when document is selected (only if activated)
   useEffect(() => {
-    if (selectedDocument?.fileUrl && canAccessDocuments) {
-      setLoadingUrl(true);
-      getPersonnelDocumentUrl(selectedDocument.fileUrl)
-        .then(url => setSignedUrl(url))
-        .finally(() => setLoadingUrl(false));
-    } else {
-      setSignedUrl(null);
+    // Cleanup previous blob URL
+    if (blobRevoke) {
+      blobRevoke();
+      setBlobRevoke(null);
     }
-  }, [selectedDocument?.fileUrl, canAccessDocuments]);
+    setBlobUrl(null);
+    setPdfData(null);
+    setSignedUrl(null);
+
+    if (!selectedDocument?.fileUrl || !canAccessDocuments) {
+      return;
+    }
+
+    setLoadingUrl(true);
+
+    const loadDocument = async () => {
+      try {
+        // Extract file path from URL
+        const url = new URL(selectedDocument.fileUrl);
+        const pathParts = url.pathname.split('/');
+        const filePath = pathParts.slice(pathParts.indexOf('personnel-documents') + 1).join('/');
+
+        const isPdf = selectedDocument.fileType === 'application/pdf';
+        const isImage = selectedDocument.fileType?.startsWith('image/');
+
+        if (isPdf) {
+          // Download PDF as ArrayBuffer for PdfViewer
+          const { data, error } = await supabase.storage
+            .from('personnel-documents')
+            .download(filePath);
+
+          if (error) throw error;
+
+          const arrayBuffer = await data.arrayBuffer();
+          setPdfData(arrayBuffer);
+        } else if (isImage) {
+          // Use blob URL for images (bypasses ad blockers)
+          const result = await downloadAsBlob('personnel-documents', filePath);
+          if (result) {
+            setBlobUrl(result.blobUrl);
+            setBlobRevoke(() => result.revoke);
+          } else {
+            // Fallback to signed URL
+            const signedUrlResult = await getPersonnelDocumentUrl(selectedDocument.fileUrl);
+            setSignedUrl(signedUrlResult);
+          }
+        } else {
+          // For other files, get signed URL
+          const signedUrlResult = await getPersonnelDocumentUrl(selectedDocument.fileUrl);
+          setSignedUrl(signedUrlResult);
+        }
+      } catch (error) {
+        console.error('Error loading document:', error);
+        // Fallback to signed URL
+        const signedUrlResult = await getPersonnelDocumentUrl(selectedDocument.fileUrl);
+        setSignedUrl(signedUrlResult);
+      } finally {
+        setLoadingUrl(false);
+      }
+    };
+
+    loadDocument();
+
+    // Cleanup on unmount
+    return () => {
+      if (blobRevoke) {
+        blobRevoke();
+      }
+    };
+  }, [selectedDocument?.fileUrl, selectedDocument?.fileType, canAccessDocuments]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -582,30 +647,44 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
-                    ) : signedUrl && selectedDocument.fileType?.startsWith('image/') ? (
+                    ) : selectedDocument.fileType?.startsWith('image/') && (blobUrl || signedUrl) ? (
                       <img
-                        src={signedUrl}
+                        src={blobUrl || signedUrl || ''}
                         alt={selectedDocument.name}
                         className="max-h-[400px] object-contain rounded"
                       />
-                    ) : signedUrl && selectedDocument.fileType === 'application/pdf' ? (
-                      <iframe
-                        src={signedUrl}
-                        title={selectedDocument.name}
-                        className="w-full h-[500px] rounded border-0"
-                      />
-                    ) : (
+                    ) : pdfData && selectedDocument.fileType === 'application/pdf' ? (
+                      <div className="flex flex-col gap-4 w-full">
+                        <PdfViewer pdfData={pdfData} />
+                        <div className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              const url = await getPersonnelDocumentUrl(selectedDocument.fileUrl);
+                              if (url) window.open(url, '_blank');
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    ) : signedUrl ? (
                       <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-muted-foreground" />
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
-                          disabled={!signedUrl}
+                          onClick={() => window.open(signedUrl, '_blank')}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 mr-2" />
                           Download Document
                         </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 py-8">
+                        <File className="h-16 w-16 text-muted-foreground" />
+                        <p className="text-muted-foreground">Loading document...</p>
                       </div>
                     )}
                   </div>
