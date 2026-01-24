@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "FlowSert Contact <onboarding@resend.dev>",
-      to: ["kmu@techno-dive.no"],
+      to: ["hello@flowsert.com"],
       reply_to: email,
       subject: `[FlowSert Contact] ${subject}`,
       html: `
