@@ -23,9 +23,11 @@ import {
 } from '@/lib/certificateUtils';
 import { getCertificateDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock, Download } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PdfViewer } from './PdfViewer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CertificateTableProps {
   certificates: Certificate[];
@@ -37,6 +39,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [editCertificate, setEditCertificate] = useState<Certificate | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
   
@@ -63,31 +66,48 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     setEditCertificate(cert);
   };
 
-  // Load signed URL and blob URL when certificate is selected (only if activated)
+  // Load PDF data and signed URL when certificate is selected (only if activated)
   useEffect(() => {
     if (selectedCertificate?.documentUrl && canAccessDocuments) {
       setLoadingUrl(true);
       setBlobUrl(null);
+      setPdfData(null);
       
-      // Load signed URL for fallback
+      // Load signed URL for fallback/download
       getCertificateDocumentUrl(selectedCertificate.documentUrl)
         .then(url => setSignedUrl(url));
       
-      // Load blob URL for viewing (bypasses ad blockers)
+      // Extract file path
       const path = selectedCertificate.documentUrl.includes('certificate-documents/')
         ? selectedCertificate.documentUrl.match(/certificate-documents\/(.+)/)?.[1] || selectedCertificate.documentUrl
         : selectedCertificate.documentUrl;
       
-      downloadAsBlob('certificate-documents', path)
-        .then(result => {
-          if (result) {
-            setBlobUrl(result.blobUrl);
+      // Download file directly using Supabase SDK (bypasses ad blockers completely)
+      supabase.storage
+        .from('certificate-documents')
+        .download(path)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error downloading file:', error);
+            return;
+          }
+          if (data) {
+            // Create blob URL for images
+            setBlobUrl(URL.createObjectURL(data));
+            
+            // For PDFs, also get ArrayBuffer for PdfViewer
+            if (isPdfFile(selectedCertificate.documentUrl || '')) {
+              data.arrayBuffer().then(buffer => {
+                setPdfData(buffer);
+              });
+            }
           }
         })
         .finally(() => setLoadingUrl(false));
     } else {
       setSignedUrl(null);
       setBlobUrl(null);
+      setPdfData(null);
     }
     
     // Cleanup blob URL when component unmounts or certificate changes
@@ -324,23 +344,31 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         alt={`${selectedCertificate.name} document`}
                         className="max-h-[400px] object-contain rounded"
                       />
-                    ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
+                    ) : pdfData && isPdfFile(selectedCertificate.documentUrl) ? (
                       <div className="flex flex-col gap-4 w-full">
-                        {/* Embedded PDF viewer */}
-                        <iframe
-                          src={displayUrl}
-                          title={`${selectedCertificate.name} document`}
-                          className="w-full h-[500px] rounded border bg-white"
-                        />
+                        {/* Embedded PDF viewer using canvas (bypasses ad blockers) */}
+                        <PdfViewer pdfData={pdfData} />
                         <div className="flex justify-center">
                           <Button
                             variant="outline"
                             onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
                           >
-                            <ExternalLink className="h-4 w-4 mr-2" />
+                            <Download className="h-4 w-4 mr-2" />
                             Download PDF
                           </Button>
                         </div>
+                      </div>
+                    ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
+                      <div className="flex flex-col items-center gap-4 py-8">
+                        <File className="h-16 w-16 text-primary" />
+                        <p className="text-muted-foreground">PDF loading...</p>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </Button>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
@@ -349,9 +377,9 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         <Button
                           variant="outline"
                           onClick={() => handleOpenDocument(selectedCertificate.documentUrl!, true)}
-                          disabled={!displayUrl}
+                          disabled={!displayUrl && !blobUrl}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 mr-2" />
                           Download Document
                         </Button>
                       </div>
