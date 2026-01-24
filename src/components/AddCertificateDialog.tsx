@@ -347,7 +347,7 @@ export function AddCertificateDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+        <div className="space-y-4 flex-1 min-h-0 overflow-hidden flex flex-col">
           {/* Smart Upload Section */}
           <SmartCertificateUpload
             existingCategories={categories}
@@ -381,8 +381,9 @@ export function AddCertificateDialog({
           </div>
 
           {/* Certificate list */}
-          <ScrollArea className="flex-1 min-h-0 border rounded-lg">
-            <div className="p-4 space-y-4">
+          <div className="flex-1 min-h-0 overflow-hidden border rounded-lg">
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4">
               {loadingCategories ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -564,8 +565,9 @@ export function AddCertificateDialog({
                   </div>
                 </div>
               ))}
-            </div>
-          </ScrollArea>
+              </div>
+            </ScrollArea>
+          </div>
 
           <div className="text-sm text-muted-foreground">
             {selectedCertificates.length} certificate(s) selected
