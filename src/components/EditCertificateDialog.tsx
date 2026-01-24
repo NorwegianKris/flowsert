@@ -11,8 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Award, Upload, X, FileText, Loader2 } from 'lucide-react';
+import { Award, Upload, X, FileText, Loader2, Sparkles, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Certificate } from '@/types';
+import { fileToBase64Image } from '@/lib/pdfUtils';
+import { ExtractionResult, isOcrSupported, getFileTypeStatus } from '@/types/certificateExtraction';
+import { cn } from '@/lib/utils';
 
 interface EditCertificateDialogProps {
   open: boolean;
@@ -35,7 +38,10 @@ export function EditCertificateDialog({
   const [file, setFile] = useState<File | null>(null);
   const [existingDocumentUrl, setExistingDocumentUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scanInputRef = useRef<HTMLInputElement | null>(null);
 
   // Populate form when certificate changes
   useEffect(() => {
@@ -47,11 +53,13 @@ export function EditCertificateDialog({
       setIssuingAuthority(certificate.issuingAuthority || '');
       setExistingDocumentUrl(certificate.documentUrl || null);
       setFile(null);
+      setExtractionResult(null);
     }
   }, [certificate]);
 
   const handleRemoveFile = () => {
     setFile(null);
+    setExtractionResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -59,6 +67,105 @@ export function EditCertificateDialog({
 
   const handleRemoveExistingDocument = () => {
     setExistingDocumentUrl(null);
+  };
+
+  // Handle smart scan of uploaded file
+  const handleSmartScan = async (fileToScan: File) => {
+    const fileTypeStatus = getFileTypeStatus(fileToScan.type);
+
+    if (fileTypeStatus === 'unsupported') {
+      setExtractionResult({
+        status: 'red',
+        confidence: 0,
+        extractedData: {
+          certificateName: null,
+          dateOfIssue: null,
+          expiryDate: null,
+          placeOfIssue: null,
+          issuingAuthority: null,
+          matchedCategory: null,
+          matchedCategoryId: null,
+        },
+        fieldsExtracted: 0,
+        issues: [`File type "${fileToScan.type || 'unknown'}" cannot be scanned.`],
+      });
+      return;
+    }
+
+    setIsScanning(true);
+    setExtractionResult(null);
+
+    try {
+      const { base64, mimeType } = await fileToBase64Image(fileToScan);
+
+      const { data, error } = await supabase.functions.invoke('extract-certificate-data', {
+        body: {
+          imageBase64: base64,
+          mimeType,
+          existingCategories: [],
+        },
+      });
+
+      if (error) throw error;
+
+      const result: ExtractionResult = data;
+      setExtractionResult(result);
+
+      // Auto-fill fields based on extraction
+      if (result.status !== 'red') {
+        const { extractedData } = result;
+        if (extractedData.certificateName && !name) {
+          setName(extractedData.certificateName);
+        }
+        if (extractedData.dateOfIssue) {
+          setDateOfIssue(extractedData.dateOfIssue);
+        }
+        if (extractedData.expiryDate) {
+          setExpiryDate(extractedData.expiryDate);
+        }
+        if (extractedData.placeOfIssue) {
+          setPlaceOfIssue(extractedData.placeOfIssue);
+        }
+        if (extractedData.issuingAuthority) {
+          setIssuingAuthority(extractedData.issuingAuthority);
+        }
+
+        if (result.status === 'green') {
+          toast.success('Certificate details extracted successfully!');
+        } else {
+          toast.warning('Partial extraction - please verify the details');
+        }
+      } else {
+        toast.error('Could not extract details from this document');
+      }
+    } catch (error) {
+      console.error('Scan error:', error);
+      toast.error('Failed to scan document');
+      setExtractionResult({
+        status: 'red',
+        confidence: 0,
+        extractedData: {
+          certificateName: null,
+          dateOfIssue: null,
+          expiryDate: null,
+          placeOfIssue: null,
+          issuingAuthority: null,
+          matchedCategory: null,
+          matchedCategoryId: null,
+        },
+        fieldsExtracted: 0,
+        issues: ['Failed to analyze document'],
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleFileSelected = async (selectedFile: File) => {
+    setFile(selectedFile);
+    setExistingDocumentUrl(null);
+    // Automatically scan the new file
+    await handleSmartScan(selectedFile);
   };
 
   const handleSubmit = async () => {
@@ -121,6 +228,28 @@ export function EditCertificateDialog({
       toast.error('Failed to update certificate');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const getStatusIcon = (status: 'green' | 'amber' | 'red') => {
+    switch (status) {
+      case 'green':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'amber':
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      case 'red':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+    }
+  };
+
+  const getStatusBgClass = (status: 'green' | 'amber' | 'red') => {
+    switch (status) {
+      case 'green':
+        return 'bg-green-500/10 border-green-500/30';
+      case 'amber':
+        return 'bg-amber-500/10 border-amber-500/30';
+      case 'red':
+        return 'bg-red-500/10 border-red-500/30';
     }
   };
 
@@ -187,9 +316,37 @@ export function EditCertificateDialog({
             </div>
           </div>
 
-          {/* Document section */}
+          {/* Document section with Smart Scan */}
           <div className="space-y-2">
             <Label>Document (PDF or Image)</Label>
+            
+            {/* Scanning indicator */}
+            {isScanning && (
+              <div className="p-3 rounded-md bg-muted/50 border border-border">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm">Analyzing document...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Extraction result indicator */}
+            {extractionResult && !isScanning && (
+              <div className={cn(
+                "p-2 rounded-md border text-sm",
+                getStatusBgClass(extractionResult.status)
+              )}>
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(extractionResult.status)}
+                  <span>
+                    {extractionResult.status === 'green' && 'Details extracted successfully'}
+                    {extractionResult.status === 'amber' && 'Partial extraction - please verify'}
+                    {extractionResult.status === 'red' && 'Could not extract details'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {existingDocumentUrl && !file ? (
               <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
                 <FileText className="h-4 w-4 text-primary" />
@@ -230,12 +387,14 @@ export function EditCertificateDialog({
               <div className="flex items-center gap-2">
                 <input
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
                   className="hidden"
                   ref={fileInputRef}
                   onChange={(e) => {
                     const selectedFile = e.target.files?.[0] || null;
-                    setFile(selectedFile);
+                    if (selectedFile) {
+                      handleFileSelected(selectedFile);
+                    }
                   }}
                 />
                 <Button
@@ -243,9 +402,10 @@ export function EditCertificateDialog({
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={isScanning}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Document
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Upload & Auto-Fill
                 </Button>
               </div>
             )}
@@ -256,7 +416,7 @@ export function EditCertificateDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || isScanning}>
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
