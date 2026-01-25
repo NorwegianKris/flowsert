@@ -703,7 +703,7 @@ export default function Auth() {
       </section>
 
       {/* User Story Section */}
-      <section className="py-16">
+      <section className="py-16 bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-start">
