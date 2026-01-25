@@ -25,6 +25,8 @@ import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, Arrow
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
+import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
+import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
 import { Logo } from '@/components/Logo';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -715,13 +717,12 @@ export default function Auth() {
                     className="absolute left-1/2 -translate-x-[85%] top-0 w-48 md:w-56 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
                     style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
                   >
-                    <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
-                      <div className="text-center p-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <Users className="h-5 w-5 text-primary" />
-                        </div>
-                        <p className="text-muted-foreground text-xs">Photo 1</p>
-                      </div>
+                    <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
+                      <img 
+                        src={technoDiveWorker} 
+                        alt="Techno Dive worker inspecting equipment" 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   </div>
                   
@@ -730,13 +731,12 @@ export default function Auth() {
                     className="absolute left-1/2 -translate-x-[30%] top-20 w-48 md:w-56 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
                     style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
                   >
-                    <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
-                      <div className="text-center p-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <Users className="h-5 w-5 text-primary" />
-                        </div>
-                        <p className="text-muted-foreground text-xs">Photo 2</p>
-                      </div>
+                    <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
+                      <img 
+                        src={technoDiveDiver} 
+                        alt="Techno Dive professional diver with equipment" 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   </div>
                 </div>
