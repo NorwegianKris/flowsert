@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight } from 'lucide-react';
+import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
@@ -59,6 +59,7 @@ export default function Auth() {
   const [workerCategories, setWorkerCategories] = useState<{ id: string; name: string }[]>([]);
   const [selectedRole, setSelectedRole] = useState('');
   const [invitationLoading, setInvitationLoading] = useState(false);
+  const [storyExpanded, setStoryExpanded] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -702,16 +703,16 @@ export default function Auth() {
       </section>
 
       {/* User Story Section */}
-      <section className="py-20 bg-muted/20">
+      <section className="py-16 bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="grid md:grid-cols-2 gap-12 items-start">
               {/* Polaroid Images */}
               <div className="order-2 md:order-1">
-                <div className="relative h-80 md:h-96">
+                <div className="relative h-[420px] flex justify-center">
                   {/* Back Polaroid */}
                   <div 
-                    className="absolute left-0 top-4 w-52 md:w-64 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-10 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
+                    className="absolute left-1/2 -translate-x-1/2 top-0 w-48 md:w-56 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-300"
                     style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
@@ -726,7 +727,7 @@ export default function Auth() {
                   
                   {/* Front Polaroid */}
                   <div 
-                    className="absolute left-16 md:left-24 top-8 w-52 md:w-64 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-10 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
+                    className="absolute left-1/2 -translate-x-1/2 top-36 w-48 md:w-56 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-2 hover:rotate-0 transition-transform duration-300 z-10"
                     style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
@@ -750,15 +751,41 @@ export default function Auth() {
                   <p>
                     Techno Dive, a Norwegian subsea contractor, manages certified personnel across multiple projects, where accurate tracking of certificates and expiry dates is critical to safe and efficient operations.
                   </p>
-                  <p>
-                    Before FlowSert, certificates were scattered across emails and folders, with expiry dates tracked manually — making it difficult to maintain a reliable and up-to-date overview.
-                  </p>
-                  <p>
-                    With FlowSert, fixed employees, regularly used freelancers, and job seekers all register their certificates in a shared system. Workers upload documentation themselves, while admins monitor certificate validity and compliance across projects in real time.
-                  </p>
-                  <p>
-                    The result is a clearer overview, reduced administrative overhead, and fewer last-minute surprises related to expiring certificates — supporting better work flow in day-to-day operations.
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="flex-1">
+                      Before FlowSert, certificates were scattered across emails and folders, with expiry dates tracked manually — making it difficult to maintain a reliable and up-to-date overview.
+                    </p>
+                    {!storyExpanded && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setStoryExpanded(true)}
+                        className="shrink-0 text-primary hover:text-primary/80 gap-1 mt-0"
+                      >
+                        Read more
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {storyExpanded && (
+                    <>
+                      <p>
+                        With FlowSert, fixed employees, regularly used freelancers, and job seekers all register their certificates in a shared system. Workers upload documentation themselves, while admins monitor certificate validity and compliance across projects in real time.
+                      </p>
+                      <p>
+                        The result is a clearer overview, reduced administrative overhead, and fewer last-minute surprises related to expiring certificates — supporting better work flow in day-to-day operations.
+                      </p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setStoryExpanded(false)}
+                        className="text-primary hover:text-primary/80 gap-1 p-0"
+                      >
+                        Show less
+                        <ChevronDown className="h-4 w-4 rotate-180" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
