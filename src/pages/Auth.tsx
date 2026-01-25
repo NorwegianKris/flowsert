@@ -701,6 +701,49 @@ export default function Auth() {
         </div>
       </section>
 
+      {/* User Story Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {/* Image Placeholder */}
+              <div className="order-2 md:order-1">
+                <div className="aspect-[4/3] bg-muted rounded-2xl border border-border/50 flex items-center justify-center overflow-hidden">
+                  <div className="text-center p-8">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-8 w-8 text-primary" />
+                    </div>
+                    <p className="text-muted-foreground text-sm">User story image</p>
+                    <p className="text-muted-foreground/60 text-xs mt-1">Add your image here</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="order-1 md:order-2">
+                <h2 className="text-2xl md:text-3xl font-bold font-rajdhani text-foreground mb-6 leading-tight">
+                  How Techno Dive keeps personnel compliance under control
+                </h2>
+                <div className="space-y-4 text-muted-foreground">
+                  <p>
+                    Techno Dive, a Norwegian subsea contractor, manages certified personnel across multiple projects, where accurate tracking of certificates and expiry dates is critical to safe and efficient operations.
+                  </p>
+                  <p>
+                    Before FlowSert, certificates were scattered across emails and folders, with expiry dates tracked manually — making it difficult to maintain a reliable and up-to-date overview.
+                  </p>
+                  <p>
+                    With FlowSert, fixed employees, regularly used freelancers, and job seekers all register their certificates in a shared system. Workers upload documentation themselves, while admins monitor certificate validity and compliance across projects in real time.
+                  </p>
+                  <p>
+                    The result is a clearer overview, reduced administrative overhead, and fewer last-minute surprises related to expiring certificates — supporting better work flow in day-to-day operations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Why It Matters Section */}
       <section className="py-16 bg-muted/20">
         <div className="container mx-auto px-6">
