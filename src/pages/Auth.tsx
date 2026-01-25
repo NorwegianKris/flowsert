@@ -703,16 +703,16 @@ export default function Auth() {
       </section>
 
       {/* User Story Section */}
-      <section className="py-16 bg-muted/20">
+      <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-start">
               {/* Polaroid Images */}
               <div className="order-2 md:order-1">
-                <div className="relative h-[420px] flex justify-center">
+                <div className="relative h-[380px] flex justify-center">
                   {/* Back Polaroid */}
                   <div 
-                    className="absolute left-1/2 -translate-x-1/2 top-0 w-48 md:w-56 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-3 hover:rotate-0 transition-transform duration-300"
+                    className="absolute left-1/2 -translate-x-[85%] top-0 w-48 md:w-56 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
                     style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
@@ -727,7 +727,7 @@ export default function Auth() {
                   
                   {/* Front Polaroid */}
                   <div 
-                    className="absolute left-1/2 -translate-x-1/2 top-36 w-48 md:w-56 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-2 hover:rotate-0 transition-transform duration-300 z-10"
+                    className="absolute left-1/2 -translate-x-[30%] top-20 w-48 md:w-56 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
                     style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
@@ -751,22 +751,22 @@ export default function Auth() {
                   <p>
                     Techno Dive, a Norwegian subsea contractor, manages certified personnel across multiple projects, where accurate tracking of certificates and expiry dates is critical to safe and efficient operations.
                   </p>
-                  <div className="flex items-start gap-2">
-                    <p className="flex-1">
-                      Before FlowSert, certificates were scattered across emails and folders, with expiry dates tracked manually — making it difficult to maintain a reliable and up-to-date overview.
-                    </p>
-                    {!storyExpanded && (
+                  <p>
+                    Before FlowSert, certificates were scattered across emails and folders, with expiry dates tracked manually — making it difficult to maintain a reliable and up-to-date overview.
+                  </p>
+                  {!storyExpanded && (
+                    <div className="flex justify-end">
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => setStoryExpanded(true)}
-                        className="shrink-0 text-primary hover:text-primary/80 gap-1 mt-0"
+                        className="text-primary hover:text-primary/80 gap-1"
                       >
                         Read more
                         <ChevronDown className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {storyExpanded && (
                     <>
                       <p>
@@ -775,15 +775,17 @@ export default function Auth() {
                       <p>
                         The result is a clearer overview, reduced administrative overhead, and fewer last-minute surprises related to expiring certificates — supporting better work flow in day-to-day operations.
                       </p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setStoryExpanded(false)}
-                        className="text-primary hover:text-primary/80 gap-1 p-0"
-                      >
-                        Show less
-                        <ChevronDown className="h-4 w-4 rotate-180" />
-                      </Button>
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setStoryExpanded(false)}
+                          className="text-primary hover:text-primary/80 gap-1"
+                        >
+                          Show less
+                          <ChevronDown className="h-4 w-4 rotate-180" />
+                        </Button>
+                      </div>
                     </>
                   )}
                 </div>
@@ -794,8 +796,17 @@ export default function Auth() {
       </section>
 
       {/* Why It Matters Section */}
-      <section className="py-16 bg-muted/20">
-        <div className="container mx-auto px-6">
+      <section className="py-16 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4 text-center">Why Certificate Tracking Matters</h2>
             <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
