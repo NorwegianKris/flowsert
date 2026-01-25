@@ -640,8 +640,17 @@ export default function Auth() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-6">
+      <section className="py-16 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-12 text-center">Platform Features</h2>
             <div className="grid md:grid-cols-2 gap-6">
