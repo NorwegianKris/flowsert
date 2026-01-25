@@ -596,7 +596,7 @@ export default function Auth() {
       </div>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-muted/20">
+      <section className="py-20 bg-primary/5">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4 text-center">How It Works</h2>
@@ -714,7 +714,7 @@ export default function Auth() {
       </section>
 
       {/* User Story Section */}
-      <section className="py-16 bg-muted/20">
+      <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-start">
