@@ -706,15 +706,37 @@ export default function Auth() {
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Image Placeholder */}
+              {/* Polaroid Images */}
               <div className="order-2 md:order-1">
-                <div className="aspect-[4/3] bg-muted rounded-2xl border border-border/50 flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-8">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-8 w-8 text-primary" />
+                <div className="relative h-80 md:h-96">
+                  {/* Back Polaroid */}
+                  <div 
+                    className="absolute left-0 top-4 w-52 md:w-64 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-10 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
+                    style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
+                  >
+                    <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
+                      <div className="text-center p-4">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-xs">Photo 1</p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground text-sm">User story image</p>
-                    <p className="text-muted-foreground/60 text-xs mt-1">Add your image here</p>
+                  </div>
+                  
+                  {/* Front Polaroid */}
+                  <div 
+                    className="absolute left-16 md:left-24 top-8 w-52 md:w-64 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-10 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
+                    style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
+                  >
+                    <div className="aspect-[4/3] bg-muted rounded-sm flex items-center justify-center overflow-hidden">
+                      <div className="text-center p-4">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-xs">Photo 2</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
