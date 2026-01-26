@@ -300,9 +300,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 overflow-hidden max-h-[calc(90vh-120px)]">
           {/* Left Column - AI Prompt + Project Details */}
-          <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 min-h-0">
             {/* AI Prompt Section */}
             <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center gap-2">
@@ -314,7 +314,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 onChange={(e) => setAiPrompt(e.target.value)}
                 placeholder="Describe your project requirements...&#10;e.g., 'Need 3 divers for offshore work in Stavanger, must have valid G4 certificate and be available 15-20 February'"
                 rows={3}
-                className="resize-none"
+                className="resize-y min-h-[80px]"
               />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -477,7 +477,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
           </div>
 
           {/* Right Column - Personnel Selection */}
-          <div className="flex-1 flex flex-col space-y-3 min-w-0">
+          <div className="flex-1 flex flex-col space-y-3 min-w-0 overflow-y-auto min-h-0">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
