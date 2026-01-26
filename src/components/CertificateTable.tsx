@@ -33,10 +33,9 @@ interface CertificateTableProps {
   certificates: Certificate[];
   onCertificateUpdated?: () => void;
   isProfileActivated?: boolean; // When false, document access is restricted
-  openInNewTab?: boolean; // When true, certificates open directly in new tab instead of dialog
 }
 
-export function CertificateTable({ certificates, onCertificateUpdated, isProfileActivated = true, openInNewTab = false }: CertificateTableProps) {
+export function CertificateTable({ certificates, onCertificateUpdated, isProfileActivated = true }: CertificateTableProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [editCertificate, setEditCertificate] = useState<Certificate | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
@@ -193,14 +192,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                 <TableRow 
                   key={cert.id} 
                   className="group cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => {
-                    if (openInNewTab && cert.documentUrl && canAccessDocuments) {
-                      // Open directly in new tab
-                      handleOpenDocument(cert.documentUrl, false);
-                    } else {
-                      setSelectedCertificate(cert);
-                    }
-                  }}
+                  onClick={() => setSelectedCertificate(cert)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
