@@ -5,11 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
 import { Personnel } from '@/types';
-import { MapPin, Mail, Phone, Award, FileText, User, Building2, Eye, Calendar, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths } from 'date-fns';
+import { MapPin, Mail, Phone, Award, FileText, User, Building2, Eye, CalendarDays, Loader2 } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { PdfViewer } from '@/components/PdfViewer';
+import { cn } from '@/lib/utils';
 import { getSignedUrl } from '@/lib/storageUtils';
 
 interface PersonnelPreviewSheetProps {
@@ -163,31 +165,41 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
     }
   };
 
-  const getAvailabilityForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return availability.find(a => a.date === dateStr);
-  };
-
-  const getAvailabilityIcon = (status: string) => {
-    switch (status) {
-      case 'available': return <CheckCircle2 className="h-3 w-3 text-green-500" />;
-      case 'unavailable': return <XCircle className="h-3 w-3 text-red-500" />;
-      case 'tentative': return <Clock className="h-3 w-3 text-amber-500" />;
-      default: return null;
-    }
-  };
-
   const validCertificates = personnel.certificates?.filter(c => {
     if (!c.expiryDate) return true;
     return new Date(c.expiryDate) >= new Date();
   }) || [];
 
-  const calendarDays = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
-  });
+  // Calendar modifiers matching AvailabilityCalendar
+  const modifiers = {
+    available: availability
+      .filter((a) => a.status === 'available')
+      .map((a) => new Date(a.date)),
+    unavailable: availability
+      .filter((a) => a.status === 'unavailable')
+      .map((a) => new Date(a.date)),
+    partial: availability
+      .filter((a) => a.status === 'partial' || a.status === 'tentative')
+      .map((a) => new Date(a.date)),
+  };
 
-  const startPadding = startOfMonth(currentMonth).getDay();
+  const modifiersStyles = {
+    available: {
+      backgroundColor: 'hsl(142 76% 36%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+    unavailable: {
+      backgroundColor: 'hsl(0 72% 50%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+    partial: {
+      backgroundColor: 'hsl(38 92% 50%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+  };
 
   return (
     <>
@@ -237,8 +249,7 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
 
               {/* Contact Info */}
               <div className="space-y-2">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium">
                   Contact
                 </h4>
                 <div className="grid gap-2 text-sm">
@@ -382,77 +393,40 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
               {/* Availability Calendar */}
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
                   Availability
                 </h4>
-                <div className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                    >
-                      ←
-                    </Button>
-                    <span className="text-sm font-medium">
-                      {format(currentMonth, 'MMMM yyyy')}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                    >
-                      →
-                    </Button>
+                {loadingAvailability ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                  
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className="font-medium text-muted-foreground py-1">
-                        {day}
+                ) : (
+                  <div className="border rounded-lg border-border">
+                    <div className="flex flex-wrap gap-3 p-3 border-b border-border">
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <span className="h-3 w-3 rounded-full bg-[hsl(142_76%_36%)]" />
+                        <span className="text-muted-foreground">Available</span>
                       </div>
-                    ))}
-                    
-                    {Array.from({ length: startPadding }).map((_, i) => (
-                      <div key={`pad-${i}`} />
-                    ))}
-                    
-                    {calendarDays.map(day => {
-                      const avail = getAvailabilityForDate(day);
-                      return (
-                        <div
-                          key={day.toISOString()}
-                          className={`
-                            p-1 rounded text-center relative
-                            ${isToday(day) ? 'ring-1 ring-primary' : ''}
-                            ${avail?.status === 'available' ? 'bg-green-500/10' : ''}
-                            ${avail?.status === 'unavailable' ? 'bg-red-500/10' : ''}
-                            ${avail?.status === 'tentative' ? 'bg-amber-500/10' : ''}
-                          `}
-                        >
-                          <span className="text-xs">{format(day, 'd')}</span>
-                          {avail && (
-                            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
-                              {getAvailabilityIcon(avail.status)}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <span className="h-3 w-3 rounded-full bg-[hsl(38_92%_50%)]" />
+                        <span className="text-muted-foreground">Partial</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <span className="h-3 w-3 rounded-full bg-[hsl(0_72%_50%)]" />
+                        <span className="text-muted-foreground">Unavailable</span>
+                      </div>
+                    </div>
+                    <Calendar
+                      mode="single"
+                      month={currentMonth}
+                      onMonthChange={setCurrentMonth}
+                      modifiers={modifiers}
+                      modifiersStyles={modifiersStyles}
+                      className={cn("p-3 pointer-events-auto")}
+                      numberOfMonths={1}
+                    />
                   </div>
-                  
-                  <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-green-500" /> Available
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-amber-500" /> Tentative
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <XCircle className="h-3 w-3 text-red-500" /> Unavailable
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Profile metadata */}
