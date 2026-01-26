@@ -247,6 +247,17 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                 </div>
               )}
 
+              {/* Role */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <span>💼</span>
+                  Role
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {personnel.role || 'No role specified'}
+                </p>
+              </div>
+
               {/* Contact Info */}
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">
