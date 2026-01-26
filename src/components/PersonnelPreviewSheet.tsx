@@ -253,7 +253,7 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                   Role
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  {personnel.role || 'No role specified'}
+                  💼 {personnel.role || 'No role specified'}
                 </p>
               </div>
 
