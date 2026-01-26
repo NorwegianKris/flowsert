@@ -27,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
 import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
-import { Logo } from '@/components/Logo';
+import { PublicHeader } from '@/components/PublicHeader';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -477,33 +477,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Logo />
-            <div className="hidden md:flex items-center gap-6">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/about')}>
-                About
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/faq')}>
-                FAQ
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/contact')}>
-                Contact
-              </Button>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => openAuthDialog('signin')}>
-                Log In
-              </Button>
-              <Button size="sm" onClick={() => navigate('/contact')}>
-                Sign Up
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PublicHeader openAuthDialog={openAuthDialog} />
 
       {/* Hero + Product Preview with Background */}
       <div className="relative overflow-hidden">
