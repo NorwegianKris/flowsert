@@ -47,6 +47,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [projectManager, setProjectManager] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
+  const [isPosted, setIsPosted] = useState(false);
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -103,6 +104,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       projectNumber: projectNumber.trim() || undefined,
       location: location.trim() || undefined,
       projectManager: projectManager.trim() || undefined,
+      isPosted,
     };
 
     const createdProject = await onProjectAdded(newProject);
@@ -164,6 +166,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setGlobalMode('invite');
     setAiPrompt('');
     setIncludeJobSeekers(false);
+    setIsPosted(false);
     clearSuggestions();
   };
 
@@ -490,6 +493,23 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   rows={3}
                   required
                 />
+              </div>
+
+              {/* Post Project Toggle */}
+              <div className="flex items-center gap-4 p-3 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="postProject"
+                    checked={isPosted}
+                    onCheckedChange={setIsPosted}
+                  />
+                  <Label htmlFor="postProject" className="text-sm cursor-pointer font-medium">
+                    Post project?
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Posted projects notify workers within the system about available opportunities
+                </p>
               </div>
             </div>
           </div>

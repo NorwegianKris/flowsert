@@ -24,6 +24,7 @@ export interface Project {
   projectNumber?: string;
   location?: string;
   projectManager?: string;
+  isPosted?: boolean;
 }
 
 interface DbProject {
@@ -42,6 +43,7 @@ interface DbProject {
   project_number: string | null;
   location: string | null;
   project_manager: string | null;
+  is_posted: boolean;
 }
 
 interface DbCalendarItem {
@@ -106,6 +108,7 @@ export function useProjects() {
         projectNumber: p.project_number || undefined,
         location: p.location || undefined,
         projectManager: p.project_manager || undefined,
+        isPosted: p.is_posted,
         calendarItems: (calendarItemsData || [])
           .filter((item: DbCalendarItem) => item.project_id === p.id)
           .map((item: DbCalendarItem) => ({
@@ -151,6 +154,7 @@ export function useProjects() {
           project_number: project.projectNumber || null,
           location: project.location || null,
           project_manager: project.projectManager || null,
+          is_posted: project.isPosted || false,
         })
         .select()
         .single();
@@ -170,6 +174,7 @@ export function useProjects() {
         projectNumber: data.project_number || undefined,
         location: data.location || undefined,
         projectManager: data.project_manager || undefined,
+        isPosted: data.is_posted,
         calendarItems: [],
       };
 
@@ -199,6 +204,7 @@ export function useProjects() {
           project_number: project.projectNumber || null,
           location: project.location || null,
           project_manager: project.projectManager || null,
+          is_posted: project.isPosted || false,
         })
         .eq('id', project.id);
 

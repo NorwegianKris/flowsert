@@ -3,10 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { FolderOpen, Clock, CheckCircle, ChevronDown } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
+
 interface ProjectsTabProps {
   projects: Project[];
   personnel: Personnel[];
@@ -21,8 +24,16 @@ const statusConfig = {
 
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
   const [previousOpen, setPreviousOpen] = useState(false);
-  const activeProjects = projects.filter((p) => p.status === 'active' || p.status === 'pending');
-  const completedProjects = projects.filter((p) => p.status === 'completed');
+  const [includePosted, setIncludePosted] = useState(false);
+  
+  // Filter projects based on posted toggle
+  const filteredProjects = includePosted 
+    ? projects 
+    : projects.filter(p => !p.isPosted);
+  
+  const activeProjects = filteredProjects.filter((p) => p.status === 'active' || p.status === 'pending');
+  const completedProjects = filteredProjects.filter((p) => p.status === 'completed');
+  const postedProjectsCount = projects.filter(p => p.isPosted).length;
 
   const getPersonnelById = (id: string) => personnel.find((p) => p.id === id);
 
@@ -37,6 +48,27 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
 
   return (
     <div className="space-y-6">
+      {/* Posted Projects Toggle */}
+      {postedProjectsCount > 0 && (
+        <div className="flex items-center gap-6 py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Megaphone className="h-4 w-4" />
+            <span className="text-sm font-medium">Posted Projects:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="includePosted"
+              checked={includePosted}
+              onCheckedChange={setIncludePosted}
+            />
+            <Label htmlFor="includePosted" className="text-sm cursor-pointer">
+              Show posted projects
+            </Label>
+            <Badge variant="secondary" className="ml-2">{postedProjectsCount}</Badge>
+          </div>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center gap-2 mb-4">
           <FolderOpen className="h-5 w-5 text-primary" />
@@ -112,11 +144,23 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
     .map(getPersonnelById)
     .filter((p): p is Personnel => p !== undefined);
 
+  const isPosted = project.isPosted;
+
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
+    <Card 
+      className={`hover:shadow-md transition-shadow cursor-pointer ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
+      onClick={onClick}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
+          <div className="flex items-center gap-2 min-w-0">
+            <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
+            {isPosted && (
+              <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0">
+                Posted
+              </Badge>
+            )}
+          </div>
           <Badge variant={config.variant} className="shrink-0">
             <StatusIcon className="h-3 w-3 mr-1" />
             {config.label}
