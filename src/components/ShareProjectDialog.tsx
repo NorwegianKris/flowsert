@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
-import { FileDown, Mail, ExternalLink, FileText, Users } from 'lucide-react';
+import { FileDown, Mail, FileText, Users } from 'lucide-react';
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -312,21 +312,20 @@ export function ShareProjectDialog({
     }
 
     try {
+      // Download PDFs - more reliable than window.open which can be blocked
       if (selectedExports.includes('projectCard')) {
         const doc = generateProjectCardPdf();
-        const pdfBlob = doc.output('blob');
-        const url = URL.createObjectURL(pdfBlob);
-        window.open(url, '_blank');
+        const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_project_card.pdf`;
+        doc.save(fileName);
       }
 
       if (selectedExports.includes('personnelCertificates')) {
         const doc = generatePersonnelCertificatesPdf();
-        const pdfBlob = doc.output('blob');
-        const url = URL.createObjectURL(pdfBlob);
-        window.open(url, '_blank');
+        const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_personnel_certificates.pdf`;
+        doc.save(fileName);
       }
 
-      toast.success('PDF(s) opened in new tab(s)');
+      toast.success('PDF(s) downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF');
@@ -452,8 +451,8 @@ export function ShareProjectDialog({
               className="flex-1 gap-2"
               disabled={!hasSelection}
             >
-              <ExternalLink className="h-4 w-4" />
-              Open PDF{selectedExports.length > 1 ? 's' : ''}
+              <FileDown className="h-4 w-4" />
+              Download PDF{selectedExports.length > 1 ? 's' : ''}
             </Button>
             <Button 
               variant="outline" 
