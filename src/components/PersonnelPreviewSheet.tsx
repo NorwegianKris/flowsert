@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Personnel } from '@/types';
-import { MapPin, Mail, Phone, Award, FileText, User, Building2, Eye, CalendarDays, Loader2 } from 'lucide-react';
+import { MapPin, Mail, Phone, Award, FileText, User, Building2, Eye, CalendarDays, Loader2, Briefcase } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { PdfViewer } from '@/components/PdfViewer';
@@ -227,7 +227,7 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                     </Badge>
                   )}
                 </div>
-                <SheetDescription className="mt-1">{personnel.role || 'No role specified'}</SheetDescription>
+                
               </div>
             </div>
           </SheetHeader>
@@ -250,7 +250,7 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
               {/* Role */}
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
-                  <span>💼</span>
+                  <Briefcase className="h-4 w-4 text-indigo-500" />
                   Role
                 </h4>
                 <p className="text-sm text-muted-foreground">
