@@ -27,6 +27,10 @@ import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
 import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
+import screenshotPersonnel from '@/assets/screenshot-personnel.jpg';
+import screenshotCertificates from '@/assets/screenshot-certificates.jpg';
+import screenshotProjects from '@/assets/screenshot-projects.jpg';
+import screenshotAnalytics from '@/assets/screenshot-analytics.jpg';
 import { Logo } from '@/components/Logo';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -550,48 +554,61 @@ export default function Auth() {
           </div>
         </section>
 
-        {/* Product Preview */}
+        {/* Product Preview - Polaroid Gallery */}
         <section className="pb-16 md:pb-24 relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
-              <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
-              </div>
-              <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Personnel</span>
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">24</p>
-                    <p className="text-xs text-muted-foreground mt-1">Active workers</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Certificates</span>
-                      <FileCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">156</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total tracked</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Expiring Soon</span>
-                      <Clock className="h-4 w-4 text-destructive" />
-                    </div>
-                    <p className="text-3xl font-bold text-destructive">3</p>
-                    <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
-                  </div>
+          <div className="container mx-auto px-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="relative h-[320px] md:h-[380px] flex justify-center items-center">
+                {/* Polaroid 1 - Personnel */}
+                <div 
+                  className="absolute left-1/2 -translate-x-[160%] md:-translate-x-[180%] top-8 w-36 md:w-44 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-6 transform -rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-300 z-10"
+                >
+                  <img 
+                    src={screenshotPersonnel} 
+                    alt="Personnel management" 
+                    className="w-full aspect-[4/3] object-cover rounded-sm"
+                  />
+                  <p className="text-xs text-muted-foreground text-center mt-2 font-medium">Personnel</p>
+                </div>
+                
+                {/* Polaroid 2 - Certificates */}
+                <div 
+                  className="absolute left-1/2 -translate-x-[95%] md:-translate-x-[105%] top-0 w-36 md:w-44 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-6 transform rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-300 z-20"
+                >
+                  <img 
+                    src={screenshotCertificates} 
+                    alt="Certificate tracking" 
+                    className="w-full aspect-[4/3] object-cover rounded-sm"
+                  />
+                  <p className="text-xs text-muted-foreground text-center mt-2 font-medium">Certificates</p>
+                </div>
+                
+                {/* Polaroid 3 - Projects */}
+                <div 
+                  className="absolute left-1/2 -translate-x-[5%] md:translate-x-[5%] top-4 w-36 md:w-44 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-6 transform -rotate-2 hover:rotate-0 hover:scale-105 transition-all duration-300 z-30"
+                >
+                  <img 
+                    src={screenshotProjects} 
+                    alt="Project management" 
+                    className="w-full aspect-[4/3] object-cover rounded-sm"
+                  />
+                  <p className="text-xs text-muted-foreground text-center mt-2 font-medium">Projects</p>
+                </div>
+                
+                {/* Polaroid 4 - Analytics */}
+                <div 
+                  className="absolute left-1/2 translate-x-[60%] md:translate-x-[80%] top-10 w-36 md:w-44 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-6 transform rotate-5 hover:rotate-0 hover:scale-105 transition-all duration-300 z-20"
+                >
+                  <img 
+                    src={screenshotAnalytics} 
+                    alt="Analytics dashboard" 
+                    className="w-full aspect-[4/3] object-cover rounded-sm"
+                  />
+                  <p className="text-xs text-muted-foreground text-center mt-2 font-medium">Analytics</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </section>
       </div>
 
