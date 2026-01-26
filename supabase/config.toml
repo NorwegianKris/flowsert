@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.extract-certificate-data]
 verify_jwt = false
+
+[functions.suggest-project-personnel]
+verify_jwt = false

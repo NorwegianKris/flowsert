@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,11 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -44,7 +47,32 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
 
+  // AI Suggestions state
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
+  const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions, getSuggestionForPersonnel } = useSuggestPersonnel();
+
   const { sendBulkInvitations } = useProjectInvitations();
+
+  // Apply suggested fields when suggestions change
+  useEffect(() => {
+    if (suggestions?.suggestedFields) {
+      const fields = suggestions.suggestedFields;
+      if (fields.location && !location) setLocation(fields.location);
+      if (fields.workCategory && !workCategory) setWorkCategory(fields.workCategory);
+      if (fields.startDate && !startDate) setStartDate(fields.startDate);
+      if (fields.endDate && !endDate) setEndDate(fields.endDate);
+      if (fields.projectManager && !projectManager) setProjectManager(fields.projectManager);
+    }
+  }, [suggestions]);
+
+  const handleGetSuggestions = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error('Please enter project requirements first');
+      return;
+    }
+    await getSuggestions(aiPrompt, personnel, includeJobSeekers);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +93,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       startDate,
       endDate: endDate || undefined,
       status: 'active',
-      assignedPersonnel: assignedPersonnelIds, // Directly assign these personnel
+      assignedPersonnel: assignedPersonnelIds,
       customer: customer.trim() || undefined,
       workCategory: workCategory.trim() || undefined,
       projectNumber: projectNumber.trim() || undefined,
@@ -77,7 +105,6 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
     // Send invitations to personnel marked for invitation
     if (createdProject && invitedPersonnelIds.length > 0) {
-      // Get personnel data for email sending
       const invitedPersonnelData = invitedPersonnelIds.map(id => {
         const person = personnel.find(p => p.id === id);
         return {
@@ -110,7 +137,6 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       }
     }
 
-    // Show success message for direct assignments
     if (assignedPersonnelIds.length > 0) {
       toast.success(`Assigned ${assignedPersonnelIds.length} personnel directly to the project`);
     }
@@ -132,6 +158,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setLocation('');
     setProjectManager('');
     setGlobalMode('invite');
+    setAiPrompt('');
+    setIncludeJobSeekers(false);
+    clearSuggestions();
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -164,14 +193,12 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const handleGlobalModeChange = (mode: PersonnelMode) => {
     setGlobalMode(mode);
-    // Update all currently selected personnel to the new mode
     setPersonnelSelections((prev) =>
       prev.map(s => ({ ...s, mode }))
     );
   };
 
   const selectAllPersonnel = () => {
-    // Only select non-job-seekers and activated job seekers
     const selectable = personnel.filter(p => !p.isJobSeeker || p.activated);
     setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: globalMode })));
   };
@@ -180,9 +207,48 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setPersonnelSelections([]);
   };
 
-  // Separate selectable (non-job-seekers + activated job seekers) and non-selectable personnel
-  const selectablePersonnel = personnel.filter(p => !p.isJobSeeker || p.activated);
-  const nonSelectablePersonnel = personnel.filter(p => p.isJobSeeker && !p.activated);
+  const selectSuggestedPersonnel = () => {
+    if (!suggestions?.suggestedPersonnel) return;
+    const suggestedIds = suggestions.suggestedPersonnel.map(s => s.id);
+    const selectableIds = personnel
+      .filter(p => suggestedIds.includes(p.id) && (!p.isJobSeeker || p.activated))
+      .map(p => p.id);
+    setPersonnelSelections(selectableIds.map(id => ({ id, mode: globalMode })));
+  };
+
+  // Sort personnel: suggested first (by score), then others
+  const getSortedPersonnel = (personnelList: Personnel[]) => {
+    if (!suggestions?.suggestedPersonnel || suggestions.suggestedPersonnel.length === 0) {
+      return personnelList;
+    }
+    
+    const suggestionMap = new Map(suggestions.suggestedPersonnel.map(s => [s.id, s]));
+    
+    return [...personnelList].sort((a, b) => {
+      const suggA = suggestionMap.get(a.id);
+      const suggB = suggestionMap.get(b.id);
+      
+      if (suggA && suggB) {
+        return suggB.matchScore - suggA.matchScore;
+      }
+      if (suggA) return -1;
+      if (suggB) return 1;
+      return 0;
+    });
+  };
+
+  // Filter personnel based on job seeker toggle
+  const getFilteredPersonnel = () => {
+    if (includeJobSeekers) {
+      return personnel.filter(p => !p.isJobSeeker || p.activated);
+    }
+    return personnel.filter(p => !p.isJobSeeker);
+  };
+
+  const selectablePersonnel = getSortedPersonnel(getFilteredPersonnel());
+  const nonSelectablePersonnel = includeJobSeekers 
+    ? personnel.filter(p => p.isJobSeeker && !p.activated)
+    : [];
 
   const getInitials = (name: string) => {
     return name
@@ -214,121 +280,227 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     return { label: category, variant: 'outline' as const };
   };
 
+  const getMatchScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500/10 text-green-600 border-green-500/30';
+    if (score >= 60) return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
+    return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+  };
+
   const inviteCount = personnelSelections.filter(s => s.mode === 'invite').length;
   const assignCount = personnelSelections.filter(s => s.mode === 'assign').length;
+  const suggestedCount = suggestions?.suggestedPersonnel?.length || 0;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>New Project</DialogTitle>
           <DialogDescription>
-            Create a new project and invite or assign personnel. Choose to send invitations or directly assign team members.
+            Describe your project requirements and get AI-powered personnel suggestions, or manually select team members.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Project Name *</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter project name"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="projectNumber">Project Number</Label>
-              <Input
-                id="projectNumber"
-                value={projectNumber}
-                onChange={(e) => setProjectNumber(e.target.value)}
-                placeholder="e.g., PRJ-2025-001"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customer">Customer</Label>
-              <Input
-                id="customer"
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                placeholder="Enter customer name"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="workCategory">Work Category</Label>
-              <Input
-                id="workCategory"
-                value={workCategory}
-                onChange={(e) => setWorkCategory(e.target.value)}
-                placeholder="e.g., Installation, Maintenance"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g., North Sea Platform A"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="projectManager">Project Manager</Label>
-            <Input
-              id="projectManager"
-              value={projectManager}
-              onChange={(e) => setProjectManager(e.target.value)}
-              placeholder="Enter project manager name"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date *</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Scope of Work *</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the project scope and objectives..."
-              rows={3}
-              required
-            />
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Personnel</Label>
+        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 overflow-hidden">
+          {/* Left Column - AI Prompt + Project Details */}
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+            {/* AI Prompt Section */}
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Label className="font-medium">AI Personnel Suggestions</Label>
+              </div>
+              <Textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Describe your project requirements...&#10;e.g., 'Need 3 divers for offshore work in Stavanger, must have valid G4 certificate and be available 15-20 February'"
+                rows={3}
+                className="resize-none"
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="includeJobSeekers"
+                    checked={includeJobSeekers}
+                    onCheckedChange={setIncludeJobSeekers}
+                  />
+                  <Label htmlFor="includeJobSeekers" className="text-sm cursor-pointer">
+                    Include job seekers
+                  </Label>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleGetSuggestions}
+                  disabled={aiLoading || !aiPrompt.trim()}
+                  className="gap-2"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Get Suggestions
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Project Details */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Project Name *</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter project name"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="projectNumber">Project Number</Label>
+                  <Input
+                    id="projectNumber"
+                    value={projectNumber}
+                    onChange={(e) => setProjectNumber(e.target.value)}
+                    placeholder="e.g., PRJ-2025-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Customer</Label>
+                  <Input
+                    id="customer"
+                    value={customer}
+                    onChange={(e) => setCustomer(e.target.value)}
+                    placeholder="Enter customer name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="workCategory" className="flex items-center gap-1">
+                    Work Category
+                    {suggestions?.suggestedFields?.workCategory && !workCategory && (
+                      <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                    )}
+                  </Label>
+                  <Input
+                    id="workCategory"
+                    value={workCategory}
+                    onChange={(e) => setWorkCategory(e.target.value)}
+                    placeholder="e.g., Installation, Maintenance"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="flex items-center gap-1">
+                    Location
+                    {suggestions?.suggestedFields?.location && !location && (
+                      <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                    )}
+                  </Label>
+                  <Input
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g., North Sea Platform A"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="projectManager" className="flex items-center gap-1">
+                  Project Manager
+                  {suggestions?.suggestedFields?.projectManager && !projectManager && (
+                    <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                  )}
+                </Label>
+                <Input
+                  id="projectManager"
+                  value={projectManager}
+                  onChange={(e) => setProjectManager(e.target.value)}
+                  placeholder="Enter project manager name"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate" className="flex items-center gap-1">
+                    Start Date *
+                    {suggestions?.suggestedFields?.startDate && !startDate && (
+                      <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                    )}
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate" className="flex items-center gap-1">
+                    End Date
+                    {suggestions?.suggestedFields?.endDate && !endDate && (
+                      <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                    )}
+                  </Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Scope of Work *</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the project scope and objectives..."
+                  rows={3}
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Personnel Selection */}
+          <div className="flex-1 flex flex-col space-y-3 min-w-0">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Personnel
+                {suggestedCount > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {suggestedCount} suggested
+                  </Badge>
+                )}
+              </Label>
+              <div className="flex items-center gap-2">
+                {suggestedCount > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={selectSuggestedPersonnel}
+                    className="text-xs h-7 gap-1"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Select Suggested
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -369,35 +541,43 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {globalMode === 'invite' ? 'Personnel will receive invitations' : 'Personnel will be directly assigned'}
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                {globalMode === 'invite' ? 'Send invitations' : 'Direct assignment'}
               </p>
             </div>
-            <p className="text-xs text-muted-foreground italic">
-              Tip: Click the Invite/Assign button on each selected person to toggle their mode individually.
-            </p>
 
-            <ScrollArea className="h-48 border rounded-md p-2">
-              {personnel.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No personnel available
-                </p>
+            <ScrollArea className="flex-1 border rounded-md p-2 min-h-[300px]">
+              {aiLoading ? (
+                <div className="space-y-2 p-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-2">
+                      <Skeleton className="h-4 w-4 rounded" />
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="flex-1 space-y-1">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : selectablePersonnel.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No personnel available for project assignment. Activate job seeker profiles first.
+                  {includeJobSeekers
+                    ? 'No personnel available for project assignment.'
+                    : 'No personnel available. Toggle "Include job seekers" to see more options.'}
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {/* Selectable personnel - non-job-seekers and activated job seekers */}
+                <div className="space-y-1">
                   {selectablePersonnel.map((person) => {
                     const selected = isSelected(person.id);
                     const mode = getPersonnelMode(person.id);
                     const categoryInfo = getCategoryLabel(person.category);
+                    const suggestion = getSuggestionForPersonnel(person.id);
                     
                     return (
                       <div
                         key={person.id}
-                        className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted ${selected ? 'bg-muted/50' : ''}`}
+                        className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors ${selected ? 'bg-muted/50' : ''} ${suggestion ? 'ring-1 ring-primary/20' : ''}`}
                       >
                         <Checkbox
                           checked={selected}
@@ -410,12 +590,32 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium truncate">{person.name}</p>
                             {categoryInfo && (
                               <Badge variant={categoryInfo.variant} className="text-[10px] px-1.5 py-0">
                                 {categoryInfo.label}
                               </Badge>
+                            )}
+                            {suggestion && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-[10px] px-1.5 py-0 ${getMatchScoreColor(suggestion.matchScore)}`}
+                                  >
+                                    {suggestion.matchScore}% match
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="font-medium mb-1">Match reasons:</p>
+                                  <ul className="text-xs list-disc list-inside space-y-0.5">
+                                    {suggestion.matchReasons.map((reason, idx) => (
+                                      <li key={idx}>{reason}</li>
+                                    ))}
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{person.role}</p>
@@ -429,7 +629,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                               e.stopPropagation();
                               togglePersonnelMode(person.id);
                             }}
-                            className="h-7 text-xs gap-1"
+                            className="h-7 text-xs gap-1 flex-shrink-0"
                           >
                             {mode === 'invite' ? (
                               <>
@@ -497,6 +697,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 </div>
               )}
             </ScrollArea>
+
             {personnelSelections.length > 0 && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 {inviteCount > 0 && (
@@ -513,15 +714,15 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 )}
               </div>
             )}
-          </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Project'}
-            </Button>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Creating...' : 'Create Project'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
