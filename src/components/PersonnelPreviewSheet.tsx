@@ -296,14 +296,18 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                 </h4>
                 {personnel.certificates && personnel.certificates.length > 0 ? (
                   <div className="border rounded-lg overflow-hidden">
-                    <ScrollArea className="max-h-[200px]">
+                    <div className="max-h-[200px] overflow-y-auto">
                       <div className="space-y-1 p-2">
                         {personnel.certificates.map((cert) => {
                           const { status, label } = getCertificateStatus(cert.expiryDate);
                           return (
                             <div 
                               key={cert.id} 
-                              className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"
+                              className={`flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm ${cert.documentUrl ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''}`}
+                              onClick={() => cert.documentUrl && handlePreviewDocument(
+                                { fileUrl: cert.documentUrl, name: cert.name },
+                                'certificate-documents'
+                              )}
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium truncate">{cert.name}</p>
@@ -318,24 +322,14 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                                   {label}
                                 </Badge>
                                 {cert.documentUrl && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => handlePreviewDocument(
-                                      { fileUrl: cert.documentUrl!, name: cert.name },
-                                      'certificate-documents'
-                                    )}
-                                  >
-                                    <Eye className="h-3.5 w-3.5" />
-                                  </Button>
+                                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                                 )}
                               </div>
                             </div>
                           );
                         })}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">No certificates on file</p>
@@ -357,12 +351,16 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                   <p className="text-sm text-muted-foreground">Loading documents...</p>
                 ) : documents.length > 0 ? (
                   <div className="border rounded-lg overflow-hidden">
-                    <ScrollArea className="max-h-[150px]">
+                    <div className="max-h-[150px] overflow-y-auto">
                       <div className="space-y-1 p-2">
                         {documents.map((doc) => (
                           <div 
                             key={doc.id} 
-                            className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"
+                            className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => handlePreviewDocument(
+                              { fileUrl: doc.fileUrl, name: doc.name },
+                              'personnel-documents'
+                            )}
                           >
                             <div className="min-w-0 flex-1">
                               <p className="font-medium truncate">{doc.name}</p>
@@ -370,21 +368,11 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                                 <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
                               )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 ml-2"
-                              onClick={() => handlePreviewDocument(
-                                { fileUrl: doc.fileUrl, name: doc.name },
-                                'personnel-documents'
-                              )}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
+                            <Eye className="h-3.5 w-3.5 text-muted-foreground ml-2" />
                           </div>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">No documents on file</p>
