@@ -385,7 +385,6 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             certificates={personnel.certificates} 
             onCertificateUpdated={handleCertificateChange}
             isProfileActivated={!personnel.isJobSeeker || isActivated}
-            openInNewTab={personnel.name.toLowerCase().includes('kristian utseth')}
           />
         </CardContent>
       </Card>
