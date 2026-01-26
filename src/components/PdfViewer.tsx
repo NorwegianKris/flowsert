@@ -65,10 +65,12 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
         
         if (!context) return;
 
-        // Get the page's rotation and apply it to the viewport
-        // This ensures documents are displayed in the correct orientation
-        const rotation = page.rotate || 0;
-        const viewport = page.getViewport({ scale, rotation });
+        // Get the page's embedded rotation value
+        // PDF pages can have rotation values of 0, 90, 180, or 270
+        // We use rotation: 0 in getViewport to display the page in its natural orientation
+        // The PDF.js library will automatically apply the page's internal rotation
+        // This ensures documents are displayed in their intended readable orientation
+        const viewport = page.getViewport({ scale, rotation: 0 });
         
         canvas.height = viewport.height;
         canvas.width = viewport.width;
