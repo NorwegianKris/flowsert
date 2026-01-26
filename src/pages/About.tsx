@@ -1,26 +1,14 @@
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Shield, Users, Award, Target } from 'lucide-react';
+import { Shield, Users, Award, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
+import { PublicHeader } from '@/components/PublicHeader';
 
 export default function About() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/auth')}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Logo />
-            </div>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="py-16 md:py-24">
