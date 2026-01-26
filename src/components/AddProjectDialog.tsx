@@ -268,7 +268,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     return selection?.mode || globalMode;
   };
 
-  const getCategoryLabel = (category: string | undefined) => {
+  const getCategoryLabel = (person: Personnel) => {
+    // Job seekers get a distinct lavender tag
+    if (person.isJobSeeker) {
+      return { label: 'Job Seeker', className: 'bg-violet-100 text-violet-700 border-violet-200' };
+    }
+    
+    const category = person.category;
     if (!category) return null;
     const lowerCategory = category.toLowerCase();
     if (lowerCategory.includes('fixed') || lowerCategory.includes('employee')) {
@@ -571,7 +577,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   {selectablePersonnel.map((person) => {
                     const selected = isSelected(person.id);
                     const mode = getPersonnelMode(person.id);
-                    const categoryInfo = getCategoryLabel(person.category);
+                    const categoryInfo = getCategoryLabel(person);
                     const suggestion = getSuggestionForPersonnel(person.id);
                     
                     return (
@@ -593,7 +599,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium truncate">{person.name}</p>
                             {categoryInfo && (
-                              <Badge variant={categoryInfo.variant} className="text-[10px] px-1.5 py-0">
+                              <Badge 
+                                variant={'className' in categoryInfo ? 'outline' : categoryInfo.variant} 
+                                className={`text-[10px] px-1.5 py-0 ${'className' in categoryInfo ? categoryInfo.className : ''}`}
+                              >
                                 {categoryInfo.label}
                               </Badge>
                             )}
@@ -658,7 +667,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                         </p>
                       </div>
                       {nonSelectablePersonnel.map((person) => {
-                        const categoryInfo = getCategoryLabel(person.category);
+                        const categoryInfo = getCategoryLabel(person);
                         
                         return (
                           <Tooltip key={person.id}>
@@ -677,7 +686,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                                   <div className="flex items-center gap-2">
                                     <p className="text-sm font-medium truncate">{person.name}</p>
                                     {categoryInfo && (
-                                      <Badge variant={categoryInfo.variant} className="text-[10px] px-1.5 py-0">
+                                      <Badge 
+                                        variant={'className' in categoryInfo ? 'outline' : categoryInfo.variant} 
+                                        className={`text-[10px] px-1.5 py-0 ${'className' in categoryInfo ? categoryInfo.className : ''}`}
+                                      >
                                         {categoryInfo.label}
                                       </Badge>
                                     )}
