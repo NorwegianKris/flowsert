@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, RotateCcw, RotateCw } from 'lucide-react';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -18,6 +18,7 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.2);
+  const [rotation, setRotation] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,12 +66,8 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
         
         if (!context) return;
 
-        // Get the page's embedded rotation value
-        // PDF pages can have rotation values of 0, 90, 180, or 270
-        // We use rotation: 0 in getViewport to display the page in its natural orientation
-        // The PDF.js library will automatically apply the page's internal rotation
-        // This ensures documents are displayed in their intended readable orientation
-        const viewport = page.getViewport({ scale, rotation: 0 });
+        // Apply user rotation on top of the page's native rotation
+        const viewport = page.getViewport({ scale, rotation });
         
         canvas.height = viewport.height;
         canvas.width = viewport.width;
@@ -90,7 +87,7 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
     };
 
     renderPage();
-  }, [pdf, currentPage, scale]);
+  }, [pdf, currentPage, scale, rotation]);
 
   const goToPrevPage = () => {
     if (currentPage > 1) {
@@ -110,6 +107,14 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
 
   const zoomOut = () => {
     setScale(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const rotateLeft = () => {
+    setRotation(prev => (prev - 90 + 360) % 360);
+  };
+
+  const rotateRight = () => {
+    setRotation(prev => (prev + 90) % 360);
   };
 
   if (loading) {
@@ -154,6 +159,26 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
             disabled={currentPage >= totalPages}
           >
             <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={rotateLeft}
+            title="Rotate left"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={rotateRight}
+            title="Rotate right"
+          >
+            <RotateCw className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex items-center gap-1">
