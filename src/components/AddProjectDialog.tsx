@@ -606,11 +606,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     return (
                       <div
                         key={person.id}
-                        className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors ${selected ? 'bg-muted/50' : ''} ${suggestion ? 'ring-1 ring-primary/20' : ''}`}
+                        className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer ${selected ? 'bg-muted/50' : ''} ${suggestion ? 'ring-1 ring-primary/20' : ''}`}
+                        onClick={() => setPreviewPersonnel(person)}
                       >
                         <Checkbox
                           checked={selected}
                           onCheckedChange={() => togglePersonnel(person.id)}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={person.avatarUrl} alt={person.name} />
@@ -620,16 +622,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewPersonnel(person);
-                              }}
-                              className="text-sm font-medium truncate hover:underline hover:text-primary transition-colors text-left"
-                            >
+                            <span className="text-sm font-medium truncate">
                               {person.name}
-                            </button>
+                            </span>
                             {categoryInfo && (
                               <Badge 
                                 variant={'className' in categoryInfo ? 'outline' : categoryInfo.variant} 
