@@ -17,6 +17,7 @@ import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
 import { PersonnelFilters } from '@/components/PersonnelFilters';
+import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
 import { JobSeekerFilters } from '@/components/JobSeekerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
   const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
   const [showJobSeekersOnly, setShowJobSeekersOnly] = useState(false);
+  const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -290,6 +292,22 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
+            <div className="mt-4 mb-4">
+              <JobSeekerFilters
+                includeJobSeekers={includeJobSeekers}
+                onIncludeJobSeekersChange={setIncludeJobSeekers}
+                showJobSeekersOnly={showJobSeekersOnly}
+                onShowJobSeekersOnlyChange={setShowJobSeekersOnly}
+              />
+            </div>
+            
+            <AIPersonnelSuggestions
+              personnel={personnel}
+              onApplyFilters={() => {}}
+              onHighlightPersonnel={setHighlightedPersonnelIds}
+              onClearHighlight={() => setHighlightedPersonnelIds([])}
+            />
+            
             <PersonnelFilters
               roleFilters={roleFilters}
               onRoleFiltersChange={setRoleFilters}
@@ -307,22 +325,14 @@ export default function AdminDashboard() {
               onAvailabilityDateRangeChange={setAvailabilityDateRange}
             />
             
-            <div className="mt-4 mb-4">
-              <JobSeekerFilters
-                includeJobSeekers={includeJobSeekers}
-                onIncludeJobSeekersChange={setIncludeJobSeekers}
-                showJobSeekersOnly={showJobSeekersOnly}
-                onShowJobSeekersOnlyChange={setShowJobSeekersOnly}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
               {filteredPersonnel.map((p) => (
                 <PersonnelCard
                   key={p.id}
                   personnel={p}
                   onClick={() => setSelectedPersonnel(p)}
                   onRemoved={refetch}
+                  highlighted={highlightedPersonnelIds.includes(p.id)}
                 />
               ))}
             </div>
