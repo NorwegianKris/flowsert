@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Switch } from '@/components/ui/switch';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PersonnelPreviewSheet } from '@/components/PersonnelPreviewSheet';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -51,6 +52,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [aiPrompt, setAiPrompt] = useState('');
   const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
   const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions, getSuggestionForPersonnel } = useSuggestPersonnel();
+
+  // Personnel preview state
+  const [previewPersonnel, setPreviewPersonnel] = useState<Personnel | null>(null);
 
   const { sendBulkInvitations } = useProjectInvitations();
 
@@ -597,7 +601,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-medium truncate">{person.name}</p>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewPersonnel(person);
+                              }}
+                              className="text-sm font-medium truncate hover:underline hover:text-primary transition-colors text-left"
+                            >
+                              {person.name}
+                            </button>
                             {categoryInfo && (
                               <Badge 
                                 variant={'className' in categoryInfo ? 'outline' : categoryInfo.variant} 
@@ -684,7 +697,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium truncate">{person.name}</p>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewPersonnel(person);
+                                      }}
+                                      className="text-sm font-medium truncate hover:underline hover:text-primary transition-colors text-left"
+                                    >
+                                      {person.name}
+                                    </button>
                                     {categoryInfo && (
                                       <Badge 
                                         variant={'className' in categoryInfo ? 'outline' : categoryInfo.variant} 
@@ -737,6 +759,12 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
             </div>
           </div>
         </form>
+
+        <PersonnelPreviewSheet
+          open={!!previewPersonnel}
+          onOpenChange={(open) => !open && setPreviewPersonnel(null)}
+          personnel={previewPersonnel}
+        />
       </DialogContent>
     </Dialog>
   );
