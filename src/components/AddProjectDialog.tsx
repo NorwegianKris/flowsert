@@ -203,12 +203,20 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const selectAllPersonnel = () => {
-    const selectable = personnel.filter(p => !p.isJobSeeker || p.activated);
+    // Use the same filtering logic as the displayed list
+    const selectable = getFilteredPersonnel();
     setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: globalMode })));
   };
 
   const deselectAllPersonnel = () => {
     setPersonnelSelections([]);
+  };
+
+  // Check if all selectable personnel are currently selected
+  const allSelected = () => {
+    const selectable = getFilteredPersonnel();
+    if (selectable.length === 0) return false;
+    return selectable.every(p => personnelSelections.some(s => s.id === p.id));
   };
 
   const selectSuggestedPersonnel = () => {
@@ -515,19 +523,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={selectAllPersonnel}
+                  onClick={allSelected() ? deselectAllPersonnel : selectAllPersonnel}
                   className="text-xs h-7"
                 >
-                  Select All
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={deselectAllPersonnel}
-                  className="text-xs h-7"
-                >
-                  Clear
+                  {allSelected() ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
             </div>
