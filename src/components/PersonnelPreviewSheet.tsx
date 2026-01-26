@@ -249,8 +249,7 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
 
               {/* Role */}
               <div className="space-y-2">
-                <h4 className="text-sm font-medium flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-indigo-500" />
+                <h4 className="text-sm font-medium">
                   Role
                 </h4>
                 <p className="text-sm text-muted-foreground">
