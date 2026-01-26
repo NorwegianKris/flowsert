@@ -28,9 +28,10 @@ interface PersonnelCardProps {
   personnel: Personnel;
   onClick: () => void;
   onRemoved?: () => void;
+  highlighted?: boolean;
 }
 
-export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardProps) {
+export function PersonnelCard({ personnel, onClick, onRemoved, highlighted }: PersonnelCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
@@ -84,6 +85,10 @@ export function PersonnelCard({ personnel, onClick, onRemoved }: PersonnelCardPr
     <>
       <Card
         className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group relative ${
+          highlighted
+            ? 'ring-2 ring-primary shadow-lg shadow-primary/20'
+            : ''
+        } ${
           isJobSeeker 
             ? 'border-[#C4B5FD] bg-[#C4B5FD]/10 dark:bg-[#C4B5FD]/10 dark:border-[#C4B5FD]/50' 
             : 'border-border/50'
