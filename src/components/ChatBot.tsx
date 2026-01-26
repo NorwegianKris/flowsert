@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, User, Loader2 } from 'lucide-react';
+import flowsertIcon from '@/assets/flowsert-icon.png';
 import { getCertificateStatus, getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkerPersonnel, usePersonnel } from '@/hooks/usePersonnel';
@@ -425,7 +426,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     <Card className="fixed bottom-6 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b border-border">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Bot className="h-5 w-5 text-cyan-500" />
+          <img src={flowsertIcon} alt="" className="h-6 w-6" />
           Flowsert Assistant
         </CardTitle>
         <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
@@ -453,8 +454,8 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
                   className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-primary" />
+                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <img src={flowsertIcon} alt="" className="h-5 w-5" />
                     </div>
                   )}
                   <div
@@ -475,8 +476,8 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
               ))}
               {isLoading && messages[messages.length - 1]?.role === 'user' && (
                 <div className="flex gap-2 justify-start">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-primary" />
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                    <img src={flowsertIcon} alt="" className="h-5 w-5" />
                   </div>
                   <div className="bg-muted rounded-lg px-3 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
