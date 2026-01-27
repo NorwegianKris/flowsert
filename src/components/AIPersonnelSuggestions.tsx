@@ -19,6 +19,7 @@ interface AIPersonnelSuggestionsProps {
   }) => void;
   onHighlightPersonnel: (personnelIds: string[]) => void;
   onClearHighlight: () => void;
+  onIncludeJobSeekersChange?: (value: boolean) => void;
 }
 
 export function AIPersonnelSuggestions({
@@ -26,6 +27,7 @@ export function AIPersonnelSuggestions({
   onApplyFilters,
   onHighlightPersonnel,
   onClearHighlight,
+  onIncludeJobSeekersChange,
 }: AIPersonnelSuggestionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -40,6 +42,17 @@ export function AIPersonnelSuggestions({
     const result = await getSuggestions(aiPrompt, personnel, includeJobSeekers);
     if (result?.suggestedPersonnel && result.suggestedPersonnel.length > 0) {
       onHighlightPersonnel(result.suggestedPersonnel.map(s => s.id));
+      
+      // Check if any suggested personnel are job seekers and sync the main toggle
+      const hasJobSeekers = result.suggestedPersonnel.some(s => {
+        const person = personnel.find(p => p.id === s.id);
+        return person?.isJobSeeker;
+      });
+      
+      if (hasJobSeekers && includeJobSeekers && onIncludeJobSeekersChange) {
+        onIncludeJobSeekersChange(true);
+      }
+      
       toast.success(`Found ${result.suggestedPersonnel.length} matching personnel`);
     }
   };
