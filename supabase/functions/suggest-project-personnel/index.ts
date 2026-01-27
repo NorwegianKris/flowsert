@@ -86,6 +86,13 @@ When analyzing requirements:
 4. Match personnel roles to the work category
 5. Rank personnel by how well they match the requirements
 
+IMPORTANT - Geographic Location Matching:
+- When a region, country, or continent is mentioned (e.g., "Europe", "Scandinavia", "Norway"), include ALL personnel from locations within that region
+- Norwegian cities (Haugesund, Husøy, Stavanger, Bergen, Oslo, Trondheim, etc.) are in Norway, which is in Scandinavia, which is in Europe
+- Swedish, Danish, Finnish cities are also in Scandinavia/Europe
+- German, French, Spanish, Italian, Polish, Dutch, etc. cities are in Europe
+- Be inclusive with geographic matching - if someone asks for "Europe", include ALL European locations
+
 For each suggested personnel, provide:
 - A match score (0-100) based on how well they fit
 - Clear reasons explaining why they're a good match
