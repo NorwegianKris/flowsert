@@ -17,6 +17,7 @@ import { PersonnelInvitations } from '@/components/PersonnelInvitations';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
+import { ProfileCompletionBar } from '@/components/ProfileCompletionBar';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -243,6 +244,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Profile Completion Bar */}
+      <Card className="border-border/50">
+        <CardContent className="py-4">
+          <ProfileCompletionBar personnel={personnel} />
         </CardContent>
       </Card>
 
