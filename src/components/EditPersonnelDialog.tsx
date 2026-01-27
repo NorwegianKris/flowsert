@@ -399,29 +399,6 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 placeholder="City, Country"
               />
             </div>
-            {/* Norwegian ID and Salary Account - hidden for job seekers */}
-            {!isJobSeeker && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-nationalId">Norwegian ID Number</Label>
-                  <Input
-                    id="edit-nationalId"
-                    value={formData.nationalId}
-                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
-                    placeholder="11 digits"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-salaryAccountNumber">Salary Account Number</Label>
-                  <Input
-                    id="edit-salaryAccountNumber"
-                    value={formData.salaryAccountNumber}
-                    onChange={(e) => setFormData({ ...formData, salaryAccountNumber: e.target.value })}
-                    placeholder="Bank account number"
-                  />
-                </div>
-              </>
-            )}
             <div className="space-y-2">
               <Label htmlFor="edit-language">Languages</Label>
               <MultiSelectInput
