@@ -465,19 +465,6 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   <p className="text-xs text-muted-foreground">Email</p>
                   <p className="text-sm font-medium text-foreground truncate">{personnel.email}</p>
                 </div>
-                {/* Norwegian ID and Salary Account - hidden for job seekers */}
-                {!personnel.isJobSeeker && (
-                  <>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">Norwegian ID</p>
-                      <p className="text-sm font-medium text-foreground truncate">{personnel.nationalId || '—'}</p>
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs text-muted-foreground">Salary Account</p>
-                      <p className="text-sm font-medium text-foreground truncate">{personnel.salaryAccountNumber || '—'}</p>
-                    </div>
-                  </>
-                )}
               </div>
             </CardContent>
           </Card>
