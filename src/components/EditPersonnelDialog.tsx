@@ -13,6 +13,7 @@ import { Personnel } from '@/types';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
+import { MultiSelectInput } from '@/components/ui/multi-select-input';
 import { useLocations, useNationalities, useLanguages } from '@/hooks/useLocations';
 import { normalizeText } from '@/lib/stringUtils';
 
@@ -52,7 +53,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     postalAddress: '',
     nationalId: '',
     salaryAccountNumber: '',
-    language: '',
+    languages: [] as string[],
     nextOfKinName: '',
     nextOfKinRelation: '',
     nextOfKinPhone: '',
@@ -76,7 +77,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         postalAddress: personnel.postalAddress || '',
         nationalId: personnel.nationalId || '',
         salaryAccountNumber: personnel.salaryAccountNumber || '',
-        language: personnel.language || 'Norwegian',
+        languages: personnel.language ? personnel.language.split(', ').filter(Boolean) : ['Norwegian'],
         nextOfKinName: personnel.nextOfKinName || '',
         nextOfKinRelation: personnel.nextOfKinRelation || '',
         nextOfKinPhone: personnel.nextOfKinPhone || '',
@@ -171,7 +172,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           postal_address: formData.postalAddress.trim() || null,
           national_id: formData.nationalId.trim() || null,
           salary_account_number: formData.salaryAccountNumber.trim() || null,
-          language: normalizeText(formData.language) || 'Norwegian',
+          language: formData.languages.length > 0 ? formData.languages.join(', ') : 'Norwegian',
           next_of_kin_name: formData.nextOfKinName.trim() || null,
           next_of_kin_relation: formData.nextOfKinRelation.trim() || null,
           next_of_kin_phone: formData.nextOfKinPhone.trim() || null,
@@ -422,13 +423,13 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               </>
             )}
             <div className="space-y-2">
-              <Label htmlFor="edit-language">Language</Label>
-              <AutocompleteInput
+              <Label htmlFor="edit-language">Languages</Label>
+              <MultiSelectInput
                 id="edit-language"
                 options={languages}
-                value={formData.language}
-                onChange={(value) => setFormData({ ...formData, language: value })}
-                placeholder="Norwegian"
+                value={formData.languages}
+                onChange={(value) => setFormData({ ...formData, languages: value })}
+                placeholder="Select languages..."
               />
             </div>
           </div>
