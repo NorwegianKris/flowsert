@@ -408,7 +408,28 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               onSelect={handleRangeSelect}
               modifiers={modifiers}
               modifiersStyles={modifiersStyles}
-              className="rounded-md border border-border"
+              className="rounded-md border border-border p-3 pointer-events-auto w-full"
+              classNames={{
+                months: "flex flex-col w-full",
+                month: "space-y-4 w-full",
+                caption: "flex justify-center pt-1 relative items-center",
+                caption_label: "text-sm font-medium",
+                nav: "space-x-1 flex items-center",
+                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
+                nav_button_previous: "absolute left-1",
+                nav_button_next: "absolute right-1",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex w-full",
+                head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
+                row: "flex w-full mt-2",
+                cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
+                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
+                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                day_today: "bg-accent text-accent-foreground",
+                day_outside: "text-muted-foreground opacity-50",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_hidden: "invisible",
+              }}
               numberOfMonths={1}
             />
 
