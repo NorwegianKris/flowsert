@@ -1083,12 +1083,20 @@ export type Database = {
         Args: { _personnel_id: string; _project_id: string }
         Returns: boolean
       }
+      can_access_notification: {
+        Args: { _notification_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_access_personnel: {
         Args: { _personnel_id: string; _user_id: string }
         Returns: boolean
       }
       can_assign_personnel_to_project: {
         Args: { _personnel_id: string }
+        Returns: boolean
+      }
+      can_insert_notification: {
+        Args: { _business_id: string; _user_id: string }
         Returns: boolean
       }
       can_worker_access_project: {
