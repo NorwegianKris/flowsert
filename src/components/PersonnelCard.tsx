@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ import { MapPin, Mail, Phone, FileCheck, Briefcase, Trash2, Loader2, ShieldCheck
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -31,13 +32,53 @@ interface PersonnelCardProps {
   highlighted?: boolean;
 }
 
+// Calculate profile completion percentage
+function calculateCompletion(personnel: Personnel, documentCount: number): { percentage: number; color: string } {
+  const checks = [
+    !!personnel.name && personnel.name.trim().length > 0,
+    !!personnel.phone && personnel.phone.trim().length > 0,
+    !!personnel.nationality,
+    !!personnel.department,
+    !!personnel.bio && personnel.bio.trim().length >= 20,
+    personnel.certificates.length > 0,
+    documentCount > 0,
+  ];
+  
+  const completed = checks.filter(Boolean).length;
+  const percentage = Math.round((completed / checks.length) * 100);
+  
+  let color: string;
+  if (percentage >= 80) {
+    color = 'bg-[hsl(var(--status-valid))] text-[hsl(var(--status-valid-foreground))]';
+  } else if (percentage >= 50) {
+    color = 'bg-[hsl(var(--status-warning))] text-[hsl(var(--status-warning-foreground))]';
+  } else {
+    color = 'bg-destructive text-destructive-foreground';
+  }
+  
+  return { percentage, color };
+}
+
 export function PersonnelCard({ personnel, onClick, onRemoved, highlighted }: PersonnelCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [documentCount, setDocumentCount] = useState(0);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    async function fetchDocumentCount() {
+      const { count } = await supabase
+        .from('personnel_documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('personnel_id', personnel.id);
+      setDocumentCount(count || 0);
+    }
+    fetchDocumentCount();
+  }, [personnel.id]);
   
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
+  const { percentage, color } = calculateCompletion(personnel, documentCount);
   const initials = personnel.name
     .split(' ')
     .map((n) => n[0])
@@ -95,11 +136,26 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted }: Pe
         }`}
         onClick={onClick}
       >
-        {/* Remove button - visible on hover */}
+        {/* Completion percentage badge - top right */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-semibold z-10",
+              color
+            )}>
+              {percentage}%
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Profile {percentage}% complete
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Remove button - visible on hover, positioned left of percentage */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
+          className="absolute top-2 right-14 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
           onClick={handleRemoveClick}
           title="Remove personnel"
         >
