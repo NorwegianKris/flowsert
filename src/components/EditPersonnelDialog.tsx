@@ -392,7 +392,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               />
               <p className="text-xs text-muted-foreground">*not mandatory</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="edit-postalAddress">Postal Address</Label>
               <Input
                 id="edit-postalAddress"
@@ -400,6 +400,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 onChange={(e) => setFormData({ ...formData, postalAddress: e.target.value })}
                 placeholder="City, Country"
               />
+              <p className="text-xs text-muted-foreground">*not mandatory</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-language">Languages</Label>
