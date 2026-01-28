@@ -397,7 +397,18 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               <Input
                 id="edit-postalAddress"
                 value={formData.postalAddress}
-                onChange={(e) => setFormData({ ...formData, postalAddress: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const shouldAutoFillLocation = (!formData.location || formData.location === 'Not specified') && value.trim();
+                  setFormData(prev => ({
+                    ...prev,
+                    postalAddress: value,
+                    location: shouldAutoFillLocation ? value.trim() : prev.location
+                  }));
+                  if (shouldAutoFillLocation && value.trim()) {
+                    toast.info('Location auto-filled from postal address');
+                  }
+                }}
                 placeholder="City, Country"
               />
               <p className="text-xs text-muted-foreground">*not mandatory</p>
