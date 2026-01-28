@@ -8,35 +8,61 @@ interface ProfileCompletionBarProps {
   personnel: Personnel;
 }
 
-interface CompletionCriteria {
-  hasCertificate: boolean;
-  hasDocument: boolean;
-  personalInfoComplete: boolean;
+interface CompletionItem {
+  id: string;
+  label: string;
+  completed: boolean;
 }
 
-// Personal info fields that need to be filled for 100% completion
-const REQUIRED_PERSONAL_INFO_FIELDS: (keyof Personnel)[] = [
-  'name',
-  'role',
-  'nationality',
-  'gender',
-  'phone',
-  'email',
-  'location',
-];
-
-function calculatePersonalInfoCompletion(personnel: Personnel): { filled: number; total: number } {
-  const total = REQUIRED_PERSONAL_INFO_FIELDS.length;
-  let filled = 0;
-
-  for (const field of REQUIRED_PERSONAL_INFO_FIELDS) {
-    const value = personnel[field];
-    if (value && typeof value === 'string' && value.trim() !== '' && value !== 'Not specified') {
-      filled++;
-    }
-  }
-
-  return { filled, total };
+// Calculate completion using the same 9-item logic as ProfileCompletionIndicator
+function calculateCompletionItems(personnel: Personnel, documentCount: number): CompletionItem[] {
+  return [
+    {
+      id: 'name',
+      label: 'Full name',
+      completed: !!personnel.name && personnel.name.trim().length > 0,
+    },
+    {
+      id: 'role',
+      label: 'Role/position',
+      completed: !!personnel.role && personnel.role.trim().length > 0,
+    },
+    {
+      id: 'nationality',
+      label: 'Nationality',
+      completed: !!personnel.nationality,
+    },
+    {
+      id: 'gender',
+      label: 'Gender',
+      completed: !!personnel.gender,
+    },
+    {
+      id: 'phone',
+      label: 'Phone number',
+      completed: !!personnel.phone && personnel.phone.trim().length > 0,
+    },
+    {
+      id: 'email',
+      label: 'Email address',
+      completed: !!personnel.email && personnel.email.trim().length > 0,
+    },
+    {
+      id: 'location',
+      label: 'Location',
+      completed: !!personnel.location && personnel.location.trim().length > 0 && personnel.location !== 'Not specified',
+    },
+    {
+      id: 'certificates',
+      label: 'At least 1 certificate',
+      completed: personnel.certificates.length > 0,
+    },
+    {
+      id: 'documents',
+      label: 'At least 1 document',
+      completed: documentCount > 0,
+    },
+  ];
 }
 
 export function ProfileCompletionBar({ personnel }: ProfileCompletionBarProps) {
@@ -63,18 +89,17 @@ export function ProfileCompletionBar({ personnel }: ProfileCompletionBarProps) {
     fetchDocumentCount();
   }, [personnel.id]);
 
+  const completionItems = calculateCompletionItems(personnel, documentCount);
+  const completedCount = completionItems.filter(item => item.completed).length;
+  const totalCount = completionItems.length;
+  const completionPercentage = Math.round((completedCount / totalCount) * 100);
+
+  // Derived values for display
   const hasCertificate = personnel.certificates.length > 0;
   const hasDocument = documentCount > 0;
-  const personalInfo = calculatePersonalInfoCompletion(personnel);
-  const personalInfoComplete = personalInfo.filled === personalInfo.total;
-
-  // Calculate completion percentage (3 criteria, each worth ~33.33%)
-  let completedCriteria = 0;
-  if (hasCertificate) completedCriteria++;
-  if (hasDocument) completedCriteria++;
-  if (personalInfoComplete) completedCriteria++;
-
-  const completionPercentage = Math.round((completedCriteria / 3) * 100);
+  const personalInfoItems = completionItems.filter(item => !['certificates', 'documents'].includes(item.id));
+  const personalInfoFilled = personalInfoItems.filter(item => item.completed).length;
+  const personalInfoTotal = personalInfoItems.length;
 
   // Determine bar color based on percentage
   const getBarColorClass = () => {
@@ -142,13 +167,13 @@ export function ProfileCompletionBar({ personnel }: ProfileCompletionBarProps) {
         </div>
         
         <div className="flex items-center gap-1.5">
-          {personalInfoComplete ? (
+          {personalInfoFilled === personalInfoTotal ? (
             <CheckCircle className="h-3.5 w-3.5 text-[hsl(var(--status-valid))]" />
           ) : (
             <Circle className="h-3.5 w-3.5" />
           )}
-          <span className={cn(personalInfoComplete && 'text-foreground')}>
-            Personal info complete ({personalInfo.filled}/{personalInfo.total})
+          <span className={cn(personalInfoFilled === personalInfoTotal && 'text-foreground')}>
+            Personal info complete ({personalInfoFilled}/{personalInfoTotal})
           </span>
         </div>
       </div>
