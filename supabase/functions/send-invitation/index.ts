@@ -16,8 +16,8 @@ interface InvitationEmailRequest {
   isAdmin?: boolean;
 }
 
-// FlowSert logo URL
-const logoUrl = "https://flowsert.lovable.app/favicon.png";
+// FlowSert logo URL from storage
+const logoUrl = "https://frgsnallgwkufyzabeje.supabase.co/storage/v1/object/public/avatars/email-logo.jpg";
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-invitation function called");

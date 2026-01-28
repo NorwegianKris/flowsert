@@ -13,8 +13,8 @@ interface NotificationEmailRequest {
   notificationId?: string;
 }
 
-// FlowSert logo as base64 encoded SVG for email compatibility
-const logoUrl = "https://flowsert.lovable.app/favicon.png";
+// FlowSert logo URL from storage
+const logoUrl = "https://frgsnallgwkufyzabeje.supabase.co/storage/v1/object/public/avatars/email-logo.jpg";
 
 const getEmailTemplate = (subject: string, message: string, notificationId?: string) => {
   const viewNotificationUrl = notificationId 
