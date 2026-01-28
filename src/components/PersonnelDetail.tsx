@@ -16,6 +16,7 @@ import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
+import { NotificationBell } from '@/components/NotificationBell';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { ProfileCompletionBar } from '@/components/ProfileCompletionBar';
 import { Personnel } from '@/types';
@@ -43,9 +44,10 @@ interface PersonnelDetailProps {
   backLabel?: string;
   showRequestProject?: boolean;
   hideInvitations?: boolean;
+  showNotificationBell?: boolean;
 }
 
-export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel, showRequestProject = true, hideInvitations = false }: PersonnelDetailProps) {
+export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onRefresh, backLabel, showRequestProject = true, hideInvitations = false, showNotificationBell = false }: PersonnelDetailProps) {
   const [isAddCertOpen, setIsAddCertOpen] = useState(false);
   const [isRemoveCertOpen, setIsRemoveCertOpen] = useState(false);
   const [isEditCertSelectOpen, setIsEditCertSelectOpen] = useState(false);
@@ -228,19 +230,24 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4 text-rose-500" />
-                  <span>{personnel.location}</span>
+              <div className="flex items-center justify-between gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm flex-1">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 text-rose-500" />
+                    <span>{personnel.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4 text-blue-500" />
+                    <span>{personnel.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4 text-emerald-500" />
+                    <span>{personnel.phone}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4 text-blue-500" />
-                  <span>{personnel.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4 text-emerald-500" />
-                  <span>{personnel.phone}</span>
-                </div>
+                {showNotificationBell && (
+                  <NotificationBell personnelId={personnel.id} />
+                )}
               </div>
             </div>
           </div>

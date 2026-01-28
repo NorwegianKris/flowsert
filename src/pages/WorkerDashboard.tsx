@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, LogOut, User } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import { NotificationBell } from '@/components/NotificationBell';
 
 export default function WorkerDashboard() {
   const { signOut, profile } = useAuth();
@@ -48,7 +47,6 @@ export default function WorkerDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {personnel && <NotificationBell personnelId={personnel.id} />}
             {personnel && <ReportFeedbackDialog />}
             <Button variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
@@ -79,6 +77,7 @@ export default function WorkerDashboard() {
               onRefresh={refetch}
               showRequestProject={false}
               hideInvitations
+              showNotificationBell
             />
           </>
         ) : (
