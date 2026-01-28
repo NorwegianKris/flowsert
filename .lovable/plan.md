@@ -1,55 +1,141 @@
 
-# Auto-Update Location from Address
+# Plan: Improve AI Personnel Search Accuracy
 
 ## Overview
-When a user fills in their address or postal address but leaves the location field empty, we'll automatically populate the location field with a derived value. This is a lightweight, client-side solution that doesn't require external APIs.
+The AI personnel search currently passes limited data to the AI model. To significantly improve accuracy, we need to:
+1. Send more personnel data (nationality, department, bio, employment type)
+2. Include certificate categories for better certificate matching
+3. Add availability data for date-based queries
+4. Enhance the system prompt with more matching guidance
+5. Improve certificate name matching (fuzzy matching, abbreviations)
 
-## How It Will Work
+---
 
-1. **Trigger**: When a user changes the `address` or `postalAddress` fields in the edit dialog
-2. **Condition**: Only auto-fill if the `location` field is currently empty or set to "Not specified"
-3. **Source Priority**:
-   - First, try to use `postalAddress` (typically contains "City, Country" format)
-   - If postal address is empty, fall back to extracting from `address` if it contains location info
+## Current Limitations Identified
 
-## Implementation Steps
+1. **Missing Personnel Data**: The AI only receives `id`, `name`, `role`, `location`, `category`, `certificates`, and completion status. It's missing: `nationality`, `department`, `bio`, `gender`, and employment type context.
 
-### 1. Add Auto-Fill Logic to EditPersonnelDialog
-Add an `onChange` handler for the address and postal address fields that checks if location is empty and auto-populates it:
+2. **No Availability Data**: When users ask "available next week", the AI cannot verify actual availability since the `availability` table data isn't included.
+
+3. **Limited Certificate Context**: Only certificate names and expiry dates are sent. Missing: certificate categories, issuing authorities, which would help with "need someone with G4" type queries.
+
+4. **Weak Certificate Matching**: The AI might miss matches due to abbreviations (e.g., "G4" vs "G4 Certificate" or "Class G4").
+
+5. **No Fuzzy Matching Guidance**: The prompt doesn't instruct the AI on how to handle partial name matches or variations.
+
+---
+
+## Technical Implementation
+
+### 1. Enhance PersonnelForAI Interface (useSuggestPersonnel.ts)
+
+Add these fields to the data sent to AI:
+- `nationality` - for region/country-based matching
+- `department` - for organizational queries
+- `bio` - for skill/experience matching from free text
+- `employmentType` - distinguish fixed/freelancer/job_seeker
+- `certificateCategories` - map certificate names to their categories
 
 ```typescript
-// When postal address changes and location is empty
-const handlePostalAddressChange = (value: string) => {
-  setFormData(prev => ({
-    ...prev,
-    postalAddress: value,
-    // Auto-fill location if empty
-    location: (!prev.location || prev.location === 'Not specified') && value.trim() 
-      ? value.trim() 
-      : prev.location
-  }));
-};
+interface PersonnelForAI {
+  // ... existing fields ...
+  nationality: string | null;
+  department: string | null;
+  bio: string | null;
+  employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker';
+  availability?: { date: string; status: string }[];
+}
 ```
 
-### 2. Add Visual Feedback
-Show a subtle toast or inline message when location is auto-filled, so users understand what happened and can correct it if needed.
+### 2. Include Availability Data
 
-### 3. Update Both Address Fields
-Apply the same logic to both `postalAddress` (primary source - usually "City, Country") and if needed, extract city from `address` as a fallback.
+Modify `AIPersonnelSuggestions.tsx` and `AddProjectDialog.tsx` to:
+- Parse project date requirements from the AI prompt (if dates are mentioned)
+- Fetch availability data for those dates
+- Pass availability information to the AI
 
-## Technical Details
+### 3. Improve Certificate Data
 
-**Files to modify:**
-- `src/components/EditPersonnelDialog.tsx` - Add auto-fill logic to address field handlers
+Include certificate category names alongside certificate names:
+```typescript
+certificates: p.certificates.map(c => ({
+  name: c.name,
+  category: c.category || null,  // Add category
+  expiryDate: c.expiryDate,
+  issuingAuthority: c.issuingAuthority || null  // Add issuer
+}))
+```
 
-**Behavior:**
-- Location auto-fills only when it's empty or "Not specified"
-- Users can still manually edit the location afterward
-- Postal Address is preferred since it typically contains city/region info
-- Shows a subtle notification when auto-fill occurs
+### 4. Enhanced System Prompt (suggest-project-personnel/index.ts)
 
-## Alternative Considered
-A geocoding API (like Google Maps or OpenStreetMap) was considered but rejected because:
-- Adds external dependency and potential costs
-- Requires API key management
-- Overkill for this use case since postal address already contains location info
+Strengthen the system prompt with:
+- **Fuzzy certificate matching**: "G4" should match "G4 Certificate", "Class G4", etc.
+- **Bio analysis**: Extract skills and experience from bio text
+- **Nationality matching**: Consider nationality for region-based queries
+- **Availability awareness**: When dates are provided, check availability data
+- **Employment type awareness**: Match "freelancer" or "contractor" queries
+- **Negative matching**: Handle "NOT" or "except" in queries
+
+```text
+IMPORTANT - Certificate Matching Rules:
+- Use fuzzy matching for certificate names (e.g., "G4" matches "G4 Certificate", "Class G4 Diver")
+- Certificate abbreviations are common - match partial names
+- Check certificate validity - only suggest personnel with valid (non-expired) required certificates
+
+IMPORTANT - Bio/Skills Matching:
+- The 'bio' field contains free-text about experience and skills
+- Extract relevant keywords and match against requirements
+- Consider years of experience mentioned in bio
+
+IMPORTANT - Employment Type Matching:
+- "freelancer", "contractor", "external" → employmentType = 'freelancer'
+- "fixed", "employee", "internal", "permanent" → employmentType = 'fixed_employee'
+- "candidate", "applicant" → employmentType = 'job_seeker'
+
+IMPORTANT - Availability Matching:
+- When dates are specified, check availability data if provided
+- Personnel with 'unavailable' status on requested dates should be excluded or ranked lower
+- No availability data means availability is unknown (don't exclude)
+
+IMPORTANT - Strict vs Flexible Matching:
+- "ONLY" or "MUST have" → strict requirement, exclude non-matches
+- "preferably" or "ideally" → preference, rank higher but don't exclude
+- Default to flexible matching unless strict keywords are used
+```
+
+### 5. Add Availability Fetching (Optional Enhancement)
+
+When the AI prompt contains date references (e.g., "next week", "February 15-20"):
+- Parse date ranges from the prompt
+- Fetch availability data for those dates
+- Include in the personnel data sent to AI
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/hooks/useSuggestPersonnel.ts` | Add nationality, department, bio, employmentType to PersonnelForAI; enhance mapping |
+| `supabase/functions/suggest-project-personnel/index.ts` | Update interface, enhance system prompt with matching rules |
+| `src/components/AIPersonnelSuggestions.tsx` | No changes needed (already fetches document counts) |
+| `src/components/AddProjectDialog.tsx` | Pass additional data when calling getSuggestions |
+
+---
+
+## Expected Accuracy Improvements
+
+1. **Certificate queries**: "Need G4 divers" will match "Class G4 Commercial Diver Certificate"
+2. **Nationality queries**: "Norwegian divers" will check nationality field
+3. **Experience queries**: "5+ years experience" will analyze bio text
+4. **Employment queries**: "freelancers only" will filter by employment type
+5. **100% completion**: Already improved, will continue to work
+6. **Skill queries**: Bio analysis enables "familiar with ROV operations" matching
+
+---
+
+## Risk Considerations
+
+- **Token usage**: Sending more data increases AI token consumption (minor cost increase)
+- **Bio length**: Very long bios should be truncated to avoid token limits
+- **Availability data**: Large date ranges could add significant data; limit to 30 days max
