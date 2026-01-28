@@ -82,32 +82,27 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Mask phone number for privacy (show last 4 digits only)
+function maskPhone(phone: string | null): string {
+  if (!phone || phone.length < 4) return 'Not specified';
+  return '***' + phone.slice(-4);
+}
+
 function generateWorkerContext(
   personnel: Personnel,
   projects: Project[],
   availability: AvailabilityEntry[]
 ): string {
-  // Personal Information - EXCLUDING sensitive PII (national_id, salary_account_number)
+  // Personal Information - MINIMIZED PII (no addresses, masked phone, no next of kin)
   const personalInfo = `
 === PERSONAL INFORMATION ===
 Name: ${personnel.name}
 Role: ${personnel.role}
 Location: ${personnel.location}
 Email: ${personnel.email}
-Phone: ${personnel.phone}
+Phone: ${maskPhone(personnel.phone)}
 Nationality: ${personnel.nationality || 'Not specified'}
-Gender: ${personnel.gender || 'Not specified'}
-Language: ${personnel.language || 'Norwegian'}
-Address: ${personnel.address || 'Not specified'}
-Postal Code: ${personnel.postal_code || 'Not specified'}
-Postal Address: ${personnel.postal_address || 'Not specified'}`;
-
-  // Next of Kin
-  const nextOfKin = `
-=== NEXT OF KIN ===
-Name: ${personnel.next_of_kin_name || 'Not specified'}
-Relation: ${personnel.next_of_kin_relation || 'Not specified'}
-Phone: ${personnel.next_of_kin_phone || 'Not specified'}`;
+Language: ${personnel.language || 'Norwegian'}`;
 
   // Certificates
   const certDetails = personnel.certificates.length > 0
@@ -172,7 +167,6 @@ ${availability.map(a => `  - ${formatDate(a.date)}: ${a.status.toUpperCase()}${a
   No availability entries recorded`;
 
   return `${personalInfo}
-${nextOfKin}
 ${certificatesSection}
 ${projectsSection}
 ${availabilitySection}`;
@@ -187,7 +181,7 @@ function generateAdminContext(
     return 'No data available.';
   }
 
-  // Personnel Overview - EXCLUDING sensitive PII
+  // Personnel Overview - MINIMIZED PII (masked phone, no addresses)
   const personnelSection = `
 === PERSONNEL OVERVIEW (${allPersonnel.length} total) ===
 ${allPersonnel.map(p => {
@@ -199,8 +193,6 @@ ${allPersonnel.map(p => {
   ${p.name}
     Role: ${p.role}
     Location: ${p.location}
-    Email: ${p.email}
-    Phone: ${p.phone}
     Certificates: ${p.certificates.length} total (${validCerts} valid, ${expiringCerts} expiring soon, ${expiredCerts} expired)
     ${p.certificates.map(cert => {
       const status = getCertificateStatus(cert.expiry_date);
