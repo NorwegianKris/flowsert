@@ -32,14 +32,17 @@ interface PersonnelCardProps {
   highlighted?: boolean;
 }
 
-// Calculate profile completion percentage
+// Calculate profile completion percentage based on required fields:
+// name, role, nationality, gender, phone, email, location, certificates, documents
 function calculateCompletion(personnel: Personnel, documentCount: number): { percentage: number; color: string } {
   const checks = [
     !!personnel.name && personnel.name.trim().length > 0,
-    !!personnel.phone && personnel.phone.trim().length > 0,
+    !!personnel.role && personnel.role.trim().length > 0,
     !!personnel.nationality,
-    !!personnel.department,
-    !!personnel.bio && personnel.bio.trim().length >= 20,
+    !!personnel.gender,
+    !!personnel.phone && personnel.phone.trim().length > 0,
+    !!personnel.email && personnel.email.trim().length > 0,
+    !!personnel.location && personnel.location.trim().length > 0 && personnel.location !== 'Not specified',
     personnel.certificates.length > 0,
     documentCount > 0,
   ];

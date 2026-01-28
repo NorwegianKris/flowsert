@@ -52,12 +52,34 @@ export function ProfileCompletionIndicator({ personnel }: ProfileCompletionIndic
     fetchDocumentCount();
   }, [personnel.id]);
 
-  // Define completion items
+  // Define completion items based on required fields:
+  // name, role, nationality, gender, phone, email, location, certificates, documents
   const completionItems: CompletionItem[] = [
     {
       id: 'name',
       label: 'Full name added',
       completed: !!personnel.name && personnel.name.trim().length > 0,
+      icon: <User className="h-4 w-4" />,
+      priority: 'high',
+    },
+    {
+      id: 'role',
+      label: 'Role/position specified',
+      completed: !!personnel.role && personnel.role.trim().length > 0,
+      icon: <User className="h-4 w-4" />,
+      priority: 'high',
+    },
+    {
+      id: 'nationality',
+      label: 'Nationality specified',
+      completed: !!personnel.nationality,
+      icon: <User className="h-4 w-4" />,
+      priority: 'high',
+    },
+    {
+      id: 'gender',
+      label: 'Gender specified',
+      completed: !!personnel.gender,
       icon: <User className="h-4 w-4" />,
       priority: 'high',
     },
@@ -69,25 +91,18 @@ export function ProfileCompletionIndicator({ personnel }: ProfileCompletionIndic
       priority: 'high',
     },
     {
-      id: 'nationality',
-      label: 'Nationality specified',
-      completed: !!personnel.nationality,
+      id: 'email',
+      label: 'Email address added',
+      completed: !!personnel.email && personnel.email.trim().length > 0,
       icon: <User className="h-4 w-4" />,
-      priority: 'medium',
+      priority: 'high',
     },
     {
-      id: 'department',
-      label: 'Department selected',
-      completed: !!personnel.department,
+      id: 'location',
+      label: 'Location specified',
+      completed: !!personnel.location && personnel.location.trim().length > 0 && personnel.location !== 'Not specified',
       icon: <User className="h-4 w-4" />,
-      priority: 'medium',
-    },
-    {
-      id: 'bio',
-      label: 'Personal introduction written',
-      completed: !!personnel.bio && personnel.bio.trim().length >= 20,
-      icon: <User className="h-4 w-4" />,
-      priority: 'medium',
+      priority: 'high',
     },
     {
       id: 'certificates',
