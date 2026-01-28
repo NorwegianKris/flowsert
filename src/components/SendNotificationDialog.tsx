@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Users, X } from 'lucide-react';
+import { Loader2, Send, Users, X, Search, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,8 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
   const [sendEmail, setSendEmail] = useState(false);
   const [sending, setSending] = useState(false);
   const [showIndividualSelect, setShowIndividualSelect] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [listHeight, setListHeight] = useState(160); // Default height in pixels
   
   const { businessId, user } = useAuth();
   const { toast } = useToast();
@@ -75,6 +77,37 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
   };
 
   const recipientCount = getRecipients().length;
+
+  // Filter personnel based on search query
+  const filteredPersonnel = useMemo(() => {
+    if (!searchQuery.trim()) return personnel;
+    const query = searchQuery.toLowerCase();
+    return personnel.filter(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.role?.toLowerCase().includes(query)
+    );
+  }, [personnel, searchQuery]);
+
+  // Handle resize drag
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = listHeight;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const delta = moveEvent.clientY - startY;
+      const newHeight = Math.max(100, Math.min(400, startHeight + delta));
+      setListHeight(newHeight);
+    };
+    
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   const handleSend = async () => {
     if (!subject.trim() || !message.trim()) {
@@ -219,31 +252,64 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
           {showIndividualSelect && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">Select individual personnel</Label>
-              <ScrollArea className="h-40 border rounded-md p-2">
-                <div className="space-y-1">
-                  {personnel.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted transition-colors ${
-                        selectedIndividuals.includes(p.id) ? 'bg-primary/10' : ''
-                      }`}
-                      onClick={() => toggleIndividual(p.id)}
-                    >
-                      <Checkbox
-                        checked={selectedIndividuals.includes(p.id)}
-                        onCheckedChange={() => toggleIndividual(p.id)}
-                      />
-                      <span className="text-sm flex-1">{p.name}</span>
-                      <span className="text-xs text-muted-foreground">{p.role}</span>
-                      {p.isJobSeeker && (
-                        <Badge variant="secondary" className="text-xs bg-lavender-100 text-lavender-700">
-                          Job Seeker
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
+              
+              {/* Search field */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or role..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              
+              {/* Resizable personnel list */}
+              <div className="border rounded-md overflow-hidden">
+                <ScrollArea style={{ height: listHeight }} className="p-2">
+                  <div className="space-y-1">
+                    {filteredPersonnel.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No personnel found matching "{searchQuery}"
+                      </p>
+                    ) : (
+                      filteredPersonnel.map((p) => (
+                        <div
+                          key={p.id}
+                          className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted transition-colors ${
+                            selectedIndividuals.includes(p.id) ? 'bg-primary/10' : ''
+                          }`}
+                          onClick={() => toggleIndividual(p.id)}
+                        >
+                          <Checkbox
+                            checked={selectedIndividuals.includes(p.id)}
+                            onCheckedChange={() => toggleIndividual(p.id)}
+                          />
+                          <span className="text-sm flex-1">{p.name}</span>
+                          <span className="text-xs text-muted-foreground">{p.role}</span>
+                          {p.isJobSeeker && (
+                            <Badge variant="secondary" className="text-xs bg-lavender-100 text-lavender-700">
+                              Job Seeker
+                            </Badge>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+                
+                {/* Resize handle */}
+                <div
+                  className="h-3 bg-muted/50 hover:bg-muted cursor-ns-resize flex items-center justify-center border-t"
+                  onMouseDown={handleResizeStart}
+                >
+                  <GripVertical className="h-3 w-3 text-muted-foreground rotate-90" />
                 </div>
-              </ScrollArea>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                {filteredPersonnel.length} of {personnel.length} personnel shown • Drag bottom edge to resize
+              </p>
             </div>
           )}
 
