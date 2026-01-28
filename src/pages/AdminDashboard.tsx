@@ -27,8 +27,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2 } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell } from 'lucide-react';
 import { CompanyCard } from '@/components/CompanyCard';
+import { SendNotificationDialog } from '@/components/SendNotificationDialog';
 import { DateRange } from 'react-day-picker';
 
 export default function AdminDashboard() {
@@ -41,6 +42,7 @@ export default function AdminDashboard() {
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [companyCardOpen, setCompanyCardOpen] = useState(false);
+  const [sendNotificationOpen, setSendNotificationOpen] = useState(false);
   
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
@@ -258,6 +260,10 @@ export default function AdminDashboard() {
               <FolderOpen className="h-4 w-4 mr-2" />
               New Project
             </Button>
+            <Button variant="outline" onClick={() => setSendNotificationOpen(true)}>
+              <Bell className="h-4 w-4 mr-2" />
+              Send Notification
+            </Button>
             <Button variant="outline" onClick={() => setCompanyCardOpen(true)}>
               <Building2 className="h-4 w-4 mr-2" />
               Company Card
@@ -453,6 +459,12 @@ export default function AdminDashboard() {
           onOpenChange={setAddProjectOpen}
           personnel={personnel}
           onProjectAdded={handleProjectAdded}
+        />
+      
+        <SendNotificationDialog
+          open={sendNotificationOpen}
+          onOpenChange={setSendNotificationOpen}
+          personnel={personnel}
         />
     </div>
   );
