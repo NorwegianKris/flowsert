@@ -95,7 +95,6 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
     setLoadingRecipients(true);
 
     try {
-      // Fetch recipients with personnel details
       const { data: recipientsData, error: recipError } = await supabase
         .from('notification_recipients')
         .select('id, personnel_id, read_at')
@@ -103,7 +102,6 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
 
       if (recipError) throw recipError;
 
-      // Fetch personnel names for each recipient
       const recipientsWithNames = await Promise.all(
         (recipientsData || []).map(async (recipient) => {
           const { data: personnel, error: persError } = await supabase
@@ -172,41 +170,41 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
           </div>
         ) : selectedNotification ? (
           // Detail view
-          <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-4 pb-4">
-              {/* Notification content */}
-              <div className="border rounded-lg p-4 bg-muted/30">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <h3 className="font-semibold text-lg text-foreground">
-                    {selectedNotification.subject}
-                  </h3>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
-                  </span>
-                </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
-                  {selectedNotification.message}
-                </p>
+          <div className="flex-1 flex flex-col overflow-hidden space-y-4">
+            {/* Notification content */}
+            <div className="border rounded-lg p-4 bg-muted/30 shrink-0">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <h3 className="font-semibold text-lg text-foreground">
+                  {selectedNotification.subject}
+                </h3>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
+                </span>
+              </div>
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {selectedNotification.message}
+              </p>
+            </div>
+
+            {/* Recipients list */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-3 shrink-0">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Recipients ({selectedNotification.recipient_count})
+                </h4>
+                <Badge variant={selectedNotification.read_count === selectedNotification.recipient_count ? 'default' : 'secondary'}>
+                  {selectedNotification.read_count}/{selectedNotification.recipient_count} read
+                </Badge>
               </div>
 
-              {/* Recipients list */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Recipients ({selectedNotification.recipient_count})
-                  </h4>
-                  <Badge variant={selectedNotification.read_count === selectedNotification.recipient_count ? 'default' : 'secondary'}>
-                    {selectedNotification.read_count}/{selectedNotification.recipient_count} read
-                  </Badge>
+              {loadingRecipients ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-
-                {loadingRecipients ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
+              ) : (
+                <ScrollArea className="flex-1">
+                  <div className="space-y-2 pr-4">
                     {selectedNotification.recipients?.map((recipient) => (
                       <div
                         key={recipient.id}
@@ -236,10 +234,10 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </ScrollArea>
+              )}
             </div>
-          </ScrollArea>
+          </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Mail className="h-12 w-12 mb-4 opacity-50" />
