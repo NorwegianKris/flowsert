@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mail, Users, ArrowLeft, Check, Clock } from 'lucide-react';
+import { Loader2, Mail, Users, ArrowLeft, Check, Clock, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -36,6 +36,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
   const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<NotificationWithRecipients | null>(null);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
+  const [messageHeight, setMessageHeight] = useState(200);
   const { businessId } = useAuth();
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
     }
     if (!open) {
       setSelectedNotification(null);
+      setMessageHeight(200);
     }
   }, [open, businessId]);
 
@@ -131,6 +133,27 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
 
   const handleBack = () => {
     setSelectedNotification(null);
+    setMessageHeight(200);
+  };
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = messageHeight;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const delta = moveEvent.clientY - startY;
+      const newHeight = Math.max(100, Math.min(400, startHeight + delta));
+      setMessageHeight(newHeight);
+    };
+    
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   return (
@@ -171,19 +194,31 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
         ) : selectedNotification ? (
           // Detail view
           <div className="flex-1 flex flex-col min-h-0 space-y-4">
-            {/* Notification content - with max height and scroll */}
-            <div className="border rounded-lg p-4 bg-muted/30 shrink-0 max-h-[200px] overflow-y-auto">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <h3 className="font-semibold text-lg text-foreground">
-                  {selectedNotification.subject}
-                </h3>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
-                </span>
+            {/* Notification content - resizable */}
+            <div className="border rounded-lg overflow-hidden shrink-0">
+              <div 
+                style={{ height: messageHeight }} 
+                className="p-4 bg-muted/30 overflow-y-auto"
+              >
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <h3 className="font-semibold text-lg text-foreground">
+                    {selectedNotification.subject}
+                  </h3>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
+                  </span>
+                </div>
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {selectedNotification.message}
+                </p>
               </div>
-              <p className="text-sm text-foreground whitespace-pre-wrap">
-                {selectedNotification.message}
-              </p>
+              {/* Resize handle */}
+              <div
+                className="h-3 bg-muted/50 hover:bg-muted cursor-ns-resize flex items-center justify-center border-t"
+                onMouseDown={handleResizeStart}
+              >
+                <GripVertical className="h-3 w-3 text-muted-foreground rotate-90" />
+              </div>
             </div>
 
             {/* Recipients list */}
