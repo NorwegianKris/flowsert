@@ -297,7 +297,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-location">Location</Label>
+              <Label htmlFor="edit-location">Location *</Label>
               <AutocompleteInput
                 id="edit-location"
                 options={locations}
@@ -325,7 +325,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="edit-nationality">Nationality</Label>
+              <Label htmlFor="edit-nationality">Nationality *</Label>
               <AutocompleteInput
                 id="edit-nationality"
                 options={nationalities}
@@ -364,7 +364,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-gender">Gender</Label>
+              <Label htmlFor="edit-gender">Gender *</Label>
               <Input
                 id="edit-gender"
                 value={formData.gender}
