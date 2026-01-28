@@ -16,6 +16,9 @@ interface InvitationEmailRequest {
   isAdmin?: boolean;
 }
 
+// FlowSert logo URL
+const logoUrl = "https://flowsert.lovable.app/favicon.png";
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-invitation function called");
 
@@ -79,40 +82,54 @@ const handler = async (req: Request): Promise<Response> => {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to ${companyName}!</h1>
-                ${isAdmin ? '<p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Administrator Invitation</p>' : ''}
-              </div>
-              
-              <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-                <p style="font-size: 16px;">Hi <strong>${workerName}</strong>,</p>
-                
-                <p style="font-size: 16px;">You've been invited to join ${companyName} as a <strong>${roleLabel}</strong>. ${roleDescription}</p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${inviteLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-                    Join
-                  </a>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+              <div style="background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <!-- Header with Logo -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px 30px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="vertical-align: middle;">
+                        <h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Welcome to ${companyName}!</h1>
+                        ${isAdmin ? '<p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">Administrator Invitation</p>' : ''}
+                      </td>
+                      <td style="text-align: right; vertical-align: middle;">
+                        <img src="${logoUrl}" alt="FlowSert" style="height: 40px; width: auto;" />
+                      </td>
+                    </tr>
+                  </table>
                 </div>
                 
-                <p style="font-size: 14px; color: #666;">
-                  <strong>Important:</strong> You must sign up using this email address: <strong>${to}</strong>
-                </p>
+                <!-- Content -->
+                <div style="padding: 30px;">
+                  <p style="font-size: 16px; margin-top: 0;">Hi <strong>${workerName}</strong>,</p>
+                  
+                  <p style="font-size: 15px;">You've been invited to join ${companyName} as a <strong>${roleLabel}</strong>. ${roleDescription}</p>
+                  
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${inviteLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                      Join Now
+                    </a>
+                  </div>
+                  
+                  <p style="font-size: 14px; color: #64748b;">
+                    <strong>Important:</strong> You must sign up using this email address: <strong>${to}</strong>
+                  </p>
+                  
+                  <p style="font-size: 14px; color: #64748b;">
+                    If the button doesn't work, copy and paste this link into your browser:
+                  </p>
+                  <p style="font-size: 12px; color: #94a3b8; word-break: break-all; background: #f8fafc; padding: 12px; border-radius: 6px;">
+                    ${inviteLink}
+                  </p>
+                </div>
                 
-                <p style="font-size: 14px; color: #666;">
-                  If the button doesn't work, copy and paste this link into your browser:
-                </p>
-                <p style="font-size: 12px; color: #888; word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 5px;">
-                  ${inviteLink}
-                </p>
-                
-                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-                
-                <p style="font-size: 12px; color: #888; text-align: center;">
-                  This invitation link will expire in 7 days.<br>
-                  If you didn't expect this email, you can safely ignore it.
-                </p>
+                <!-- Footer -->
+                <div style="background: #f8fafc; padding: 20px 30px; border-top: 1px solid #e2e8f0;">
+                  <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+                    This invitation link will expire in 7 days.<br>
+                    If you didn't expect this email, you can safely ignore it.
+                  </p>
+                </div>
               </div>
             </body>
           </html>

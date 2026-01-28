@@ -20,6 +20,9 @@ interface ProjectInvitationEmailRequest {
   businessName?: string;
 }
 
+// FlowSert logo URL
+const logoUrl = "https://flowsert.lovable.app/favicon.png";
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-project-invitation function called");
 
@@ -108,51 +111,74 @@ const handler = async (req: Request): Promise<Response> => {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-                <h1 style="color: white; margin: 0; font-size: 24px;">Project Invitation</h1>
-                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">${companyName}</p>
-              </div>
-              
-              <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-                <p style="font-size: 16px;">Hi <strong>${personnelName}</strong>,</p>
-                
-                <p style="font-size: 16px;">You've been invited to join the following project:</p>
-                
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h2 style="margin: 0 0 10px 0; color: #2563eb; font-size: 20px;">${projectName}</h2>
-                  ${projectDescription ? `<p style="margin: 0 0 15px 0; color: #555;">${projectDescription}</p>` : ''}
-                  
-                  <table style="width: 100%; font-size: 14px;">
-                    ${dateRange ? `
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+              <div style="background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <!-- Header with Logo -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px 30px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                      <td style="padding: 5px 0; color: #666;"><strong>Dates:</strong></td>
-                      <td style="padding: 5px 0;">${dateRange}</td>
+                      <td style="vertical-align: middle;">
+                        <h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">Project Invitation</h1>
+                        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">${companyName}</p>
+                      </td>
+                      <td style="text-align: right; vertical-align: middle;">
+                        <img src="${logoUrl}" alt="FlowSert" style="height: 40px; width: auto;" />
+                      </td>
                     </tr>
-                    ` : ''}
-                    ${projectLocation ? `
-                    <tr>
-                      <td style="padding: 5px 0; color: #666;"><strong>Location:</strong></td>
-                      <td style="padding: 5px 0;">${projectLocation}</td>
-                    </tr>
-                    ` : ''}
-                    ${projectManager ? `
-                    <tr>
-                      <td style="padding: 5px 0; color: #666;"><strong>Manager:</strong></td>
-                      <td style="padding: 5px 0;">${projectManager}</td>
-                    </tr>
-                    ` : ''}
                   </table>
                 </div>
                 
-                <p style="font-size: 16px;">Please log in to your FlowSert account to accept or decline this invitation.</p>
+                <!-- Content -->
+                <div style="padding: 30px;">
+                  <p style="font-size: 16px; margin-top: 0;">Hi <strong>${personnelName}</strong>,</p>
+                  
+                  <p style="font-size: 15px;">You've been invited to join the following project:</p>
+                  
+                  <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h2 style="margin: 0 0 12px 0; color: #2563eb; font-size: 20px;">${projectName}</h2>
+                    ${projectDescription ? `<p style="margin: 0 0 15px 0; color: #475569; font-size: 15px;">${projectDescription}</p>` : ''}
+                    
+                    <table style="width: 100%; font-size: 14px;">
+                      ${dateRange ? `
+                      <tr>
+                        <td style="padding: 5px 0; color: #64748b;"><strong>Dates:</strong></td>
+                        <td style="padding: 5px 0; color: #334155;">${dateRange}</td>
+                      </tr>
+                      ` : ''}
+                      ${projectLocation ? `
+                      <tr>
+                        <td style="padding: 5px 0; color: #64748b;"><strong>Location:</strong></td>
+                        <td style="padding: 5px 0; color: #334155;">${projectLocation}</td>
+                      </tr>
+                      ` : ''}
+                      ${projectManager ? `
+                      <tr>
+                        <td style="padding: 5px 0; color: #64748b;"><strong>Manager:</strong></td>
+                        <td style="padding: 5px 0; color: #334155;">${projectManager}</td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </div>
+                  
+                  <!-- View Invitation Button -->
+                  <div style="text-align: center; margin: 28px 0;">
+                    <a href="https://flowsert.lovable.app/worker" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                      View Invitation
+                    </a>
+                  </div>
+                  
+                  <p style="font-size: 14px; color: #64748b; text-align: center;">
+                    Log in to your FlowSert account to accept or decline this invitation.
+                  </p>
+                </div>
                 
-                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-                
-                <p style="font-size: 12px; color: #888; text-align: center;">
-                  This is an automated message from ${companyName}.<br>
-                  If you didn't expect this email, please contact your administrator.
-                </p>
+                <!-- Footer -->
+                <div style="background: #f8fafc; padding: 20px 30px; border-top: 1px solid #e2e8f0;">
+                  <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+                    This is an automated message from ${companyName}.<br>
+                    If you didn't expect this email, please contact your administrator.
+                  </p>
+                </div>
               </div>
             </body>
           </html>

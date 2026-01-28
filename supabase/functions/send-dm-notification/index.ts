@@ -12,6 +12,9 @@ interface DMNotificationRequest {
   senderName: string;
 }
 
+// FlowSert logo URL
+const logoUrl = "https://flowsert.lovable.app/favicon.png";
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -52,7 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", personnelId)
       .single();
 
-    const businessName = (personnelWithBusiness?.businesses as any)?.name || "Flowsert";
+    const businessName = (personnelWithBusiness?.businesses as any)?.name || "FlowSert";
 
     // Send email notification via Resend API
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -62,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `${businessName} <onboarding@resend.dev>`,
+        from: `${businessName} <noreply@flowsert.com>`,
         to: [personnel.email],
         subject: `New message from ${senderName}`,
         html: `
@@ -72,30 +75,51 @@ const handler = async (req: Request): Promise<Response> => {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 24px;">New Message</h1>
-            </div>
-            
-            <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
-              <p style="margin-top: 0;">Hi ${personnel.name},</p>
-              
-              <p>You have received a new message from <strong>${senderName}</strong>:</p>
-              
-              <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
-                <p style="margin: 0; color: #475569; white-space: pre-wrap;">${messageContent}</p>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+            <div style="background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <!-- Header with Logo -->
+              <div style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); padding: 24px 30px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="vertical-align: middle;">
+                      <h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">New Message</h1>
+                    </td>
+                    <td style="text-align: right; vertical-align: middle;">
+                      <img src="${logoUrl}" alt="FlowSert" style="height: 40px; width: auto;" />
+                    </td>
+                  </tr>
+                </table>
               </div>
               
-              <p>Log in to your Flowsert account to reply to this message.</p>
+              <!-- Content -->
+              <div style="padding: 30px;">
+                <p style="margin-top: 0; font-size: 16px;">Hi ${personnel.name},</p>
+                
+                <p style="font-size: 15px;">You have received a new message from <strong>${senderName}</strong>:</p>
+                
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
+                  <p style="margin: 0; color: #475569; white-space: pre-wrap; font-size: 15px;">${messageContent}</p>
+                </div>
+                
+                <!-- View Message Button -->
+                <div style="text-align: center; margin: 28px 0;">
+                  <a href="https://flowsert.lovable.app/worker" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    View Message
+                  </a>
+                </div>
+                
+                <p style="margin-bottom: 0; color: #64748b; font-size: 14px; text-align: center;">
+                  Best regards,<br>
+                  The ${businessName} Team
+                </p>
+              </div>
               
-              <p style="margin-bottom: 0; color: #64748b; font-size: 14px;">
-                Best regards,<br>
-                The ${businessName} Team
-              </p>
-            </div>
-            
-            <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px;">
-              <p>This is an automated notification. Please do not reply to this email.</p>
+              <!-- Footer -->
+              <div style="background: #f8fafc; padding: 20px 30px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">
+                  This is an automated notification. Please do not reply to this email.
+                </p>
+              </div>
             </div>
           </body>
           </html>
