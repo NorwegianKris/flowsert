@@ -170,9 +170,9 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
           </div>
         ) : selectedNotification ? (
           // Detail view
-          <div className="flex-1 flex flex-col overflow-hidden space-y-4">
-            {/* Notification content */}
-            <div className="border rounded-lg p-4 bg-muted/30 shrink-0">
+          <div className="flex-1 flex flex-col min-h-0 space-y-4">
+            {/* Notification content - with max height and scroll */}
+            <div className="border rounded-lg p-4 bg-muted/30 shrink-0 max-h-[200px] overflow-y-auto">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <h3 className="font-semibold text-lg text-foreground">
                   {selectedNotification.subject}
@@ -187,7 +187,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
             </div>
 
             {/* Recipients list */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="flex items-center justify-between mb-3 shrink-0">
                 <h4 className="font-medium text-foreground flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -203,8 +203,8 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <ScrollArea className="flex-1 max-h-[300px]">
-                  <div className="space-y-2 pr-4">
+                <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg">
+                  <div className="space-y-2 p-2">
                     {selectedNotification.recipients?.map((recipient) => (
                       <div
                         key={recipient.id}
@@ -234,7 +234,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               )}
             </div>
           </div>
