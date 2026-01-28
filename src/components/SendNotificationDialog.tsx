@@ -166,6 +166,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               emails: emailRecipients,
               subject: subject.trim(),
               message: message.trim(),
+              notificationId: notification.id,
             },
           });
         }
