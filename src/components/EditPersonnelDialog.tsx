@@ -372,7 +372,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 placeholder="Male / Female / Other"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="edit-address">Address</Label>
               <Input
                 id="edit-address"
@@ -380,8 +380,9 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="Street name and number"
               />
+              <p className="text-xs text-muted-foreground">*not mandatory</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="edit-postalCode">Postal Code</Label>
               <Input
                 id="edit-postalCode"
@@ -389,6 +390,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                 placeholder="0001"
               />
+              <p className="text-xs text-muted-foreground">*not mandatory</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-postalAddress">Postal Address</Label>
