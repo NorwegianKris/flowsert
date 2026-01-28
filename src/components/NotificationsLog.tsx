@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Mail, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Mail, Users, ArrowLeft, Check, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+
+interface Recipient {
+  id: string;
+  personnel_id: string;
+  read_at: string | null;
+  personnel_name: string;
+  personnel_email: string;
+}
 
 interface NotificationWithRecipients {
   id: string;
@@ -14,6 +23,7 @@ interface NotificationWithRecipients {
   created_at: string;
   recipient_count: number;
   read_count: number;
+  recipients?: Recipient[];
 }
 
 interface NotificationsLogProps {
@@ -24,18 +34,22 @@ interface NotificationsLogProps {
 export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) {
   const [notifications, setNotifications] = useState<NotificationWithRecipients[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationWithRecipients | null>(null);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
   const { businessId } = useAuth();
 
   useEffect(() => {
     if (open && businessId) {
       fetchNotifications();
     }
+    if (!open) {
+      setSelectedNotification(null);
+    }
   }, [open, businessId]);
 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      // First fetch all notifications for the business
       const { data: notificationsData, error: notifError } = await supabase
         .from('notifications')
         .select('id, subject, message, created_at')
@@ -44,7 +58,6 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
 
       if (notifError) throw notifError;
 
-      // For each notification, get recipient counts
       const notificationsWithCounts = await Promise.all(
         (notificationsData || []).map(async (notification) => {
           const { data: recipients, error: recipError } = await supabase
@@ -77,16 +90,79 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
     }
   };
 
+  const handleSelectNotification = async (notification: NotificationWithRecipients) => {
+    setSelectedNotification(notification);
+    setLoadingRecipients(true);
+
+    try {
+      // Fetch recipients with personnel details
+      const { data: recipientsData, error: recipError } = await supabase
+        .from('notification_recipients')
+        .select('id, personnel_id, read_at')
+        .eq('notification_id', notification.id);
+
+      if (recipError) throw recipError;
+
+      // Fetch personnel names for each recipient
+      const recipientsWithNames = await Promise.all(
+        (recipientsData || []).map(async (recipient) => {
+          const { data: personnel, error: persError } = await supabase
+            .from('personnel')
+            .select('name, email')
+            .eq('id', recipient.personnel_id)
+            .maybeSingle();
+
+          return {
+            ...recipient,
+            personnel_name: personnel?.name || 'Unknown',
+            personnel_email: personnel?.email || '',
+          };
+        })
+      );
+
+      setSelectedNotification({
+        ...notification,
+        recipients: recipientsWithNames,
+      });
+    } catch (error) {
+      console.error('Error fetching recipient details:', error);
+    } finally {
+      setLoadingRecipients(false);
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedNotification(null);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
-            Notifications Log
+            {selectedNotification ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 mr-1"
+                  onClick={handleBack}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                Notification Details
+              </>
+            ) : (
+              <>
+                <Mail className="h-5 w-5 text-primary" />
+                Notifications Log
+              </>
+            )}
           </DialogTitle>
           <DialogDescription>
-            View all notifications sent to your personnel.
+            {selectedNotification
+              ? 'View the full notification and recipient list.'
+              : 'View all notifications sent to your personnel.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -94,18 +170,98 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : selectedNotification ? (
+          // Detail view
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-4 pb-4">
+              {/* Notification content */}
+              <div className="border rounded-lg p-4 bg-muted/30">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <h3 className="font-semibold text-lg text-foreground">
+                    {selectedNotification.subject}
+                  </h3>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
+                  </span>
+                </div>
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {selectedNotification.message}
+                </p>
+              </div>
+
+              {/* Recipients list */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Recipients ({selectedNotification.recipient_count})
+                  </h4>
+                  <Badge variant={selectedNotification.read_count === selectedNotification.recipient_count ? 'default' : 'secondary'}>
+                    {selectedNotification.read_count}/{selectedNotification.recipient_count} read
+                  </Badge>
+                </div>
+
+                {loadingRecipients ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedNotification.recipients?.map((recipient) => (
+                      <div
+                        key={recipient.id}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-background"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-foreground truncate">
+                            {recipient.personnel_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {recipient.personnel_email}
+                          </p>
+                        </div>
+                        <div className="shrink-0 ml-3">
+                          {recipient.read_at ? (
+                            <Badge variant="default" className="text-xs flex items-center gap-1">
+                              <Check className="h-3 w-3" />
+                              Read
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Unread
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Mail className="h-12 w-12 mb-4 opacity-50" />
             <p>No notifications have been sent yet.</p>
           </div>
         ) : (
+          // List view
           <ScrollArea className="flex-1 -mx-6 px-6">
             <div className="space-y-3 pb-4">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  role="button"
+                  tabIndex={0}
+                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => handleSelectNotification(notification)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectNotification(notification);
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
