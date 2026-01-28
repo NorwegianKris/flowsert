@@ -14,6 +14,8 @@ interface PersonnelData {
   isJobSeeker: boolean;
   activated: boolean;
   certificates: { name: string; expiryDate: string | null }[];
+  profileCompletionPercentage: number;
+  profileCompletionStatus: 'complete' | 'high' | 'medium' | 'low';
 }
 
 interface SuggestedPersonnel {
@@ -74,7 +76,9 @@ serve(async (req) => {
       certificates: p.certificates.map(c => ({
         name: c.name,
         valid: !c.expiryDate || new Date(c.expiryDate) > new Date()
-      }))
+      })),
+      profileCompletionPercentage: p.profileCompletionPercentage,
+      profileCompletionStatus: p.profileCompletionStatus
     }));
 
     const systemPrompt = `You are an expert personnel matching assistant for project staffing. Your task is to analyze project requirements and suggest the best matching personnel from the available pool.
@@ -85,6 +89,20 @@ When analyzing requirements:
 3. Consider location proximity (personnel location vs project location)
 4. Match personnel roles to the work category
 5. Rank personnel by how well they match the requirements
+
+IMPORTANT - Profile Completion Filtering:
+Each personnel has a profileCompletionPercentage (0-100) and profileCompletionStatus ('complete', 'high', 'medium', 'low'):
+- 'complete' = 100% profile completion (all required fields filled)
+- 'high' = 80-99% profile completion
+- 'medium' = 50-79% profile completion  
+- 'low' = below 50% profile completion
+
+When users ask for "100% complete", "fully complete", "complete profiles", or similar:
+- ONLY include personnel where profileCompletionStatus is 'complete' (exactly 100%)
+- This is a strict filter - do not include 99% or below
+
+When users ask for "mostly complete", "nearly complete", or "high completion":
+- Include personnel where profileCompletionPercentage >= 80
 
 IMPORTANT - Geographic Location Matching:
 - When a region, country, or continent is mentioned (e.g., "Europe", "Scandinavia", "Norway"), include ALL personnel from locations within that region
