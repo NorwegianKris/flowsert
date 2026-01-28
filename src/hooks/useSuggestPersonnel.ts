@@ -31,6 +31,30 @@ interface PersonnelForAI {
   isJobSeeker: boolean;
   activated: boolean;
   certificates: { name: string; expiryDate: string | null }[];
+  profileCompletionPercentage: number;
+  profileCompletionStatus: 'complete' | 'high' | 'medium' | 'low';
+}
+
+// Calculate profile completion percentage (must match PersonnelCard and ProfileCompletionIndicator logic)
+function calculateProfileCompletion(p: Personnel, documentCount: number): { percentage: number; status: 'complete' | 'high' | 'medium' | 'low' } {
+  const checks = [
+    !!p.name && p.name.trim().length > 0,
+    !!p.role && p.role.trim().length > 0,
+    !!p.nationality,
+    !!p.gender,
+    !!p.phone && p.phone.trim().length > 0,
+    !!p.email && p.email.trim().length > 0,
+    !!p.location && p.location.trim().length > 0 && p.location !== 'Not specified',
+    p.certificates.length > 0,
+    documentCount > 0,
+  ];
+  const percentage = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  let status: 'complete' | 'high' | 'medium' | 'low';
+  if (percentage === 100) status = 'complete';
+  else if (percentage >= 80) status = 'high';
+  else if (percentage >= 50) status = 'medium';
+  else status = 'low';
+  return { percentage, status };
 }
 
 export function useSuggestPersonnel() {
@@ -41,7 +65,8 @@ export function useSuggestPersonnel() {
   const getSuggestions = async (
     prompt: string,
     personnel: Personnel[],
-    includeJobSeekers: boolean
+    includeJobSeekers: boolean,
+    documentCounts?: Map<string, number>
   ): Promise<SuggestionResult | null> => {
     if (!prompt.trim()) {
       setSuggestions(null);
@@ -51,20 +76,26 @@ export function useSuggestPersonnel() {
     setLoading(true);
 
     try {
-      // Prepare personnel data (exclude sensitive fields)
-      const personnelForAI: PersonnelForAI[] = personnel.map(p => ({
-        id: p.id,
-        name: p.name,
-        role: p.role,
-        location: p.location,
-        category: p.category || null,
-        isJobSeeker: p.isJobSeeker || false,
-        activated: p.activated || false,
-        certificates: p.certificates.map(c => ({
-          name: c.name,
-          expiryDate: c.expiryDate
-        }))
-      }));
+      // Prepare personnel data (exclude sensitive fields, include completion info)
+      const personnelForAI: PersonnelForAI[] = personnel.map(p => {
+        const docCount = documentCounts?.get(p.id) || 0;
+        const { percentage, status } = calculateProfileCompletion(p, docCount);
+        return {
+          id: p.id,
+          name: p.name,
+          role: p.role,
+          location: p.location,
+          category: p.category || null,
+          isJobSeeker: p.isJobSeeker || false,
+          activated: p.activated || false,
+          certificates: p.certificates.map(c => ({
+            name: c.name,
+            expiryDate: c.expiryDate
+          })),
+          profileCompletionPercentage: percentage,
+          profileCompletionStatus: status
+        };
+      });
 
       const { data, error } = await supabase.functions.invoke('suggest-project-personnel', {
         body: {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Personnel } from '@/types';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AIPersonnelSuggestionsProps {
   personnel: Personnel[];
@@ -32,14 +33,38 @@ export function AIPersonnelSuggestions({
   const [isOpen, setIsOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
+  const [documentCounts, setDocumentCounts] = useState<Map<string, number>>(new Map());
   const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions } = useSuggestPersonnel();
+
+  // Fetch document counts for all personnel
+  useEffect(() => {
+    async function fetchDocumentCounts() {
+      if (personnel.length === 0) return;
+      
+      const personnelIds = personnel.map(p => p.id);
+      const { data, error } = await supabase
+        .from('personnel_documents')
+        .select('personnel_id')
+        .in('personnel_id', personnelIds);
+      
+      if (!error && data) {
+        const counts = new Map<string, number>();
+        data.forEach(doc => {
+          counts.set(doc.personnel_id, (counts.get(doc.personnel_id) || 0) + 1);
+        });
+        setDocumentCounts(counts);
+      }
+    }
+    
+    fetchDocumentCounts();
+  }, [personnel]);
 
   const handleGetSuggestions = async () => {
     if (!aiPrompt.trim()) {
       toast.error('Please enter search requirements first');
       return;
     }
-    const result = await getSuggestions(aiPrompt, personnel, includeJobSeekers);
+    const result = await getSuggestions(aiPrompt, personnel, includeJobSeekers, documentCounts);
     if (result?.suggestedPersonnel && result.suggestedPersonnel.length > 0) {
       onHighlightPersonnel(result.suggestedPersonnel.map(s => s.id));
       
