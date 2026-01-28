@@ -1159,6 +1159,7 @@ export type Database = {
         Args: { _personnel_id: string }
         Returns: boolean
       }
+      is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       remove_personnel_from_project: {
         Args: { _personnel_id: string; _project_id: string }
         Returns: boolean

@@ -70,6 +70,12 @@ export function InviteAdminDialog({
       return;
     }
 
+    // Check if user is superadmin (kmu@live.no)
+    if (profile.email !== 'kmu@live.no') {
+      setError('Only the superadmin (kmu@live.no) can invite new admins');
+      return;
+    }
+
     setLoading(true);
 
     try {
