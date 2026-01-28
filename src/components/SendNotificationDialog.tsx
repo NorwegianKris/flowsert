@@ -276,19 +276,27 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                       filteredPersonnel.map((p) => (
                         <div
                           key={p.id}
-                          className={`flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-muted transition-colors ${
-                            selectedIndividuals.includes(p.id) ? 'bg-primary/10' : ''
+                          role="button"
+                          tabIndex={0}
+                          className={`flex items-center gap-3 p-2.5 rounded-md cursor-pointer hover:bg-muted transition-colors w-full ${
+                            selectedIndividuals.includes(p.id) ? 'bg-primary/10 ring-1 ring-primary/20' : ''
                           }`}
                           onClick={() => toggleIndividual(p.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleIndividual(p.id);
+                            }
+                          }}
                         >
                           <Checkbox
                             checked={selectedIndividuals.includes(p.id)}
-                            onCheckedChange={() => toggleIndividual(p.id)}
+                            className="pointer-events-none"
                           />
-                          <span className="text-sm flex-1">{p.name}</span>
-                          <span className="text-xs text-muted-foreground">{p.role}</span>
+                          <span className="text-sm flex-1 truncate">{p.name}</span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[120px]">{p.role}</span>
                           {p.isJobSeeker && (
-                            <Badge variant="secondary" className="text-xs bg-lavender-100 text-lavender-700">
+                            <Badge variant="secondary" className="text-xs bg-lavender-100 text-lavender-700 shrink-0">
                               Job Seeker
                             </Badge>
                           )}
