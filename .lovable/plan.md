@@ -1,69 +1,55 @@
 
-## Make Availability Calendar Full Width
+# Auto-Update Location from Address
 
-### Summary
-Update the Availability Calendar component to fill the entire width of its container on all personnel profiles. Currently, the calendar uses fixed-width cells which prevent it from expanding to fill available space.
+## Overview
+When a user fills in their address or postal address but leaves the location field empty, we'll automatically populate the location field with a derived value. This is a lightweight, client-side solution that doesn't require external APIs.
 
-### What Will Change
-The calendar on personnel profiles will stretch to use all available horizontal space in its container, matching the full-width appearance already implemented in the Personnel Preview Sheet.
+## How It Will Work
 
-### Technical Details
+1. **Trigger**: When a user changes the `address` or `postalAddress` fields in the edit dialog
+2. **Condition**: Only auto-fill if the `location` field is currently empty or set to "Not specified"
+3. **Source Priority**:
+   - First, try to use `postalAddress` (typically contains "City, Country" format)
+   - If postal address is empty, fall back to extracting from `address` if it contains location info
 
-**File: `src/components/AvailabilityCalendar.tsx`**
+## Implementation Steps
 
-Update the Calendar component (around line 405-413) to use custom classNames that make it responsive and full-width:
+### 1. Add Auto-Fill Logic to EditPersonnelDialog
+Add an `onChange` handler for the address and postal address fields that checks if location is empty and auto-populates it:
 
-Current code:
-```tsx
-<Calendar
-  mode="range"
-  selected={selectedRange}
-  onSelect={handleRangeSelect}
-  modifiers={modifiers}
-  modifiersStyles={modifiersStyles}
-  className="rounded-md border border-border"
-  numberOfMonths={1}
-/>
+```typescript
+// When postal address changes and location is empty
+const handlePostalAddressChange = (value: string) => {
+  setFormData(prev => ({
+    ...prev,
+    postalAddress: value,
+    // Auto-fill location if empty
+    location: (!prev.location || prev.location === 'Not specified') && value.trim() 
+      ? value.trim() 
+      : prev.location
+  }));
+};
 ```
 
-Updated code:
-```tsx
-<Calendar
-  mode="range"
-  selected={selectedRange}
-  onSelect={handleRangeSelect}
-  modifiers={modifiers}
-  modifiersStyles={modifiersStyles}
-  className="rounded-md border border-border p-3 pointer-events-auto w-full"
-  classNames={{
-    months: "flex flex-col w-full",
-    month: "space-y-4 w-full",
-    caption: "flex justify-center pt-1 relative items-center",
-    caption_label: "text-sm font-medium",
-    nav: "space-x-1 flex items-center",
-    nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
-    nav_button_previous: "absolute left-1",
-    nav_button_next: "absolute right-1",
-    table: "w-full border-collapse space-y-1",
-    head_row: "flex w-full",
-    head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
-    row: "flex w-full mt-2",
-    cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
-    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
-    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-    day_today: "bg-accent text-accent-foreground",
-    day_outside: "text-muted-foreground opacity-50",
-    day_disabled: "text-muted-foreground opacity-50",
-    day_hidden: "invisible",
-  }}
-  numberOfMonths={1}
-/>
-```
+### 2. Add Visual Feedback
+Show a subtle toast or inline message when location is auto-filled, so users understand what happened and can correct it if needed.
 
-### Key Changes
-- `months` and `month`: Set to `w-full` to take full container width
-- `table`, `head_row`, `row`: Set to `w-full` for full-width layout
-- `head_cell` and `cell`: Changed from fixed `w-9` to `flex-1` so they distribute space evenly
-- `day`: Maintains `h-9 w-9` for the circular day indicators to keep perfect circles
+### 3. Update Both Address Fields
+Apply the same logic to both `postalAddress` (primary source - usually "City, Country") and if needed, extract city from `address` as a fallback.
 
-This matches the exact implementation already working in the Personnel Preview Sheet calendar.
+## Technical Details
+
+**Files to modify:**
+- `src/components/EditPersonnelDialog.tsx` - Add auto-fill logic to address field handlers
+
+**Behavior:**
+- Location auto-fills only when it's empty or "Not specified"
+- Users can still manually edit the location afterward
+- Postal Address is preferred since it typically contains city/region info
+- Shows a subtle notification when auto-fill occurs
+
+## Alternative Considered
+A geocoding API (like Google Maps or OpenStreetMap) was considered but rejected because:
+- Adds external dependency and potential costs
+- Requires API key management
+- Overkill for this use case since postal address already contains location info
