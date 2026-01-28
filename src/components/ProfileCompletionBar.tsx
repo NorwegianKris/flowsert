@@ -22,6 +22,7 @@ const REQUIRED_PERSONAL_INFO_FIELDS: (keyof Personnel)[] = [
   'gender',
   'phone',
   'email',
+  'location',
 ];
 
 function calculatePersonalInfoCompletion(personnel: Personnel): { filled: number; total: number } {
