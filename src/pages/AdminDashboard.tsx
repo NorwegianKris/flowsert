@@ -27,7 +27,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
 import { DateRange } from 'react-day-picker';
@@ -168,10 +169,7 @@ export default function AdminDashboard() {
     
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <DashboardHeader />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <PersonnelDetail
             personnel={currentPersonnel}
@@ -188,10 +186,7 @@ export default function AdminDashboard() {
   if (selectedProject) {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <DashboardHeader />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <ProjectDetail
             project={selectedProject}
@@ -215,10 +210,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <DashboardHeader
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      <DashboardHeader />
       
       <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
@@ -298,7 +290,19 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
-            <div className="mt-4 mb-4">
+            {/* Search field */}
+            <div className="relative w-full sm:w-80 mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search personnel..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-background border-border"
+              />
+            </div>
+            
+            <div className="mb-4">
               <JobSeekerFilters
                 includeJobSeekers={includeJobSeekers}
                 onIncludeJobSeekersChange={setIncludeJobSeekers}
