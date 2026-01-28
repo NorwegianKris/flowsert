@@ -18,7 +18,7 @@ export function AdminOverview() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const { profile } = useAuth();
+  const { profile, isSuperadmin } = useAuth();
 
   useEffect(() => {
     const fetchAdmins = async () => {
@@ -107,16 +107,18 @@ export function AdminOverview() {
             Admin Users
             <Badge variant="secondary" className="ml-2">
               {admins.length}
-            </Badge>
+          </Badge>
           </CardTitle>
-          <Button
-            size="sm"
-            onClick={() => setInviteDialogOpen(true)}
-            className="gap-1"
-          >
-            <UserPlus className="h-4 w-4" />
-            Invite Admin
-          </Button>
+          {isSuperadmin && (
+            <Button
+              size="sm"
+              onClick={() => setInviteDialogOpen(true)}
+              className="gap-1"
+            >
+              <UserPlus className="h-4 w-4" />
+              Invite Admin
+            </Button>
+          )}
         </CardHeader>
       <CardContent>
         {admins.length === 0 ? (
