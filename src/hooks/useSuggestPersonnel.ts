@@ -30,7 +30,16 @@ interface PersonnelForAI {
   category: string | null;
   isJobSeeker: boolean;
   activated: boolean;
-  certificates: { name: string; expiryDate: string | null }[];
+  nationality: string | null;
+  department: string | null;
+  bio: string | null;
+  employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker';
+  certificates: { 
+    name: string; 
+    expiryDate: string | null;
+    category: string | null;
+    issuingAuthority: string | null;
+  }[];
   profileCompletionPercentage: number;
   profileCompletionStatus: 'complete' | 'high' | 'medium' | 'low';
 }
@@ -80,6 +89,20 @@ export function useSuggestPersonnel() {
       const personnelForAI: PersonnelForAI[] = personnel.map(p => {
         const docCount = documentCounts?.get(p.id) || 0;
         const { percentage, status } = calculateProfileCompletion(p, docCount);
+        
+        // Determine employment type based on category and isJobSeeker
+        let employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker' = 'fixed_employee';
+        if (p.isJobSeeker) {
+          employmentType = 'job_seeker';
+        } else if (p.category === 'freelancer') {
+          employmentType = 'freelancer';
+        } else if (p.category === 'fixed_employee') {
+          employmentType = 'fixed_employee';
+        }
+        
+        // Truncate bio to avoid token limits (max 500 chars)
+        const truncatedBio = p.bio ? p.bio.slice(0, 500) : null;
+        
         return {
           id: p.id,
           name: p.name,
@@ -88,9 +111,15 @@ export function useSuggestPersonnel() {
           category: p.category || null,
           isJobSeeker: p.isJobSeeker || false,
           activated: p.activated || false,
+          nationality: p.nationality || null,
+          department: p.department || null,
+          bio: truncatedBio,
+          employmentType,
           certificates: p.certificates.map(c => ({
             name: c.name,
-            expiryDate: c.expiryDate
+            expiryDate: c.expiryDate,
+            category: c.category || null,
+            issuingAuthority: c.issuingAuthority || null
           })),
           profileCompletionPercentage: percentage,
           profileCompletionStatus: status
