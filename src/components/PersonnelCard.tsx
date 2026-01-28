@@ -32,28 +32,47 @@ interface PersonnelCardProps {
   highlighted?: boolean;
 }
 
-// Calculate profile completion percentage based on required fields:
-// name, role, nationality, gender, phone, email, location, certificates, documents
+// Personal info fields required for completion (must match ProfileCompletionBar)
+const REQUIRED_PERSONAL_INFO_FIELDS: (keyof Personnel)[] = [
+  'name',
+  'role',
+  'nationality',
+  'gender',
+  'phone',
+  'email',
+  'location',
+];
+
+function isPersonalInfoComplete(personnel: Personnel): boolean {
+  for (const field of REQUIRED_PERSONAL_INFO_FIELDS) {
+    const value = personnel[field];
+    if (!value || typeof value !== 'string' || value.trim() === '' || value === 'Not specified') {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Calculate profile completion using 3 criteria (matching ProfileCompletionBar):
+// 1. At least one certificate, 2. At least one document, 3. Personal info complete
 function calculateCompletion(personnel: Personnel, documentCount: number): { percentage: number; color: string } {
-  const checks = [
-    !!personnel.name && personnel.name.trim().length > 0,
-    !!personnel.role && personnel.role.trim().length > 0,
-    !!personnel.nationality,
-    !!personnel.gender,
-    !!personnel.phone && personnel.phone.trim().length > 0,
-    !!personnel.email && personnel.email.trim().length > 0,
-    !!personnel.location && personnel.location.trim().length > 0 && personnel.location !== 'Not specified',
-    personnel.certificates.length > 0,
-    documentCount > 0,
-  ];
-  
-  const completed = checks.filter(Boolean).length;
-  const percentage = Math.round((completed / checks.length) * 100);
+  const hasCertificate = personnel.certificates.length > 0;
+  const hasDocument = documentCount > 0;
+  const personalInfoComplete = isPersonalInfoComplete(personnel);
+
+  let completedCriteria = 0;
+  if (hasCertificate) completedCriteria++;
+  if (hasDocument) completedCriteria++;
+  if (personalInfoComplete) completedCriteria++;
+
+  const percentage = Math.round((completedCriteria / 3) * 100);
   
   let color: string;
-  if (percentage >= 80) {
+  if (percentage >= 100) {
     color = 'bg-[hsl(var(--status-valid))] text-[hsl(var(--status-valid-foreground))]';
-  } else if (percentage >= 50) {
+  } else if (percentage >= 67) {
+    color = 'bg-[hsl(var(--status-warning))] text-[hsl(var(--status-warning-foreground))]';
+  } else if (percentage >= 34) {
     color = 'bg-[hsl(var(--status-warning))] text-[hsl(var(--status-warning-foreground))]';
   } else {
     color = 'bg-destructive text-destructive-foreground';

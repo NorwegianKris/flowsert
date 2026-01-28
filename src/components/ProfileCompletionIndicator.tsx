@@ -52,95 +52,80 @@ export function ProfileCompletionIndicator({ personnel }: ProfileCompletionIndic
     fetchDocumentCount();
   }, [personnel.id]);
 
-  // Define completion items based on required fields:
-  // name, role, nationality, gender, phone, email, location, certificates, documents
+  // Personal info fields required for completion (must match ProfileCompletionBar)
+  const REQUIRED_PERSONAL_INFO_FIELDS: (keyof Personnel)[] = [
+    'name',
+    'role',
+    'nationality',
+    'gender',
+    'phone',
+    'email',
+    'location',
+  ];
+
+  const isFieldComplete = (field: keyof Personnel): boolean => {
+    const value = personnel[field];
+    return !!value && typeof value === 'string' && value.trim() !== '' && value !== 'Not specified';
+  };
+
+  const personalInfoComplete = REQUIRED_PERSONAL_INFO_FIELDS.every(isFieldComplete);
+  const hasCertificate = personnel.certificates.length > 0;
+  const hasDocument = documentCount > 0;
+
+  // Calculate completion using 3 criteria (matching ProfileCompletionBar)
+  let completedCriteria = 0;
+  if (hasCertificate) completedCriteria++;
+  if (hasDocument) completedCriteria++;
+  if (personalInfoComplete) completedCriteria++;
+
+  const percentage = Math.round((completedCriteria / 3) * 100);
+
+  // Build completion items for display (3 criteria)
   const completionItems: CompletionItem[] = [
-    {
-      id: 'name',
-      label: 'Full name added',
-      completed: !!personnel.name && personnel.name.trim().length > 0,
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
-    {
-      id: 'role',
-      label: 'Role/position specified',
-      completed: !!personnel.role && personnel.role.trim().length > 0,
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
-    {
-      id: 'nationality',
-      label: 'Nationality specified',
-      completed: !!personnel.nationality,
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
-    {
-      id: 'gender',
-      label: 'Gender specified',
-      completed: !!personnel.gender,
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
-    {
-      id: 'phone',
-      label: 'Phone number added',
-      completed: !!personnel.phone && personnel.phone.trim().length > 0,
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
-    {
-      id: 'email',
-      label: 'Email address added',
-      completed: !!personnel.email && personnel.email.trim().length > 0,
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
-    {
-      id: 'location',
-      label: 'Location specified',
-      completed: !!personnel.location && personnel.location.trim().length > 0 && personnel.location !== 'Not specified',
-      icon: <User className="h-4 w-4" />,
-      priority: 'high',
-    },
     {
       id: 'certificates',
       label: 'At least one certificate uploaded',
-      completed: personnel.certificates.length > 0,
+      completed: hasCertificate,
       icon: <Award className="h-4 w-4" />,
       priority: 'high',
     },
     {
       id: 'documents',
-      label: 'Supporting documents uploaded',
-      completed: documentCount > 0,
+      label: 'At least one document uploaded',
+      completed: hasDocument,
       icon: <FileText className="h-4 w-4" />,
+      priority: 'high',
+    },
+    {
+      id: 'personal_info',
+      label: 'Personal information complete',
+      completed: personalInfoComplete,
+      icon: <User className="h-4 w-4" />,
       priority: 'high',
     },
   ];
 
-  const completedCount = completionItems.filter(item => item.completed).length;
-  const totalCount = completionItems.length;
-  const percentage = Math.round((completedCount / totalCount) * 100);
+  const completedCount = completedCriteria;
+  const totalCount = 3;
 
-  // Color coding based on completion percentage
+  // Color coding based on completion percentage (matching ProfileCompletionBar thresholds)
   const getProgressColor = () => {
-    if (percentage >= 80) return 'bg-[hsl(var(--status-valid))]';
-    if (percentage >= 50) return 'bg-[hsl(var(--status-warning))]';
+    if (percentage >= 100) return 'bg-[hsl(var(--status-valid))]';
+    if (percentage >= 67) return 'bg-[hsl(var(--status-warning))]';
+    if (percentage >= 34) return 'bg-[hsl(var(--status-warning))]';
     return 'bg-destructive';
   };
 
   const getStatusText = () => {
     if (percentage === 100) return 'Profile Complete!';
-    if (percentage >= 80) return 'Almost there!';
-    if (percentage >= 50) return 'Good progress';
+    if (percentage >= 67) return 'Almost there!';
+    if (percentage >= 34) return 'Good progress';
     return 'Needs attention';
   };
 
   const getStatusBadgeVariant = () => {
-    if (percentage >= 80) return 'default';
-    if (percentage >= 50) return 'secondary';
+    if (percentage >= 100) return 'default';
+    if (percentage >= 34) return 'secondary';
     return 'destructive';
   };
 
