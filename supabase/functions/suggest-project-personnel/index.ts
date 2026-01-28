@@ -89,9 +89,11 @@ When analyzing requirements:
 IMPORTANT - Geographic Location Matching:
 - When a region, country, or continent is mentioned (e.g., "Europe", "Scandinavia", "Norway"), include ALL personnel from locations within that region
 - Norwegian cities (Haugesund, Husøy, Stavanger, Bergen, Oslo, Trondheim, etc.) are in Norway, which is in Scandinavia, which is in Europe
-- Swedish, Danish, Finnish cities are also in Scandinavia/Europe
-- German, French, Spanish, Italian, Polish, Dutch, etc. cities are in Europe
-- Be inclusive with geographic matching - if someone asks for "Europe", include ALL European locations
+- Swedish cities (Överlida, Stockholm, Gothenburg, Malmö, Uppsala, etc.) are in Sweden, which is in Scandinavia, which is in Europe
+- Danish, Finnish cities are also in Scandinavia/Europe
+- UK cities (Liverpool, London, Manchester, Birmingham, Edinburgh, Glasgow, etc.) are in the United Kingdom, which is in Europe
+- German, French, Spanish, Italian, Polish, Dutch, Belgian, Austrian, Swiss, Portuguese, Greek, Irish cities are all in Europe
+- Be inclusive with geographic matching - if someone asks for "Europe", include ALL European locations including UK, Scandinavia, and all EU/non-EU European countries
 
 For each suggested personnel, provide:
 - A match score (0-100) based on how well they fit
