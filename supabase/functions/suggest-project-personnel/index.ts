@@ -13,7 +13,16 @@ interface PersonnelData {
   category: string | null;
   isJobSeeker: boolean;
   activated: boolean;
-  certificates: { name: string; expiryDate: string | null }[];
+  nationality: string | null;
+  department: string | null;
+  bio: string | null;
+  employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker';
+  certificates: { 
+    name: string; 
+    expiryDate: string | null;
+    category: string | null;
+    issuingAuthority: string | null;
+  }[];
   profileCompletionPercentage: number;
   profileCompletionStatus: 'complete' | 'high' | 'medium' | 'low';
 }
@@ -73,8 +82,14 @@ serve(async (req) => {
       location: p.location,
       category: p.category || "unknown",
       isJobSeeker: p.isJobSeeker,
+      nationality: p.nationality,
+      department: p.department,
+      bio: p.bio,
+      employmentType: p.employmentType,
       certificates: p.certificates.map(c => ({
         name: c.name,
+        category: c.category,
+        issuingAuthority: c.issuingAuthority,
         valid: !c.expiryDate || new Date(c.expiryDate) > new Date()
       })),
       profileCompletionPercentage: p.profileCompletionPercentage,
@@ -113,9 +128,47 @@ IMPORTANT - Geographic Location Matching:
 - German, French, Spanish, Italian, Polish, Dutch, Belgian, Austrian, Swiss, Portuguese, Greek, Irish cities are all in Europe
 - Be inclusive with geographic matching - if someone asks for "Europe", include ALL European locations including UK, Scandinavia, and all EU/non-EU European countries
 
+IMPORTANT - Nationality Matching:
+- Each personnel has a 'nationality' field (e.g., "Norwegian", "Swedish", "British")
+- When users ask for personnel by nationality (e.g., "Norwegian divers", "British workers"), match against this field
+- Nationality is different from location - someone can be Norwegian but located in the UK
+- Consider both nationality AND location when relevant to the query
+
+IMPORTANT - Certificate Matching Rules:
+- Use FUZZY matching for certificate names - abbreviations and variations are common
+- "G4" should match "G4 Certificate", "Class G4", "G4 Diver", "G4 Commercial Diver Certificate", etc.
+- "BOSIET" should match "BOSIET Certificate", "Basic Offshore Safety Induction", etc.
+- "First Aid" should match "First Aid Certificate", "Advanced First Aid", "Offshore First Aid", etc.
+- Certificate categories provide additional context - use them to understand certificate types
+- Check certificate validity - prefer personnel with valid (non-expired) required certificates
+- If a certificate is expired, mention this in the match reasons but don't exclude unless specifically requested
+
+IMPORTANT - Bio/Skills Matching:
+- The 'bio' field contains free-text about experience, skills, and qualifications
+- Extract relevant keywords and match against requirements
+- Look for years of experience mentioned (e.g., "5+ years", "over 10 years experience")
+- Match specific skills mentioned in bio (e.g., "ROV operations", "welding", "saturation diving")
+- Bio can contain valuable context not captured in formal certificate titles
+
+IMPORTANT - Employment Type Matching:
+- Each personnel has an 'employmentType' field: 'fixed_employee', 'freelancer', or 'job_seeker'
+- "freelancer", "contractor", "external", "consultant" queries → match employmentType = 'freelancer'
+- "fixed", "employee", "internal", "permanent", "staff" queries → match employmentType = 'fixed_employee'
+- "candidate", "applicant", "job seeker" queries → match employmentType = 'job_seeker'
+
+IMPORTANT - Department Matching:
+- Personnel may have a 'department' field for organizational grouping
+- When users ask for specific departments (e.g., "diving department", "operations team"), match against this field
+
+IMPORTANT - Strict vs Flexible Matching:
+- Keywords "ONLY", "MUST have", "required", "mandatory" → strict requirement, EXCLUDE non-matches
+- Keywords "preferably", "ideally", "nice to have", "bonus" → preference, rank higher but DON'T exclude
+- Keywords "NOT", "except", "exclude", "without" → exclude matching personnel
+- Default to flexible matching unless strict keywords are used
+
 For each suggested personnel, provide:
-- A match score (0-100) based on how well they fit
-- Clear reasons explaining why they're a good match
+- A match score (0-100) based on how well they fit ALL criteria
+- Clear, specific reasons explaining why they're a good match (reference actual data from their profile)
 
 Be practical and helpful. If requirements are vague, make reasonable assumptions and explain them.`;
 
