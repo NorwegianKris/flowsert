@@ -203,7 +203,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 max-h-[300px]">
                   <div className="space-y-2 pr-4">
                     {selectedNotification.recipients?.map((recipient) => (
                       <div
