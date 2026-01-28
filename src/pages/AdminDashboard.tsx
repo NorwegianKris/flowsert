@@ -27,10 +27,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
+import { NotificationsLog } from '@/components/NotificationsLog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { DateRange } from 'react-day-picker';
 
 export default function AdminDashboard() {
@@ -44,6 +51,7 @@ export default function AdminDashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [companyCardOpen, setCompanyCardOpen] = useState(false);
   const [sendNotificationOpen, setSendNotificationOpen] = useState(false);
+  const [notificationsLogOpen, setNotificationsLogOpen] = useState(false);
   
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
@@ -252,10 +260,25 @@ export default function AdminDashboard() {
               <FolderOpen className="h-4 w-4 mr-2" />
               New Project
             </Button>
-            <Button variant="outline" onClick={() => setSendNotificationOpen(true)}>
-              <Bell className="h-4 w-4 mr-2" />
-              Send Notification
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Notifications
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSendNotificationOpen(true)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Notification
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setNotificationsLogOpen(true)}>
+                  <List className="h-4 w-4 mr-2" />
+                  Notifications Log
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" onClick={() => setCompanyCardOpen(true)}>
               <Building2 className="h-4 w-4 mr-2" />
               Company Card
@@ -469,6 +492,11 @@ export default function AdminDashboard() {
           open={sendNotificationOpen}
           onOpenChange={setSendNotificationOpen}
           personnel={personnel}
+        />
+      
+        <NotificationsLog
+          open={notificationsLogOpen}
+          onOpenChange={setNotificationsLogOpen}
         />
     </div>
   );
