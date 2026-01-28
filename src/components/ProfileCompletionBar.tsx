@@ -20,8 +20,6 @@ const REQUIRED_PERSONAL_INFO_FIELDS: (keyof Personnel)[] = [
   'role',
   'nationality',
   'gender',
-  'address',
-  'postalCode',
   'phone',
   'email',
 ];
