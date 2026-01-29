@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
@@ -28,6 +28,7 @@ import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
@@ -64,6 +65,7 @@ export default function AdminDashboard() {
   const [showJobSeekersOnly, setShowJobSeekersOnly] = useState(false);
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
+  const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -72,6 +74,42 @@ export default function AdminDashboard() {
   const { signOut, profile } = useAuth();
   
   const loading = personnelLoading || projectsLoading;
+
+  // Fetch admin user IDs for personnel with admin roles
+  useEffect(() => {
+    const fetchAdminUserIds = async () => {
+      if (!profile?.business_id) return;
+
+      try {
+        // Fetch all admin user roles
+        const { data: adminRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        if (rolesError) throw rolesError;
+
+        if (adminRoles && adminRoles.length > 0) {
+          const adminIds = adminRoles.map((r) => r.user_id);
+          
+          // Fetch profiles for these admin users in the same business
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id')
+            .in('id', adminIds)
+            .eq('business_id', profile.business_id);
+
+          if (profilesError) throw profilesError;
+
+          setAdminUserIds(new Set(profiles?.map((p) => p.id) || []));
+        }
+      } catch (error) {
+        console.error('Error fetching admin user IDs:', error);
+      }
+    };
+
+    fetchAdminUserIds();
+  }, [profile?.business_id]);
 
   // Get unique locations for filter dropdown
   const uniqueLocations = useMemo(() => {
@@ -374,6 +412,7 @@ export default function AdminDashboard() {
                   onClick={() => setSelectedPersonnel(p)}
                   onRemoved={refetch}
                   highlighted={highlightedPersonnelIds.includes(p.id)}
+                  isAdmin={p.userId ? adminUserIds.has(p.userId) : false}
                 />
               ))}
             </div>
