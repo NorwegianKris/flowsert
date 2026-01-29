@@ -101,17 +101,11 @@ export default function Auth() {
           
           if (data && data.length > 0) {
             const invitation = data[0];
-            // Fetch business name
-            const { data: businessData } = await supabase
-              .from('businesses')
-              .select('name')
-              .eq('id', invitation.business_id)
-              .single();
-            
+            // Business name is now included in the RPC response
             setInvitationDetails({
               email: invitation.email,
               role: invitation.role,
-              businessName: businessData?.name || 'Unknown Business'
+              businessName: invitation.business_name || 'Unknown Business'
             });
             setEmail(invitation.email);
           } else {

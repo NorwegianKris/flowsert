@@ -1107,6 +1107,7 @@ export type Database = {
         Args: { lookup_token: string }
         Returns: {
           business_id: string
+          business_name: string
           email: string
           expires_at: string
           id: string
