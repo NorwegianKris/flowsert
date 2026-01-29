@@ -79,17 +79,17 @@ export function CertificateExpiryNotificationDialog({
           ) : (
             <BellOff className="h-4 w-4 text-muted-foreground" />
           )}
-          Notifications
+          Expiry Reminder
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
-            Certificate Expiry Notifications
+            Certificate Expiry Reminder
           </DialogTitle>
           <DialogDescription>
-            Get notified by email when your certificates are about to expire.
+            Get a one-time email reminder when a certificate is about to expire.
           </DialogDescription>
         </DialogHeader>
 
@@ -97,10 +97,10 @@ export function CertificateExpiryNotificationDialog({
           <div className="flex items-center justify-between space-x-4">
             <div className="flex-1 space-y-1">
               <Label htmlFor="expiry-notifications" className="text-base font-medium">
-                Email notifications
+                Email reminders
               </Label>
               <p className="text-sm text-muted-foreground">
-                Receive email alerts when certificates reach the "expiring soon" status (within 90 days of expiry).
+                Receive a single email alert when a certificate enters the "expiring soon" or "expired" status.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -126,9 +126,9 @@ export function CertificateExpiryNotificationDialog({
               <div className="flex items-start gap-3">
                 <Bell className="h-5 w-5 text-primary mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-primary">Notifications are active</p>
+                  <p className="text-sm font-medium text-primary">Reminders are active</p>
                   <p className="text-xs text-muted-foreground">
-                    You'll receive an email when any of your certificates enters the expiring soon period.
+                    You'll receive a one-time email when any certificate enters the expiring soon or expired status.
                   </p>
                 </div>
               </div>
