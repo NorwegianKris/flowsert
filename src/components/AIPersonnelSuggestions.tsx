@@ -21,6 +21,7 @@ interface AIPersonnelSuggestionsProps {
   onHighlightPersonnel: (personnelIds: string[]) => void;
   onClearHighlight: () => void;
   onIncludeJobSeekersChange?: (value: boolean) => void;
+  onFilterByAI?: (personnelIds: string[] | null) => void;
 }
 
 export function AIPersonnelSuggestions({
@@ -29,6 +30,7 @@ export function AIPersonnelSuggestions({
   onHighlightPersonnel,
   onClearHighlight,
   onIncludeJobSeekersChange,
+  onFilterByAI,
 }: AIPersonnelSuggestionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -66,7 +68,13 @@ export function AIPersonnelSuggestions({
     }
     const result = await getSuggestions(aiPrompt, personnel, includeJobSeekers, documentCounts);
     if (result?.suggestedPersonnel && result.suggestedPersonnel.length > 0) {
-      onHighlightPersonnel(result.suggestedPersonnel.map(s => s.id));
+      const matchedIds = result.suggestedPersonnel.map(s => s.id);
+      onHighlightPersonnel(matchedIds);
+      
+      // Filter to show only matching personnel
+      if (onFilterByAI) {
+        onFilterByAI(matchedIds);
+      }
       
       // Check if any suggested personnel are job seekers and sync the main toggle
       const hasJobSeekers = result.suggestedPersonnel.some(s => {
@@ -79,6 +87,12 @@ export function AIPersonnelSuggestions({
       }
       
       toast.success(`Found ${result.suggestedPersonnel.length} matching personnel`);
+    } else if (result?.suggestedPersonnel?.length === 0) {
+      // No matches found - filter to empty
+      if (onFilterByAI) {
+        onFilterByAI([]);
+      }
+      toast.info('No matching personnel found');
     }
   };
 
@@ -86,6 +100,10 @@ export function AIPersonnelSuggestions({
     setAiPrompt('');
     clearSuggestions();
     onClearHighlight();
+    // Clear the AI filter to show all personnel again
+    if (onFilterByAI) {
+      onFilterByAI(null);
+    }
   };
 
   const getMatchScoreColor = (score: number) => {
