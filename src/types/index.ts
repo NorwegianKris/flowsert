@@ -42,5 +42,6 @@ export interface Personnel {
   lastLoginAt?: string; // Timestamp of last user login
   updatedAt?: string; // Timestamp of last profile update
   profileCode?: string; // Unique 6-character registration code
+  certificateExpiryNotifications?: boolean; // When true, user receives email notifications for expiring certificates
   certificates: Certificate[];
 }

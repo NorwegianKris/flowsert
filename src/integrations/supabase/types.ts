@@ -529,6 +529,7 @@ export type Database = {
           bio: string | null
           business_id: string | null
           category: string | null
+          certificate_expiry_notifications: boolean
           created_at: string
           department: string | null
           email: string
@@ -560,6 +561,7 @@ export type Database = {
           bio?: string | null
           business_id?: string | null
           category?: string | null
+          certificate_expiry_notifications?: boolean
           created_at?: string
           department?: string | null
           email: string
@@ -591,6 +593,7 @@ export type Database = {
           bio?: string | null
           business_id?: string | null
           category?: string | null
+          certificate_expiry_notifications?: boolean
           created_at?: string
           department?: string | null
           email?: string

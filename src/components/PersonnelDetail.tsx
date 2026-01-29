@@ -19,6 +19,7 @@ import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationD
 import { NotificationBell } from '@/components/NotificationBell';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { ProfileCompletionBar } from '@/components/ProfileCompletionBar';
+import { CertificateExpiryNotificationDialog } from '@/components/CertificateExpiryNotificationDialog';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -355,6 +356,12 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
           <div className="flex gap-2">
+            <CertificateExpiryNotificationDialog
+              personnelId={personnel.id}
+              personnelEmail={personnel.email}
+              initialEnabled={personnel.certificateExpiryNotifications}
+              onUpdate={onRefresh}
+            />
             <Button
               variant="outline"
               size="sm"

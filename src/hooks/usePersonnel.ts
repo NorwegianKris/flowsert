@@ -33,6 +33,7 @@ interface DbPersonnel {
   last_login_at: string | null;
   updated_at: string | null;
   profile_code: string | null;
+  certificate_expiry_notifications: boolean | null;
 }
 
 interface DbCertificate {
@@ -113,6 +114,7 @@ export function usePersonnel() {
         lastLoginAt: p.last_login_at || undefined,
         updatedAt: p.updated_at || undefined,
         profileCode: p.profile_code || undefined,
+        certificateExpiryNotifications: p.certificate_expiry_notifications || false,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -216,6 +218,7 @@ export function useWorkerPersonnel() {
         lastLoginAt: p.last_login_at || undefined,
         updatedAt: p.updated_at || undefined,
         profileCode: p.profile_code || undefined,
+        certificateExpiryNotifications: p.certificate_expiry_notifications || false,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.name,
