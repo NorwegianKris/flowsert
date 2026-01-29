@@ -292,14 +292,15 @@ export function AdminOverview() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                    {isSuperadminUser && (
+                    {isSuperadminUser ? (
                       <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
                         Superadmin
                       </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                        Admin
+                      </Badge>
                     )}
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                      Admin
-                    </Badge>
                     {renderLinkStatus(admin)}
                   </div>
                 </div>
