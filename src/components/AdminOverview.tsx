@@ -5,70 +5,151 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Mail, Loader2, UserPlus } from 'lucide-react';
+import { Shield, Mail, Loader2, UserPlus, Check, AlertTriangle, Link2 } from 'lucide-react';
 import { InviteAdminDialog } from './InviteAdminDialog';
+import { toast } from 'sonner';
 
 interface AdminUser {
   id: string;
   email: string;
   fullName: string | null;
+  personnelId: string | null;
+  personnelName: string | null;
+  hasUnlinkedProfile: boolean;
+  unlinkedPersonnelId: string | null;
 }
 
 export function AdminOverview() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const { profile, isSuperadmin } = useAuth();
 
-  useEffect(() => {
-    const fetchAdmins = async () => {
-      if (!profile?.business_id) {
+  const fetchAdmins = async () => {
+    if (!profile?.business_id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Fetch all admin user roles
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (rolesError) throw rolesError;
+
+      if (!adminRoles || adminRoles.length === 0) {
+        setAdmins([]);
         setLoading(false);
         return;
       }
 
-      try {
-        // Fetch all admin user roles
-        const { data: adminRoles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'admin');
+      const adminUserIds = adminRoles.map((r) => r.user_id);
 
-        if (rolesError) throw rolesError;
+      // 2. Fetch profiles for these admin users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, business_id')
+        .in('id', adminUserIds)
+        .eq('business_id', profile.business_id);
 
-        if (!adminRoles || adminRoles.length === 0) {
-          setAdmins([]);
-          setLoading(false);
-          return;
-        }
+      if (profilesError) throw profilesError;
 
-        const adminUserIds = adminRoles.map((r) => r.user_id);
+      // 3. Fetch all personnel in the business
+      const { data: personnel, error: personnelError } = await supabase
+        .from('personnel')
+        .select('id, name, email, user_id')
+        .eq('business_id', profile.business_id);
 
-        // Fetch profiles for these admin users
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, email, full_name, business_id')
-          .in('id', adminUserIds)
-          .eq('business_id', profile.business_id);
+      if (personnelError) throw personnelError;
 
-        if (profilesError) throw profilesError;
+      // 4. Map admins with their personnel linking status
+      const mappedAdmins: AdminUser[] = (profiles || []).map((p) => {
+        // Check if there's a personnel record linked by user_id
+        const linkedPersonnel = personnel?.find(per => per.user_id === p.id);
+        
+        // Check if there's a personnel record with matching email but not linked
+        const matchingUnlinkedPersonnel = personnel?.find(
+          per => per.email.toLowerCase() === p.email.toLowerCase() && !per.user_id
+        );
 
-        const mappedAdmins: AdminUser[] = (profiles || []).map((p) => ({
+        return {
           id: p.id,
           email: p.email,
           fullName: p.full_name,
-        }));
+          personnelId: linkedPersonnel?.id || null,
+          personnelName: linkedPersonnel?.name || null,
+          hasUnlinkedProfile: !!matchingUnlinkedPersonnel,
+          unlinkedPersonnelId: matchingUnlinkedPersonnel?.id || null,
+        };
+      });
 
-        setAdmins(mappedAdmins);
-      } catch (error) {
-        console.error('Error fetching admins:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setAdmins(mappedAdmins);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+      toast.error('Failed to load admin users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAdmins();
   }, [profile?.business_id]);
+
+  const handleLinkPersonnel = async (adminUserId: string, personnelId: string) => {
+    setActionLoading(adminUserId);
+    try {
+      const { error } = await supabase
+        .from('personnel')
+        .update({ user_id: adminUserId })
+        .eq('id', personnelId);
+
+      if (error) throw error;
+
+      toast.success('Personnel profile linked successfully');
+      await fetchAdmins();
+    } catch (error) {
+      console.error('Error linking personnel:', error);
+      toast.error('Failed to link personnel profile');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCreatePersonnelProfile = async (admin: AdminUser) => {
+    if (!profile?.business_id) return;
+    
+    setActionLoading(admin.id);
+    try {
+      const { error } = await supabase
+        .from('personnel')
+        .insert({
+          name: admin.fullName || admin.email.split('@')[0],
+          email: admin.email,
+          phone: '',
+          role: 'Administrator',
+          location: 'Not specified',
+          business_id: profile.business_id,
+          user_id: admin.id,
+          is_job_seeker: false,
+          activated: true,
+        });
+
+      if (error) throw error;
+
+      toast.success('Personnel profile created successfully');
+      await fetchAdmins();
+    } catch (error) {
+      console.error('Error creating personnel profile:', error);
+      toast.error('Failed to create personnel profile');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const getInitials = (name: string | null, email: string) => {
     if (name) {
@@ -80,6 +161,66 @@ export function AdminOverview() {
         .slice(0, 2);
     }
     return email.slice(0, 2).toUpperCase();
+  };
+
+  const renderLinkStatus = (admin: AdminUser) => {
+    if (admin.personnelId) {
+      return (
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+          <Check className="h-3 w-3" />
+          Profile Linked
+        </Badge>
+      );
+    }
+
+    if (admin.hasUnlinkedProfile) {
+      return (
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Unlinked
+          </Badge>
+          {isSuperadmin && admin.unlinkedPersonnelId && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={() => handleLinkPersonnel(admin.id, admin.unlinkedPersonnelId!)}
+              disabled={actionLoading === admin.id}
+            >
+              {actionLoading === admin.id ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Link2 className="h-3 w-3" />
+              )}
+              Link Profile
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">No personnel profile</span>
+        {isSuperadmin && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1"
+            onClick={() => handleCreatePersonnelProfile(admin)}
+            disabled={actionLoading === admin.id}
+          >
+            {actionLoading === admin.id ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <UserPlus className="h-3 w-3" />
+            )}
+            Create Profile
+          </Button>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -151,7 +292,7 @@ export function AdminOverview() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                     {isSuperadminUser && (
                       <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
                         Superadmin
@@ -160,6 +301,7 @@ export function AdminOverview() {
                     <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
                       Admin
                     </Badge>
+                    {renderLinkStatus(admin)}
                   </div>
                 </div>
               );
