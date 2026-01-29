@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -15,9 +15,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Personnel } from '@/types';
-import { Users, Mail, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Users, Mail, Pencil, Trash2, Loader2, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PersonnelOverviewProps {
   personnel: Personnel[];
@@ -29,7 +30,45 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personnelToDelete, setPersonnelToDelete] = useState<Personnel | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const { profile } = useAuth();
+
+  // Fetch admin user IDs on mount
+  useEffect(() => {
+    const fetchAdminUserIds = async () => {
+      if (!profile?.business_id) return;
+
+      try {
+        // Fetch all admin user roles
+        const { data: adminRoles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        if (rolesError) throw rolesError;
+
+        if (adminRoles && adminRoles.length > 0) {
+          const adminIds = adminRoles.map((r) => r.user_id);
+          
+          // Fetch profiles for these admin users in the same business
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id')
+            .in('id', adminIds)
+            .eq('business_id', profile.business_id);
+
+          if (profilesError) throw profilesError;
+
+          setAdminUserIds(new Set(profiles?.map((p) => p.id) || []));
+        }
+      } catch (error) {
+        console.error('Error fetching admin user IDs:', error);
+      }
+    };
+
+    fetchAdminUserIds();
+  }, [profile?.business_id]);
 
   const getInitials = (name: string) => {
     return name
@@ -117,7 +156,15 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{person.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{person.name}</p>
+                        {person.userId && adminUserIds.has(person.userId) && (
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Admin
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Mail className="h-3 w-3 shrink-0" />
                         <span className="truncate">{person.email}</span>
