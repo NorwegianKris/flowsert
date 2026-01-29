@@ -63,6 +63,7 @@ export default function AdminDashboard() {
   const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
   const [showJobSeekersOnly, setShowJobSeekersOnly] = useState(false);
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
+  const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -89,6 +90,11 @@ export default function AdminDashboard() {
 
   const filteredPersonnel = useMemo(() => {
     return personnel.filter((p) => {
+      // AI filter takes priority - if active, only show AI-matched personnel
+      if (aiFilteredPersonnelIds !== null) {
+        return aiFilteredPersonnelIds.includes(p.id);
+      }
+      
       // Job seeker filter logic
       const isJobSeeker = p.isJobSeeker || false;
       
@@ -133,7 +139,7 @@ export default function AdminDashboard() {
       
       return true;
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly, aiFilteredPersonnelIds]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -340,6 +346,7 @@ export default function AdminDashboard() {
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
               onIncludeJobSeekersChange={setIncludeJobSeekers}
+              onFilterByAI={setAiFilteredPersonnelIds}
             />
             
             <PersonnelFilters
