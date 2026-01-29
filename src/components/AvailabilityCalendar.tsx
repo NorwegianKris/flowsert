@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO } from 'date-fns';
-import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase } from 'lucide-react';
+import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Certificate } from '@/types';
 import { useAssignedProjects } from '@/components/AssignedProjects';
 import type { DateRange } from 'react-day-picker';
 
-type AvailabilityStatus = 'available' | 'unavailable' | 'partial';
+type AvailabilityStatus = 'available' | 'unavailable' | 'partial' | 'other';
 
 interface AvailabilityEntry {
   id: string;
@@ -50,6 +50,11 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
     label: 'Unavailable',
     icon: X,
     className: 'bg-[hsl(var(--status-expired))] text-[hsl(var(--status-expired-foreground))]',
+  },
+  other: {
+    label: 'Other',
+    icon: Circle,
+    className: 'bg-[hsl(var(--status-other))] text-[hsl(var(--status-other-foreground))]',
   },
 };
 
@@ -340,6 +345,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     partial: availability
       .filter((a) => a.status === 'partial')
       .map((a) => new Date(a.date)),
+    other: availability
+      .filter((a) => a.status === 'other')
+      .map((a) => new Date(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
     projectEvent: getProjectDates(),
   };
@@ -357,6 +365,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     },
     partial: {
       backgroundColor: 'hsl(38 92% 50%)',
+      color: 'white',
+      borderRadius: '50%',
+    },
+    other: {
+      backgroundColor: 'hsl(210 100% 50%)',
       color: 'white',
       borderRadius: '50%',
     },
