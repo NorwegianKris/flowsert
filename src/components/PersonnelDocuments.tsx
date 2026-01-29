@@ -129,10 +129,14 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
 
     const loadDocument = async () => {
       try {
-        // Extract file path from URL
-        const url = new URL(selectedDocument.fileUrl);
-        const pathParts = url.pathname.split('/');
-        const filePath = pathParts.slice(pathParts.indexOf('personnel-documents') + 1).join('/');
+        // Extract file path - handle both full URLs (legacy) and relative paths (new)
+        let filePath = selectedDocument.fileUrl;
+        if (filePath.includes('/storage/v1/object/')) {
+          // Legacy full URL format
+          const url = new URL(filePath);
+          const pathParts = url.pathname.split('/');
+          filePath = pathParts.slice(pathParts.indexOf('personnel-documents') + 1).join('/');
+        }
 
         const isPdf = selectedDocument.fileType === 'application/pdf';
         const isImage = selectedDocument.fileType?.startsWith('image/');
@@ -254,17 +258,14 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('personnel-documents')
-        .getPublicUrl(fileName);
-
+      // Store the relative path, not public URL (bucket is private)
       const { error: insertError } = await supabase
         .from('personnel_documents')
         .insert({
           personnel_id: personnelId,
           category_id: selectedCategory && selectedCategory !== 'uncategorized' ? selectedCategory : null,
           name: documentName || selectedFile.name,
-          file_url: urlData.publicUrl,
+          file_url: fileName,
           file_size: selectedFile.size,
           file_type: selectedFile.type,
         });
@@ -322,10 +323,14 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
     if (!documentToDelete) return;
 
     try {
-      // Extract file path from URL
-      const url = new URL(documentToDelete.fileUrl);
-      const pathParts = url.pathname.split('/');
-      const filePath = pathParts.slice(pathParts.indexOf('personnel-documents') + 1).join('/');
+      // Extract file path - handle both full URLs (legacy) and relative paths (new)
+      let filePath = documentToDelete.fileUrl;
+      if (filePath.includes('/storage/v1/object/')) {
+        // Legacy full URL format
+        const url = new URL(filePath);
+        const pathParts = url.pathname.split('/');
+        filePath = pathParts.slice(pathParts.indexOf('personnel-documents') + 1).join('/');
+      }
 
       // Delete from storage
       await supabase.storage.from('personnel-documents').remove([filePath]);
