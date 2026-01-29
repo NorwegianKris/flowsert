@@ -523,153 +523,37 @@ export default function Auth() {
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
-              {/* Browser chrome */}
               <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-destructive/60" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
                 <div className="w-3 h-3 rounded-full bg-green-500/60" />
                 <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
               </div>
-              
-              {/* Dashboard content */}
-              <div className="p-4 md:p-6 bg-gradient-to-br from-muted/20 to-muted/40">
-                {/* Stats row */}
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="bg-background rounded-lg p-3 border border-border/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">Personnel</span>
-                      <Users className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <p className="text-xl font-bold text-foreground">24</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-3 border border-border/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">Certificates</span>
-                      <FileCheck className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <p className="text-xl font-bold text-foreground">156</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-3 border border-border/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">Projects</span>
-                      <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <p className="text-xl font-bold text-foreground">8</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-3 border border-border/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">Expiring</span>
-                      <Clock className="h-3.5 w-3.5 text-destructive" />
-                    </div>
-                    <p className="text-xl font-bold text-destructive">3</p>
-                  </div>
-                </div>
-
-                {/* Main content area - 2 columns */}
+              <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
                 <div className="grid md:grid-cols-3 gap-4">
-                  {/* Personnel list */}
-                  <div className="md:col-span-2 bg-background rounded-lg border border-border/50 p-4">
+                  <div className="bg-background rounded-lg p-4 border border-border/50">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold text-foreground">Team Members</span>
-                      <span className="text-xs text-primary cursor-pointer">View all →</span>
+                      <span className="text-sm font-medium text-foreground">Personnel</span>
+                      <Users className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="space-y-2">
-                      {/* Personnel row 1 */}
-                      <div className="flex items-center gap-3 p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">AS</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">Alex Svensson</p>
-                          <p className="text-xs text-muted-foreground">Diving Supervisor</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">4 valid</span>
-                        </div>
-                      </div>
-                      {/* Personnel row 2 */}
-                      <div className="flex items-center gap-3 p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs font-medium text-indigo-600">MK</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">Maria Karlsen</p>
-                          <p className="text-xs text-muted-foreground">Project Engineer</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">6 valid</span>
-                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">1 expiring</span>
-                        </div>
-                      </div>
-                      {/* Personnel row 3 */}
-                      <div className="flex items-center gap-3 p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center text-xs font-medium text-teal-600">JH</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">Jonas Hansen</p>
-                          <p className="text-xs text-muted-foreground">Commercial Diver</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">5 valid</span>
-                        </div>
-                      </div>
-                      {/* Personnel row 4 */}
-                      <div className="flex items-center gap-3 p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-xs font-medium text-rose-600">EN</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">Emma Nilsen</p>
-                          <p className="text-xs text-muted-foreground">Safety Officer</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">8 valid</span>
-                        </div>
-                      </div>
-                    </div>
+                    <p className="text-3xl font-bold text-foreground">24</p>
+                    <p className="text-xs text-muted-foreground mt-1">Active workers</p>
                   </div>
-
-                  {/* Right sidebar - Projects & Calendar */}
-                  <div className="space-y-4">
-                    {/* Active projects */}
-                    <div className="bg-background rounded-lg border border-border/50 p-4">
-                      <span className="text-sm font-semibold text-foreground mb-3 block">Active Projects</span>
-                      <div className="space-y-2">
-                        <div className="p-2 rounded-md bg-primary/5 border border-primary/20">
-                          <p className="text-xs font-medium text-foreground">North Sea Platform</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">6 assigned • Ends Mar 15</p>
-                        </div>
-                        <div className="p-2 rounded-md bg-muted/50 border border-border/50">
-                          <p className="text-xs font-medium text-foreground">Harbor Maintenance</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">4 assigned • Ends Apr 02</p>
-                        </div>
-                        <div className="p-2 rounded-md bg-muted/50 border border-border/50">
-                          <p className="text-xs font-medium text-foreground">Pipeline Inspection</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">3 assigned • Ends Feb 28</p>
-                        </div>
-                      </div>
+                  <div className="bg-background rounded-lg p-4 border border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-foreground">Certificates</span>
+                      <FileCheck className="h-4 w-4 text-primary" />
                     </div>
-
-                    {/* Upcoming expirations */}
-                    <div className="bg-background rounded-lg border border-border/50 p-4">
-                      <span className="text-sm font-semibold text-foreground mb-3 block">Expiring Soon</span>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                          <div className="flex-1">
-                            <p className="text-xs text-foreground">BOSIET Certificate</p>
-                            <p className="text-[10px] text-muted-foreground">M. Karlsen • 12 days</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-destructive"></div>
-                          <div className="flex-1">
-                            <p className="text-xs text-foreground">First Aid Level 2</p>
-                            <p className="text-[10px] text-muted-foreground">T. Berg • 5 days</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                          <div className="flex-1">
-                            <p className="text-xs text-foreground">ROV Pilot License</p>
-                            <p className="text-[10px] text-muted-foreground">L. Olsen • 21 days</p>
-                          </div>
-                        </div>
-                      </div>
+                    <p className="text-3xl font-bold text-foreground">156</p>
+                    <p className="text-xs text-muted-foreground mt-1">Total tracked</p>
+                  </div>
+                  <div className="bg-background rounded-lg p-4 border border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-foreground">Expiring Soon</span>
+                      <Clock className="h-4 w-4 text-destructive" />
                     </div>
+                    <p className="text-3xl font-bold text-destructive">3</p>
+                    <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
                   </div>
                 </div>
               </div>
