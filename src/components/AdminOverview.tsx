@@ -128,32 +128,42 @@ export function AdminOverview() {
           </div>
         ) : (
           <div className="space-y-3">
-            {admins.map((admin) => (
-              <div
-                key={admin.id}
-                className="flex items-center gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
-              >
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {getInitials(admin.fullName, admin.email)}
-                  </AvatarFallback>
-                </Avatar>
+            {admins.map((admin) => {
+              const isSuperadminUser = admin.email === 'kmu@live.no';
+              return (
+                <div
+                  key={admin.id}
+                  className="flex items-center gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                      {getInitials(admin.fullName, admin.email)}
+                    </AvatarFallback>
+                  </Avatar>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">
-                    {admin.fullName || 'No name set'}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Mail className="h-3 w-3" />
-                    <span className="truncate">{admin.email}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {admin.fullName || 'No name set'}
+                    </p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Mail className="h-3 w-3" />
+                      <span className="truncate">{admin.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isSuperadminUser && (
+                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                        Superadmin
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      Admin
+                    </Badge>
                   </div>
                 </div>
-
-                <Badge variant="outline" className="shrink-0 bg-primary/10 text-primary border-primary/30">
-                  Admin
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         </CardContent>
