@@ -503,25 +503,42 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    {Object.entries(statusConfig).map(([status, config]) => {
-                      const Icon = config.icon;
-                      return (
-                        <Button
-                          key={status}
-                          variant={selectedStatus === status ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setSelectedStatus(status as AvailabilityStatus)}
-                          className={cn(
-                            'flex-1',
-                            selectedStatus === status && config.className
-                          )}
-                        >
-                          <Icon className="h-3.5 w-3.5 mr-1" />
-                          {config.label}
-                        </Button>
-                      );
-                    })}
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      {(['available', 'partial', 'unavailable'] as AvailabilityStatus[]).map((status) => {
+                        const config = statusConfig[status];
+                        const Icon = config.icon;
+                        return (
+                          <Button
+                            key={status}
+                            variant={selectedStatus === status ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setSelectedStatus(status)}
+                            className={cn(
+                              'flex-1',
+                              selectedStatus === status && config.className
+                            )}
+                          >
+                            <Icon className="h-3.5 w-3.5 mr-1" />
+                            {config.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={selectedStatus === 'other' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedStatus('other')}
+                        className={cn(
+                          'flex-1',
+                          selectedStatus === 'other' && statusConfig.other.className
+                        )}
+                      >
+                        <Circle className="h-3.5 w-3.5 mr-1" />
+                        {statusConfig.other.label}
+                      </Button>
+                    </div>
                   </div>
 
                   <div>
