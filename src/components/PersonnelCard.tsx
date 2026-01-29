@@ -19,7 +19,7 @@ import {
   getPersonnelOverallStatus,
   countCertificatesByStatus,
 } from '@/lib/certificateUtils';
-import { MapPin, Mail, Phone, FileCheck, Briefcase, Trash2, Loader2, ShieldCheck, ShieldOff } from 'lucide-react';
+import { MapPin, Mail, Phone, FileCheck, Briefcase, Trash2, Loader2, ShieldCheck, ShieldOff, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -30,6 +30,7 @@ interface PersonnelCardProps {
   onClick: () => void;
   onRemoved?: () => void;
   highlighted?: boolean;
+  isAdmin?: boolean;
 }
 
 // Calculate profile completion percentage based on required fields:
@@ -62,7 +63,7 @@ function calculateCompletion(personnel: Personnel, documentCount: number): { per
   return { percentage, color };
 }
 
-export function PersonnelCard({ personnel, onClick, onRemoved, highlighted }: PersonnelCardProps) {
+export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAdmin }: PersonnelCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [documentCount, setDocumentCount] = useState(0);
@@ -217,6 +218,12 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted }: Pe
                 {personnel.department && (
                   <Badge variant="outline" className="font-normal text-muted-foreground">
                     {personnel.department}
+                  </Badge>
+                )}
+                {isAdmin && (
+                  <Badge variant="outline" className="font-normal bg-primary/10 text-primary border-primary/30 ml-auto">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Admin
                   </Badge>
                 )}
               </div>
