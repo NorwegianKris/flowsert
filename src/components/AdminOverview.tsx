@@ -200,27 +200,26 @@ export function AdminOverview() {
       );
     }
 
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">No personnel profile</span>
-        {isSuperadmin && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs gap-1"
-            onClick={() => handleCreatePersonnelProfile(admin)}
-            disabled={actionLoading === admin.id}
-          >
-            {actionLoading === admin.id ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <UserPlus className="h-3 w-3" />
-            )}
-            Create Profile
-          </Button>
-        )}
-      </div>
-    );
+    if (isSuperadmin) {
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs gap-1"
+          onClick={() => handleCreatePersonnelProfile(admin)}
+          disabled={actionLoading === admin.id}
+        >
+          {actionLoading === admin.id ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <UserPlus className="h-3 w-3" />
+          )}
+          Create Profile
+        </Button>
+      );
+    }
+
+    return null;
   };
 
   if (loading) {
