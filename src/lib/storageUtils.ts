@@ -58,14 +58,23 @@ export async function downloadAsBlob(
 ): Promise<{ blobUrl: string; revoke: () => void } | null> {
   if (!path) return null;
 
-  // If it's already a full URL, extract the path
+  // Handle both full URLs (legacy) and relative paths (new)
   let filePath = path;
-  if (path.includes(`${bucket}/`)) {
+  
+  // Check for full Supabase storage URL format
+  if (path.includes('/storage/v1/object/')) {
+    const match = path.match(new RegExp(`${bucket}/(.+)`));
+    if (match) {
+      filePath = match[1];
+    }
+  } else if (path.includes(`${bucket}/`)) {
+    // Partial URL with bucket name
     const match = path.match(new RegExp(`${bucket}/(.+)`));
     if (match) {
       filePath = match[1];
     }
   }
+  // If it's already a relative path, use as-is
 
   try {
     const { data, error } = await supabase.storage
@@ -129,13 +138,23 @@ export async function getProjectDocumentUrl(documentUrl: string | null | undefin
 export async function getPersonnelDocumentUrl(documentUrl: string | null | undefined): Promise<string | null> {
   if (!documentUrl) return null;
   
+  // Handle both legacy full URLs and new relative paths
   let path = documentUrl;
-  if (documentUrl.includes('personnel-documents/')) {
+  
+  // If it's a full URL, extract the path
+  if (documentUrl.includes('/storage/v1/object/')) {
+    const match = documentUrl.match(/personnel-documents\/(.+)/);
+    if (match) {
+      path = match[1];
+    }
+  } else if (documentUrl.includes('personnel-documents/')) {
+    // Partial URL with bucket name
     const match = documentUrl.match(/personnel-documents\/(.+)/);
     if (match) {
       path = match[1];
     }
   }
+  // If it's already a relative path (e.g., "uuid/filename.pdf"), use as-is
   
   return getSignedUrl('personnel-documents', path);
 }
