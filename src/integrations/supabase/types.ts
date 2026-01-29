@@ -189,6 +189,7 @@ export type Database = {
           date_of_issue: string
           document_url: string | null
           expiry_date: string | null
+          expiry_notification_sent: boolean
           id: string
           issuing_authority: string | null
           name: string
@@ -202,6 +203,7 @@ export type Database = {
           date_of_issue: string
           document_url?: string | null
           expiry_date?: string | null
+          expiry_notification_sent?: boolean
           id?: string
           issuing_authority?: string | null
           name: string
@@ -215,6 +217,7 @@ export type Database = {
           date_of_issue?: string
           document_url?: string | null
           expiry_date?: string | null
+          expiry_notification_sent?: boolean
           id?: string
           issuing_authority?: string | null
           name?: string

@@ -11,9 +11,11 @@ const corsHeaders = {
 const logoUrl = "https://frgsnallgwkufyzabeje.supabase.co/storage/v1/object/public/avatars/email-logo.jpg";
 
 interface ExpiringCertificate {
+  id: string;
   certificate_name: string;
   expiry_date: string;
   days_until_expiry: number;
+  is_expired: boolean;
 }
 
 interface PersonnelWithExpiringCerts {
@@ -24,6 +26,21 @@ interface PersonnelWithExpiringCerts {
 }
 
 const getEmailTemplate = (personnelName: string, certificates: ExpiringCertificate[]) => {
+  const expiredCerts = certificates.filter(c => c.is_expired);
+  const expiringCerts = certificates.filter(c => !c.is_expired);
+  
+  const hasExpired = expiredCerts.length > 0;
+  const hasExpiring = expiringCerts.length > 0;
+  
+  let subjectContext = '';
+  if (hasExpired && hasExpiring) {
+    subjectContext = 'expired and expiring soon';
+  } else if (hasExpired) {
+    subjectContext = 'expired';
+  } else {
+    subjectContext = 'expiring soon';
+  }
+
   const certificateRows = certificates
     .map(
       (cert) => `
@@ -32,11 +49,13 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
         <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${new Date(cert.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
         <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
           <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; ${
-            cert.days_until_expiry <= 30
+            cert.is_expired
               ? 'background: #fef2f2; color: #dc2626;'
+              : cert.days_until_expiry <= 30
+              ? 'background: #fef9c3; color: #ca8a04;'
               : 'background: #fef9c3; color: #ca8a04;'
           }">
-            ${cert.days_until_expiry} days
+            ${cert.is_expired ? 'Expired' : `${cert.days_until_expiry} days left`}
           </span>
         </td>
       </tr>
@@ -58,7 +77,7 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="vertical-align: middle;">
-                  <h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">⚠️ Certificate Expiry Alert</h1>
+                  <h1 style="color: white; margin: 0; font-size: 20px; font-weight: 600;">⚠️ Certificate Expiry Reminder</h1>
                 </td>
                 <td style="text-align: right; vertical-align: middle;">
                   <img src="${logoUrl}" alt="FlowSert" style="height: 40px; width: auto;" />
@@ -72,7 +91,7 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
             <p style="margin: 0 0 20px 0; font-size: 16px;">Hello <strong>${personnelName}</strong>,</p>
             
             <p style="margin: 0 0 20px 0; color: #475569;">
-              The following certificates in your profile are expiring soon and may require renewal:
+              This is a one-time reminder that the following certificates in your profile are ${subjectContext}:
             </p>
             
             <!-- Certificate Table -->
@@ -81,7 +100,7 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
                 <tr style="background: #e2e8f0;">
                   <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: 600; color: #475569;">Certificate</th>
                   <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: 600; color: #475569;">Expiry Date</th>
-                  <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: 600; color: #475569;">Time Left</th>
+                  <th style="padding: 12px; text-align: left; font-size: 14px; font-weight: 600; color: #475569;">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -97,16 +116,16 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
             </div>
             
             <p style="color: #64748b; font-size: 14px; margin: 0; text-align: center;">
-              Please ensure your certificates are renewed before they expire to maintain your qualifications.
+              Please ensure your certificates are renewed to maintain your qualifications.
             </p>
           </div>
           
           <!-- Footer -->
           <div style="background: #f8fafc; padding: 20px 30px; border-top: 1px solid #e2e8f0;">
             <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">
-              You received this email because you enabled certificate expiry notifications in your FlowSert profile.
+              You received this one-time reminder because you enabled certificate expiry reminders in your FlowSert profile.
               <br />
-              To stop receiving these notifications, visit your profile and disable them in the Certificates section.
+              To stop receiving these reminders, visit your profile and disable them in the Certificates section.
             </p>
           </div>
         </div>
@@ -132,8 +151,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find all personnel with notification preference enabled who have expiring certificates
-    // "Expiring soon" = within 90 days of expiry
+    // Find certificates that:
+    // 1. Belong to personnel with notifications enabled
+    // 2. Are expiring soon (within 90 days) OR already expired
+    // 3. Haven't had a notification sent yet
     const today = new Date().toISOString().split('T')[0];
     const ninetyDaysFromNow = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -155,21 +176,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     const personnelIds = personnelData.map(p => p.id);
 
-    // Get expiring certificates for these personnel
+    // Get certificates that need notification:
+    // - Expiring within 90 days OR already expired
+    // - Notification not yet sent
     const { data: certificatesData, error: certError } = await supabase
       .from('certificates')
-      .select('personnel_id, name, expiry_date')
+      .select('id, personnel_id, name, expiry_date')
       .in('personnel_id', personnelIds)
       .not('expiry_date', 'is', null)
-      .gte('expiry_date', today)
-      .lte('expiry_date', ninetyDaysFromNow);
+      .lte('expiry_date', ninetyDaysFromNow)
+      .eq('expiry_notification_sent', false);
 
     if (certError) throw certError;
 
     if (!certificatesData || certificatesData.length === 0) {
-      console.log('No expiring certificates found');
+      console.log('No certificates need notifications');
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: 'No expiring certificates found' }),
+        JSON.stringify({ success: true, sent: 0, message: 'No certificates need notifications' }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -191,22 +214,43 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const expiryDate = new Date(cert.expiry_date);
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const todayDate = new Date(today);
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+      const isExpired = daysUntilExpiry < 0;
 
       personnelCertMap.get(cert.personnel_id)!.certificates.push({
+        id: cert.id,
         certificate_name: cert.name,
         expiry_date: cert.expiry_date,
-        days_until_expiry: daysUntilExpiry,
+        days_until_expiry: Math.abs(daysUntilExpiry),
+        is_expired: isExpired,
       });
     }
 
-    // Send emails to each personnel
+    // Send emails to each personnel and mark certificates as notified
     let successful = 0;
     let failed = 0;
+    const notifiedCertIds: string[] = [];
 
     for (const [, personnelCerts] of personnelCertMap) {
-      // Sort certificates by days until expiry
-      personnelCerts.certificates.sort((a, b) => a.days_until_expiry - b.days_until_expiry);
+      // Sort: expired first, then by days until expiry
+      personnelCerts.certificates.sort((a, b) => {
+        if (a.is_expired && !b.is_expired) return -1;
+        if (!a.is_expired && b.is_expired) return 1;
+        return a.days_until_expiry - b.days_until_expiry;
+      });
+
+      const expiredCount = personnelCerts.certificates.filter(c => c.is_expired).length;
+      const expiringCount = personnelCerts.certificates.filter(c => !c.is_expired).length;
+      
+      let subject = '';
+      if (expiredCount > 0 && expiringCount > 0) {
+        subject = `⚠️ ${expiredCount} expired and ${expiringCount} expiring certificate(s)`;
+      } else if (expiredCount > 0) {
+        subject = `🚨 ${expiredCount} certificate(s) have expired`;
+      } else {
+        subject = `⚠️ ${expiringCount} certificate(s) expiring soon`;
+      }
 
       try {
         const res = await fetch("https://api.resend.com/emails", {
@@ -218,7 +262,7 @@ const handler = async (req: Request): Promise<Response> => {
           body: JSON.stringify({
             from: "FlowSert <noreply@flowsert.com>",
             to: [personnelCerts.email],
-            subject: `⚠️ ${personnelCerts.certificates.length} certificate(s) expiring soon`,
+            subject: subject,
             html: getEmailTemplate(personnelCerts.personnel_name, personnelCerts.certificates),
           }),
         });
@@ -228,8 +272,10 @@ const handler = async (req: Request): Promise<Response> => {
           console.error(`Failed to send email to ${personnelCerts.email}:`, errorText);
           failed++;
         } else {
-          console.log(`Sent expiry notification to ${personnelCerts.email}`);
+          console.log(`Sent expiry reminder to ${personnelCerts.email}`);
           successful++;
+          // Track which certificates were notified
+          notifiedCertIds.push(...personnelCerts.certificates.map(c => c.id));
         }
       } catch (error) {
         console.error(`Error sending to ${personnelCerts.email}:`, error);
@@ -237,14 +283,28 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Certificate expiry notifications sent: ${successful} successful, ${failed} failed`);
+    // Mark all successfully notified certificates as sent
+    if (notifiedCertIds.length > 0) {
+      const { error: updateError } = await supabase
+        .from('certificates')
+        .update({ expiry_notification_sent: true })
+        .in('id', notifiedCertIds);
+
+      if (updateError) {
+        console.error('Failed to mark certificates as notified:', updateError);
+      } else {
+        console.log(`Marked ${notifiedCertIds.length} certificates as notified`);
+      }
+    }
+
+    console.log(`Certificate expiry reminders sent: ${successful} successful, ${failed} failed`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         sent: successful, 
         failed: failed,
-        total_personnel: personnelCertMap.size,
+        certificates_notified: notifiedCertIds.length,
       }),
       {
         status: 200,

@@ -356,12 +356,6 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
           <div className="flex gap-2">
-            <CertificateExpiryNotificationDialog
-              personnelId={personnel.id}
-              personnelEmail={personnel.email}
-              initialEnabled={personnel.certificateExpiryNotifications}
-              onUpdate={onRefresh}
-            />
             <Button
               variant="outline"
               size="sm"
@@ -371,6 +365,12 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               <Plus className="h-4 w-4" />
               Add
             </Button>
+            <CertificateExpiryNotificationDialog
+              personnelId={personnel.id}
+              personnelEmail={personnel.email}
+              initialEnabled={personnel.certificateExpiryNotifications}
+              onUpdate={onRefresh}
+            />
             <Button
               variant="outline"
               size="sm"
