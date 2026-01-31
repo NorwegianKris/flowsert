@@ -323,10 +323,6 @@ export default function AdminDashboard() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" onClick={() => setCompanyCardOpen(true)}>
-              <Building2 className="h-4 w-4 mr-2" />
-              Company Card
-            </Button>
             <Button variant="outline" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -457,6 +453,19 @@ export default function AdminDashboard() {
                 </Button>
               </div>
               <div className="p-4 overflow-y-auto h-[calc(100vh-65px)] space-y-6">
+                {/* Company Card Button */}
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setCompanyCardOpen(true);
+                  }}
+                >
+                  <Building2 className="h-4 w-4" />
+                  Company Card
+                </Button>
+                
                 <Tabs defaultValue="admins" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
                     <TabsTrigger value="admins" className="flex items-center gap-2">
