@@ -16,7 +16,7 @@ import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
-import { PersonnelFilters } from '@/components/PersonnelFilters';
+import { PersonnelFilters, PersonnelSortOption } from '@/components/PersonnelFilters';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
 import { JobSeekerFilters } from '@/components/JobSeekerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -66,6 +66,7 @@ export default function AdminDashboard() {
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
+  const [sortOption, setSortOption] = useState<PersonnelSortOption>('recent');
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -127,7 +128,7 @@ export default function AdminDashboard() {
   }, [personnel]);
 
   const filteredPersonnel = useMemo(() => {
-    return personnel.filter((p) => {
+    const filtered = personnel.filter((p) => {
       // AI filter takes priority - if active, only show AI-matched personnel
       if (aiFilteredPersonnelIds !== null) {
         return aiFilteredPersonnelIds.includes(p.id);
@@ -177,7 +178,19 @@ export default function AdminDashboard() {
       
       return true;
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly, aiFilteredPersonnelIds]);
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      if (sortOption === 'alphabetical') {
+        return a.name.localeCompare(b.name);
+      } else {
+        // Most recent - sort by updatedAt or id (newest first)
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return dateB - dateA;
+      }
+    });
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly, aiFilteredPersonnelIds, sortOption]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -398,6 +411,8 @@ export default function AdminDashboard() {
               certificates={uniqueCertificates}
               availabilityDateRange={availabilityDateRange}
               onAvailabilityDateRangeChange={setAvailabilityDateRange}
+              sortOption={sortOption}
+              onSortOptionChange={setSortOption}
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
