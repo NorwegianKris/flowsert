@@ -4,11 +4,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2 } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
+
+export type PersonnelSortOption = 'recent' | 'alphabetical';
 
 interface PersonnelFiltersProps {
   roleFilters: string[];
@@ -25,6 +27,8 @@ interface PersonnelFiltersProps {
   certificates: string[];
   availabilityDateRange: DateRange | undefined;
   onAvailabilityDateRangeChange: (range: DateRange | undefined) => void;
+  sortOption: PersonnelSortOption;
+  onSortOptionChange: (option: PersonnelSortOption) => void;
 }
 
 export function PersonnelFilters({
@@ -42,6 +46,8 @@ export function PersonnelFilters({
   certificates,
   availabilityDateRange,
   onAvailabilityDateRangeChange,
+  sortOption,
+  onSortOptionChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
@@ -51,6 +57,12 @@ export function PersonnelFilters({
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+
+  const sortOptions = [
+    { value: 'recent' as PersonnelSortOption, label: 'Most Recent' },
+    { value: 'alphabetical' as PersonnelSortOption, label: 'Alphabetical' },
+  ];
 
   const hasActiveFilters = 
     roleFilters.length > 0 || 
@@ -374,6 +386,37 @@ export function PersonnelFilters({
               Clear
             </Button>
           )}
+        </PopoverContent>
+      </Popover>
+
+      {/* Sort Option */}
+      <Popover open={sortOpen} onOpenChange={setSortOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9 justify-between min-w-[140px]">
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            <span className="truncate">
+              {sortOptions.find(o => o.value === sortOption)?.label || 'Sort'}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[160px] p-2 bg-popover border shadow-md z-50" align="start">
+          <div className="space-y-1">
+            {sortOptions.map((option) => (
+              <button
+                key={option.value}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm text-left ${
+                  sortOption === option.value ? 'bg-muted font-medium' : ''
+                }`}
+                onClick={() => {
+                  onSortOptionChange(option.value);
+                  setSortOpen(false);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </PopoverContent>
       </Popover>
 
