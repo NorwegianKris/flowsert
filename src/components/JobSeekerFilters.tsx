@@ -32,7 +32,7 @@ export function JobSeekerFilters({
   };
 
   return (
-    <div className="flex items-center gap-6 py-3 px-4 bg-bar text-bar-foreground rounded-lg border border-bar/50">
+    <div className="flex items-center gap-6 py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Briefcase className="h-4 w-4" />
         <span className="text-sm font-medium">Job Seekers:</span>

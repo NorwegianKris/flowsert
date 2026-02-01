@@ -64,10 +64,6 @@ export default {
 			completed: {
 				DEFAULT: 'hsl(var(--completed))',
 				foreground: 'hsl(var(--completed-foreground))'
-			},
-			bar: {
-				DEFAULT: 'hsl(var(--bar))',
-				foreground: 'hsl(var(--bar-foreground))'
 			}
 		},
   		borderRadius: {

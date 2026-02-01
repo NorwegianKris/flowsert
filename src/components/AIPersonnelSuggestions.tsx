@@ -116,10 +116,10 @@ export function AIPersonnelSuggestions({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4">
-      <div className="flex items-center justify-between p-3 border rounded-lg bg-bar text-bar-foreground">
+      <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent text-bar-foreground">
-            <Sparkles className="h-4 w-4" />
+          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+            <Sparkles className="h-4 w-4 text-primary" />
             <span className="font-medium">AI Personnel Search</span>
             {suggestedCount > 0 && (
               <Badge variant="secondary" className="ml-2">
@@ -127,9 +127,9 @@ export function AIPersonnelSuggestions({
               </Badge>
             )}
             {isOpen ? (
-              <ChevronUp className="h-4 w-4 ml-2" />
+              <ChevronUp className="h-4 w-4 ml-2 text-muted-foreground" />
             ) : (
-              <ChevronDown className="h-4 w-4 ml-2" />
+              <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
             )}
           </Button>
         </CollapsibleTrigger>
@@ -138,7 +138,7 @@ export function AIPersonnelSuggestions({
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="text-bar-foreground/80 hover:text-bar-foreground hover:bg-bar-foreground/10"
+            className="text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4 mr-1" />
             Clear
@@ -147,13 +147,13 @@ export function AIPersonnelSuggestions({
       </div>
       
       <CollapsibleContent className="mt-2">
-        <div className="p-4 border rounded-lg bg-bar text-bar-foreground space-y-3">
+        <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
           <Textarea
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             placeholder="Describe who you're looking for...&#10;e.g., 'Divers with G4 certificate available next week in Stavanger area'"
             rows={3}
-            className="resize-y min-h-[80px] bg-background text-foreground"
+            className="resize-y min-h-[80px]"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
