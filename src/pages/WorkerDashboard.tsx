@@ -28,30 +28,35 @@ export default function WorkerDashboard() {
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Logo />
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {personnel?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || <User className="h-5 w-5" />}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="font-semibold text-foreground">My Profile</h1>
-                <p className="text-sm text-muted-foreground">
-                  {personnel?.name || profile?.full_name || profile?.email}
-                </p>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Logo and Profile Info */}
+            <div className="flex items-center gap-4">
+              <Logo />
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={personnel?.avatarUrl || ''} alt={personnel?.name || 'Profile'} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {personnel?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || <User className="h-5 w-5" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h1 className="font-semibold text-foreground">My Profile</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {personnel?.name || profile?.full_name || profile?.email}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {personnel && <ReportFeedbackDialog />}
-            <Button variant="outline" onClick={signOut}>
-              <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+            
+            {/* Action Buttons - Below on mobile, side on desktop */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {personnel && <ReportFeedbackDialog />}
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
