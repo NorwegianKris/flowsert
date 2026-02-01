@@ -7,9 +7,10 @@ import { Personnel } from '@/types';
 interface DashboardHeaderProps {
   projects?: Project[];
   personnel?: Personnel[];
+  personnelId?: string;
 }
 
-export function DashboardHeader({ projects = [], personnel = [] }: DashboardHeaderProps) {
+export function DashboardHeader({ projects = [], personnel = [], personnelId }: DashboardHeaderProps) {
   return (
     <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
@@ -17,7 +18,7 @@ export function DashboardHeader({ projects = [], personnel = [] }: DashboardHead
           <Logo />
           
           <div className="flex items-center gap-3">
-            <ActionsBell projects={projects} personnel={personnel} />
+            <ActionsBell projects={projects} personnel={personnel} personnelId={personnelId} />
             <ReportFeedbackDialog />
           </div>
         </div>
