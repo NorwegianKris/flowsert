@@ -27,12 +27,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
 import { NotificationsLog } from '@/components/NotificationsLog';
+import { ExternalSharingDialog } from '@/components/ExternalSharingDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +54,7 @@ export default function AdminDashboard() {
   const [companyCardOpen, setCompanyCardOpen] = useState(false);
   const [sendNotificationOpen, setSendNotificationOpen] = useState(false);
   const [notificationsLogOpen, setNotificationsLogOpen] = useState(false);
+  const [externalSharingOpen, setExternalSharingOpen] = useState(false);
   
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
@@ -234,7 +236,7 @@ export default function AdminDashboard() {
     
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader projects={projects} personnel={personnel} />
+        <DashboardHeader />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <PersonnelDetail
             personnel={currentPersonnel}
@@ -251,7 +253,7 @@ export default function AdminDashboard() {
   if (selectedProject) {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader projects={projects} personnel={personnel} />
+        <DashboardHeader />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <ProjectDetail
             project={selectedProject}
@@ -275,7 +277,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <DashboardHeader projects={projects} personnel={personnel} />
+      <DashboardHeader />
       
       <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
@@ -321,11 +323,15 @@ export default function AdminDashboard() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
                   <Bell className="h-4 w-4 mr-2" />
-                  Notifications
+                  Actions
                   <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setExternalSharingOpen(true)}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  External Sharing
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setSendNotificationOpen(true)}>
                   <Send className="h-4 w-4 mr-2" />
                   Send Notification
@@ -567,6 +573,13 @@ export default function AdminDashboard() {
         <NotificationsLog
           open={notificationsLogOpen}
           onOpenChange={setNotificationsLogOpen}
+        />
+
+        <ExternalSharingDialog
+          open={externalSharingOpen}
+          onOpenChange={setExternalSharingOpen}
+          projects={projects}
+          personnel={personnel}
         />
     </div>
   );
