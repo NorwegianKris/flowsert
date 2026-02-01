@@ -181,14 +181,43 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       <Card className="border-border/50">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
-            <Avatar className="h-24 w-24 border-4 border-border">
-              {personnel.avatarUrl && (
-                <AvatarImage src={personnel.avatarUrl} alt={personnel.name} />
-              )}
-              <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            {/* Mobile: Avatar + Metadata side by side */}
+            <div className="flex gap-4 md:block">
+              <Avatar className="h-24 w-24 border-4 border-border shrink-0">
+                {personnel.avatarUrl && (
+                  <AvatarImage src={personnel.avatarUrl} alt={personnel.name} />
+                )}
+                <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* Profile Code and Timestamps - Shown next to avatar on mobile only */}
+              <div className="md:hidden space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Hash className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs font-mono font-semibold text-primary">
+                    {personnel.profileCode || '------'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs">
+                    {personnel.lastLoginAt 
+                      ? format(new Date(personnel.lastLoginAt), 'MMM d, yyyy')
+                      : 'Never logged in'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <RefreshCw className="h-3 w-3" />
+                  <span className="text-xs">
+                    {personnel.updatedAt 
+                      ? format(new Date(personnel.updatedAt), 'MMM d, yyyy')
+                      : 'Never updated'}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <div className="flex-1 space-y-4">
               <div className="flex items-start justify-between">
@@ -204,8 +233,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   </Badge>
                 </div>
                 
-                {/* Profile Code and Timestamps - Top Right */}
-                <div className="text-right space-y-1">
+                {/* Profile Code and Timestamps - Top Right (hidden on mobile) */}
+                <div className="hidden md:block text-right space-y-1">
                   <div className="flex items-center justify-end gap-1.5">
                     <span className="text-xs text-muted-foreground">Profile Reference Code:</span>
                     <span className="text-sm font-mono font-semibold text-primary">
@@ -353,7 +382,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
       {/* Certificates Table */}
       <Card className="border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="space-y-3">
           <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -363,7 +392,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               className="gap-1"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add</span>
+              Add
             </Button>
             <CertificateExpiryNotificationDialog
               personnelId={personnel.id}
@@ -379,7 +408,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               disabled={personnel.certificates.length === 0}
             >
               <Pencil className="h-4 w-4" />
-              <span className="hidden sm:inline">Edit</span>
+              Edit
             </Button>
             <Button
               variant="outline"
@@ -389,7 +418,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               disabled={personnel.certificates.length === 0}
             >
               <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Remove</span>
+              Remove
             </Button>
           </div>
         </CardHeader>

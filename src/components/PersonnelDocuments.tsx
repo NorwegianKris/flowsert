@@ -397,12 +397,12 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
 
   return (
     <Card className="border-border/50">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="space-y-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <FileText className="h-5 w-5 text-amber-500" />
           Documents
         </CardTitle>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
