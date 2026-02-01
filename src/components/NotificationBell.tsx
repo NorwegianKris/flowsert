@@ -1,22 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bell, ChevronDown, FileDown } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { NotificationDialog } from './NotificationDialog';
-import { ExternalSharingDialog } from './ExternalSharingDialog';
-import { Project } from '@/hooks/useProjects';
-import { Personnel } from '@/types';
 
 interface Notification {
   id: string;
@@ -28,26 +18,19 @@ interface Notification {
 }
 
 interface NotificationBellProps {
-  personnelId?: string;
-  projects?: Project[];
-  personnel?: Personnel[];
-  isAdmin?: boolean;
+  personnelId: string;
 }
 
-export function NotificationBell({ personnelId, projects = [], personnel = [], isAdmin = false }: NotificationBellProps) {
+export function NotificationBell({ personnelId }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-  const [externalSharingOpen, setExternalSharingOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
   const fetchNotifications = async () => {
-    if (!personnelId) {
-      setLoading(false);
-      return;
-    }
+    if (!personnelId) return;
 
     try {
       const { data, error } = await supabase
@@ -87,29 +70,27 @@ export function NotificationBell({ personnelId, projects = [], personnel = [], i
   };
 
   useEffect(() => {
-    if (personnelId) {
-      fetchNotifications();
+    fetchNotifications();
 
-      const channel = supabase
-        .channel('notification_recipients_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notification_recipients',
-            filter: `personnel_id=eq.${personnelId}`,
-          },
-          () => {
-            fetchNotifications();
-          }
-        )
-        .subscribe();
+    const channel = supabase
+      .channel('notification_recipients_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notification_recipients',
+          filter: `personnel_id=eq.${personnelId}`,
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [personnelId]);
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -129,7 +110,7 @@ export function NotificationBell({ personnelId, projects = [], personnel = [], i
     }
 
     setSelectedNotification(notification);
-    setNotificationsOpen(false);
+    setOpen(false);
   };
 
   const markAllAsRead = async () => {
@@ -148,39 +129,9 @@ export function NotificationBell({ personnelId, projects = [], personnel = [], i
     );
   };
 
-  // Admin view with Actions dropdown
-  if (isAdmin) {
-    return (
-      <>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              Actions
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => setExternalSharingOpen(true)}>
-              <FileDown className="h-4 w-4 mr-2" />
-              External Sharing
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <ExternalSharingDialog
-          open={externalSharingOpen}
-          onOpenChange={setExternalSharingOpen}
-          projects={projects}
-          personnel={personnel}
-        />
-      </>
-    );
-  }
-
-  // Worker view with notifications popover
   return (
     <>
-      <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
