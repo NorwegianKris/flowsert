@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,31 +34,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Track if we've already fetched data for this user to prevent double fetches
+  const fetchedUserIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  const fetchUserData = useCallback(async (userId: string) => {
+    // Prevent duplicate fetches for the same user
+    if (fetchedUserIdRef.current === userId) {
+      return;
+    }
+    fetchedUserIdRef.current = userId;
+
+    try {
+      // Fetch profile and role in parallel for faster loading
+      const [profileResult, roleResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle(),
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle()
+      ]);
+
+      if (!isMountedRef.current) return;
+
+      if (profileResult.error) throw profileResult.error;
+      if (roleResult.error) throw roleResult.error;
+
+      // Batch state updates
+      setProfile(profileResult.data as Profile | null);
+      setRole(roleResult.data?.role as AppRole || null);
+
+      // Update last_login_at for workers (fire and forget, don't await)
+      if (roleResult.data?.role === 'worker') {
+        supabase
+          .from('personnel')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .then(() => {});
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile/role fetch
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserData(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-          setRole(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    // THEN check for existing session
+    isMountedRef.current = true;
+    
+    // Get initial session first
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMountedRef.current) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         fetchUserData(session.user.id);
       } else {
@@ -66,44 +104,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserData = async (userId: string) => {
-    try {
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-      setProfile(profileData as Profile | null);
-
-      // Fetch role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (roleError) throw roleError;
-      setRole(roleData?.role as AppRole || null);
-
-      // Update last_login_at for the personnel record if user is a worker
-      if (roleData?.role === 'worker') {
-        await supabase
-          .from('personnel')
-          .update({ last_login_at: new Date().toISOString() })
-          .eq('user_id', userId);
+    // Then set up listener for future changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!isMountedRef.current) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Only fetch if it's a different user
+          if (fetchedUserIdRef.current !== session.user.id) {
+            fetchUserData(session.user.id);
+          }
+        } else {
+          // Clear data on sign out
+          fetchedUserIdRef.current = null;
+          setProfile(null);
+          setRole(null);
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
+
+    return () => {
+      isMountedRef.current = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserData]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
