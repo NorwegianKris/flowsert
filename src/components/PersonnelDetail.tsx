@@ -120,23 +120,23 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         )}
         {hideBackButton && <div />}
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-end">
           {/* Activate/Deactivate button for admins - only for job seekers */}
           {isAdmin && personnel.isJobSeeker && (
             <Button
               variant={isActivated ? 'outline' : 'default'}
               onClick={() => setIsActivateDialogOpen(true)}
-              className="gap-2"
+              className="gap-1 sm:gap-2"
             >
               {isActivated ? (
                 <>
                   <ShieldOff className="h-4 w-4" />
-                  Deactivate
+                  <span className="hidden sm:inline">Deactivate</span>
                 </>
               ) : (
                 <>
                   <ShieldCheck className="h-4 w-4" />
-                  Activate Profile
+                  <span className="hidden sm:inline">Activate Profile</span>
                 </>
               )}
             </Button>
@@ -147,10 +147,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             <Button
               variant="outline"
               onClick={() => setIsSendInvitationOpen(true)}
-              className="gap-2"
+              className="gap-1 sm:gap-2"
             >
               <UserPlus className="h-4 w-4" />
-              Send Invitation
+              <span className="hidden sm:inline">Send Invitation</span>
             </Button>
           )}
           
@@ -158,10 +158,10 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           {showRequestProject && isActivated && (
             <Button
               onClick={() => setIsRequestProjectOpen(true)}
-              className="gap-2"
+              className="gap-1 sm:gap-2"
             >
               <Send className="h-4 w-4" />
-              Request for Project
+              <span className="hidden sm:inline">Request for Project</span>
             </Button>
           )}
         </div>
@@ -355,7 +355,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       <Card className="border-border/50">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -363,7 +363,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               className="gap-1"
             >
               <Plus className="h-4 w-4" />
-              Add
+              <span className="hidden sm:inline">Add</span>
             </Button>
             <CertificateExpiryNotificationDialog
               personnelId={personnel.id}
@@ -379,7 +379,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               disabled={personnel.certificates.length === 0}
             >
               <Pencil className="h-4 w-4" />
-              Edit
+              <span className="hidden sm:inline">Edit</span>
             </Button>
             <Button
               variant="outline"
@@ -389,7 +389,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
               disabled={personnel.certificates.length === 0}
             >
               <Trash2 className="h-4 w-4" />
-              Remove
+              <span className="hidden sm:inline">Remove</span>
             </Button>
           </div>
         </CardHeader>
