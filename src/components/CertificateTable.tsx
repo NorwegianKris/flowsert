@@ -171,7 +171,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
       <div className="rounded-lg border border-border/50 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableRow className="bg-bar text-bar-foreground hover:bg-bar">
               <TableHead className="font-semibold">Certificate</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Category</TableHead>
@@ -289,7 +289,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
               {/* Document Preview */}
               {selectedCertificate.documentUrl ? (
                 <div className="border rounded-lg overflow-hidden bg-muted/20">
-                  <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                  <div className="p-3 border-b bg-bar text-bar-foreground flex items-center justify-between">
                     <span className="text-sm font-medium">Document Preview</span>
                     <div className="flex items-center gap-2">
                       <Button
