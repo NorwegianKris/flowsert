@@ -1,6 +1,6 @@
 import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
 import { Logo } from '@/components/Logo';
-import { ActionsBell } from '@/components/ActionsBell';
+import { NotificationBell } from '@/components/NotificationBell';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 
@@ -17,7 +17,7 @@ export function DashboardHeader({ projects = [], personnel = [] }: DashboardHead
           <Logo />
           
           <div className="flex items-center gap-3">
-            <ActionsBell projects={projects} personnel={personnel} />
+            <NotificationBell isAdmin projects={projects} personnel={personnel} />
             <ReportFeedbackDialog />
           </div>
         </div>
