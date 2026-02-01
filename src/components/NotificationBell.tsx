@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { NotificationDialog } from './NotificationDialog';
 
@@ -28,7 +26,6 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-  const { user } = useAuth();
 
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
@@ -75,7 +72,6 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
   useEffect(() => {
     fetchNotifications();
 
-    // Subscribe to realtime updates
     const channel = supabase
       .channel('notification_recipients_changes')
       .on(
@@ -98,7 +94,6 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
   }, [personnelId]);
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if not already
     if (!notification.read_at) {
       await supabase
         .from('notification_recipients')
@@ -123,7 +118,7 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
     if (unread.length === 0) return;
 
     const recipientIds = unread.map(n => n.recipient_id);
-    
+
     await supabase
       .from('notification_recipients')
       .update({ read_at: new Date().toISOString() })
@@ -210,7 +205,7 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
       <NotificationDialog
         notification={selectedNotification}
         open={!!selectedNotification}
-        onOpenChange={(open) => !open && setSelectedNotification(null)}
+        onOpenChange={open => !open && setSelectedNotification(null)}
       />
     </>
   );
