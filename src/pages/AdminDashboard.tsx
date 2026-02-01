@@ -303,28 +303,28 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
             <p className="text-muted-foreground">
               Welcome back, {profile?.full_name || profile?.email}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => setAddPersonnelOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Personnel
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Personnel</span>
             </Button>
             <Button onClick={() => setAddProjectOpen(true)}>
-              <FolderOpen className="h-4 w-4 mr-2" />
-              New Project
+              <FolderOpen className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">New Project</span>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
-                  <Bell className="h-4 w-4 mr-2" />
-                  Actions
-                  <ChevronDown className="h-4 w-4 ml-2" />
+                  <Bell className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Actions</span>
+                  <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -343,12 +343,12 @@ export default function AdminDashboard() {
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="outline" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+              <Settings className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
             </Button>
             <Button variant="outline" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
