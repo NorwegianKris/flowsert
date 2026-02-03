@@ -23,22 +23,25 @@ import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
 import { useBusinessInfo } from '@/hooks/useBusinessInfo';
+import { useUnreadDirectMessages } from '@/hooks/useUnreadDirectMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
 import { NotificationsLog } from '@/components/NotificationsLog';
 import { ExternalSharingDialog } from '@/components/ExternalSharingDialog';
+import { PersonnelChatSidebar } from '@/components/PersonnelChatSidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { DateRange } from 'react-day-picker';
 
@@ -55,6 +58,7 @@ export default function AdminDashboard() {
   const [sendNotificationOpen, setSendNotificationOpen] = useState(false);
   const [notificationsLogOpen, setNotificationsLogOpen] = useState(false);
   const [externalSharingOpen, setExternalSharingOpen] = useState(false);
+  const [personnelChatOpen, setPersonnelChatOpen] = useState(false);
   
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
@@ -75,6 +79,7 @@ export default function AdminDashboard() {
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
   const { business, refetch: refetchBusiness } = useBusinessInfo();
   const { signOut, profile } = useAuth();
+  const { unreadCounts, totalUnread, refetchCounts } = useUnreadDirectMessages();
   
   const loading = personnelLoading || projectsLoading;
 
@@ -321,10 +326,15 @@ export default function AdminDashboard() {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="relative">
                   <Bell className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Actions</span>
                   <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
+                  {totalUnread > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-xs min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full font-medium">
+                      {totalUnread > 99 ? '99+' : totalUnread}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -339,6 +349,16 @@ export default function AdminDashboard() {
                 <DropdownMenuItem onClick={() => setNotificationsLogOpen(true)}>
                   <List className="h-4 w-4 mr-2" />
                   Notifications Log
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setPersonnelChatOpen(true)} className="relative">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Personnel Chat
+                  {totalUnread > 0 && (
+                    <span className="ml-auto bg-destructive text-destructive-foreground text-xs min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full font-medium">
+                      {totalUnread > 99 ? '99+' : totalUnread}
+                    </span>
+                  )}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -580,6 +600,13 @@ export default function AdminDashboard() {
           onOpenChange={setExternalSharingOpen}
           projects={projects}
           personnel={personnel}
+        />
+
+        <PersonnelChatSidebar
+          open={personnelChatOpen}
+          onOpenChange={setPersonnelChatOpen}
+          unreadCounts={unreadCounts}
+          onMessagesRead={refetchCounts}
         />
     </div>
   );
