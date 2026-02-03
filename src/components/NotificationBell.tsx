@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,6 +15,7 @@ interface Notification {
   created_at: string;
   read_at: string | null;
   recipient_id: string;
+  type: 'notification' | 'direct_message';
 }
 
 interface NotificationBellProps {
@@ -23,11 +24,13 @@ interface NotificationBellProps {
 
 export function NotificationBell({ personnelId }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadDMCount, setUnreadDMCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
-  const unreadCount = notifications.filter(n => !n.read_at).length;
+  const unreadNotificationCount = notifications.filter(n => !n.read_at).length;
+  const totalUnreadCount = unreadNotificationCount + unreadDMCount;
 
   const fetchNotifications = async () => {
     if (!personnelId) return;
@@ -59,6 +62,7 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
         created_at: nr.notifications.created_at,
         read_at: nr.read_at,
         recipient_id: nr.id,
+        type: 'notification' as const,
       }));
 
       setNotifications(mapped);
@@ -69,10 +73,38 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
     }
   };
 
+  const fetchUnreadDMCount = async () => {
+    if (!personnelId) return;
+
+    try {
+      const { data: personnel } = await supabase
+        .from('personnel')
+        .select('user_id')
+        .eq('id', personnelId)
+        .single();
+
+      if (!personnel?.user_id) return;
+
+      const { count, error } = await supabase
+        .from('direct_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('personnel_id', personnelId)
+        .eq('sender_role', 'admin')
+        .is('read_at', null);
+
+      if (error) throw error;
+      setUnreadDMCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching unread DM count:', error);
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
+    fetchUnreadDMCount();
 
-    const channel = supabase
+    // Subscribe to notification changes
+    const notificationChannel = supabase
       .channel('notification_recipients_changes')
       .on(
         'postgres_changes',
@@ -88,8 +120,38 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
       )
       .subscribe();
 
+    // Subscribe to direct message changes
+    const dmChannel = supabase
+      .channel(`dm_notifications_${personnelId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `personnel_id=eq.${personnelId}`,
+        },
+        () => {
+          fetchUnreadDMCount();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'direct_messages',
+          filter: `personnel_id=eq.${personnelId}`,
+        },
+        () => {
+          fetchUnreadDMCount();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(notificationChannel);
+      supabase.removeChannel(dmChannel);
     };
   }, [personnelId]);
 
@@ -135,17 +197,25 @@ export function NotificationBell({ personnelId }: NotificationBellProps) {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
+            {totalUnreadCount > 0 && (
               <span className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
               </span>
             )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="end">
           <div className="flex items-center justify-between p-3 border-b">
-            <h4 className="font-semibold text-sm">Notifications</h4>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold text-sm">Notifications</h4>
+              {unreadDMCount > 0 && (
+                <span className="flex items-center gap-1 text-xs text-primary">
+                  <MessageCircle className="h-3 w-3" />
+                  {unreadDMCount} new message{unreadDMCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            {unreadNotificationCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
