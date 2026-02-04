@@ -16,7 +16,7 @@ export function CategoriesSection() {
       <CardHeader>
         <CardTitle>Categories</CardTitle>
         <CardDescription>
-          Manage the categories and types used throughout your organization for workers, certificates, and documents. Categories define broad groupings, while types provide specific classifications within each category.
+          Manage the categories used throughout your organization for workers, certificates, and documents.
         </CardDescription>
       </CardHeader>
       <CardContent>
