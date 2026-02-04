@@ -5,6 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -41,6 +46,9 @@ import {
   FileText,
   CheckCircle2,
   AlertTriangle,
+  ChevronDown,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,10 +63,21 @@ import { useBulkUpdateCertificates } from "@/hooks/useCertificatesNeedingReview"
 import { MAX_BATCH_SIZE } from "@/components/BulkUpdateConfirmDialog";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 interface Category {
   id: string;
   name: string;
+}
+
+// Helper to format date nicely
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return null;
+  try {
+    return format(new Date(dateStr), "d MMM yyyy");
+  } catch {
+    return null;
+  }
 }
 
 export function TypeMergingPane() {
@@ -376,7 +395,7 @@ export function TypeMergingPane() {
                 <div className="p-8 text-center text-muted-foreground">
                   {showMapped === "unmapped" ? (
                     <>
-                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-70" />
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary opacity-70" />
                       <p className="text-sm">All types are mapped!</p>
                     </>
                   ) : (
@@ -386,54 +405,171 @@ export function TypeMergingPane() {
               ) : (
                 filteredInputted.map((inputted) => {
                   const isSelected = selectedInputted.has(inputted.title_normalized);
+                  
+                  // Build secondary line text
+                  const certLabel = inputted.count === 1 ? "certificate" : "certificates";
+                  const uploadedByText = inputted.personnel_count === 1 
+                    ? `Uploaded by ${inputted.personnel_names[0] || "Unknown"}`
+                    : `${inputted.personnel_count} people`;
+                  const secondaryText = `${inputted.count} ${certLabel} • ${uploadedByText}`;
+                  
+                  // Build tertiary hint
+                  let tertiaryHint: string | null = null;
+                  if (inputted.sample_expiry_date) {
+                    tertiaryHint = `Expires: ${formatDate(inputted.sample_expiry_date)}`;
+                  } else if (inputted.sample_file_name) {
+                    tertiaryHint = `File: ${inputted.sample_file_name}`;
+                  } else if (inputted.raw_examples.length > 0 && inputted.raw_examples[0] !== inputted.display_name) {
+                    tertiaryHint = `Example: "${inputted.raw_examples[0]}"`;
+                  }
+
                   return (
-                    <div
-                      key={inputted.title_normalized}
-                      className={`p-3 cursor-pointer transition-colors ${
-                        isSelected ? "bg-primary/10" : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => toggleInputtedSelection(inputted.title_normalized)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleInputtedSelection(inputted.title_normalized)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-0.5"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm truncate">
-                              {inputted.display_name}
-                            </span>
-                            <Badge variant="secondary" className="text-xs shrink-0">
-                              {inputted.count}
-                            </Badge>
-                            {inputted.is_mapped ? (
-                              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 shrink-0">
-                                Mapped
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 shrink-0">
-                                Unmapped
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {inputted.personnel_count}
-                            </span>
-                            {inputted.raw_examples.length > 1 && (
-                              <span className="flex items-center gap-1">
-                                <FileText className="h-3 w-3" />
-                                {inputted.raw_examples.length} variations
-                              </span>
-                            )}
+                    <Collapsible key={inputted.title_normalized}>
+                      <div
+                        className={`transition-colors ${
+                          isSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                        }`}
+                      >
+                        {/* Main row content */}
+                        <div 
+                          className="p-3 cursor-pointer"
+                          onClick={() => toggleInputtedSelection(inputted.title_normalized)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleInputtedSelection(inputted.title_normalized)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-0.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              {/* Primary: Certificate name (bold) */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm">
+                                  {inputted.display_name}
+                                </span>
+                                {inputted.is_mapped ? (
+                                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 shrink-0">
+                                    Mapped
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/30 shrink-0">
+                                    Unmapped
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {/* Secondary: Count + who uploaded */}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {secondaryText}
+                              </p>
+                              
+                              {/* Tertiary: Contextual hint */}
+                              {tertiaryHint && (
+                                <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">
+                                  {tertiaryHint}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* Expand chevron */}
+                            <CollapsibleTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                              </Button>
+                            </CollapsibleTrigger>
                           </div>
                         </div>
+                        
+                        {/* Expandable details */}
+                        <CollapsibleContent>
+                          <div className="px-3 pb-3 pt-0 pl-10 space-y-3 border-t border-border/50 bg-muted/20">
+                            {/* Raw title variations */}
+                            {inputted.raw_examples.length > 1 && (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                                  Name Variations
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {inputted.raw_examples.map((example, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-[10px] font-normal">
+                                      {example}
+                                    </Badge>
+                                  ))}
+                                  {inputted.raw_examples.length >= 5 && (
+                                    <span className="text-[10px] text-muted-foreground self-center">
+                                      +more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Included certificates */}
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                                Included Certificates
+                              </p>
+                              <div className="space-y-1.5">
+                                {inputted.certificates.slice(0, 5).map((cert) => (
+                                  <div 
+                                    key={cert.id} 
+                                    className="flex items-center gap-2 text-xs text-muted-foreground"
+                                  >
+                                    <span className="font-medium text-foreground truncate max-w-[120px]">
+                                      {cert.personnel_name}
+                                    </span>
+                                    <span className="text-muted-foreground/50">—</span>
+                                    {cert.file_name ? (
+                                      cert.document_url ? (
+                                        <a
+                                          href={cert.document_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="truncate max-w-[140px] text-primary hover:underline flex items-center gap-1"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {cert.file_name}
+                                          <ExternalLink className="h-3 w-3 shrink-0" />
+                                        </a>
+                                      ) : (
+                                        <span className="truncate max-w-[140px]">{cert.file_name}</span>
+                                      )
+                                    ) : (
+                                      <span className="italic">No file</span>
+                                    )}
+                                    {cert.expiry_date && (
+                                      <>
+                                        <span className="text-muted-foreground/50">—</span>
+                                        <span className="shrink-0 flex items-center gap-1">
+                                          <Calendar className="h-3 w-3" />
+                                          {formatDate(cert.expiry_date)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                ))}
+                                {inputted.certificates.length > 5 && (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    +{inputted.certificates.length - 5} more certificates
+                                  </p>
+                                )}
+                                {inputted.count > inputted.certificates.length && (
+                                  <p className="text-[10px] text-muted-foreground italic">
+                                    Showing {inputted.certificates.length} of {inputted.count} total
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
                       </div>
-                    </div>
+                    </Collapsible>
                   );
                 })
               )}
