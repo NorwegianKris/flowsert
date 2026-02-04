@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export interface CertificateDetail {
   id: string;
@@ -43,7 +44,8 @@ export function useInputtedTypes() {
     queryFn: async () => {
       if (!businessId) return [];
 
-      // Fetch all certificates with their title_normalized and related data
+      // Fetch only certificates that were entered via free text (certificate_type_id is null)
+      // and have not been marked as "unmapped" by an admin
       const { data: certificates, error } = await supabase
         .from("certificates")
         .select(`
@@ -61,7 +63,9 @@ export function useInputtedTypes() {
           )
         `)
         .eq("personnel.business_id", businessId)
-        .is("unmapped_by", null)
+        .is("certificate_type_id", null) // Only show custom-entered types (not mapped to official type)
+        .is("unmapped_by", null) // Not dismissed by admin
+        .not("title_raw", "is", null) // Must have a title_raw (was entered via custom type field)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -148,7 +152,7 @@ export function useInputtedTypes() {
         }
       });
 
-      // Convert to array
+      // Convert to array - all items are unmapped since we filtered for certificate_type_id IS NULL
       const inputtedTypes: InputtedType[] = Array.from(groupMap.entries())
         .map(([title_normalized, data]) => ({
           title_normalized,
@@ -156,8 +160,8 @@ export function useInputtedTypes() {
             ? Array.from(data.raw_examples)[0] 
             : title_normalized,
           count: data.count,
-          certificate_type_id: data.has_multiple_types ? null : data.certificate_type_id,
-          is_mapped: !data.has_multiple_types && data.certificate_type_id !== null,
+          certificate_type_id: null, // Always null since we only fetch unmapped
+          is_mapped: false, // Always false since we only fetch unmapped
           raw_examples: Array.from(data.raw_examples).slice(0, 5),
           personnel_count: data.personnel_ids.size,
           personnel_names: Array.from(data.personnel_names).slice(0, 10),
@@ -171,5 +175,68 @@ export function useInputtedTypes() {
       return inputtedTypes;
     },
     enabled: !!businessId,
+  });
+}
+
+/**
+ * Hook to dismiss/delete an inputted type by marking all its certificates as "unmapped".
+ * This removes them from the Inputted Types list without deleting the certificates.
+ */
+export function useDismissInputtedType() {
+  const { businessId } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      titleNormalized, 
+      reason = "Dismissed by admin" 
+    }: { 
+      titleNormalized: string; 
+      reason?: string;
+    }) => {
+      if (!businessId) throw new Error("No business ID");
+
+      // Get all certificate IDs with this title_normalized
+      const { data: certsToUpdate, error: fetchError } = await supabase
+        .from("certificates")
+        .select(`
+          id,
+          personnel!inner (business_id)
+        `)
+        .eq("personnel.business_id", businessId)
+        .eq("title_normalized", titleNormalized)
+        .is("certificate_type_id", null)
+        .is("unmapped_by", null);
+
+      if (fetchError) throw fetchError;
+
+      if (!certsToUpdate || certsToUpdate.length === 0) {
+        return { count: 0 };
+      }
+
+      // Mark all as unmapped
+      const ids = certsToUpdate.map((c: any) => c.id);
+      const { error: updateError } = await supabase
+        .from("certificates")
+        .update({
+          unmapped_by: (await supabase.auth.getUser()).data.user?.id || null,
+          unmapped_at: new Date().toISOString(),
+          unmapped_reason: reason,
+        })
+        .in("id", ids);
+
+      if (updateError) throw updateError;
+
+      return { count: ids.length };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["inputted-types"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      toast.success(`Dismissed ${data.count} certificate${data.count !== 1 ? "s" : ""}`);
+    },
+    onError: (error) => {
+      console.error("Error dismissing inputted type:", error);
+      toast.error("Failed to dismiss inputted type");
+    },
   });
 }
