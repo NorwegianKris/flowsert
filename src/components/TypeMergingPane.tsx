@@ -326,11 +326,14 @@ export function TypeMergingPane() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 lg:gap-0">
         {/* Left Pane: Inputted Types */}
         <div className="border rounded-lg flex flex-col h-[600px]">
-          <div className="p-3 border-b bg-muted/30 space-y-3">
+          <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Inputted Types</h3>
               <Badge variant="secondary">{filteredInputted.length}</Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Names entered by personnel during uploads. Select items to group them into official types.
+            </p>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -488,12 +491,15 @@ export function TypeMergingPane() {
 
         {/* Right Pane: Merged Types */}
         <div className="border rounded-lg flex flex-col h-[600px]">
-          <div className="p-3 border-b bg-muted/30 space-y-3">
+          <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Merged Types</h3>
               <Badge variant="secondary">{filteredMerged.length}</Badge>
             </div>
-            <div className="relative">
+            <p className="text-xs text-muted-foreground">
+              Official standardized types. Personnel can select these during uploads. Click to select a target for grouping.
+            </p>
+            <div className="relative pt-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search types..."
@@ -502,9 +508,6 @@ export function TypeMergingPane() {
                 className="pl-9 h-8"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              These official types are available for future uploads.
-            </p>
           </div>
 
           <ScrollArea className="flex-1">
