@@ -15,8 +15,8 @@ export function CategoriesSection() {
     <Card>
       <CardHeader>
         <CardTitle>Categories</CardTitle>
-        <CardDescription>
-          Manage the categories used throughout your organization for workers, certificates, and documents.
+      <CardDescription>
+          Manage the categories used throughout your organization for workers, departments, certificates, and documents.
         </CardDescription>
       </CardHeader>
       <CardContent>
