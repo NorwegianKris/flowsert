@@ -376,16 +376,16 @@ export default function AdminDashboard() {
         <DashboardStats personnel={personnel} />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-primary p-1.5 h-12">
-            <TabsTrigger value="personnel" className="flex items-center gap-2 text-primary-foreground data-[state=active]:bg-primary-foreground data-[state=active]:text-primary text-base">
+          <TabsList className="grid w-full grid-cols-3 p-1.5 h-12">
+            <TabsTrigger value="personnel" className="flex items-center gap-2 text-base">
               <Users className="h-5 w-5" />
               Personnel
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2 text-primary-foreground data-[state=active]:bg-primary-foreground data-[state=active]:text-primary text-base">
+            <TabsTrigger value="calendar" className="flex items-center gap-2 text-base">
               <Calendar className="h-5 w-5" />
               Calendar
             </TabsTrigger>
-            <TabsTrigger value="projects" className="flex items-center gap-2 text-primary-foreground data-[state=active]:bg-primary-foreground data-[state=active]:text-primary text-base">
+            <TabsTrigger value="projects" className="flex items-center gap-2 text-base">
               <FolderOpen className="h-5 w-5" />
               Projects
             </TabsTrigger>
