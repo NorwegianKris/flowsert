@@ -16,6 +16,7 @@ export interface BusinessInfo {
   postal_code: string | null;
   company_code: string;
   custom_domain: string | null;
+  use_canonical_certificates: boolean;
 }
 
 export function useBusinessInfo() {
