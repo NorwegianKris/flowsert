@@ -1,391 +1,256 @@
 
+# Phase 2 Implementation: Admin Cleanup Tools & EditCertificateDialog Update
 
-# Certificate Standardization & Canonical Mapping System (Final)
+## Final Refinements Incorporated
 
-## Overview
+Based on your feedback, I'm incorporating these 5 additional guardrails:
 
-This plan implements a safe, additive certificate standardization system that maps messy, user-entered certificate names to canonical certificate types. The system preserves raw user input, enables deterministic normalization, and ensures compliance timelines remain clean and stable.
+### 1. Bulk Update Cap with Safe Path Forward
+When a group exceeds 500 certificates, I'll:
+- Show a warning explaining the limit
+- Offer two options:
+  - **Split into batches**: Process in 500-record chunks with confirmation for each
+  - **Use Backfill Tool**: Link to the Backfill Tool pre-filtered for that `title_normalized`
 
-This final revision incorporates additional refinements:
-- **Worker selections remain reviewable**: `needs_review = true` unless alias match exists
-- **Alias creation is explicitly admin-confirmed**: Only on checkbox + type confirmation, with ambiguity warnings
-- **Tightened ambiguity detection**: Generic-term patterns only, known acronyms always bypass
-- **Backfill order**: Alias match first, then ambiguity detection only if no match
-- **Soft deletion for types**: `is_active` flag instead of hard delete
-- **Performance indexes**: Added for review queue queries
-
----
-
-## Phase 1: Database Schema (Additive Only)
-
-### 1.1 Create `certificate_types` Table
-
-```text
-certificate_types
--------------------------------------------------
-id                UUID PRIMARY KEY
-business_id       UUID NULLABLE (null = global template)
-category_id       UUID NULLABLE FK -> certificate_categories
-name              TEXT NOT NULL (e.g., "CSWIP 3.2U Inspector")
-description       TEXT NULLABLE
-is_active         BOOLEAN DEFAULT true (soft delete)
-created_at        TIMESTAMPTZ DEFAULT now()
-updated_at        TIMESTAMPTZ DEFAULT now()
-UNIQUE (business_id, name)
-```
-
-**Soft deletion**: Types with `is_active = false` are hidden from dropdowns but preserved for historical data integrity.
-
-### 1.2 Create `certificate_aliases` Table
-
-```text
-certificate_aliases
--------------------------------------------------
-id                    UUID PRIMARY KEY
-business_id           UUID NOT NULL
-alias_normalized      TEXT NOT NULL
-alias_raw_example     TEXT NULLABLE
-certificate_type_id   UUID NOT NULL FK -> certificate_types
-confidence            INT DEFAULT 100
-created_by            TEXT CHECK IN ('system', 'admin')
-last_seen_at          TIMESTAMPTZ DEFAULT now()
-created_at            TIMESTAMPTZ DEFAULT now()
-UNIQUE (business_id, alias_normalized)
-INDEX (business_id, alias_normalized)
-```
-
-### 1.3 Extend Existing `certificates` Table
-
-| Column | Type | Default | Purpose |
-|--------|------|---------|---------|
-| `title_raw` | TEXT NULLABLE | NULL | Original user input |
-| `title_normalized` | TEXT NULLABLE | NULL | Normalized for lookups |
-| `certificate_type_id` | UUID NULLABLE | NULL | Links to canonical type |
-| `needs_review` | BOOLEAN | FALSE | Flags for admin review |
-| `unmapped_reason` | TEXT NULLABLE | NULL | Reason for intentional non-mapping |
-| `unmapped_by` | UUID NULLABLE | NULL | Admin who marked unmapped |
-| `unmapped_at` | TIMESTAMPTZ NULLABLE | NULL | When marked unmapped |
-
-### 1.4 Performance Indexes
-
+### 2. Cursor-Based Backfill with `created_at`
+Since the `certificates` table has `created_at`, I'll use:
 ```sql
--- Primary review queue index
-CREATE INDEX idx_certificates_review_queue 
-ON certificates (business_id, needs_review) 
-WHERE needs_review = true;
-
--- Optional: normalized title lookup for grouping
-CREATE INDEX idx_certificates_title_normalized 
-ON certificates (business_id, title_normalized);
-
--- Alias lookup (already defined in table)
-CREATE INDEX idx_aliases_lookup 
-ON certificate_aliases (business_id, alias_normalized);
+ORDER BY created_at ASC, id ASC
+WHERE (created_at, id) > (last_created_at, last_id)
 ```
+This ensures stable, idempotent pagination even if data changes mid-run.
 
-### 1.5 RLS Policies
+### 3. Review Queue Null Safety
+The grouped query will explicitly exclude null/empty `title_normalized`:
+```sql
+WHERE title_normalized IS NOT NULL 
+  AND title_normalized != ''
+  AND needs_review = true
+  AND unmapped_by IS NULL
+```
+A separate "Unmapped Titles" bucket will handle certificates with null/empty normalized titles.
 
-Standard patterns scoped by `business_id`:
-- **SELECT**: Users in same business can view
-- **INSERT/UPDATE/DELETE**: Admin/manager role required for `certificate_types` and `certificate_aliases`
-- Workers can modify only their own certificates
+### 4. Edit Dialog Alias Lookup Debounce
+Title changes will trigger alias lookups with a 400ms debounce using `useEffect` + `setTimeout`, preventing excessive queries during typing.
+
+### 5. Subtle Alias-Existence Indicators
+Instead of prominent badges, I'll use:
+- A small info icon next to the type selector
+- Tooltip on hover: "Alias exists for this name" or "No alias exists for this name"
+- Only visible when type selector is focused or after title changes
 
 ---
 
-## Phase 2: Normalization Function
+## Implementation Order
 
-### 2.1 Shared Normalization Logic
+### Task 1: Update EditCertificateDialog.tsx
 
-File: `src/lib/certificateNormalization.ts`
+**Changes:**
+- Add `CertificateTypeSelector` component with role-based behavior
+- Add state tracking: `selectedTypeId`, `originalTypeId`, `titleChanged`, `aliasExists`, `aliasLoading`
+- Implement debounced alias lookup (400ms) when name changes
+- Don't auto-remap if `originalTypeId` is set - just show informational status
+- Add subtle tooltip for alias existence indicator
+- Add "Remember this name" checkbox for admins (with ambiguity warning)
+- Update submit handler with `title_raw`, `title_normalized`, `certificate_type_id`, `needs_review`
 
-```text
-Steps:
-  1. Lowercase
-  2. Trim
-  3. Collapse whitespace
-  4. Replace punctuation with space
-  5. Keep alphanumeric + spaces only
-  6. Unicode normalize (NFD)
+**Key Logic:**
+```typescript
+// On dialog open:
+if (certificate.certificate_type_id) {
+  // Preserve existing mapping
+  setOriginalTypeId(certificate.certificate_type_id);
+  setSelectedTypeId(certificate.certificate_type_id);
+  // Run alias lookup for INFO ONLY, don't auto-select
+}
 
-Examples:
-  "3.2U Inspection" -> "3 2u inspection"
-  "BOSIET (With CA-EBS)" -> "bosiet with ca ebs"
-  "HUET" -> "huet"
+// On title change (debounced 400ms):
+if (selectedTypeId && !titleChanged) {
+  // Keep existing type, just update alias indicator
+} else if (!originalTypeId) {
+  // Pre-select from alias match (suggestion)
+}
 ```
 
-### 2.2 Ambiguity Detection (Pattern-Based Only)
+### Task 2: Create CertificateTypesManager.tsx
 
-```text
-KNOWN ACRONYMS (always bypass ambiguity):
-  HUET, BOSIET, GWO, STCW, CSWIP, DMT, EBS, CA-EBS,
-  IMCA, OPITO, NOGEPA, OGUK, T-HUET, FOET, MIST
-
-GENERIC PATTERNS (flag as ambiguous):
-  Exact matches only:
-    "diving", "medical", "certificate", "cert",
-    "inspection", "training", "course", "safety",
-    "offshore", "marine", "subsea"
-  
-  Generic phrases:
-    "diving cert", "medical certificate", 
-    "diving certificate", "safety training"
-
-Detection Logic:
-  1. Normalize title
-  2. If normalized matches known acronym -> NOT ambiguous
-  3. If normalized exactly matches generic term -> AMBIGUOUS
-  4. If normalized matches generic phrase pattern -> AMBIGUOUS
-  5. Otherwise -> NOT ambiguous
-
-Token count is NEVER used for ambiguity detection.
-```
-
----
-
-## Phase 3: Upload Flow (Role-Based)
-
-### 3.1 Worker Upload Flow
-
-```text
-1. Upload certificate file
-2. OCR suggests title_raw (no auto-mapping)
-3. Compute title_normalized
-4. Query alias table for exact match
-
-IF ALIAS EXISTS:
-  - Auto-select certificate_type_id
-  - Set needs_review = false
-  - Show "Auto-matched" badge
-  - Update alias last_seen_at
-
-IF NO ALIAS:
-  - Type selection is OPTIONAL
-  - If worker selects a type manually:
-      - Set certificate_type_id to selected
-      - Set needs_review = true (worker selection = suggestion)
-  - If worker does not select type:
-      - Set certificate_type_id = null
-      - Set needs_review = true
-  - Certificate saves successfully either way
-  - "Remember this name" checkbox NOT shown
-```
-
-**Key point**: Worker-selected types are treated as suggestions and remain reviewable.
-
-### 3.2 Admin/Manager Upload Flow
-
-```text
-1. Upload certificate file
-2. OCR suggests title_raw (no auto-mapping)
-3. Compute title_normalized
-4. Query alias table for exact match
-
-IF ALIAS EXISTS:
-  - Auto-select certificate_type_id
-  - Set needs_review = false
-  - Show "Auto-matched" badge
-
-IF NO ALIAS:
-  - Type selection is REQUIRED
-  - Show "Remember this name for next time" checkbox
-  - If checkbox checked AND title appears generic:
-      - Show warning: "This name appears generic. Are you sure?"
-      - Require confirmation before alias creation
-  - On save with checkbox:
-      - Create alias (created_by = 'admin')
-      - Set needs_review = false
-  - On save without checkbox:
-      - No alias created
-      - Set needs_review = false (admin confirmed)
-```
-
-### 3.3 OCR Behavior
-
-The Edge Function `extract-certificate-data`:
-- Returns suggested `certificateName` as `title_raw`
-- Returns `matchedCategory` for existing category matching
-- **NEVER** auto-creates types or aliases
-- All mapping requires explicit user action
-
----
-
-## Phase 4: Admin Cleanup Tools
-
-### 4.1 Certificate Types Manager
-
-Location: Settings section
-
-Features:
-- List all types for business (filter by `is_active`)
-- Each type shows linked category from `certificate_categories`
-- Create new type: name, description, linked category
+**Features:**
+- List all certificate types with category links
+- Create new types with name, description, category dropdown
 - Edit existing types
-- Archive type (set `is_active = false`):
-  - Type hidden from dropdowns
-  - Historical certificates retain reference
-  - Show warning with count of linked certificates
+- Archive (soft delete) with usage count warning
 - Restore archived types
+- Filter toggle: Active / Archived / All
 
-### 4.2 Alias Manager
+### Task 3: Create CertificateAliasesManager.tsx
 
-Features:
-- View aliases grouped by certificate type
-- Show raw examples and last-seen timestamps
+**Features:**
+- List aliases grouped by certificate type
+- Show normalized alias, raw example, last-seen, confidence
 - Delete individual aliases
-- Reassign alias to different type
+- Reassign alias to different type via dropdown
 
-### 4.3 Review Queue
+### Task 4: Create useCertificatesNeedingReview.ts Hook
 
-Table showing certificates where `needs_review = true` AND `unmapped_by IS NULL`:
+**Features:**
+- Optimized JOIN query (not IN subquery)
+- Grouped by `title_normalized` with explicit source indicators
+- Excludes null/empty `title_normalized` (handled separately)
+- Returns: count, raw_examples, has_worker_selected_type, worker_selected_type_ids, example_personnel_names
 
-| Grouped By | Count | Source | Actions |
-|------------|-------|--------|---------|
-| `title_normalized` | N | Worker-selected / Unmatched | Map / Create / Unmapped |
-
-Columns:
-- **Normalized Title**: Grouped key
-- **Count**: Number of certificates
-- **Sample Raw Titles**: Examples of original input
-- **Type Selected**: If worker selected a type (shown for review)
-- **Personnel Names**: Who uploaded these
-
-Actions:
-1. **Map to Existing Type**: 
-   - Select type from dropdown
-   - Optional: Create alias for this normalized title
-   - Updates all certificates in group
-   
-2. **Create New Type & Map**:
-   - Create new type inline
-   - Automatically creates alias
-   - Updates all certificates in group
-
-3. **Mark Intentionally Unmapped** (admin-only):
-   - Opens dialog requiring `unmapped_reason`
-   - Sets `unmapped_by`, `unmapped_at`
-   - Sets `needs_review = false`
-   - `certificate_type_id` remains null
-
-### 4.4 Safe Backfill Tool
-
-Button: "Standardize Existing Certificates (Safe)"
-
-**Order of Operations** (per batch of 100-300 rows):
-
-```text
-FOR EACH certificate WHERE title_raw IS NULL OR title_normalized IS NULL:
-  
-  1. SET title_raw = existing name (if null)
-  2. COMPUTE title_normalized = normalize(title_raw)
-  
-  3. QUERY alias table for exact match:
-     SELECT * FROM certificate_aliases 
-     WHERE business_id = ? AND alias_normalized = title_normalized
-  
-  4. IF ALIAS FOUND:
-     - SET certificate_type_id = alias.certificate_type_id
-     - SET needs_review = false
-     - UPDATE alias.last_seen_at
-     - SKIP ambiguity detection (already mapped)
-  
-  5. IF NO ALIAS FOUND:
-     - SET needs_review = true
-     - certificate_type_id remains null
-     - Ambiguity detection runs for UI hints only
-       (does not affect needs_review logic)
+```typescript
+// Uses JOIN for performance
+const query = supabase
+  .from('certificates')
+  .select(`
+    title_normalized,
+    certificate_type_id,
+    title_raw,
+    personnel!inner(business_id, name)
+  `)
+  .eq('personnel.business_id', businessId)
+  .eq('needs_review', true)
+  .is('unmapped_by', null)
+  .not('title_normalized', 'is', null)
+  .neq('title_normalized', '');
 ```
 
-**Key point**: Alias matching takes priority. Ambiguity detection only informs the admin review UI, not the backfill logic.
+### Task 5: Create CertificateReviewQueue.tsx
+
+**Features:**
+- Grouped table by `title_normalized`
+- Show count, sample raw titles, source badge (Worker-selected vs Unmatched)
+- Show example personnel names
+- Actions:
+  - **Map to Type**: Select from dropdown + optional "Create alias" checkbox
+  - **Create New Type**: Inline creation + auto-creates alias
+  - **Mark Unmapped**: Opens `MarkUnmappedDialog`
+- Bulk update with 500-record cap:
+  - If under 500: Show `BulkUpdateConfirmDialog` with preview
+  - If over 500: Offer split batches OR link to Backfill Tool
+- Separate "Unmapped Titles" bucket for null/empty normalized titles
+
+### Task 6: Create BulkUpdateConfirmDialog.tsx
+
+**Features:**
+- Shows count of certificates to update
+- Shows normalized title and target type
+- Shows "Create alias" checkbox state
+- Confirm/Cancel buttons
+- Loading state during update
+
+### Task 7: Create CertificateBackfillTool.tsx
+
+**Features:**
+- Admin-only button: "Standardize Existing Certificates (Safe)"
+- Cursor-based pagination using `(created_at, id)`:
+```typescript
+const cursor = { lastCreatedAt: string | null, lastId: string | null };
+
+// Query:
+query.order('created_at', { ascending: true })
+     .order('id', { ascending: true })
+     .limit(200);
+
+if (cursor.lastCreatedAt && cursor.lastId) {
+  query.or(`created_at.gt.${cursor.lastCreatedAt},and(created_at.eq.${cursor.lastCreatedAt},id.gt.${cursor.lastId})`);
+}
+```
+- Progress display with percentage
+- Stats: Matched, Needs Review, Processed
+- Pause/Resume capability
+- Idempotent: safe to run multiple times
+
+### Task 8: Update CategoriesSection.tsx
+
+**Changes:**
+- Add "Standardization" as a top-level tab (not nested)
+- Tab contains sub-sections:
+  - Certificate Types
+  - Aliases
+  - Review Queue
+  - Backfill Tool
+- Update grid from `grid-cols-4` to `grid-cols-5`
 
 ---
 
-## Phase 5: Compliance Integration (Feature-Flagged)
-
-### 5.1 Feature Flag
-
-Add to `businesses` table:
-```sql
-use_canonical_certificates BOOLEAN DEFAULT false
-```
-
-### 5.2 Behavior When Enabled
-
-- Timeline grouping uses `certificate_type_id` instead of raw name
-- Only certificates with `certificate_type_id` appear in canonical views
-- Certificates with `needs_review = true` shown in "Pending Classification" section
-- Status calculations unchanged (based on expiry date)
-
-### 5.3 Activation Prerequisites
-
-1. All needs_review certificates addressed
-2. Alias coverage reviewed
-3. Pilot tenant confirms correctness
-
----
-
-## Technical Implementation
-
-### New Files
+## Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/lib/certificateNormalization.ts` | Normalize function + ambiguity detection |
-| `src/components/CertificateTypeSelector.tsx` | Searchable dropdown with role awareness |
-| `src/components/CertificateTypesManager.tsx` | Admin CRUD with archive support |
-| `src/components/CertificateAliasesManager.tsx` | Alias management |
-| `src/components/CertificateReviewQueue.tsx` | Needs-review cleanup UI |
-| `src/components/CertificateBackfillTool.tsx` | Batched backfill with progress |
-| `src/components/MarkUnmappedDialog.tsx` | Unmapped reason dialog |
-| `src/components/AmbiguityWarningDialog.tsx` | Warning when creating generic alias |
-| `src/hooks/useCertificateTypes.ts` | Type management hook |
-| `src/hooks/useCertificateAliases.ts` | Alias lookup/creation hook |
+| `src/components/CertificateTypesManager.tsx` | CRUD for canonical types with archive support |
+| `src/components/CertificateAliasesManager.tsx` | Alias management UI |
+| `src/components/CertificateReviewQueue.tsx` | Needs-review cleanup with batching |
+| `src/components/CertificateBackfillTool.tsx` | Cursor-based safe backfill |
+| `src/components/BulkUpdateConfirmDialog.tsx` | Confirm dialog for bulk mapping |
+| `src/hooks/useCertificatesNeedingReview.ts` | Optimized grouped query |
 
-### Modified Files
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/AddCertificateDialog.tsx` | Type selector, role-based logic, alias checkbox |
-| `src/components/EditCertificateDialog.tsx` | Type selector, role-based requirements |
-| `src/components/CategoriesSection.tsx` | Add standardization management tab |
-| `src/types/index.ts` | Extend Certificate interface |
-
-### Database Migrations
-
-1. Create `certificate_types` with `is_active` flag and RLS
-2. Create `certificate_aliases` with indexes and RLS
-3. Extend `certificates` with new columns
-4. Add performance indexes for review queue
-5. Add `use_canonical_certificates` flag to businesses
+| `src/components/EditCertificateDialog.tsx` | Add type selector, debounced alias lookup, role-based logic |
+| `src/components/CategoriesSection.tsx` | Add "Standardization" tab |
 
 ---
 
-## Safety Constraints Summary
+## Technical Details
 
-| Constraint | Implementation |
-|------------|----------------|
-| Worker selections are reviewable | `needs_review = true` unless alias match |
-| Alias creation is admin-confirmed | Checkbox + confirmation, warning for generic |
-| No token-count ambiguity | Pattern matching only, acronyms bypass |
-| Backfill prioritizes alias match | Alias lookup before ambiguity detection |
-| No hard delete of types | `is_active` flag for soft delete |
-| Review queue is performant | Indexes on `needs_review` and `title_normalized` |
-| No auto-creation from OCR | OCR suggests only, explicit mapping required |
-| All changes additive | New columns nullable, feature-flagged |
+### Debounced Alias Lookup (EditCertificateDialog)
+```typescript
+const [debouncedName, setDebouncedName] = useState(name);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedName(name);
+  }, 400);
+  return () => clearTimeout(timer);
+}, [name]);
+
+const { data: aliasMatch, isLoading: aliasLoading } = useLookupAlias(
+  titleChanged ? debouncedName : null
+);
+```
+
+### Bulk Update with Split Batches
+```typescript
+const MAX_BATCH_SIZE = 500;
+
+if (certificateCount > MAX_BATCH_SIZE) {
+  // Show dialog with options:
+  // 1. Split into N batches (N = ceil(count/500))
+  // 2. Use Backfill Tool (link with pre-filter)
+}
+```
+
+### Cursor State for Backfill
+```typescript
+interface BackfillCursor {
+  lastCreatedAt: string | null;
+  lastId: string | null;
+}
+
+interface BackfillState {
+  cursor: BackfillCursor;
+  totalProcessed: number;
+  totalMatched: number;
+  totalNeedsReview: number;
+  isRunning: boolean;
+  isComplete: boolean;
+  isPaused: boolean;
+}
+```
 
 ---
 
-## Acceptance Criteria
+## Safety Constraints Maintained
 
-| Scenario | Expected Result |
-|----------|-----------------|
-| Worker uploads with no alias match, selects type | `needs_review = true`, type saved |
-| Worker uploads with alias match | `needs_review = false`, auto-matched |
-| Worker uploads with no selection | `needs_review = true`, no type |
-| Admin uploads with no alias, checks "Remember" | Alias created, `needs_review = false` |
-| Admin creates alias for "diving" | Warning dialog shown, requires confirmation |
-| "HUET" processed | NOT flagged as ambiguous |
-| "Diving" processed | Flagged as ambiguous |
-| Backfill finds existing alias | Sets type, skips ambiguity check |
-| Admin archives certificate type | Type hidden, historical data preserved |
-| Review queue with 10k certificates | Fast loading via indexes |
-
+| Constraint | How It's Enforced |
+|------------|-------------------|
+| No auto-remap if already mapped | Check `originalTypeId` before any auto-selection |
+| Title changes don't override type | Only show alias info, require explicit user action |
+| Debounced alias lookups | 400ms debounce prevents query spam |
+| Bulk updates capped at 500 | With split batch OR backfill tool handoff |
+| Cursor-based backfill | Uses `(created_at, id)` for stable pagination |
+| Null title_normalized handled | Separate bucket, excluded from main grouping |
+| Subtle alias indicators | Tooltip/helper text, not prominent badges |
