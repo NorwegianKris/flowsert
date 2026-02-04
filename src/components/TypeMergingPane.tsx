@@ -49,10 +49,11 @@ import {
   ChevronDown,
   Calendar,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useInputtedTypes, InputtedType } from "@/hooks/useInputtedTypes";
+import { useInputtedTypes, InputtedType, useDismissInputtedType } from "@/hooks/useInputtedTypes";
 import {
   useCertificateTypes,
   useCreateCertificateType,
@@ -90,17 +91,19 @@ export function TypeMergingPane() {
   const createTypeMutation = useCreateCertificateType();
   const createAliasMutation = useCreateAlias();
   const bulkUpdateMutation = useBulkUpdateCertificates();
+  const dismissInputtedMutation = useDismissInputtedType();
 
   // UI State
   const [leftSearch, setLeftSearch] = useState("");
   const [rightSearch, setRightSearch] = useState("");
-  const [showMapped, setShowMapped] = useState<"unmapped" | "mapped" | "all">("unmapped");
   const [selectedInputted, setSelectedInputted] = useState<Set<string>>(new Set());
   const [selectedMerged, setSelectedMerged] = useState<string | null>(null);
   
   // Dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [dismissDialogOpen, setDismissDialogOpen] = useState(false);
+  const [typeToDelete, setTypeToDelete] = useState<InputtedType | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [newTypeName, setNewTypeName] = useState("");
   const [newTypeDescription, setNewTypeDescription] = useState("");
@@ -123,14 +126,10 @@ export function TypeMergingPane() {
     }
   }, [businessId]);
 
-  // Filter inputted types
+  // Filter inputted types (all are unmapped custom entries now)
   const filteredInputted = useMemo(() => {
     return inputtedTypes.filter((t) => {
-      // Filter by mapping status
-      if (showMapped === "unmapped" && t.is_mapped) return false;
-      if (showMapped === "mapped" && !t.is_mapped) return false;
-      
-      // Filter by search
+      // Filter by search only - all items are already unmapped
       if (leftSearch) {
         const query = leftSearch.toLowerCase();
         return (
@@ -141,7 +140,7 @@ export function TypeMergingPane() {
       }
       return true;
     });
-  }, [inputtedTypes, leftSearch, showMapped]);
+  }, [inputtedTypes, leftSearch]);
 
   // Filter merged types
   const filteredMerged = useMemo(() => {
@@ -354,26 +353,16 @@ export function TypeMergingPane() {
               Names entered by personnel during uploads. Select items to group them into official types.
             </p>
             <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={leftSearch}
-                  onChange={(e) => setLeftSearch(e.target.value)}
-                  className="pl-9 h-8"
-                />
-              </div>
-              <Select value={showMapped} onValueChange={(v) => setShowMapped(v as any)}>
-                <SelectTrigger className="w-[120px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unmapped">Unmapped</SelectItem>
-                  <SelectItem value="mapped">Mapped</SelectItem>
-                  <SelectItem value="all">All</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={leftSearch}
+                onChange={(e) => setLeftSearch(e.target.value)}
+                className="pl-9 h-8"
+              />
             </div>
+          </div>
             {filteredInputted.length > 0 && (
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -393,14 +382,10 @@ export function TypeMergingPane() {
             <div className="divide-y">
               {filteredInputted.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
-                  {showMapped === "unmapped" ? (
-                    <>
-                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary opacity-70" />
-                      <p className="text-sm">All types are mapped!</p>
-                    </>
-                  ) : (
-                    <p className="text-sm">No inputted types found.</p>
-                  )}
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary opacity-70" />
+                  <p className="text-sm">
+                    {leftSearch ? "No matching types found." : "All custom types are mapped!"}
+                  </p>
                 </div>
               ) : (
                 filteredInputted.map((inputted) => {
@@ -448,15 +433,6 @@ export function TypeMergingPane() {
                                 <span className="font-medium text-sm">
                                   {inputted.display_name}
                                 </span>
-                                {inputted.is_mapped ? (
-                                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 shrink-0">
-                                    Mapped
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/30 shrink-0">
-                                    Unmapped
-                                  </Badge>
-                                )}
                               </div>
                               
                               {/* Secondary: Count + who uploaded */}
@@ -471,6 +447,20 @@ export function TypeMergingPane() {
                                 </p>
                               )}
                             </div>
+                            
+                            {/* Delete button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTypeToDelete(inputted);
+                                setDismissDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                             
                             {/* Expand chevron */}
                             <CollapsibleTrigger asChild>
@@ -828,6 +818,53 @@ export function TypeMergingPane() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dismiss Inputted Type Confirmation Dialog */}
+      <AlertDialog open={dismissDialogOpen} onOpenChange={setDismissDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Inputted Type</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Are you sure you want to delete "{typeToDelete?.display_name}"?
+                </p>
+                <p className="text-sm">
+                  This will remove {typeToDelete?.count} certificate{typeToDelete?.count !== 1 ? "s" : ""} from this list.
+                  The certificates themselves will not be deleted, but they will no longer appear as unmapped types.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={dismissInputtedMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (typeToDelete) {
+                  dismissInputtedMutation.mutate({
+                    titleNormalized: typeToDelete.title_normalized,
+                  });
+                  setDismissDialogOpen(false);
+                  setTypeToDelete(null);
+                }
+              }}
+              disabled={dismissInputtedMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {dismissInputtedMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
