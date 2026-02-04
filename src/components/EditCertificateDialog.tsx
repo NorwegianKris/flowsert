@@ -11,6 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -64,6 +71,14 @@ export function EditCertificateDialog({
   const [titleChanged, setTitleChanged] = useState(false);
   const [rememberName, setRememberName] = useState(false);
 
+  // Free text for certificate type (hybrid input)
+  const [certificateTypeFreeText, setCertificateTypeFreeText] = useState('');
+  const [debouncedFreeText, setDebouncedFreeText] = useState('');
+
+  // Category state
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{id: string; name: string}[]>([]);
+
   // Ambiguity warning
   const [ambiguityDialogOpen, setAmbiguityDialogOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
@@ -85,6 +100,14 @@ export function EditCertificateDialog({
     return () => clearTimeout(timer);
   }, [name]);
 
+  // Debounce free text for alias lookup
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFreeText(certificateTypeFreeText);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [certificateTypeFreeText]);
+
   // Alias lookup - only run if title changed OR no original type
   const shouldLookupAlias = useCanonicalCertificates && debouncedName && (titleChanged || !originalTypeId);
   const { data: aliasMatch, isLoading: aliasLoading } = useLookupAlias(
@@ -96,7 +119,29 @@ export function EditCertificateDialog({
     useCanonicalCertificates && debouncedName ? debouncedName : null
   );
 
+  // Alias lookup for free text input
+  const freeTextNormalized = debouncedFreeText?.trim()
+    ? normalizeCertificateTitle(debouncedFreeText)
+    : null;
+  const { data: freeTextAliasMatch, isLoading: freeTextAliasLoading } = useLookupAlias(
+    useCanonicalCertificates && freeTextNormalized ? freeTextNormalized : null
+  );
+
   const createAliasMutation = useCreateAlias();
+
+  // Fetch certificate categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!businessInfo?.id) return;
+      const { data } = await supabase
+        .from('certificate_categories')
+        .select('id, name')
+        .eq('business_id', businessInfo.id)
+        .order('name');
+      setCategories(data || []);
+    };
+    if (open) fetchCategories();
+  }, [businessInfo?.id, open]);
 
   // Populate form when certificate changes
   useEffect(() => {
@@ -111,6 +156,11 @@ export function EditCertificateDialog({
       setExtractionResult(null);
       setTitleChanged(false);
       setRememberName(false);
+      setCertificateTypeFreeText('');
+      setDebouncedFreeText('');
+
+      // Set category from certificate
+      setCategoryId((certificate as any).category_id || null);
 
       // Set type from certificate - this is the source of truth
       const certTypeId = (certificate as any).certificate_type_id || null;
@@ -282,20 +332,35 @@ export function EditCertificateDialog({
         documentUrl = urlData.publicUrl;
       }
 
-      // Prepare update data - title_raw should be the TYPE, not the certificate name
-      // If a type is selected, use the type name; otherwise null
-      const titleRaw = selectedTypeName || null;
+      // Prepare update data - title_raw should be the TYPE
+      // Prioritize free text over dropdown selection
+      let titleRaw: string | null = null;
+      if (certificateTypeFreeText?.trim()) {
+        // User typed free text - store exactly what they typed
+        titleRaw = certificateTypeFreeText.trim();
+      } else if (selectedTypeId && selectedTypeName) {
+        // User selected from dropdown - store the type name
+        titleRaw = selectedTypeName;
+      }
       const titleNormalized = titleRaw ? normalizeCertificateTitle(titleRaw) : null;
+
+      // If free text is used without selecting an alias match, type ID should be null
+      const effectiveTypeId = certificateTypeFreeText?.trim() && !selectedTypeId 
+        ? null 
+        : selectedTypeId;
 
       // Determine needs_review based on role and alias match
       let needsReview = (certificate as any).needs_review ?? false;
       if (useCanonicalCertificates) {
-        if (isAdminOrManager && selectedTypeId) {
+        if (isAdminOrManager && effectiveTypeId) {
           // Admin selected a type - no review needed
           needsReview = false;
-        } else if (!isAdminOrManager && selectedTypeId) {
+        } else if (!isAdminOrManager && effectiveTypeId) {
           // Worker selected a type - still needs review unless alias matched
-          needsReview = !aliasMatch || aliasMatch.certificate_type_id !== selectedTypeId;
+          needsReview = !aliasMatch || aliasMatch.certificate_type_id !== effectiveTypeId;
+        } else if (!effectiveTypeId && certificateTypeFreeText?.trim()) {
+          // Worker entered custom free text without alias match - needs review
+          needsReview = true;
         }
       }
 
@@ -307,13 +372,14 @@ export function EditCertificateDialog({
         place_of_issue: placeOfIssue,
         issuing_authority: issuingAuthority,
         document_url: documentUrl,
+        category_id: categoryId,
       };
 
       // Add canonical certificate fields if feature is enabled
       if (useCanonicalCertificates) {
         updateData.title_raw = titleRaw;
         updateData.title_normalized = titleNormalized;
-        updateData.certificate_type_id = selectedTypeId;
+        updateData.certificate_type_id = effectiveTypeId;
         updateData.needs_review = needsReview;
       }
 
@@ -424,61 +490,26 @@ export function EditCertificateDialog({
               />
             </div>
 
-            {/* Certificate Type Selector - only show if canonical certificates enabled */}
-            {useCanonicalCertificates && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label>Certificate Type {isAdminOrManager && '*'}</Label>
-                  {/* Subtle alias indicator */}
-                  {debouncedName && !aliasLoading && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className={cn(
-                            "h-4 w-4 cursor-help",
-                            aliasInfo ? "text-green-500" : "text-muted-foreground"
-                          )} />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">
-                            {aliasInfo
-                              ? `Alias exists → ${aliasInfo.certificate_type_name}`
-                              : "No alias exists for this name"}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {aliasLoading && (
-                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-                <CertificateTypeSelector
-                  value={selectedTypeId}
-                  onChange={(typeId, typeName) => {
-                    setSelectedTypeId(typeId);
-                    setSelectedTypeName(typeName || null);
-                  }}
-                  required={isAdminOrManager}
-                  autoMatched={showAutoMatched}
-                  placeholder={isAdminOrManager ? "Select certificate type..." : "Select type (optional)..."}
-                />
-
-                {/* Remember this name checkbox - admin only */}
-                {isAdminOrManager && selectedTypeId && (
-                  <div className="flex items-center space-x-2 pt-1">
-                    <Checkbox
-                      id="remember-name"
-                      checked={rememberName}
-                      onCheckedChange={(checked) => setRememberName(checked === true)}
-                    />
-                    <Label htmlFor="remember-name" className="text-sm text-muted-foreground cursor-pointer">
-                      Remember this name for future auto-matching
-                    </Label>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Category Dropdown */}
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select
+                value={categoryId || 'none'}
+                onValueChange={(value) => setCategoryId(value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No category</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -503,7 +534,7 @@ export function EditCertificateDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="place-of-issue">Place of Issue *</Label>
+                <Label htmlFor="place-of-issue">Place of Issue</Label>
                 <Input
                   id="place-of-issue"
                   value={placeOfIssue}
@@ -512,7 +543,7 @@ export function EditCertificateDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="issuing-authority">Issuing Authority *</Label>
+                <Label htmlFor="issuing-authority">Issuing Authority</Label>
                 <Input
                   id="issuing-authority"
                   value={issuingAuthority}
@@ -521,6 +552,101 @@ export function EditCertificateDialog({
                 />
               </div>
             </div>
+
+            {/* Certificate Type Selector - only show if canonical certificates enabled */}
+            {useCanonicalCertificates && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label>Certificate Type {isAdminOrManager && '*'}</Label>
+                  {/* Subtle alias indicator */}
+                  {debouncedName && !aliasLoading && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className={cn(
+                            "h-4 w-4 cursor-help",
+                            aliasInfo ? "text-primary" : "text-muted-foreground"
+                          )} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">
+                            {aliasInfo
+                              ? `Alias exists → ${aliasInfo.certificate_type_name}`
+                              : "No alias exists for this name"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {aliasLoading && (
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                <CertificateTypeSelector
+                  value={selectedTypeId}
+                  onChange={(typeId, typeName) => {
+                    setSelectedTypeId(typeId);
+                    setSelectedTypeName(typeName || null);
+                    if (typeId) {
+                      setCertificateTypeFreeText(''); // Clear free text when dropdown selected
+                    }
+                  }}
+                  required={isAdminOrManager}
+                  autoMatched={showAutoMatched}
+                  placeholder={isAdminOrManager ? "Select certificate type..." : "Select type (optional)..."}
+                  allowFreeText={true}
+                  freeTextValue={certificateTypeFreeText}
+                  onFreeTextChange={(text) => {
+                    setCertificateTypeFreeText(text);
+                    if (text) {
+                      setSelectedTypeId(null); // Clear dropdown when free text entered
+                      setSelectedTypeName(null);
+                    }
+                  }}
+                />
+
+                {/* Alias Match Feedback for free text */}
+                {certificateTypeFreeText?.trim() && 
+                 !selectedTypeId && 
+                 freeTextAliasMatch && 
+                 freeTextAliasMatch.certificate_type_name && (
+                  <div className="flex items-center gap-2 mt-1 p-2 rounded bg-primary/5 border border-primary/20">
+                    <span className="text-xs text-muted-foreground">
+                      Matched: <span className="font-medium text-foreground">
+                        {freeTextAliasMatch.certificate_type_name}
+                      </span>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-primary"
+                      onClick={() => {
+                        setSelectedTypeId(freeTextAliasMatch.certificate_type_id);
+                        setSelectedTypeName(freeTextAliasMatch.certificate_type_name);
+                        setCertificateTypeFreeText('');
+                      }}
+                    >
+                      Use this type
+                    </Button>
+                  </div>
+                )}
+
+                {/* Remember this name checkbox - admin only */}
+                {isAdminOrManager && (selectedTypeId || certificateTypeFreeText?.trim()) && (
+                  <div className="flex items-center space-x-2 pt-1">
+                    <Checkbox
+                      id="remember-name"
+                      checked={rememberName}
+                      onCheckedChange={(checked) => setRememberName(checked === true)}
+                    />
+                    <Label htmlFor="remember-name" className="text-sm text-muted-foreground cursor-pointer">
+                      Remember this name for future auto-matching
+                    </Label>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Document section with Smart Scan */}
             <div className="space-y-2">
