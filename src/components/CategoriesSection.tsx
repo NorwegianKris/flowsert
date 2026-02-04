@@ -8,7 +8,7 @@ import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
 import { CertificateReviewQueue } from '@/components/CertificateReviewQueue';
 import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
-import { Award, FileText, Users, Building2, Settings2 } from 'lucide-react';
+import { Award, FileText, Users, Building2 } from 'lucide-react';
 
 export function CategoriesSection() {
   return (
@@ -21,7 +21,7 @@ export function CategoriesSection() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="roles" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="roles" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Roles
@@ -37,10 +37,6 @@ export function CategoriesSection() {
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Documents
-            </TabsTrigger>
-            <TabsTrigger value="standardization" className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
-              Standardization
             </TabsTrigger>
           </TabsList>
           
@@ -63,12 +59,55 @@ export function CategoriesSection() {
           </TabsContent>
           
           <TabsContent value="certificates">
-            <div className="space-y-2 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Define certificate categories that personnel can upload.
-              </p>
-            </div>
-            <CertificateCategoriesContent />
+            <Tabs defaultValue="categories" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="categories">Categories</TabsTrigger>
+                <TabsTrigger value="types">Types</TabsTrigger>
+                <TabsTrigger value="aliases">Aliases</TabsTrigger>
+                <TabsTrigger value="review">Review Queue</TabsTrigger>
+                <TabsTrigger value="backfill">Backfill Tool</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="categories">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Define certificate categories that personnel can upload.
+                  </p>
+                </div>
+                <CertificateCategoriesContent />
+              </TabsContent>
+              
+              <TabsContent value="types">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Manage canonical certificate types for standardized mapping.
+                  </p>
+                </div>
+                <CertificateTypesManager />
+              </TabsContent>
+              
+              <TabsContent value="aliases">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    View and manage certificate name aliases for auto-matching.
+                  </p>
+                </div>
+                <CertificateAliasesManager />
+              </TabsContent>
+              
+              <TabsContent value="review">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Review certificates that need manual type assignment.
+                  </p>
+                </div>
+                <CertificateReviewQueue />
+              </TabsContent>
+              
+              <TabsContent value="backfill">
+                <CertificateBackfillTool />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           
           <TabsContent value="documents">
@@ -78,10 +117,6 @@ export function CategoriesSection() {
               </p>
             </div>
             <DocumentCategoriesContent />
-          </TabsContent>
-          
-          <TabsContent value="standardization">
-            <StandardizationContent />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -96,50 +131,6 @@ function CertificateCategoriesContent() {
 
 function DocumentCategoriesContent() {
   return <DocumentCategoriesInner />;
-}
-
-function StandardizationContent() {
-  return (
-    <Tabs defaultValue="types" className="w-full">
-      <TabsList className="mb-4">
-        <TabsTrigger value="types">Types</TabsTrigger>
-        <TabsTrigger value="aliases">Aliases</TabsTrigger>
-        <TabsTrigger value="review">Review Queue</TabsTrigger>
-        <TabsTrigger value="backfill">Backfill Tool</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="types">
-        <div className="space-y-2 mb-4">
-          <p className="text-sm text-muted-foreground">
-            Manage canonical certificate types for standardized mapping.
-          </p>
-        </div>
-        <CertificateTypesManager />
-      </TabsContent>
-      
-      <TabsContent value="aliases">
-        <div className="space-y-2 mb-4">
-          <p className="text-sm text-muted-foreground">
-            View and manage certificate name aliases for auto-matching.
-          </p>
-        </div>
-        <CertificateAliasesManager />
-      </TabsContent>
-      
-      <TabsContent value="review">
-        <div className="space-y-2 mb-4">
-          <p className="text-sm text-muted-foreground">
-            Review certificates that need manual type assignment.
-          </p>
-        </div>
-        <CertificateReviewQueue />
-      </TabsContent>
-      
-      <TabsContent value="backfill">
-        <CertificateBackfillTool />
-      </TabsContent>
-    </Tabs>
-  );
 }
 
 // These are simplified inline components that reuse the logic from the managers
