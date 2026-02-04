@@ -8,7 +8,8 @@ import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
 import { CertificateReviewQueue } from '@/components/CertificateReviewQueue';
 import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
-import { Award, FileText, Users, Building2 } from 'lucide-react';
+import { Award, FileText, Users, Building2, ChevronDown, Settings2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export function CategoriesSection() {
   return (
@@ -63,9 +64,7 @@ export function CategoriesSection() {
               <TabsList className="mb-4">
                 <TabsTrigger value="categories">Categories</TabsTrigger>
                 <TabsTrigger value="types">Types</TabsTrigger>
-                <TabsTrigger value="aliases">Aliases</TabsTrigger>
-                <TabsTrigger value="review">Review Queue</TabsTrigger>
-                <TabsTrigger value="backfill">Backfill Tool</TabsTrigger>
+                <TabsTrigger value="organize">Organize</TabsTrigger>
               </TabsList>
               
               <TabsContent value="categories">
@@ -86,28 +85,37 @@ export function CategoriesSection() {
                 <CertificateTypesManager />
               </TabsContent>
               
-              <TabsContent value="aliases">
+              <TabsContent value="organize">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    View and manage certificate name aliases for auto-matching.
-                  </p>
-                </div>
-                <CertificateAliasesManager />
-              </TabsContent>
-              
-              <TabsContent value="review">
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    Review certificates that need manual type assignment.
+                    Confirm which certificates belong together. The system will organize them automatically.
                   </p>
                 </div>
                 <CertificateReviewQueue />
               </TabsContent>
-              
-              <TabsContent value="backfill">
-                <CertificateBackfillTool />
-              </TabsContent>
             </Tabs>
+            
+            {/* Advanced Tools - Collapsible */}
+            <Collapsible className="mt-6 border-t pt-4">
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
+                <Settings2 className="h-4 w-4" />
+                <span>Advanced</span>
+                <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4 space-y-6">
+                <p className="text-xs text-muted-foreground">
+                  Rarely used tools for managing recognition and bulk processing.
+                </p>
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Aliases</h4>
+                  <CertificateAliasesManager />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Backfill Tool</h4>
+                  <CertificateBackfillTool />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
           
           <TabsContent value="documents">
