@@ -427,15 +427,15 @@ export function AddCertificateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-primary" />
             Add Certificates for {personnelName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="space-y-4 flex-1 min-h-0 overflow-y-auto flex flex-col pr-1">
           {/* Smart Upload Section */}
           <SmartCertificateUpload
             existingCategories={categories}
@@ -468,8 +468,8 @@ export function AddCertificateDialog({
             </Button>
           </div>
 
-          {/* Certificate list - using native scroll for reliability */}
-          <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg">
+          {/* Certificate list */}
+          <div className="flex-1 min-h-[200px] border rounded-lg overflow-visible">
             <div className="p-4 space-y-4">
               {loadingCategories ? (
                 <div className="flex items-center justify-center py-8">
