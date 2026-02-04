@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
@@ -22,6 +29,7 @@ import { CertificateTypeSelector } from './CertificateTypeSelector';
 import { AmbiguityWarningDialog } from './AmbiguityWarningDialog';
 import { useLookupAlias, useCreateAlias, useUpdateAliasLastSeen } from '@/hooks/useCertificateAliases';
 import { normalizeCertificateTitle, isAmbiguousTitle } from '@/lib/certificateNormalization';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AddCertificateDialogProps {
   open: boolean;
@@ -38,10 +46,11 @@ interface CertificateEntry {
   expiryDate: string;
   placeOfIssue: string;
   issuingAuthority: string;
-  selected: boolean;
   file: File | null;
+  categoryId: string | null;
   // OCR tracking
   wasAutoFilled?: boolean;
+  extractionStatus?: 'green' | 'amber' | 'red';
   fieldConfidence?: {
     dateOfIssue?: 'high' | 'medium' | 'low';
     expiryDate?: 'high' | 'medium' | 'low';
@@ -73,10 +82,8 @@ export function AddCertificateDialog({
   const [categories, setCategories] = useState<CertificateCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
-  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const [customName, setCustomName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastExtractionResult, setLastExtractionResult] = useState<ExtractionResult | null>(null);
+  const [expandedCertId, setExpandedCertId] = useState<string | null>(null);
   
   // Ambiguity warning dialog state
   const [ambiguityWarningOpen, setAmbiguityWarningOpen] = useState(false);
@@ -89,7 +96,6 @@ export function AddCertificateDialog({
   
   // Alias mutation hooks
   const createAlias = useCreateAlias();
-  const updateAliasLastSeen = useUpdateAliasLastSeen();
 
   // Fetch certificate categories from database
   useEffect(() => {
@@ -107,22 +113,7 @@ export function AddCertificateDialog({
           .order('name');
 
         if (error) throw error;
-
         setCategories(data || []);
-        
-        // Initialize certificates from categories
-        setCertificates(
-          (data || []).map((cat) => ({
-            id: cat.id,
-            name: cat.name,
-            dateOfIssue: '',
-            expiryDate: '',
-            placeOfIssue: '',
-            issuingAuthority: '',
-            selected: false,
-            file: null,
-          }))
-        );
       } catch (error) {
         console.error('Error fetching certificate categories:', error);
         toast.error('Failed to load certificate categories');
@@ -133,144 +124,80 @@ export function AddCertificateDialog({
 
     if (open) {
       fetchCategories();
-      setLastExtractionResult(null);
+      setCertificates([]);
+      setExpandedCertId(null);
     }
   }, [businessId, open]);
 
-  const selectedCertificates = certificates.filter((c) => c.selected);
-
-  const handleToggle = (id: string) => {
-    setCertificates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, selected: !c.selected } : c))
-    );
-  };
-
-  const handleFieldChange = (
-    id: string,
-    field: 'dateOfIssue' | 'expiryDate' | 'placeOfIssue' | 'issuingAuthority',
-    value: string
-  ) => {
-    setCertificates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
-    );
-  };
-
-  const handleFileChange = (id: string, file: File | null) => {
-    setCertificates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, file } : c))
-    );
-  };
-
-  const handleRemoveFile = (id: string) => {
-    setCertificates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, file: null } : c))
-    );
-    if (fileInputRefs.current[id]) {
-      fileInputRefs.current[id]!.value = '';
-    }
-  };
-
-  const handleAddCustom = () => {
-    if (!customName.trim()) return;
-    const newCert: CertificateEntry = {
-      id: `custom-${Date.now()}`,
-      name: customName.trim(),
-      dateOfIssue: '',
-      expiryDate: '',
-      placeOfIssue: '',
-      issuingAuthority: '',
-      selected: true,
-      file: null,
-    };
-    setCertificates((prev) => [newCert, ...prev]);
-    setCustomName('');
-  };
-
-  // Handle OCR extraction result
+  // Handle OCR extraction result - creates a new certificate entry
   const handleExtractionComplete = (result: ExtractionResult, file: File) => {
-    setLastExtractionResult(result);
     const { extractedData } = result;
 
-    // Determine confidence levels based on overall result
     const getConfidence = (status: string): 'high' | 'medium' | 'low' => {
       if (result.status === 'green') return 'high';
       if (result.status === 'amber') return 'medium';
       return 'low';
     };
 
-    if (result.status === 'red') {
-      // Red status - create a new custom entry with the file but no data
-      const newCert: CertificateEntry = {
-        id: `custom-${Date.now()}`,
-        name: '',
-        dateOfIssue: '',
-        expiryDate: '',
-        placeOfIssue: '',
-        issuingAuthority: '',
-        selected: true,
-        file,
-      };
-      setCertificates((prev) => [newCert, ...prev]);
-      return;
+    // Find matching category if extraction found one
+    let matchedCategoryId: string | null = null;
+    if (extractedData.matchedCategoryId) {
+      matchedCategoryId = extractedData.matchedCategoryId;
     }
 
-    // Check if we have a matched category
-    if (extractedData.matchedCategoryId) {
-      // Update the matching category entry
-      setCertificates((prev) =>
-        prev.map((c) => {
-          if (c.id === extractedData.matchedCategoryId) {
-            return {
-              ...c,
-              selected: true,
-              dateOfIssue: extractedData.dateOfIssue || '',
-              expiryDate: extractedData.expiryDate || '',
-              placeOfIssue: extractedData.placeOfIssue || '',
-              issuingAuthority: extractedData.issuingAuthority || '',
-              file,
-              wasAutoFilled: true,
-              fieldConfidence: {
-                dateOfIssue: extractedData.dateOfIssue ? getConfidence(result.status) : undefined,
-                expiryDate: extractedData.expiryDate ? getConfidence(result.status) : undefined,
-                placeOfIssue: extractedData.placeOfIssue ? getConfidence(result.status) : undefined,
-                issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
-              },
-            };
-          }
-          return c;
-        })
-      );
-    } else {
-      // Create a new custom certificate with extracted data
-      const newCert: CertificateEntry = {
-        id: `custom-${Date.now()}`,
-        name: extractedData.certificateName || '',
-        dateOfIssue: extractedData.dateOfIssue || '',
-        expiryDate: extractedData.expiryDate || '',
-        placeOfIssue: extractedData.placeOfIssue || '',
-        issuingAuthority: extractedData.issuingAuthority || '',
-        selected: true,
-        file,
-        wasAutoFilled: true,
-        fieldConfidence: {
-          dateOfIssue: extractedData.dateOfIssue ? getConfidence(result.status) : undefined,
-          expiryDate: extractedData.expiryDate ? getConfidence(result.status) : undefined,
-          placeOfIssue: extractedData.placeOfIssue ? getConfidence(result.status) : undefined,
-          issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
-        },
-      };
-      setCertificates((prev) => [newCert, ...prev]);
+    const newCert: CertificateEntry = {
+      id: `cert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: extractedData.certificateName || file.name.replace(/\.[^/.]+$/, ''),
+      dateOfIssue: extractedData.dateOfIssue || '',
+      expiryDate: extractedData.expiryDate || '',
+      placeOfIssue: extractedData.placeOfIssue || '',
+      issuingAuthority: extractedData.issuingAuthority || '',
+      file,
+      categoryId: matchedCategoryId,
+      wasAutoFilled: result.status !== 'red',
+      extractionStatus: result.status,
+      fieldConfidence: result.status !== 'red' ? {
+        dateOfIssue: extractedData.dateOfIssue ? getConfidence(result.status) : undefined,
+        expiryDate: extractedData.expiryDate ? getConfidence(result.status) : undefined,
+        placeOfIssue: extractedData.placeOfIssue ? getConfidence(result.status) : undefined,
+        issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
+      } : undefined,
+    };
+
+    setCertificates(prev => [...prev, newCert]);
+    
+    // Auto-expand the first certificate if none expanded
+    if (certificates.length === 0) {
+      setExpandedCertId(newCert.id);
     }
   };
 
+  const handleRemoveCertificate = (id: string) => {
+    setCertificates(prev => prev.filter(c => c.id !== id));
+    if (expandedCertId === id) {
+      setExpandedCertId(null);
+    }
+  };
+
+  const handleFieldChange = (
+    id: string,
+    field: keyof CertificateEntry,
+    value: string | null
+  ) => {
+    setCertificates(prev =>
+      prev.map(c => c.id === id ? { ...c, [field]: value } : c)
+    );
+  };
+
   const handleSubmit = async () => {
-    // For admins/managers, type selection is required (unless auto-matched)
-    // For workers, type is optional
-    const toAdd = selectedCertificates.filter((c) => {
-      const hasRequiredFields = c.dateOfIssue && c.placeOfIssue && c.issuingAuthority;
-      if (!hasRequiredFields) return false;
+    // Validate certificates
+    const validCerts = certificates.filter(c => {
+      const hasName = c.name.trim();
+      const hasDateOfIssue = c.dateOfIssue;
       
-      // Admins/managers need a type selected (unless auto-matched which already has it)
+      if (!hasName || !hasDateOfIssue) return false;
+      
+      // Admins/managers need a type selected
       if (isAdminOrManager && !c.certificateTypeId && !c.aliasAutoMatched) {
         return false;
       }
@@ -278,33 +205,27 @@ export function AddCertificateDialog({
       return true;
     });
 
-    if (toAdd.length === 0) {
-      if (isAdminOrManager) {
-        toast.error('Please select certificates, fill in required fields, and select a certificate type');
-      } else {
-        toast.error('Please select certificates and fill in required fields (Date of Issue, Place of Issue, Issuing Authority)');
-      }
+    if (validCerts.length === 0) {
+      toast.error('Please fill in at least the Certificate Name and Date of Issue for each certificate');
       return;
+    }
+
+    if (validCerts.length < certificates.length) {
+      toast.warning(`${certificates.length - validCerts.length} certificate(s) are missing required fields and will be skipped`);
     }
 
     setIsSubmitting(true);
 
     try {
-      // Insert certificates one by one to handle file uploads
-      for (const cert of toAdd) {
+      for (const cert of validCerts) {
         const titleRaw = cert.titleRaw || cert.name;
         const titleNormalized = normalizeCertificateTitle(titleRaw);
         
-        // Determine needs_review based on role and alias match
-        // Workers: always needs_review = true unless alias auto-matched
-        // Admins: needs_review = false (they confirmed the mapping)
         let needsReview = false;
         if (!isAdminOrManager) {
-          // Worker: needs_review = true unless alias auto-matched
           needsReview = !cert.aliasAutoMatched;
         }
         
-        // First insert the certificate to get its ID
         const { data: insertedCert, error: insertError } = await supabase
           .from('certificates')
           .insert({
@@ -312,10 +233,9 @@ export function AddCertificateDialog({
             name: cert.name,
             date_of_issue: cert.dateOfIssue,
             expiry_date: cert.expiryDate || null,
-            place_of_issue: cert.placeOfIssue,
-            issuing_authority: cert.issuingAuthority,
-            category_id: cert.id.startsWith('custom-') ? null : cert.id,
-            // New standardization fields
+            place_of_issue: cert.placeOfIssue || '',
+            issuing_authority: cert.issuingAuthority || '',
+            category_id: cert.categoryId,
             title_raw: titleRaw,
             title_normalized: titleNormalized,
             certificate_type_id: cert.certificateTypeId || null,
@@ -326,7 +246,7 @@ export function AddCertificateDialog({
 
         if (insertError) throw insertError;
 
-        // If there's a file, upload it and update the certificate
+        // Upload file if exists
         if (cert.file && insertedCert) {
           const fileExt = cert.file.name.split('.').pop();
           const filePath = `${insertedCert.id}/${Date.now()}.${fileExt}`;
@@ -341,7 +261,6 @@ export function AddCertificateDialog({
             continue;
           }
 
-          // Get public URL and update certificate
           const { data: urlData } = supabase.storage
             .from('certificate-documents')
             .getPublicUrl(filePath);
@@ -360,30 +279,15 @@ export function AddCertificateDialog({
               certificateTypeId: cert.certificateTypeId,
             });
           } catch (aliasError) {
-            // Don't fail the whole operation if alias creation fails
             console.error('Error creating alias:', aliasError);
           }
         }
       }
 
-      toast.success(`${toAdd.length} certificate(s) added successfully`);
+      toast.success(`${validCerts.length} certificate(s) added successfully`);
       onSuccess();
       onOpenChange(false);
-      
-      // Reset form
-      setCertificates(
-        categories.map((cat) => ({
-          id: cat.id,
-          name: cat.name,
-          dateOfIssue: '',
-          expiryDate: '',
-          placeOfIssue: '',
-          issuingAuthority: '',
-          selected: false,
-          file: null,
-        }))
-      );
-      setLastExtractionResult(null);
+      setCertificates([]);
     } catch (error) {
       console.error('Error adding certificates:', error);
       toast.error('Failed to add certificates');
@@ -392,10 +296,8 @@ export function AddCertificateDialog({
     }
   };
 
-  // Helper to render field confidence indicator
   const renderFieldIndicator = (confidence?: 'high' | 'medium' | 'low') => {
     if (!confidence) return null;
-    
     if (confidence === 'high') {
       return <CheckCircle2 className="h-3.5 w-3.5 text-primary" />;
     }
@@ -404,12 +306,29 @@ export function AddCertificateDialog({
     }
     return null;
   };
+
+  const getStatusColor = (status?: 'green' | 'amber' | 'red') => {
+    switch (status) {
+      case 'green': return 'border-primary/50 bg-primary/5';
+      case 'amber': return 'border-warning/50 bg-warning/5';
+      case 'red': return 'border-destructive/50 bg-destructive/5';
+      default: return 'border-border';
+    }
+  };
+
+  const getStatusIcon = (status?: 'green' | 'amber' | 'red') => {
+    switch (status) {
+      case 'green': return <CheckCircle2 className="h-4 w-4 text-primary" />;
+      case 'amber': return <AlertTriangle className="h-4 w-4 text-warning" />;
+      case 'red': return <AlertTriangle className="h-4 w-4 text-destructive" />;
+      default: return <FileText className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
   
-  // Handle ambiguity warning confirmation
   const handleAmbiguityConfirm = () => {
     if (pendingAmbiguousAlias) {
-      setCertificates((prev) =>
-        prev.map((c) =>
+      setCertificates(prev =>
+        prev.map(c =>
           c.id === pendingAmbiguousAlias.certId
             ? { ...c, rememberAlias: true }
             : c
@@ -425,114 +344,123 @@ export function AddCertificateDialog({
     setPendingAmbiguousAlias(null);
   };
 
+  const processedCount = certificates.length;
+  const readyCount = certificates.filter(c => c.name && c.dateOfIssue).length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-primary" />
             Add Certificates for {personnelName}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 min-h-0 overflow-y-auto flex flex-col pr-1">
-          {/* Smart Upload Section */}
-          <SmartCertificateUpload
-            existingCategories={categories}
-            onExtractionComplete={handleExtractionComplete}
-            disabled={loadingCategories}
-          />
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            {/* Smart Upload Section */}
+            <div className="space-y-2">
+              <SmartCertificateUpload
+                existingCategories={categories}
+                onExtractionComplete={handleExtractionComplete}
+                disabled={loadingCategories}
+              />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or select from categories
-              </span>
-            </div>
-          </div>
 
-          {/* Custom certificate input */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add custom certificate name..."
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddCustom()}
-            />
-            <Button variant="outline" size="icon" onClick={handleAddCustom}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+            {/* Processed Certificates Section */}
+            {certificates.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium">
+                    Processed Certificates ({processedCount})
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    {readyCount} ready to save
+                  </span>
+                </div>
 
-          {/* Certificate list */}
-          <div className="flex-1 min-h-[200px] border rounded-lg overflow-visible">
-            <div className="p-4 space-y-4">
-              {loadingCategories ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">Loading categories...</span>
-                </div>
-              ) : certificates.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <div className="text-4xl mb-3">📋</div>
-                  <p>No certificate categories defined.</p>
-                  <p className="text-sm">Add a custom certificate above or contact your administrator.</p>
-                </div>
-              ) : certificates.map((cert) => (
-                <div
-                  key={cert.id}
-                  className={cn(
-                    "p-4 rounded-lg border transition-colors",
-                    cert.selected
-                      ? cert.wasAutoFilled
-                        ? 'border-primary/50 bg-primary/5'
-                        : 'border-primary bg-primary/5'
-                      : 'border-border/50 hover:border-border'
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={cert.selected}
-                      onCheckedChange={() => handleToggle(cert.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{cert.name || 'New Certificate'}</span>
-                        {cert.wasAutoFilled && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            Auto-filled
-                          </span>
-                        )}
+                <div className="space-y-3">
+                  {certificates.map((cert) => (
+                    <div
+                      key={cert.id}
+                      className={cn(
+                        "rounded-lg border transition-all",
+                        getStatusColor(cert.extractionStatus)
+                      )}
+                    >
+                      {/* Certificate Header - Always visible */}
+                      <div
+                        className="flex items-center gap-3 p-3 cursor-pointer"
+                        onClick={() => setExpandedCertId(expandedCertId === cert.id ? null : cert.id)}
+                      >
+                        {getStatusIcon(cert.extractionStatus)}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {cert.name || 'Unnamed Certificate'}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {cert.file?.name}
+                            {cert.categoryId && categories.find(c => c.id === cert.categoryId) && (
+                              <span className="ml-2">
+                                → {categories.find(c => c.id === cert.categoryId)?.name}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCertificate(cert.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                        </Button>
                       </div>
 
-                      {/* Editable name for custom certificates */}
-                      {cert.id.startsWith('custom-') && cert.selected && (
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">
-                            Certificate Name *
-                          </Label>
-                          <Input
-                            value={cert.name}
-                            onChange={(e) =>
-                              setCertificates((prev) =>
-                                prev.map((c) =>
-                                  c.id === cert.id ? { ...c, name: e.target.value } : c
-                                )
-                              )
-                            }
-                            placeholder="Certificate name"
-                          />
-                        </div>
-                      )}
+                      {/* Expanded Details */}
+                      {expandedCertId === cert.id && (
+                        <div className="px-3 pb-3 pt-0 space-y-3 border-t">
+                          <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Certificate Name */}
+                            <div className="sm:col-span-2 space-y-1">
+                              <Label className="text-xs text-muted-foreground">
+                                Certificate Name *
+                              </Label>
+                              <Input
+                                value={cert.name}
+                                onChange={(e) => handleFieldChange(cert.id, 'name', e.target.value)}
+                                placeholder="Certificate name"
+                              />
+                            </div>
 
-                      {cert.selected && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
+                            {/* Category Selection */}
+                            <div className="sm:col-span-2 space-y-1">
+                              <Label className="text-xs text-muted-foreground">
+                                Category
+                              </Label>
+                              <Select
+                                value={cert.categoryId || 'none'}
+                                onValueChange={(value) => handleFieldChange(cert.id, 'categoryId', value === 'none' ? null : value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a category..." />
+                                </SelectTrigger>
+                                <SelectContent className="z-[200]">
+                                  <SelectItem value="none">No category</SelectItem>
+                                  {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                      {cat.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Date of Issue */}
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Date of Issue *
@@ -541,15 +469,11 @@ export function AddCertificateDialog({
                               <Input
                                 type="date"
                                 value={cert.dateOfIssue}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    cert.id,
-                                    'dateOfIssue',
-                                    e.target.value
-                                  )
-                                }
+                                onChange={(e) => handleFieldChange(cert.id, 'dateOfIssue', e.target.value)}
                               />
                             </div>
+
+                            {/* Expiry Date */}
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Expiry Date
@@ -558,186 +482,117 @@ export function AddCertificateDialog({
                               <Input
                                 type="date"
                                 value={cert.expiryDate}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    cert.id,
-                                    'expiryDate',
-                                    e.target.value
-                                  )
-                                }
+                                onChange={(e) => handleFieldChange(cert.id, 'expiryDate', e.target.value)}
                               />
                             </div>
+
+                            {/* Place of Issue */}
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                                Place of Issue *
+                                Place of Issue
                                 {renderFieldIndicator(cert.fieldConfidence?.placeOfIssue)}
                               </Label>
                               <Input
                                 placeholder="e.g., Norway"
                                 value={cert.placeOfIssue}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    cert.id,
-                                    'placeOfIssue',
-                                    e.target.value
-                                  )
-                                }
+                                onChange={(e) => handleFieldChange(cert.id, 'placeOfIssue', e.target.value)}
                               />
                             </div>
+
+                            {/* Issuing Authority */}
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                                Issuing Authority *
+                                Issuing Authority
                                 {renderFieldIndicator(cert.fieldConfidence?.issuingAuthority)}
                               </Label>
                               <Input
                                 placeholder="e.g., DNV, Lloyd's Register"
                                 value={cert.issuingAuthority}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    cert.id,
-                                    'issuingAuthority',
-                                    e.target.value
-                                  )
-                                }
+                                onChange={(e) => handleFieldChange(cert.id, 'issuingAuthority', e.target.value)}
                               />
                             </div>
-                          </div>
-                          
-                          {/* Certificate Type Selector - NEW */}
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                              Certificate Type {isAdminOrManager && '*'}
-                              {cert.aliasAutoMatched && (
-                                <span className="text-xs text-primary ml-1">(Auto-matched)</span>
-                              )}
-                            </Label>
-                            <CertificateTypeSelector
-                              value={cert.certificateTypeId || null}
-                              onChange={(typeId) =>
-                                setCertificates((prev) =>
-                                  prev.map((c) =>
-                                    c.id === cert.id
-                                      ? { ...c, certificateTypeId: typeId }
-                                      : c
-                                  )
-                                )
-                              }
-                              required={isAdminOrManager}
-                              autoMatched={cert.aliasAutoMatched}
-                              placeholder={isAdminOrManager ? "Select certificate type..." : "Optional: Select type..."}
-                            />
-                          </div>
-                          
-                          {/* Remember this name checkbox - Admin/Manager only */}
-                          {isAdminOrManager && cert.certificateTypeId && !cert.aliasAutoMatched && (
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`remember-${cert.id}`}
-                                checked={cert.rememberAlias || false}
-                                onCheckedChange={(checked) => {
-                                  const normalizedTitle = normalizeCertificateTitle(cert.titleRaw || cert.name);
-                                  
-                                  // If checking and title is ambiguous, show warning
-                                  if (checked && isAmbiguousTitle(normalizedTitle)) {
-                                    setPendingAmbiguousAlias({
-                                      certId: cert.id,
-                                      normalizedTitle,
-                                      typeId: cert.certificateTypeId!,
-                                      rawTitle: cert.titleRaw || cert.name,
-                                    });
-                                    setAmbiguityWarningOpen(true);
-                                    return;
-                                  }
-                                  
-                                  setCertificates((prev) =>
-                                    prev.map((c) =>
-                                      c.id === cert.id
-                                        ? { ...c, rememberAlias: !!checked }
-                                        : c
-                                    )
-                                  );
-                                }}
-                              />
-                              <Label
-                                htmlFor={`remember-${cert.id}`}
-                                className="text-xs text-muted-foreground cursor-pointer"
-                              >
-                                Remember this name for next time
+
+                            {/* Certificate Type Selector */}
+                            <div className="sm:col-span-2 space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                Certificate Type {isAdminOrManager && '*'}
+                                {cert.aliasAutoMatched && (
+                                  <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                                )}
                               </Label>
+                              <CertificateTypeSelector
+                                value={cert.certificateTypeId || null}
+                                onChange={(typeId) => handleFieldChange(cert.id, 'certificateTypeId', typeId)}
+                                required={isAdminOrManager}
+                                autoMatched={cert.aliasAutoMatched}
+                                placeholder={isAdminOrManager ? "Select certificate type..." : "Optional: Select type..."}
+                              />
                             </div>
-                          )}
-                          
-                          {/* File upload */}
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">
-                              Document (PDF or Image)
-                            </Label>
-                            {cert.file ? (
-                              <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
-                                <FileText className="h-4 w-4 text-primary" />
-                                <span className="text-sm flex-1 truncate">{cert.file.name}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => handleRemoveFile(cert.id)}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="file"
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                  className="hidden"
-                                  ref={(el) => (fileInputRefs.current[cert.id] = el)}
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0] || null;
-                                    handleFileChange(cert.id, file);
+
+                            {/* Remember Alias Checkbox */}
+                            {isAdminOrManager && cert.certificateTypeId && !cert.aliasAutoMatched && (
+                              <div className="sm:col-span-2 flex items-center space-x-2">
+                                <Checkbox
+                                  id={`remember-${cert.id}`}
+                                  checked={cert.rememberAlias || false}
+                                  onCheckedChange={(checked) => {
+                                    const normalizedTitle = normalizeCertificateTitle(cert.titleRaw || cert.name);
+                                    
+                                    if (checked && isAmbiguousTitle(normalizedTitle)) {
+                                      setPendingAmbiguousAlias({
+                                        certId: cert.id,
+                                        normalizedTitle,
+                                        typeId: cert.certificateTypeId!,
+                                        rawTitle: cert.titleRaw || cert.name,
+                                      });
+                                      setAmbiguityWarningOpen(true);
+                                      return;
+                                    }
+                                    
+                                    handleFieldChange(cert.id, 'rememberAlias', checked ? 'true' : '');
                                   }}
                                 />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => fileInputRefs.current[cert.id]?.click()}
+                                <Label
+                                  htmlFor={`remember-${cert.id}`}
+                                  className="text-xs text-muted-foreground cursor-pointer"
                                 >
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  Upload Document
-                                </Button>
+                                  Remember this name for next time
+                                </Label>
                               </div>
                             )}
                           </div>
                         </div>
                       )}
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            )}
 
-          <div className="text-sm text-muted-foreground">
-            {selectedCertificates.length} certificate(s) selected
+            {/* Empty state when no certificates */}
+            {certificates.length === 0 && !loadingCategories && (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                <div className="text-4xl mb-3">📄</div>
+                <p>Upload certificates above to get started</p>
+                <p className="text-sm">We'll extract details automatically</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || selectedCertificates.length === 0}
+            disabled={isSubmitting || certificates.length === 0}
           >
-            {isSubmitting ? 'Adding...' : `Add ${selectedCertificates.length} Certificate(s)`}
+            {isSubmitting ? 'Adding...' : `Save ${readyCount} Certificate(s)`}
           </Button>
         </DialogFooter>
       </DialogContent>
       
-      {/* Ambiguity Warning Dialog */}
       <AmbiguityWarningDialog
         open={ambiguityWarningOpen}
         onOpenChange={setAmbiguityWarningOpen}
