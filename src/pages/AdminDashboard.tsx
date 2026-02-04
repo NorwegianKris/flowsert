@@ -485,7 +485,7 @@ export default function AdminDashboard() {
 
         {settingsOpen && (
           <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-            <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-background border-l shadow-lg">
+            <div className="fixed inset-y-0 right-0 w-full max-w-5xl bg-background border-l shadow-lg">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-lg font-semibold">Settings</h2>
                 <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(false)}>
