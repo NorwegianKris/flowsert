@@ -71,7 +71,7 @@ export function CategoriesSection() {
               <TabsContent value="categories">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Define certificate categories that personnel can upload.
+                    Define broad certificate categories such as Welding, Diving, Inspection, or Safety.
                   </p>
                 </div>
                 <CertificateCategoriesContent />
