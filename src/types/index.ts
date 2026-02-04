@@ -9,6 +9,14 @@ export interface Certificate {
   issuingAuthority?: string;
   documentUrl?: string;
   category?: string; // Category name from certificate_categories
+  // Canonical mapping fields
+  titleRaw?: string | null;
+  titleNormalized?: string | null;
+  certificateTypeId?: string | null;
+  needsReview?: boolean;
+  unmappedReason?: string | null;
+  unmappedBy?: string | null;
+  unmappedAt?: string | null;
 }
 
 export type PersonnelCategory = 'fixed_employee' | 'freelancer' | 'job_seeker';
