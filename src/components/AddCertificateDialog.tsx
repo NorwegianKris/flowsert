@@ -20,7 +20,7 @@ import {
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
@@ -434,6 +434,14 @@ export function AddCertificateDialog({
                   </span>
                 </div>
 
+                {/* Verification note */}
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Please review each certificate below and ensure all fields are correct before saving. Click on a certificate to expand and edit its details.
+                  </p>
+                </div>
+
                 <div className="space-y-3">
                   {certificates.map((cert) => (
                     <div
@@ -469,6 +477,14 @@ export function AddCertificateDialog({
                               </span>
                             )}
                           </p>
+                        </div>
+                        {/* Expand/collapse indicator */}
+                        <div className="flex-shrink-0 text-muted-foreground">
+                          {expandedCertId === cert.id ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
                         </div>
                         <Button
                           variant="ghost"
