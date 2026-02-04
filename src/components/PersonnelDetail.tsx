@@ -382,9 +382,9 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
       {/* Certificates Table */}
       <Card className="border-border/50">
-        <CardHeader className="space-y-3">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-lg font-semibold">Certificates</CardTitle>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-end">
             <Button
               variant="outline"
               size="sm"
