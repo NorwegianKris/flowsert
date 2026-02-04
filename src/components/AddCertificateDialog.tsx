@@ -59,6 +59,7 @@ interface CertificateEntry {
   };
   // Canonical mapping fields
   certificateTypeId?: string | null;
+  certificateTypeName?: string; // The name of the selected type from dropdown
   certificateTypeFreeText?: string;
   titleRaw?: string;
   rememberAlias?: boolean;
@@ -100,6 +101,17 @@ export function AddCertificateDialog({
   
   // Alias mutation hooks
   const createAlias = useCreateAlias();
+  
+  // Compute normalized free text for the currently expanded certificate
+  const freeTextNormalized = useMemo(() => {
+    const currentCert = certificates.find(c => c.id === expandedCertId);
+    return currentCert?.certificateTypeFreeText?.trim()
+      ? normalizeCertificateTitle(currentCert.certificateTypeFreeText)
+      : null;
+  }, [certificates, expandedCertId]);
+  
+  // Look up alias for the free text input
+  const { data: aliasMatch, isLoading: isLoadingAlias } = useLookupAlias(freeTextNormalized);
 
   // Fetch certificate categories from database
   useEffect(() => {
@@ -241,8 +253,19 @@ export function AddCertificateDialog({
 
     try {
       for (const cert of validCerts) {
-        const titleRaw = cert.titleRaw || cert.name;
-        const titleNormalized = normalizeCertificateTitle(titleRaw);
+        // Determine title_raw based on how type was specified
+        // This ensures title_raw stores the CERTIFICATE TYPE, not the filename
+        let titleRaw: string | null = null;
+        if (cert.certificateTypeFreeText?.trim()) {
+          // User typed free text - store exactly what they typed
+          titleRaw = cert.certificateTypeFreeText.trim();
+        } else if (cert.certificateTypeId && cert.certificateTypeName) {
+          // User selected from dropdown - store the type name
+          titleRaw = cert.certificateTypeName;
+        }
+        // If neither, title_raw stays null - no type was specified
+        
+        const titleNormalized = titleRaw ? normalizeCertificateTitle(titleRaw) : null;
         
         let needsReview = false;
         if (!isAdminOrManager) {
@@ -600,10 +623,12 @@ export function AddCertificateDialog({
                               </Label>
                               <CertificateTypeSelector
                                 value={cert.certificateTypeId || null}
-                                onChange={(typeId) => {
+                                onChange={(typeId, typeName) => {
                                   handleFieldChange(cert.id, 'certificateTypeId', typeId);
+                                  handleFieldChange(cert.id, 'certificateTypeName', typeName || null);
                                   if (typeId) {
                                     handleFieldChange(cert.id, 'certificateTypeFreeText', '');
+                                    handleFieldChange(cert.id, 'aliasAutoMatched', '');
                                   }
                                 }}
                                 required={isAdminOrManager}
@@ -615,9 +640,38 @@ export function AddCertificateDialog({
                                   handleFieldChange(cert.id, 'certificateTypeFreeText', text);
                                   if (text) {
                                     handleFieldChange(cert.id, 'certificateTypeId', null);
+                                    handleFieldChange(cert.id, 'certificateTypeName', null);
+                                    handleFieldChange(cert.id, 'aliasAutoMatched', '');
                                   }
                                 }}
                               />
+                              
+                              {/* Alias Match Feedback */}
+                              {expandedCertId === cert.id && 
+                               cert.certificateTypeFreeText?.trim() && 
+                               !cert.certificateTypeId && 
+                               aliasMatch && 
+                               aliasMatch.certificate_type_name && (
+                                <div className="flex items-center gap-2 mt-1 p-2 rounded bg-primary/5 border border-primary/20">
+                                  <span className="text-xs text-muted-foreground">
+                                    Matched: <span className="font-medium text-foreground">{aliasMatch.certificate_type_name}</span>
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto p-0 text-xs text-primary"
+                                    onClick={() => {
+                                      handleFieldChange(cert.id, 'certificateTypeId', aliasMatch.certificate_type_id);
+                                      handleFieldChange(cert.id, 'certificateTypeName', aliasMatch.certificate_type_name);
+                                      handleFieldChange(cert.id, 'certificateTypeFreeText', '');
+                                      handleFieldChange(cert.id, 'aliasAutoMatched', 'true');
+                                    }}
+                                  >
+                                    Use this type
+                                  </Button>
+                                </div>
+                              )}
                             </div>
 
                             {/* Remember Alias Checkbox */}
@@ -627,14 +681,16 @@ export function AddCertificateDialog({
                                   id={`remember-${cert.id}`}
                                   checked={cert.rememberAlias || false}
                                   onCheckedChange={(checked) => {
-                                    const normalizedTitle = normalizeCertificateTitle(cert.titleRaw || cert.name);
+                                    // Use certificateTypeName or certificateTypeFreeText for normalized title
+                                    const titleForNormalization = cert.certificateTypeName || cert.certificateTypeFreeText || '';
+                                    const normalizedTitle = normalizeCertificateTitle(titleForNormalization);
                                     
                                     if (checked && isAmbiguousTitle(normalizedTitle)) {
                                       setPendingAmbiguousAlias({
                                         certId: cert.id,
                                         normalizedTitle,
                                         typeId: cert.certificateTypeId!,
-                                        rawTitle: cert.titleRaw || cert.name,
+                                        rawTitle: titleForNormalization,
                                       });
                                       setAmbiguityWarningOpen(true);
                                       return;

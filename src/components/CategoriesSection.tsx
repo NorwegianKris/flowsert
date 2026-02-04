@@ -6,7 +6,6 @@ import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
 import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
-import { CertificateReviewQueue } from '@/components/CertificateReviewQueue';
 import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
 import { Award, FileText, Users, Building2, ChevronDown, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -64,7 +63,6 @@ export function CategoriesSection() {
               <TabsList className="mb-4">
                 <TabsTrigger value="categories">Categories</TabsTrigger>
                 <TabsTrigger value="types">Types</TabsTrigger>
-                <TabsTrigger value="organize">Organize</TabsTrigger>
               </TabsList>
               
               <TabsContent value="categories">
@@ -83,15 +81,6 @@ export function CategoriesSection() {
                   </p>
                 </div>
                 <CertificateTypesManager />
-              </TabsContent>
-              
-              <TabsContent value="organize">
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    Confirm which certificates belong together. The system will organize them automatically.
-                  </p>
-                </div>
-                <CertificateReviewQueue />
               </TabsContent>
             </Tabs>
             
