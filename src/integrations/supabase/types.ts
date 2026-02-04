@@ -112,6 +112,7 @@ export type Database = {
           postal_address: string | null
           postal_code: string | null
           updated_at: string
+          use_canonical_certificates: boolean
           website: string | null
         }
         Insert: {
@@ -129,6 +130,7 @@ export type Database = {
           postal_address?: string | null
           postal_code?: string | null
           updated_at?: string
+          use_canonical_certificates?: boolean
           website?: string | null
         }
         Update: {
@@ -146,9 +148,61 @@ export type Database = {
           postal_address?: string | null
           postal_code?: string | null
           updated_at?: string
+          use_canonical_certificates?: boolean
           website?: string | null
         }
         Relationships: []
+      }
+      certificate_aliases: {
+        Row: {
+          alias_normalized: string
+          alias_raw_example: string | null
+          business_id: string
+          certificate_type_id: string
+          confidence: number
+          created_at: string
+          created_by: string
+          id: string
+          last_seen_at: string
+        }
+        Insert: {
+          alias_normalized: string
+          alias_raw_example?: string | null
+          business_id: string
+          certificate_type_id: string
+          confidence?: number
+          created_at?: string
+          created_by: string
+          id?: string
+          last_seen_at?: string
+        }
+        Update: {
+          alias_normalized?: string
+          alias_raw_example?: string | null
+          business_id?: string
+          certificate_type_id?: string
+          confidence?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_seen_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_aliases_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_aliases_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       certificate_categories: {
         Row: {
@@ -182,9 +236,58 @@ export type Database = {
           },
         ]
       }
+      certificate_types: {
+        Row: {
+          business_id: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_types_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificates: {
         Row: {
           category_id: string | null
+          certificate_type_id: string | null
           created_at: string
           date_of_issue: string
           document_url: string | null
@@ -193,12 +296,19 @@ export type Database = {
           id: string
           issuing_authority: string | null
           name: string
+          needs_review: boolean
           personnel_id: string
           place_of_issue: string
+          title_normalized: string | null
+          title_raw: string | null
+          unmapped_at: string | null
+          unmapped_by: string | null
+          unmapped_reason: string | null
           updated_at: string
         }
         Insert: {
           category_id?: string | null
+          certificate_type_id?: string | null
           created_at?: string
           date_of_issue: string
           document_url?: string | null
@@ -207,12 +317,19 @@ export type Database = {
           id?: string
           issuing_authority?: string | null
           name: string
+          needs_review?: boolean
           personnel_id: string
           place_of_issue: string
+          title_normalized?: string | null
+          title_raw?: string | null
+          unmapped_at?: string | null
+          unmapped_by?: string | null
+          unmapped_reason?: string | null
           updated_at?: string
         }
         Update: {
           category_id?: string | null
+          certificate_type_id?: string | null
           created_at?: string
           date_of_issue?: string
           document_url?: string | null
@@ -221,8 +338,14 @@ export type Database = {
           id?: string
           issuing_authority?: string | null
           name?: string
+          needs_review?: boolean
           personnel_id?: string
           place_of_issue?: string
+          title_normalized?: string | null
+          title_raw?: string | null
+          unmapped_at?: string | null
+          unmapped_by?: string | null
+          unmapped_reason?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -231,6 +354,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "certificate_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
             referencedColumns: ["id"]
           },
           {

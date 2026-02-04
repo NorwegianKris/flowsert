@@ -18,6 +18,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
 import { cn } from '@/lib/utils';
+import { CertificateTypeSelector } from './CertificateTypeSelector';
+import { AmbiguityWarningDialog } from './AmbiguityWarningDialog';
+import { useLookupAlias, useCreateAlias, useUpdateAliasLastSeen } from '@/hooks/useCertificateAliases';
+import { normalizeCertificateTitle, isAmbiguousTitle } from '@/lib/certificateNormalization';
 
 interface AddCertificateDialogProps {
   open: boolean;
@@ -44,6 +48,11 @@ interface CertificateEntry {
     placeOfIssue?: 'high' | 'medium' | 'low';
     issuingAuthority?: 'high' | 'medium' | 'low';
   };
+  // Canonical mapping fields
+  certificateTypeId?: string | null;
+  titleRaw?: string;
+  rememberAlias?: boolean;
+  aliasAutoMatched?: boolean;
 }
 
 interface CertificateCategory {
@@ -58,7 +67,9 @@ export function AddCertificateDialog({
   personnelName,
   onSuccess,
 }: AddCertificateDialogProps) {
-  const { businessId } = useAuth();
+  const { businessId, isAdmin, role } = useAuth();
+  const isAdminOrManager = isAdmin || role === 'manager';
+  
   const [categories, setCategories] = useState<CertificateCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
@@ -66,6 +77,19 @@ export function AddCertificateDialog({
   const [customName, setCustomName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastExtractionResult, setLastExtractionResult] = useState<ExtractionResult | null>(null);
+  
+  // Ambiguity warning dialog state
+  const [ambiguityWarningOpen, setAmbiguityWarningOpen] = useState(false);
+  const [pendingAmbiguousAlias, setPendingAmbiguousAlias] = useState<{
+    certId: string;
+    normalizedTitle: string;
+    typeId: string;
+    rawTitle: string;
+  } | null>(null);
+  
+  // Alias mutation hooks
+  const createAlias = useCreateAlias();
+  const updateAliasLastSeen = useUpdateAliasLastSeen();
 
   // Fetch certificate categories from database
   useEffect(() => {
@@ -240,12 +264,26 @@ export function AddCertificateDialog({
   };
 
   const handleSubmit = async () => {
-    const toAdd = selectedCertificates.filter(
-      (c) => c.dateOfIssue && c.placeOfIssue && c.issuingAuthority
-    );
+    // For admins/managers, type selection is required (unless auto-matched)
+    // For workers, type is optional
+    const toAdd = selectedCertificates.filter((c) => {
+      const hasRequiredFields = c.dateOfIssue && c.placeOfIssue && c.issuingAuthority;
+      if (!hasRequiredFields) return false;
+      
+      // Admins/managers need a type selected (unless auto-matched which already has it)
+      if (isAdminOrManager && !c.certificateTypeId && !c.aliasAutoMatched) {
+        return false;
+      }
+      
+      return true;
+    });
 
     if (toAdd.length === 0) {
-      toast.error('Please select certificates and fill in required fields (Date of Issue, Place of Issue, Issuing Authority)');
+      if (isAdminOrManager) {
+        toast.error('Please select certificates, fill in required fields, and select a certificate type');
+      } else {
+        toast.error('Please select certificates and fill in required fields (Date of Issue, Place of Issue, Issuing Authority)');
+      }
       return;
     }
 
@@ -254,6 +292,18 @@ export function AddCertificateDialog({
     try {
       // Insert certificates one by one to handle file uploads
       for (const cert of toAdd) {
+        const titleRaw = cert.titleRaw || cert.name;
+        const titleNormalized = normalizeCertificateTitle(titleRaw);
+        
+        // Determine needs_review based on role and alias match
+        // Workers: always needs_review = true unless alias auto-matched
+        // Admins: needs_review = false (they confirmed the mapping)
+        let needsReview = false;
+        if (!isAdminOrManager) {
+          // Worker: needs_review = true unless alias auto-matched
+          needsReview = !cert.aliasAutoMatched;
+        }
+        
         // First insert the certificate to get its ID
         const { data: insertedCert, error: insertError } = await supabase
           .from('certificates')
@@ -265,6 +315,11 @@ export function AddCertificateDialog({
             place_of_issue: cert.placeOfIssue,
             issuing_authority: cert.issuingAuthority,
             category_id: cert.id.startsWith('custom-') ? null : cert.id,
+            // New standardization fields
+            title_raw: titleRaw,
+            title_normalized: titleNormalized,
+            certificate_type_id: cert.certificateTypeId || null,
+            needs_review: needsReview,
           })
           .select()
           .single();
@@ -295,6 +350,19 @@ export function AddCertificateDialog({
             .from('certificates')
             .update({ document_url: urlData.publicUrl })
             .eq('id', insertedCert.id);
+        }
+        
+        // Create alias if admin checked "Remember this name" 
+        if (isAdminOrManager && cert.rememberAlias && cert.certificateTypeId && titleRaw) {
+          try {
+            await createAlias.mutateAsync({
+              aliasRaw: titleRaw,
+              certificateTypeId: cert.certificateTypeId,
+            });
+          } catch (aliasError) {
+            // Don't fail the whole operation if alias creation fails
+            console.error('Error creating alias:', aliasError);
+          }
         }
       }
 
@@ -329,12 +397,32 @@ export function AddCertificateDialog({
     if (!confidence) return null;
     
     if (confidence === 'high') {
-      return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
+      return <CheckCircle2 className="h-3.5 w-3.5 text-primary" />;
     }
     if (confidence === 'medium') {
-      return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />;
+      return <AlertTriangle className="h-3.5 w-3.5 text-warning" />;
     }
     return null;
+  };
+  
+  // Handle ambiguity warning confirmation
+  const handleAmbiguityConfirm = () => {
+    if (pendingAmbiguousAlias) {
+      setCertificates((prev) =>
+        prev.map((c) =>
+          c.id === pendingAmbiguousAlias.certId
+            ? { ...c, rememberAlias: true }
+            : c
+        )
+      );
+    }
+    setAmbiguityWarningOpen(false);
+    setPendingAmbiguousAlias(null);
+  };
+  
+  const handleAmbiguityCancel = () => {
+    setAmbiguityWarningOpen(false);
+    setPendingAmbiguousAlias(null);
   };
 
   return (
@@ -401,7 +489,7 @@ export function AddCertificateDialog({
                     "p-4 rounded-lg border transition-colors",
                     cert.selected
                       ? cert.wasAutoFilled
-                        ? 'border-green-500/50 bg-green-500/5'
+                        ? 'border-primary/50 bg-primary/5'
                         : 'border-primary bg-primary/5'
                       : 'border-border/50 hover:border-border'
                   )}
@@ -416,7 +504,7 @@ export function AddCertificateDialog({
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{cert.name || 'New Certificate'}</span>
                         {cert.wasAutoFilled && (
-                          <span className="text-xs bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full">
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                             Auto-filled
                           </span>
                         )}
@@ -515,6 +603,70 @@ export function AddCertificateDialog({
                             </div>
                           </div>
                           
+                          {/* Certificate Type Selector - NEW */}
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              Certificate Type {isAdminOrManager && '*'}
+                              {cert.aliasAutoMatched && (
+                                <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                              )}
+                            </Label>
+                            <CertificateTypeSelector
+                              value={cert.certificateTypeId || null}
+                              onChange={(typeId) =>
+                                setCertificates((prev) =>
+                                  prev.map((c) =>
+                                    c.id === cert.id
+                                      ? { ...c, certificateTypeId: typeId }
+                                      : c
+                                  )
+                                )
+                              }
+                              required={isAdminOrManager}
+                              autoMatched={cert.aliasAutoMatched}
+                              placeholder={isAdminOrManager ? "Select certificate type..." : "Optional: Select type..."}
+                            />
+                          </div>
+                          
+                          {/* Remember this name checkbox - Admin/Manager only */}
+                          {isAdminOrManager && cert.certificateTypeId && !cert.aliasAutoMatched && (
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`remember-${cert.id}`}
+                                checked={cert.rememberAlias || false}
+                                onCheckedChange={(checked) => {
+                                  const normalizedTitle = normalizeCertificateTitle(cert.titleRaw || cert.name);
+                                  
+                                  // If checking and title is ambiguous, show warning
+                                  if (checked && isAmbiguousTitle(normalizedTitle)) {
+                                    setPendingAmbiguousAlias({
+                                      certId: cert.id,
+                                      normalizedTitle,
+                                      typeId: cert.certificateTypeId!,
+                                      rawTitle: cert.titleRaw || cert.name,
+                                    });
+                                    setAmbiguityWarningOpen(true);
+                                    return;
+                                  }
+                                  
+                                  setCertificates((prev) =>
+                                    prev.map((c) =>
+                                      c.id === cert.id
+                                        ? { ...c, rememberAlias: !!checked }
+                                        : c
+                                    )
+                                  );
+                                }}
+                              />
+                              <Label
+                                htmlFor={`remember-${cert.id}`}
+                                className="text-xs text-muted-foreground cursor-pointer"
+                              >
+                                Remember this name for next time
+                              </Label>
+                            </div>
+                          )}
+                          
                           {/* File upload */}
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">
@@ -584,6 +736,15 @@ export function AddCertificateDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      
+      {/* Ambiguity Warning Dialog */}
+      <AmbiguityWarningDialog
+        open={ambiguityWarningOpen}
+        onOpenChange={setAmbiguityWarningOpen}
+        normalizedTitle={pendingAmbiguousAlias?.normalizedTitle || ''}
+        onConfirm={handleAmbiguityConfirm}
+        onCancel={handleAmbiguityCancel}
+      />
     </Dialog>
   );
 }
