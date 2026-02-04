@@ -551,7 +551,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               </div>
             </div>
 
-            <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center justify-between bg-primary/10 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Mode:</span>
                 <ToggleGroup
