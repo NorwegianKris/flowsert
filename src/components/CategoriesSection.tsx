@@ -60,10 +60,16 @@ export function CategoriesSection() {
           
           <TabsContent value="certificates">
             <Tabs defaultValue="categories" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="categories">Categories</TabsTrigger>
-                <TabsTrigger value="types">Types</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
+                <TabsList>
+                  <TabsTrigger value="categories">Categories</TabsTrigger>
+                  <TabsTrigger value="types">Types</TabsTrigger>
+                </TabsList>
+                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <span>💡</span>
+                  Categories are broad groupings; Types are specific classifications within each.
+                </span>
+              </div>
               
               <TabsContent value="categories">
                 <div className="space-y-2 mb-4">
