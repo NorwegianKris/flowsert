@@ -1,56 +1,38 @@
-import { useState, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { 
-  Upload, 
-  Loader2, 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle,
-  Sparkles,
-  FileText,
-  X,
-  RefreshCw
-} from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { fileToBase64Image } from '@/lib/pdfUtils';
 import { 
   ExtractionResult, 
-  ExtractionStatus,
-  isOcrSupported,
   getFileTypeStatus 
 } from '@/types/certificateExtraction';
-import { cn } from '@/lib/utils';
+import { QueuedFile, SmartCertificateUploadProps } from './certificate-upload/types';
+import { UploadZone } from './certificate-upload/UploadZone';
+import { ProcessingQueue } from './certificate-upload/ProcessingQueue';
 
-interface SmartCertificateUploadProps {
-  existingCategories: { id: string; name: string }[];
-  onExtractionComplete: (result: ExtractionResult, file: File) => void;
-  onFileSelected?: (file: File) => void;
-  disabled?: boolean;
-}
+const DELAY_BETWEEN_CALLS_MS = 500;
 
 export function SmartCertificateUpload({
   existingCategories,
   onExtractionComplete,
   onFileSelected,
   disabled = false,
+  maxFiles = 10,
 }: SmartCertificateUploadProps) {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
+  const [fileQueue, setFileQueue] = useState<QueuedFile[]>([]);
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const processingRef = useRef(false);
 
-  const handleFileSelect = useCallback(async (file: File) => {
-    setSelectedFile(file);
-    setExtractionResult(null);
-    onFileSelected?.(file);
+  // Generate unique ID for queue items
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  // Process a single file through the extraction API
+  const processFile = useCallback(async (file: File): Promise<ExtractionResult> => {
     const fileTypeStatus = getFileTypeStatus(file.type);
 
     if (fileTypeStatus === 'unsupported') {
-      // For unsupported files, immediately return red status
-      const result: ExtractionResult = {
+      return {
         status: 'red',
         confidence: 0,
         extractedData: {
@@ -63,86 +45,132 @@ export function SmartCertificateUpload({
           matchedCategoryId: null,
         },
         fieldsExtracted: 0,
-        issues: [`File type "${file.type || 'unknown'}" cannot be scanned. Please upload a PDF or image file, or enter details manually.`],
+        issues: [`File type "${file.type || 'unknown'}" cannot be scanned. Please enter details manually.`],
       };
-      setExtractionResult(result);
-      onExtractionComplete(result, file);
-      return;
     }
 
-    // Start OCR extraction
-    setIsAnalyzing(true);
+    const { base64, mimeType } = await fileToBase64Image(file);
 
-    try {
-      // Convert file to base64
-      const { base64, mimeType } = await fileToBase64Image(file);
+    const { data, error } = await supabase.functions.invoke('extract-certificate-data', {
+      body: {
+        imageBase64: base64,
+        mimeType,
+        existingCategories: existingCategories.map(c => c.name),
+      },
+    });
 
-      // Call the extraction edge function
-      const { data, error } = await supabase.functions.invoke('extract-certificate-data', {
-        body: {
-          imageBase64: base64,
-          mimeType,
-          existingCategories: existingCategories.map(c => c.name),
-        },
-      });
+    if (error) throw error;
 
-      if (error) throw error;
-
-      // Find matched category ID if there's a match
-      let matchedCategoryId: string | null = null;
-      if (data.extractedData?.matchedCategory) {
-        const matched = existingCategories.find(
-          c => c.name.toLowerCase() === data.extractedData.matchedCategory.toLowerCase()
-        );
-        matchedCategoryId = matched?.id || null;
-      }
-
-      const result: ExtractionResult = {
-        ...data,
-        extractedData: {
-          ...data.extractedData,
-          matchedCategoryId,
-        },
-      };
-
-      setExtractionResult(result);
-      onExtractionComplete(result, file);
-
-      // Show toast based on status
-      if (result.status === 'green') {
-        toast.success('Certificate details extracted successfully!');
-      } else if (result.status === 'amber') {
-        toast.warning('Partial extraction - please verify the details');
-      } else {
-        toast.error('Could not extract details - manual entry required');
-      }
-
-    } catch (error) {
-      console.error('Extraction error:', error);
-      
-      const result: ExtractionResult = {
-        status: 'red',
-        confidence: 0,
-        extractedData: {
-          certificateName: null,
-          dateOfIssue: null,
-          expiryDate: null,
-          placeOfIssue: null,
-          issuingAuthority: null,
-          matchedCategory: null,
-          matchedCategoryId: null,
-        },
-        fieldsExtracted: 0,
-        issues: ['Failed to analyze document. Please try again or enter details manually.'],
-      };
-      setExtractionResult(result);
-      onExtractionComplete(result, file);
-      toast.error('Failed to analyze document');
-    } finally {
-      setIsAnalyzing(false);
+    // Find matched category ID if there's a match
+    let matchedCategoryId: string | null = null;
+    if (data.extractedData?.matchedCategory) {
+      const matched = existingCategories.find(
+        c => c.name.toLowerCase() === data.extractedData.matchedCategory.toLowerCase()
+      );
+      matchedCategoryId = matched?.id || null;
     }
-  }, [existingCategories, onExtractionComplete, onFileSelected]);
 
+    return {
+      ...data,
+      extractedData: {
+        ...data.extractedData,
+        matchedCategoryId,
+      },
+    };
+  }, [existingCategories]);
+
+  // Process the queue sequentially
+  const processQueue = useCallback(async () => {
+    if (processingRef.current) return;
+    processingRef.current = true;
+    setIsProcessingQueue(true);
+
+    const pendingItems = fileQueue.filter(f => f.status === 'pending');
+    
+    for (const item of pendingItems) {
+      // Update status to processing
+      setFileQueue(prev => prev.map(f => 
+        f.id === item.id ? { ...f, status: 'processing' as const } : f
+      ));
+
+      try {
+        const result = await processFile(item.file);
+        
+        setFileQueue(prev => prev.map(f =>
+          f.id === item.id 
+            ? { ...f, status: 'complete' as const, result } 
+            : f
+        ));
+
+        // Notify parent of extraction
+        onExtractionComplete(result, item.file);
+
+        // Show toast based on status
+        if (result.status === 'green') {
+          toast.success(`Extracted: ${item.file.name}`);
+        } else if (result.status === 'amber') {
+          toast.warning(`Partial extraction: ${item.file.name}`);
+        }
+        // Don't toast on red - the UI shows it clearly
+
+      } catch (error) {
+        console.error('Extraction error:', error);
+        
+        setFileQueue(prev => prev.map(f =>
+          f.id === item.id 
+            ? { ...f, status: 'error' as const, error: 'Failed to analyze' } 
+            : f
+        ));
+      }
+
+      // Add delay between API calls to avoid rate limits
+      if (pendingItems.indexOf(item) < pendingItems.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CALLS_MS));
+      }
+    }
+
+    setIsProcessingQueue(false);
+    processingRef.current = false;
+  }, [fileQueue, processFile, onExtractionComplete]);
+
+  // Start processing when new pending items are added
+  useEffect(() => {
+    const hasPending = fileQueue.some(f => f.status === 'pending');
+    if (hasPending && !isProcessingQueue) {
+      processQueue();
+    }
+  }, [fileQueue, isProcessingQueue, processQueue]);
+
+  // Handle file selection (from input or drop)
+  const handleFilesSelected = useCallback((files: FileList) => {
+    const currentCount = fileQueue.length;
+    const maxAllowed = maxFiles - currentCount;
+
+    if (files.length > maxAllowed) {
+      if (maxAllowed <= 0) {
+        toast.warning(`Maximum of ${maxFiles} files reached.`);
+        return;
+      }
+      toast.warning(`You can add up to ${maxAllowed} more file(s). Max is ${maxFiles}.`);
+    }
+
+    const filesToAdd = Array.from(files).slice(0, Math.max(0, maxAllowed));
+    
+    if (filesToAdd.length === 0) return;
+
+    const newQueueItems: QueuedFile[] = filesToAdd.map(file => ({
+      id: generateId(),
+      file,
+      status: 'pending' as const,
+    }));
+
+    setFileQueue(prev => [...prev, ...newQueueItems]);
+
+    // Notify parent about file selections
+    filesToAdd.forEach(file => onFileSelected?.(file));
+  }, [fileQueue.length, maxFiles, onFileSelected]);
+
+  // Drag handlers
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -158,173 +186,51 @@ export function SmartCertificateUpload({
     e.stopPropagation();
     setDragActive(false);
     
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleFileSelect(file);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFilesSelected(files);
     }
-  }, [handleFileSelect]);
+  }, [handleFilesSelected]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
-  };
+  // Queue actions
+  const handleRetry = useCallback((id: string) => {
+    setFileQueue(prev => prev.map(f =>
+      f.id === id ? { ...f, status: 'pending' as const, error: undefined, result: undefined } : f
+    ));
+  }, []);
 
-  const handleRetry = () => {
-    if (selectedFile) {
-      handleFileSelect(selectedFile);
-    }
-  };
+  const handleRemove = useCallback((id: string) => {
+    setFileQueue(prev => prev.filter(f => f.id !== id));
+  }, []);
 
-  const handleClear = () => {
-    setSelectedFile(null);
-    setExtractionResult(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const getStatusIcon = (status: ExtractionStatus) => {
-    switch (status) {
-      case 'green':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'amber':
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-      case 'red':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-    }
-  };
-
-  const getStatusBgClass = (status: ExtractionStatus) => {
-    switch (status) {
-      case 'green':
-        return 'bg-green-500/10 border-green-500/30';
-      case 'amber':
-        return 'bg-amber-500/10 border-amber-500/30';
-      case 'red':
-        return 'bg-red-500/10 border-red-500/30';
-    }
-  };
-
-  const getStatusMessage = (status: ExtractionStatus, confidence: number) => {
-    switch (status) {
-      case 'green':
-        return `Successfully extracted (${confidence}% confidence)`;
-      case 'amber':
-        return `Partially extracted (${confidence}% confidence) - Please verify`;
-      case 'red':
-        return 'Could not extract - Manual entry required';
-    }
-  };
+  const handleClearAll = useCallback(() => {
+    setFileQueue([]);
+  }, []);
 
   return (
     <div className="space-y-3">
-      {/* Upload zone */}
-      {!selectedFile && !isAnalyzing && (
-        <div
-          className={cn(
-            "relative p-6 border-2 border-dashed rounded-lg transition-colors cursor-pointer",
-            dragActive 
-              ? "border-primary bg-primary/5" 
-              : "border-muted-foreground/25 hover:border-primary/50 bg-muted/30",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => !disabled && fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
-            className="hidden"
-            onChange={handleInputChange}
-            disabled={disabled}
-          />
-          <div className="text-center">
-            <Sparkles className="h-8 w-8 mx-auto text-primary mb-2" />
-            <h3 className="font-medium text-foreground">Smart Upload</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Upload your certificate and we'll extract the details automatically
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Supports PDF, JPEG, PNG, WebP • Drag & drop or click to browse
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Upload zone (full or compact based on state) */}
+      <UploadZone
+        onFilesSelected={handleFilesSelected}
+        disabled={disabled}
+        dragActive={dragActive}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        hasFiles={fileQueue.length > 0}
+        maxFiles={maxFiles}
+        currentCount={fileQueue.length}
+      />
 
-      {/* Analyzing state */}
-      {isAnalyzing && (
-        <div className="p-6 border rounded-lg bg-muted/30">
-          <div className="flex items-center justify-center gap-3">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <div>
-              <p className="font-medium">Analyzing certificate...</p>
-              <p className="text-sm text-muted-foreground">
-                Reading {selectedFile?.name}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Result display */}
-      {extractionResult && !isAnalyzing && selectedFile && (
-        <div className={cn(
-          "p-4 border rounded-lg",
-          getStatusBgClass(extractionResult.status)
-        )}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1">
-              {getStatusIcon(extractionResult.status)}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">
-                  {getStatusMessage(extractionResult.status, extractionResult.confidence)}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground truncate">
-                    {selectedFile.name}
-                  </span>
-                </div>
-                {extractionResult.issues.length > 0 && (
-                  <ul className="mt-2 space-y-0.5">
-                    {extractionResult.issues.map((issue, i) => (
-                      <li key={i} className="text-xs text-muted-foreground">
-                        • {issue}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleRetry}
-                title="Re-scan document"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleClear}
-                title="Remove file"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Processing queue */}
+      <ProcessingQueue
+        queue={fileQueue}
+        isProcessing={isProcessingQueue}
+        onRetry={handleRetry}
+        onRemove={handleRemove}
+        onClearAll={handleClearAll}
+      />
     </div>
   );
 }
