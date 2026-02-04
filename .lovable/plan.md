@@ -1,272 +1,137 @@
 
-# Plan: Synchronize Edit Certificate Dialog with Add Certificate Fields
+
+# Plan: Standardize Toggle Bar Colors to Universal Purple
 
 ## Summary
 
-Update the Edit Certificate Dialog to have the **exact same fields and UI** as the "Processed Certificates" section in the Add Certificate Dialog. This ensures workers editing their certificates can enter custom types that appear in the admin's "Inputted Types" list.
+Update all toggle bars (TabsList components) across the system to use the same purple color scheme as the main dashboard toggle bar (Personnel - Calendar - Projects). This will be achieved by modifying the base UI component defaults, ensuring consistency throughout the application.
 
-## Fields Required (in order)
+## Current State
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| Certificate Name | Text input | Yes | Already exists |
-| Category | Dropdown | No | **MISSING - needs adding** |
-| Date of Issue | Date input | Yes | Already exists |
-| Expiry Date | Date input | No | Already exists |
-| Place of Issue | Text input | No | Already exists |
-| Issuing Authority | Text input | No | Already exists |
-| Certificate Type | Hybrid (dropdown + free text) | Yes* | **Needs free text support** |
+| Component | Current Styling | Location |
+|-----------|-----------------|----------|
+| Main Dashboard Tabs | Purple (`bg-primary`) | `AdminDashboard.tsx:379` |
+| Settings Categories | Gray (`bg-muted` default) | `CategoriesSection.tsx:24` |
+| Certificate Sub-tabs | Gray (default) | `CategoriesSection.tsx:63` |
+| Certificate Types Manager | Gray (default) | `CertificateTypesManager.tsx:72, 245` |
+| Project Detail Tabs | Gray (default) | `ProjectDetail.tsx:275` |
+| Company Card Tabs | Gray (default) | `CompanyCard.tsx:413` |
+| Admin/Personnel Tabs | Gray (default) | `AdminDashboard.tsx:511` |
+| Invite/Assign Toggle | Gray (`bg-muted/50`) | `AddProjectDialog.tsx:554` |
 
-## Changes Required
+## Solution Approach
 
-### File: `src/components/EditCertificateDialog.tsx`
+**Option A: Modify Base Component Defaults (Recommended)**
 
-#### 1. Add Category State and Fetch
+Update `src/components/ui/tabs.tsx` to use purple styling by default. This approach:
+- Ensures all tabs use the same style automatically
+- Reduces code duplication
+- Makes future consistency easier to maintain
 
-Add state and database fetch for certificate categories:
+**Option B: Update Each Component Individually**
 
-```typescript
-const [categoryId, setCategoryId] = useState<string | null>(null);
-const [categories, setCategories] = useState<{id: string; name: string}[]>([]);
+Apply the purple styling classes to each TabsList individually. This approach:
+- More verbose and repetitive
+- Easier to miss locations
+- Harder to maintain long-term
 
-// Fetch categories on dialog open
-useEffect(() => {
-  const fetchCategories = async () => {
-    if (!businessId) return;
-    const { data } = await supabase
-      .from('certificate_categories')
-      .select('id, name')
-      .eq('business_id', businessId)
-      .order('name');
-    setCategories(data || []);
-  };
-  if (open) fetchCategories();
-}, [businessId, open]);
-```
+I will use **Option A** - updating the base component defaults.
 
-#### 2. Populate Category from Certificate
+## Technical Changes
 
-In the existing `useEffect` that populates form fields:
+### File 1: `src/components/ui/tabs.tsx`
 
-```typescript
-setCategoryId((certificate as any).category_id || null);
-```
+**TabsList Changes**
 
-#### 3. Add Category Dropdown UI
-
-Add after Certificate Name field:
-
+Current:
 ```tsx
-<div className="space-y-2">
-  <Label>Category</Label>
-  <Select
-    value={categoryId || 'none'}
-    onValueChange={(value) => setCategoryId(value === 'none' ? null : value)}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="No category" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="none">No category</SelectItem>
-      {categories.map((cat) => (
-        <SelectItem key={cat.id} value={cat.id}>
-          {cat.name}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+"inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
 ```
 
-#### 4. Add Free Text State for Certificate Type
-
-```typescript
-const [certificateTypeFreeText, setCertificateTypeFreeText] = useState('');
-const [debouncedFreeText, setDebouncedFreeText] = useState('');
-
-// Debounce free text for alias lookup
-useEffect(() => {
-  const timer = setTimeout(() => setDebouncedFreeText(certificateTypeFreeText), 400);
-  return () => clearTimeout(timer);
-}, [certificateTypeFreeText]);
-```
-
-#### 5. Add Alias Lookup for Free Text
-
-```typescript
-const freeTextNormalized = debouncedFreeText?.trim()
-  ? normalizeCertificateTitle(debouncedFreeText)
-  : null;
-
-const { data: freeTextAliasMatch, isLoading: freeTextAliasLoading } = useLookupAlias(
-  useCanonicalCertificates && freeTextNormalized ? freeTextNormalized : null
-);
-```
-
-#### 6. Update CertificateTypeSelector with Free Text
-
-Change from dropdown-only to hybrid mode:
-
+Updated:
 ```tsx
-<CertificateTypeSelector
-  value={selectedTypeId}
-  onChange={(typeId, typeName) => {
-    setSelectedTypeId(typeId);
-    setSelectedTypeName(typeName || null);
-    if (typeId) {
-      setCertificateTypeFreeText(''); // Clear free text when dropdown selected
-    }
-  }}
-  required={isAdminOrManager}
-  autoMatched={showAutoMatched}
-  placeholder={isAdminOrManager ? "Select certificate type..." : "Select type (optional)..."}
-  allowFreeText={true}
-  freeTextValue={certificateTypeFreeText}
-  onFreeTextChange={(text) => {
-    setCertificateTypeFreeText(text);
-    if (text) {
-      setSelectedTypeId(null); // Clear dropdown when free text entered
-      setSelectedTypeName(null);
-    }
-  }}
-/>
+"inline-flex h-10 items-center justify-center rounded-md bg-primary p-1 text-primary-foreground"
 ```
 
-#### 7. Add Alias Match Feedback UI
+**TabsTrigger Changes**
 
-After the CertificateTypeSelector, add the same feedback badge as in Add dialog:
-
+Current:
 ```tsx
-{/* Alias Match Feedback for free text */}
-{certificateTypeFreeText?.trim() && 
- !selectedTypeId && 
- freeTextAliasMatch && 
- freeTextAliasMatch.certificate_type_name && (
-  <div className="flex items-center gap-2 mt-1 p-2 rounded bg-primary/5 border border-primary/20">
-    <span className="text-xs text-muted-foreground">
-      Matched: <span className="font-medium text-foreground">
-        {freeTextAliasMatch.certificate_type_name}
-      </span>
-    </span>
-    <Button
-      type="button"
-      variant="link"
-      size="sm"
-      className="h-auto p-0 text-xs text-primary"
-      onClick={() => {
-        setSelectedTypeId(freeTextAliasMatch.certificate_type_id);
-        setSelectedTypeName(freeTextAliasMatch.certificate_type_name);
-        setCertificateTypeFreeText('');
-      }}
-    >
-      Use this type
-    </Button>
-  </div>
-)}
+"... data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm ..."
 ```
 
-#### 8. Update Submit Logic
-
-Modify title_raw determination to prioritize free text:
-
-```typescript
-let titleRaw: string | null = null;
-if (certificateTypeFreeText?.trim()) {
-  // User typed free text - store exactly what they typed
-  titleRaw = certificateTypeFreeText.trim();
-} else if (selectedTypeId && selectedTypeName) {
-  // User selected from dropdown - store the type name
-  titleRaw = selectedTypeName;
-}
-const titleNormalized = titleRaw ? normalizeCertificateTitle(titleRaw) : null;
-
-// If free text is used without selecting an alias match, type ID should be null
-updateData.certificate_type_id = certificateTypeFreeText?.trim() && !selectedTypeId 
-  ? null 
-  : selectedTypeId;
+Updated:
+```tsx
+"... data-[state=active]:bg-primary-foreground data-[state=active]:text-primary data-[state=active]:shadow-sm ..."
 ```
 
-Also add category update:
+### File 2: `src/components/ui/toggle.tsx`
 
-```typescript
-updateData.category_id = categoryId;
+Update the toggle variants to use purple for the active state:
+
+Current:
+```tsx
+"... data-[state=on]:bg-accent data-[state=on]:text-accent-foreground"
 ```
 
-#### 9. Reset State on Dialog Open
+Updated:
+```tsx
+"... data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+```
 
-Clear free text and category when dialog opens:
+### File 3: `src/pages/AdminDashboard.tsx`
 
-```typescript
-setCertificateTypeFreeText('');
+Remove the custom purple styling from the main dashboard tabs since it will now be the default:
+
+Current (line 379):
+```tsx
+<TabsList className="grid w-full grid-cols-3 bg-primary p-1.5 h-12">
+```
+
+Updated:
+```tsx
+<TabsList className="grid w-full grid-cols-3 p-1.5 h-12">
+```
+
+Also update the triggers (lines 380, 384, 388) - remove custom color overrides.
+
+Similar cleanup for Admin/Personnel tabs (lines 511-520).
+
+### File 4: `src/components/AddProjectDialog.tsx`
+
+Update the mode toggle group container:
+
+Current (line 554):
+```tsx
+<div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+```
+
+Updated:
+```tsx
+<div className="flex items-center justify-between bg-primary/10 rounded-lg p-3">
 ```
 
 ## Visual Result
 
-The Edit Certificate dialog will now have:
-
-```text
-┌─────────────────────────────────────────────┐
-│ ✎ Edit Certificate                          │
-├─────────────────────────────────────────────┤
-│                                             │
-│ Certificate Name *                          │
-│ [_____________________________]             │
-│                                             │
-│ Category                                    │
-│ [▼ No category________________]             │
-│                                             │
-│ Date of Issue *          Expiry Date        │
-│ [___________]            [___________]      │
-│                                             │
-│ Place of Issue           Issuing Authority  │
-│ [___________]            [___________]      │
-│                                             │
-│ Certificate Type *                          │
-│ [▼ Select type...] or type if not found [__]│
-│                                             │
-│ ☐ Remember this name for future matching    │
-│                                             │
-│ Document (PDF or Image)                     │
-│ [📎 existing-doc.pdf] [View] [✕]            │
-│                                             │
-├─────────────────────────────────────────────┤
-│                      [Cancel] [Save Changes]│
-└─────────────────────────────────────────────┘
-```
-
-## Data Flow After Implementation
-
-```text
-User edits certificate and types custom text
-      │
-      ├─► Alias lookup runs on debounced text
-      │       │
-      │       ├─► Match found ─► Shows "Matched: [Type]" badge
-      │       │                  User can click "Use this type"
-      │       │                      │
-      │       │                      └─► Sets certificate_type_id
-      │       │                          Clears free text
-      │       │
-      │       └─► No match ─► User saves with free text
-      │                       certificate_type_id = NULL
-      │                       title_raw = [custom text]
-      │                       → Appears in Inputted Types list
-      │
-      └─► User selects from dropdown
-              │
-              └─► certificate_type_id = [selected ID]
-                  title_raw = [type name]
-                  → Does NOT appear in Inputted Types
-```
+All toggle bars throughout the system will have:
+- **Background**: Purple (`bg-primary`)
+- **Inactive Text**: White (`text-primary-foreground`)
+- **Active Tab**: White background with purple text (`bg-primary-foreground text-primary`)
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/EditCertificateDialog.tsx` | Add category state/fetch/dropdown, add free text state, update CertificateTypeSelector with allowFreeText, add alias match feedback UI, update submit logic |
+| `src/components/ui/tabs.tsx` | Update TabsList and TabsTrigger default colors |
+| `src/components/ui/toggle.tsx` | Update active state colors |
+| `src/pages/AdminDashboard.tsx` | Remove custom overrides (now default) |
+| `src/components/AddProjectDialog.tsx` | Update toggle container background |
 
-## Additional Imports Needed
+## Verification After Implementation
 
-```typescript
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-```
+1. Navigate to Admin Dashboard - confirm main tabs are still purple
+2. Go to Settings - confirm all category tabs are purple
+3. Open a Project Detail - confirm tabs are purple
+4. Open Company Card - confirm tabs are purple
+5. Open Add Project dialog - confirm Invite/Assign toggle is purple-themed
+
