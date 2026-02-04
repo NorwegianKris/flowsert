@@ -59,6 +59,7 @@ export function EditCertificateDialog({
 
   // Type selector state
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
+  const [selectedTypeName, setSelectedTypeName] = useState<string | null>(null);
   const [originalTypeId, setOriginalTypeId] = useState<string | null>(null);
   const [titleChanged, setTitleChanged] = useState(false);
   const [rememberName, setRememberName] = useState(false);
@@ -115,6 +116,7 @@ export function EditCertificateDialog({
       const certTypeId = (certificate as any).certificate_type_id || null;
       setOriginalTypeId(certTypeId);
       setSelectedTypeId(certTypeId);
+      setSelectedTypeName(null); // Will be populated when type selector loads
     }
   }, [certificate]);
 
@@ -280,9 +282,10 @@ export function EditCertificateDialog({
         documentUrl = urlData.publicUrl;
       }
 
-      // Prepare update data
-      const titleRaw = name;
-      const titleNormalized = normalizeCertificateTitle(name);
+      // Prepare update data - title_raw should be the TYPE, not the certificate name
+      // If a type is selected, use the type name; otherwise null
+      const titleRaw = selectedTypeName || null;
+      const titleNormalized = titleRaw ? normalizeCertificateTitle(titleRaw) : null;
 
       // Determine needs_review based on role and alias match
       let needsReview = (certificate as any).needs_review ?? false;
@@ -452,7 +455,10 @@ export function EditCertificateDialog({
                 </div>
                 <CertificateTypeSelector
                   value={selectedTypeId}
-                  onChange={(typeId) => setSelectedTypeId(typeId)}
+                  onChange={(typeId, typeName) => {
+                    setSelectedTypeId(typeId);
+                    setSelectedTypeName(typeName || null);
+                  }}
                   required={isAdminOrManager}
                   autoMatched={showAutoMatched}
                   placeholder={isAdminOrManager ? "Select certificate type..." : "Select type (optional)..."}
