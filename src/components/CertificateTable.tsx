@@ -175,12 +175,12 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
               <TableHead className="font-semibold">Certificate</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Category</TableHead>
+              <TableHead className="font-semibold">Type</TableHead>
               <TableHead className="font-semibold">Issuing Authority</TableHead>
               <TableHead className="font-semibold">Date of Issue</TableHead>
               <TableHead className="font-semibold">Expiry Date</TableHead>
               <TableHead className="font-semibold">Place of Issue</TableHead>
               <TableHead className="font-semibold">Document</TableHead>
-              <TableHead className="font-semibold w-16">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -216,6 +216,16 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground italic">Uncategorized</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {cert.titleRaw ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
+                        <Award className="h-3 w-3" />
+                        {cert.titleRaw}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Untyped</span>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -257,16 +267,6 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                     ) : (
                       <span className="text-xs text-muted-foreground italic">None</span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => handleEditClick(e, cert)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
                   </TableCell>
                 </TableRow>
               );
