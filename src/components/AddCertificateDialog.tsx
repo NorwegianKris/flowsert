@@ -20,7 +20,7 @@ import {
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2 } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
@@ -59,9 +59,12 @@ interface CertificateEntry {
   };
   // Canonical mapping fields
   certificateTypeId?: string | null;
+  certificateTypeFreeText?: string;
   titleRaw?: string;
   rememberAlias?: boolean;
   aliasAutoMatched?: boolean;
+  // Manual upload flag
+  isManualEntry?: boolean;
 }
 
 interface CertificateCategory {
@@ -84,6 +87,7 @@ export function AddCertificateDialog({
   const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedCertId, setExpandedCertId] = useState<string | null>(null);
+  const manualFileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Ambiguity warning dialog state
   const [ambiguityWarningOpen, setAmbiguityWarningOpen] = useState(false);
@@ -139,21 +143,18 @@ export function AddCertificateDialog({
       return 'low';
     };
 
-    // Find matching category if extraction found one
-    let matchedCategoryId: string | null = null;
-    if (extractedData.matchedCategoryId) {
-      matchedCategoryId = extractedData.matchedCategoryId;
-    }
+    // Use filename as certificate name (remove extension)
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
 
     const newCert: CertificateEntry = {
       id: `cert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: extractedData.certificateName || file.name.replace(/\.[^/.]+$/, ''),
+      name: fileName, // Always use filename
       dateOfIssue: extractedData.dateOfIssue || '',
       expiryDate: extractedData.expiryDate || '',
       placeOfIssue: extractedData.placeOfIssue || '',
       issuingAuthority: extractedData.issuingAuthority || '',
       file,
-      categoryId: matchedCategoryId,
+      categoryId: null, // Personnel choose themselves
       wasAutoFilled: result.status !== 'red',
       extractionStatus: result.status,
       fieldConfidence: result.status !== 'red' ? {
@@ -162,6 +163,7 @@ export function AddCertificateDialog({
         placeOfIssue: extractedData.placeOfIssue ? getConfidence(result.status) : undefined,
         issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
       } : undefined,
+      certificateTypeFreeText: '', // For free text certificate type
     };
 
     setCertificates(prev => [...prev, newCert]);
@@ -170,6 +172,27 @@ export function AddCertificateDialog({
     if (certificates.length === 0) {
       setExpandedCertId(newCert.id);
     }
+  };
+
+  // Handle manual upload - creates empty certificate entry with file
+  const handleManualUpload = (file: File) => {
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+
+    const newCert: CertificateEntry = {
+      id: `cert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: fileName,
+      dateOfIssue: '',
+      expiryDate: '',
+      placeOfIssue: '',
+      issuingAuthority: '',
+      file,
+      categoryId: null,
+      isManualEntry: true,
+      certificateTypeFreeText: '',
+    };
+
+    setCertificates(prev => [...prev, newCert]);
+    setExpandedCertId(newCert.id);
   };
 
   const handleRemoveCertificate = (id: string) => {
@@ -197,8 +220,8 @@ export function AddCertificateDialog({
       
       if (!hasName || !hasDateOfIssue) return false;
       
-      // Admins/managers need a type selected
-      if (isAdminOrManager && !c.certificateTypeId && !c.aliasAutoMatched) {
+      // Admins/managers need a type selected OR free text entered
+      if (isAdminOrManager && !c.certificateTypeId && !c.aliasAutoMatched && !c.certificateTypeFreeText?.trim()) {
         return false;
       }
       
@@ -360,12 +383,43 @@ export function AddCertificateDialog({
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Smart Upload Section */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <SmartCertificateUpload
                 existingCategories={categories}
                 onExtractionComplete={handleExtractionComplete}
                 disabled={loadingCategories}
               />
+              
+              {/* Manual Upload Option */}
+              <div className="flex items-center gap-2 pt-2">
+                <div className="flex-1 border-t border-border" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 border-t border-border" />
+              </div>
+              
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                className="hidden"
+                ref={manualFileInputRef}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleManualUpload(file);
+                    e.target.value = '';
+                  }
+                }}
+              />
+              
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => manualFileInputRef.current?.click()}
+                disabled={loadingCategories}
+              >
+                <PenLine className="h-4 w-4 mr-2" />
+                Manual Upload (fill in details yourself)
+              </Button>
             </div>
 
             {/* Processed Certificates Section */}
@@ -394,13 +448,21 @@ export function AddCertificateDialog({
                         className="flex items-center gap-3 p-3 cursor-pointer"
                         onClick={() => setExpandedCertId(expandedCertId === cert.id ? null : cert.id)}
                       >
-                        {getStatusIcon(cert.extractionStatus)}
+                        {cert.isManualEntry ? (
+                          <PenLine className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          getStatusIcon(cert.extractionStatus)
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">
                             {cert.name || 'Unnamed Certificate'}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {cert.file?.name}
+                            {cert.isManualEntry ? (
+                              <span className="italic">Manual entry</span>
+                            ) : null}
+                            {cert.file?.name && !cert.isManualEntry && cert.file.name}
+                            {cert.isManualEntry && cert.file?.name && ` • ${cert.file.name}`}
                             {cert.categoryId && categories.find(c => c.id === cert.categoryId) && (
                               <span className="ml-2">
                                 → {categories.find(c => c.id === cert.categoryId)?.name}
@@ -522,10 +584,23 @@ export function AddCertificateDialog({
                               </Label>
                               <CertificateTypeSelector
                                 value={cert.certificateTypeId || null}
-                                onChange={(typeId) => handleFieldChange(cert.id, 'certificateTypeId', typeId)}
+                                onChange={(typeId) => {
+                                  handleFieldChange(cert.id, 'certificateTypeId', typeId);
+                                  if (typeId) {
+                                    handleFieldChange(cert.id, 'certificateTypeFreeText', '');
+                                  }
+                                }}
                                 required={isAdminOrManager}
                                 autoMatched={cert.aliasAutoMatched}
                                 placeholder={isAdminOrManager ? "Select certificate type..." : "Optional: Select type..."}
+                                allowFreeText={true}
+                                freeTextValue={cert.certificateTypeFreeText || ''}
+                                onFreeTextChange={(text) => {
+                                  handleFieldChange(cert.id, 'certificateTypeFreeText', text);
+                                  if (text) {
+                                    handleFieldChange(cert.id, 'certificateTypeId', null);
+                                  }
+                                }}
                               />
                             </div>
 
