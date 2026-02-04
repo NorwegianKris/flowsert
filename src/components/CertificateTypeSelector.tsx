@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Check, ChevronsUpDown, Sparkles, Plus, List, Edit3 } from "lucide-react";
+import { Check, ChevronsUpDown, Sparkles, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCertificateTypes, CertificateType } from "@/hooks/useCertificateTypes";
 
@@ -53,7 +53,6 @@ export function CertificateTypeSelector({
 }: CertificateTypeSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [inputMode, setInputMode] = useState<'dropdown' | 'freetext'>(value ? 'dropdown' : 'freetext');
   const { data: types = [], isLoading } = useCertificateTypes();
 
   const selectedType = useMemo(() => {
@@ -99,9 +98,12 @@ export function CertificateTypeSelector({
   const handleSelect = (typeId: string) => {
     const type = types.find((t) => t.id === typeId);
     onChange(typeId, type?.name);
+    // Clear free text when selecting from dropdown
+    if (onFreeTextChange) {
+      onFreeTextChange('');
+    }
     setOpen(false);
     setSearchValue("");
-    setInputMode('dropdown');
   };
 
   const handleClear = () => {
@@ -118,161 +120,135 @@ export function CertificateTypeSelector({
     }
   };
 
-  const handleSwitchToFreeText = () => {
-    setInputMode('freetext');
-    onChange(null); // Clear the dropdown selection
-  };
-
-  const handleSwitchToDropdown = () => {
-    setInputMode('dropdown');
-    if (onFreeTextChange) {
-      onFreeTextChange(''); // Clear free text
-    }
-  };
-
-  // If allowFreeText is enabled, show toggle between modes
+  // If allowFreeText is enabled, show dropdown and free text side by side
   if (allowFreeText) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant={inputMode === 'freetext' ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleSwitchToFreeText}
-            disabled={disabled}
-            className="text-xs h-7"
-          >
-            <Edit3 className="h-3 w-3 mr-1" />
-            Free text
-          </Button>
-          <Button
-            type="button"
-            variant={inputMode === 'dropdown' ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleSwitchToDropdown}
-            disabled={disabled}
-            className="text-xs h-7"
-          >
-            <List className="h-3 w-3 mr-1" />
-            Choose from list
-          </Button>
-        </div>
-
-        {inputMode === 'freetext' ? (
-          <Input
-            value={freeTextValue}
-            onChange={(e) => onFreeTextChange?.(e.target.value)}
-            placeholder="Enter certificate type..."
-            disabled={disabled}
-            className={className}
-          />
-        ) : (
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                disabled={disabled || isLoading}
-                className={cn(
-                  "w-full justify-between font-normal",
-                  !selectedType && "text-muted-foreground",
-                  autoMatched && selectedType && "border-primary/50 bg-primary/5",
-                  className
-                )}
-              >
-                <span className="flex items-center gap-2 truncate">
-                  {selectedType ? (
-                    <>
-                      {selectedType.name}
-                      {autoMatched && (
-                        <Badge variant="secondary" className="ml-1 text-xs">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          Auto-matched
-                        </Badge>
-                      )}
-                    </>
-                  ) : (
-                    placeholder
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+          {/* Dropdown on left */}
+          <div className="flex-1">
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  disabled={disabled || isLoading}
+                  className={cn(
+                    "w-full justify-between font-normal",
+                    !selectedType && "text-muted-foreground",
+                    autoMatched && selectedType && "border-primary/50 bg-primary/5",
+                    className
                   )}
-                </span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0 z-[100]" align="start" sideOffset={4}>
-              <Command>
-                <CommandInput
-                  placeholder="Search certificate types..."
-                  value={searchValue}
-                  onValueChange={setSearchValue}
-                />
-                <CommandList>
-                  <CommandEmpty>
-                    {allowCreate && searchValue.trim() ? (
-                      <div className="p-2">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={handleCreateNew}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create "{searchValue.trim()}"
-                        </Button>
-                      </div>
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    {selectedType ? (
+                      <>
+                        {selectedType.name}
+                        {autoMatched && (
+                          <Badge variant="secondary" className="ml-1 text-xs">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Auto
+                          </Badge>
+                        )}
+                      </>
                     ) : (
-                      <span className="text-muted-foreground">No certificate types found.</span>
+                      placeholder
                     )}
-                  </CommandEmpty>
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0 z-[100]" align="start" sideOffset={4}>
+                <Command>
+                  <CommandInput
+                    placeholder="Search certificate types..."
+                    value={searchValue}
+                    onValueChange={setSearchValue}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {allowCreate && searchValue.trim() ? (
+                        <div className="p-2">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={handleCreateNew}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create "{searchValue.trim()}"
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">No certificate types found.</span>
+                      )}
+                    </CommandEmpty>
 
-                  {!required && selectedType && (
-                    <CommandGroup>
-                      <CommandItem onSelect={handleClear} className="text-muted-foreground">
-                        Clear selection
-                      </CommandItem>
-                    </CommandGroup>
-                  )}
-
-                  {groupedTypes.map(({ category, types: categoryTypes }) => (
-                    <CommandGroup key={category} heading={category}>
-                      {categoryTypes.map((type) => (
-                        <CommandItem
-                          key={type.id}
-                          value={type.name}
-                          onSelect={() => handleSelect(type.id)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              value === type.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div className="flex flex-col">
-                            <span>{type.name}</span>
-                            {type.description && (
-                              <span className="text-xs text-muted-foreground">
-                                {type.description}
-                              </span>
-                            )}
-                          </div>
+                    {!required && selectedType && (
+                      <CommandGroup>
+                        <CommandItem onSelect={handleClear} className="text-muted-foreground">
+                          Clear selection
                         </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  ))}
+                      </CommandGroup>
+                    )}
 
-                  {allowCreate && !searchMatchesExisting && searchValue.trim() && (
-                    <CommandGroup heading="Create new">
-                      <CommandItem onSelect={handleCreateNew}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create "{searchValue.trim()}"
-                      </CommandItem>
-                    </CommandGroup>
-                  )}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        )}
+                    {groupedTypes.map(({ category, types: categoryTypes }) => (
+                      <CommandGroup key={category} heading={category}>
+                        {categoryTypes.map((type) => (
+                          <CommandItem
+                            key={type.id}
+                            value={type.name}
+                            onSelect={() => handleSelect(type.id)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                value === type.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{type.name}</span>
+                              {type.description && (
+                                <span className="text-xs text-muted-foreground">
+                                  {type.description}
+                                </span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    ))}
+
+                    {allowCreate && !searchMatchesExisting && searchValue.trim() && (
+                      <CommandGroup heading="Create new">
+                        <CommandItem onSelect={handleCreateNew}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create "{searchValue.trim()}"
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Separator text */}
+          <div className="flex items-center justify-center sm:pt-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap px-1">or type if not found</span>
+          </div>
+
+          {/* Free text on right */}
+          <div className="flex-1">
+            <Input
+              value={freeTextValue}
+              onChange={(e) => onFreeTextChange?.(e.target.value)}
+              placeholder="Enter custom type..."
+              disabled={disabled || !!selectedType}
+              className={cn(className, selectedType && "opacity-50")}
+            />
+          </div>
+        </div>
       </div>
     );
   }
