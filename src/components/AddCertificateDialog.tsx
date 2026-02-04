@@ -213,17 +213,13 @@ export function AddCertificateDialog({
   };
 
   const handleSubmit = async () => {
-    // Validate certificates
+    // Validate certificates - only require name and date of issue
     const validCerts = certificates.filter(c => {
-      const hasName = c.name.trim();
-      const hasDateOfIssue = c.dateOfIssue;
+      const hasName = c.name?.trim();
+      const hasDateOfIssue = c.dateOfIssue?.trim();
       
+      // Basic required fields
       if (!hasName || !hasDateOfIssue) return false;
-      
-      // Admins/managers need a type selected OR free text entered
-      if (isAdminOrManager && !c.certificateTypeId && !c.aliasAutoMatched && !c.certificateTypeFreeText?.trim()) {
-        return false;
-      }
       
       return true;
     });
@@ -231,6 +227,10 @@ export function AddCertificateDialog({
     if (validCerts.length === 0) {
       toast.error('Please fill in at least the Certificate Name and Date of Issue for each certificate');
       return;
+    }
+
+    if (validCerts.length < certificates.length) {
+      toast.warning(`${certificates.length - validCerts.length} certificate(s) are missing required fields and will be skipped`);
     }
 
     if (validCerts.length < certificates.length) {
