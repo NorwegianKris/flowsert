@@ -1,195 +1,391 @@
 
-# Mobile View Improvement Plan
+
+# Certificate Standardization & Canonical Mapping System (Final)
 
 ## Overview
-This plan addresses the issue of buttons and UI elements overflowing horizontally on mobile devices, causing them to "skew to the right outside of the frame." The solution involves systematically adding `flex-wrap` and responsive layout classes throughout the application to ensure all content stays within the viewport on smaller screens.
 
-## Problem Areas Identified
+This plan implements a safe, additive certificate standardization system that maps messy, user-entered certificate names to canonical certificate types. The system preserves raw user input, enables deterministic normalization, and ensures compliance timelines remain clean and stable.
 
-After reviewing the codebase, I found multiple components with button groups and layouts that lack proper wrapping for mobile:
-
-1. **AdminDashboard.tsx (lines 306-354)** - Header buttons (Add Personnel, New Project, Actions, Settings, Sign Out) use `flex gap-2` without wrapping
-2. **PersonnelInvitations.tsx (lines 79-121)** - Accept/Decline buttons in invitation cards lack `flex-wrap`
-3. **WorkerInvitations.tsx (lines 80-124)** - Same issue with Accept/Decline buttons
-4. **PersonnelDetail.tsx (lines 110-168)** - Top action buttons (Activate, Send Invitation, Request for Project) need wrapping
-5. **PersonnelDetail.tsx (lines 354-394)** - Certificate action buttons (Add, Edit, Remove) need wrapping
-6. **ProjectDetail.tsx (lines 139-163)** - Project action buttons (Edit, Add Calendar Item, Share, Close) already use `flex-wrap` but may need further optimization
-7. **WorkerDashboard.tsx (lines 49-56)** - Header buttons (Report Feedback, Sign Out) need mobile handling
-8. **PersonnelFilters.tsx** - Filter buttons may overflow on smaller screens (partially addressed with existing `flex-wrap`)
-
-## Solution Approach
-
-For each problem area, I will:
-1. Add `flex-wrap` to button container divs
-2. Add responsive gap adjustments using Tailwind classes (e.g., `gap-2 sm:gap-3`)
-3. On mobile, make some buttons full-width or icon-only where appropriate
-4. Ensure text in buttons truncates or hides on smaller screens
-5. Stack layouts vertically on mobile where necessary
+This final revision incorporates additional refinements:
+- **Worker selections remain reviewable**: `needs_review = true` unless alias match exists
+- **Alias creation is explicitly admin-confirmed**: Only on checkbox + type confirmation, with ambiguity warnings
+- **Tightened ambiguity detection**: Generic-term patterns only, known acronyms always bypass
+- **Backfill order**: Alias match first, then ambiguity detection only if no match
+- **Soft deletion for types**: `is_active` flag instead of hard delete
+- **Performance indexes**: Added for review queue queries
 
 ---
 
-## Detailed Changes
+## Phase 1: Database Schema (Additive Only)
 
-### 1. AdminDashboard.tsx - Header Buttons
-**Current:**
+### 1.1 Create `certificate_types` Table
+
 ```text
-<div className="flex gap-2">
-  <Button>Add Personnel</Button>
-  <Button>New Project</Button>
-  <Button>Actions</Button>
-  <Button>Settings</Button>
-  <Button>Sign Out</Button>
-</div>
+certificate_types
+-------------------------------------------------
+id                UUID PRIMARY KEY
+business_id       UUID NULLABLE (null = global template)
+category_id       UUID NULLABLE FK -> certificate_categories
+name              TEXT NOT NULL (e.g., "CSWIP 3.2U Inspector")
+description       TEXT NULLABLE
+is_active         BOOLEAN DEFAULT true (soft delete)
+created_at        TIMESTAMPTZ DEFAULT now()
+updated_at        TIMESTAMPTZ DEFAULT now()
+UNIQUE (business_id, name)
 ```
 
-**Proposed:**
-- Wrap the entire header section with `flex-col sm:flex-row` for stacking on mobile
-- Add `flex-wrap gap-2` to button container
-- Hide button text labels on mobile, showing only icons
-- On very small screens, consider grouping secondary actions (Settings, Sign Out) into a dropdown
+**Soft deletion**: Types with `is_active = false` are hidden from dropdowns but preserved for historical data integrity.
 
-### 2. PersonnelInvitations.tsx - Invitation Cards
-**Current:**
+### 1.2 Create `certificate_aliases` Table
+
 ```text
-<div className="flex items-center justify-between gap-4 p-3 ...">
-  {/* Content */}
-  <div className="flex items-center gap-2 shrink-0">
-    <Button>Decline</Button>
-    <Button>Accept</Button>
-  </div>
-</div>
+certificate_aliases
+-------------------------------------------------
+id                    UUID PRIMARY KEY
+business_id           UUID NOT NULL
+alias_normalized      TEXT NOT NULL
+alias_raw_example     TEXT NULLABLE
+certificate_type_id   UUID NOT NULL FK -> certificate_types
+confidence            INT DEFAULT 100
+created_by            TEXT CHECK IN ('system', 'admin')
+last_seen_at          TIMESTAMPTZ DEFAULT now()
+created_at            TIMESTAMPTZ DEFAULT now()
+UNIQUE (business_id, alias_normalized)
+INDEX (business_id, alias_normalized)
 ```
 
-**Proposed:**
-- Add `flex-wrap` to the main container
-- Stack content and buttons vertically on mobile using `flex-col sm:flex-row`
-- Make buttons full-width on mobile with `w-full sm:w-auto`
+### 1.3 Extend Existing `certificates` Table
 
-### 3. WorkerInvitations.tsx - Invitation Cards
-Same changes as PersonnelInvitations.tsx (identical structure)
+| Column | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `title_raw` | TEXT NULLABLE | NULL | Original user input |
+| `title_normalized` | TEXT NULLABLE | NULL | Normalized for lookups |
+| `certificate_type_id` | UUID NULLABLE | NULL | Links to canonical type |
+| `needs_review` | BOOLEAN | FALSE | Flags for admin review |
+| `unmapped_reason` | TEXT NULLABLE | NULL | Reason for intentional non-mapping |
+| `unmapped_by` | UUID NULLABLE | NULL | Admin who marked unmapped |
+| `unmapped_at` | TIMESTAMPTZ NULLABLE | NULL | When marked unmapped |
 
-### 4. PersonnelDetail.tsx - Top Action Bar
-**Current:**
-```text
-<div className="flex gap-2">
-  {isAdmin && <Button>Activate Profile</Button>}
-  {!personnel.userId && <Button>Send Invitation</Button>}
-  {isActivated && <Button>Request for Project</Button>}
-</div>
+### 1.4 Performance Indexes
+
+```sql
+-- Primary review queue index
+CREATE INDEX idx_certificates_review_queue 
+ON certificates (business_id, needs_review) 
+WHERE needs_review = true;
+
+-- Optional: normalized title lookup for grouping
+CREATE INDEX idx_certificates_title_normalized 
+ON certificates (business_id, title_normalized);
+
+-- Alias lookup (already defined in table)
+CREATE INDEX idx_aliases_lookup 
+ON certificate_aliases (business_id, alias_normalized);
 ```
 
-**Proposed:**
-- Add `flex-wrap gap-2` to ensure buttons wrap to new line
-- Use responsive text: hide text on mobile, show icons only
-- Add `justify-end` to maintain right alignment
+### 1.5 RLS Policies
 
-### 5. PersonnelDetail.tsx - Certificate Actions
-**Current:**
+Standard patterns scoped by `business_id`:
+- **SELECT**: Users in same business can view
+- **INSERT/UPDATE/DELETE**: Admin/manager role required for `certificate_types` and `certificate_aliases`
+- Workers can modify only their own certificates
+
+---
+
+## Phase 2: Normalization Function
+
+### 2.1 Shared Normalization Logic
+
+File: `src/lib/certificateNormalization.ts`
+
 ```text
-<div className="flex gap-2">
-  <Button>Add</Button>
-  <CertificateExpiryNotificationDialog />
-  <Button>Edit</Button>
-  <Button>Remove</Button>
-</div>
+Steps:
+  1. Lowercase
+  2. Trim
+  3. Collapse whitespace
+  4. Replace punctuation with space
+  5. Keep alphanumeric + spaces only
+  6. Unicode normalize (NFD)
+
+Examples:
+  "3.2U Inspection" -> "3 2u inspection"
+  "BOSIET (With CA-EBS)" -> "bosiet with ca ebs"
+  "HUET" -> "huet"
 ```
 
-**Proposed:**
-- Add `flex-wrap gap-2`
-- Consider making buttons smaller on mobile with `size="sm"` becoming `size="icon"` on small screens
+### 2.2 Ambiguity Detection (Pattern-Based Only)
 
-### 6. WorkerDashboard.tsx - Header Section
-**Current:**
 ```text
-<div className="flex items-center gap-3">
-  <ReportFeedbackDialog />
-  <Button variant="outline" onClick={signOut}>
-    <LogOut /> Sign Out
-  </Button>
-</div>
+KNOWN ACRONYMS (always bypass ambiguity):
+  HUET, BOSIET, GWO, STCW, CSWIP, DMT, EBS, CA-EBS,
+  IMCA, OPITO, NOGEPA, OGUK, T-HUET, FOET, MIST
+
+GENERIC PATTERNS (flag as ambiguous):
+  Exact matches only:
+    "diving", "medical", "certificate", "cert",
+    "inspection", "training", "course", "safety",
+    "offshore", "marine", "subsea"
+  
+  Generic phrases:
+    "diving cert", "medical certificate", 
+    "diving certificate", "safety training"
+
+Detection Logic:
+  1. Normalize title
+  2. If normalized matches known acronym -> NOT ambiguous
+  3. If normalized exactly matches generic term -> AMBIGUOUS
+  4. If normalized matches generic phrase pattern -> AMBIGUOUS
+  5. Otherwise -> NOT ambiguous
+
+Token count is NEVER used for ambiguity detection.
 ```
 
-**Proposed:**
-- Add `flex-wrap` to handle potential overflow
-- Hide button text on very small screens
+---
 
-### 7. DashboardStats.tsx - Stats Grid
-**Current:**
+## Phase 3: Upload Flow (Role-Based)
+
+### 3.1 Worker Upload Flow
+
 ```text
-<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+1. Upload certificate file
+2. OCR suggests title_raw (no auto-mapping)
+3. Compute title_normalized
+4. Query alias table for exact match
+
+IF ALIAS EXISTS:
+  - Auto-select certificate_type_id
+  - Set needs_review = false
+  - Show "Auto-matched" badge
+  - Update alias last_seen_at
+
+IF NO ALIAS:
+  - Type selection is OPTIONAL
+  - If worker selects a type manually:
+      - Set certificate_type_id to selected
+      - Set needs_review = true (worker selection = suggestion)
+  - If worker does not select type:
+      - Set certificate_type_id = null
+      - Set needs_review = true
+  - Certificate saves successfully either way
+  - "Remember this name" checkbox NOT shown
 ```
 
-This is already responsive, but on very small mobile screens the 2-column layout may still be tight.
+**Key point**: Worker-selected types are treated as suggestions and remain reviewable.
 
-**Proposed:**
-- Change to `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` for single-column on very small screens
+### 3.2 Admin/Manager Upload Flow
+
+```text
+1. Upload certificate file
+2. OCR suggests title_raw (no auto-mapping)
+3. Compute title_normalized
+4. Query alias table for exact match
+
+IF ALIAS EXISTS:
+  - Auto-select certificate_type_id
+  - Set needs_review = false
+  - Show "Auto-matched" badge
+
+IF NO ALIAS:
+  - Type selection is REQUIRED
+  - Show "Remember this name for next time" checkbox
+  - If checkbox checked AND title appears generic:
+      - Show warning: "This name appears generic. Are you sure?"
+      - Require confirmation before alias creation
+  - On save with checkbox:
+      - Create alias (created_by = 'admin')
+      - Set needs_review = false
+  - On save without checkbox:
+      - No alias created
+      - Set needs_review = false (admin confirmed)
+```
+
+### 3.3 OCR Behavior
+
+The Edge Function `extract-certificate-data`:
+- Returns suggested `certificateName` as `title_raw`
+- Returns `matchedCategory` for existing category matching
+- **NEVER** auto-creates types or aliases
+- All mapping requires explicit user action
+
+---
+
+## Phase 4: Admin Cleanup Tools
+
+### 4.1 Certificate Types Manager
+
+Location: Settings section
+
+Features:
+- List all types for business (filter by `is_active`)
+- Each type shows linked category from `certificate_categories`
+- Create new type: name, description, linked category
+- Edit existing types
+- Archive type (set `is_active = false`):
+  - Type hidden from dropdowns
+  - Historical certificates retain reference
+  - Show warning with count of linked certificates
+- Restore archived types
+
+### 4.2 Alias Manager
+
+Features:
+- View aliases grouped by certificate type
+- Show raw examples and last-seen timestamps
+- Delete individual aliases
+- Reassign alias to different type
+
+### 4.3 Review Queue
+
+Table showing certificates where `needs_review = true` AND `unmapped_by IS NULL`:
+
+| Grouped By | Count | Source | Actions |
+|------------|-------|--------|---------|
+| `title_normalized` | N | Worker-selected / Unmatched | Map / Create / Unmapped |
+
+Columns:
+- **Normalized Title**: Grouped key
+- **Count**: Number of certificates
+- **Sample Raw Titles**: Examples of original input
+- **Type Selected**: If worker selected a type (shown for review)
+- **Personnel Names**: Who uploaded these
+
+Actions:
+1. **Map to Existing Type**: 
+   - Select type from dropdown
+   - Optional: Create alias for this normalized title
+   - Updates all certificates in group
+   
+2. **Create New Type & Map**:
+   - Create new type inline
+   - Automatically creates alias
+   - Updates all certificates in group
+
+3. **Mark Intentionally Unmapped** (admin-only):
+   - Opens dialog requiring `unmapped_reason`
+   - Sets `unmapped_by`, `unmapped_at`
+   - Sets `needs_review = false`
+   - `certificate_type_id` remains null
+
+### 4.4 Safe Backfill Tool
+
+Button: "Standardize Existing Certificates (Safe)"
+
+**Order of Operations** (per batch of 100-300 rows):
+
+```text
+FOR EACH certificate WHERE title_raw IS NULL OR title_normalized IS NULL:
+  
+  1. SET title_raw = existing name (if null)
+  2. COMPUTE title_normalized = normalize(title_raw)
+  
+  3. QUERY alias table for exact match:
+     SELECT * FROM certificate_aliases 
+     WHERE business_id = ? AND alias_normalized = title_normalized
+  
+  4. IF ALIAS FOUND:
+     - SET certificate_type_id = alias.certificate_type_id
+     - SET needs_review = false
+     - UPDATE alias.last_seen_at
+     - SKIP ambiguity detection (already mapped)
+  
+  5. IF NO ALIAS FOUND:
+     - SET needs_review = true
+     - certificate_type_id remains null
+     - Ambiguity detection runs for UI hints only
+       (does not affect needs_review logic)
+```
+
+**Key point**: Alias matching takes priority. Ambiguity detection only informs the admin review UI, not the backfill logic.
+
+---
+
+## Phase 5: Compliance Integration (Feature-Flagged)
+
+### 5.1 Feature Flag
+
+Add to `businesses` table:
+```sql
+use_canonical_certificates BOOLEAN DEFAULT false
+```
+
+### 5.2 Behavior When Enabled
+
+- Timeline grouping uses `certificate_type_id` instead of raw name
+- Only certificates with `certificate_type_id` appear in canonical views
+- Certificates with `needs_review = true` shown in "Pending Classification" section
+- Status calculations unchanged (based on expiry date)
+
+### 5.3 Activation Prerequisites
+
+1. All needs_review certificates addressed
+2. Alias coverage reviewed
+3. Pilot tenant confirms correctness
 
 ---
 
 ## Technical Implementation
 
-### Strategy 1: Responsive Button Groups
-For button containers, add this pattern:
-```css
-flex flex-wrap gap-2 justify-end
-```
+### New Files
 
-### Strategy 2: Icon-Only Buttons on Mobile
-For buttons with icons and text:
-```html
-<Button>
-  <Icon className="h-4 w-4 sm:mr-2" />
-  <span className="hidden sm:inline">Button Text</span>
-</Button>
-```
+| File | Purpose |
+|------|---------|
+| `src/lib/certificateNormalization.ts` | Normalize function + ambiguity detection |
+| `src/components/CertificateTypeSelector.tsx` | Searchable dropdown with role awareness |
+| `src/components/CertificateTypesManager.tsx` | Admin CRUD with archive support |
+| `src/components/CertificateAliasesManager.tsx` | Alias management |
+| `src/components/CertificateReviewQueue.tsx` | Needs-review cleanup UI |
+| `src/components/CertificateBackfillTool.tsx` | Batched backfill with progress |
+| `src/components/MarkUnmappedDialog.tsx` | Unmapped reason dialog |
+| `src/components/AmbiguityWarningDialog.tsx` | Warning when creating generic alias |
+| `src/hooks/useCertificateTypes.ts` | Type management hook |
+| `src/hooks/useCertificateAliases.ts` | Alias lookup/creation hook |
 
-### Strategy 3: Stacked Layouts on Mobile
-For side-by-side layouts that overflow:
-```css
-flex flex-col sm:flex-row items-start sm:items-center gap-3
-```
-
-### Strategy 4: Full-Width Buttons on Mobile
-For action buttons in cards:
-```css
-w-full sm:w-auto
-```
-
----
-
-## Files to Modify
+### Modified Files
 
 | File | Changes |
 |------|---------|
-| `src/pages/AdminDashboard.tsx` | Add `flex-wrap`, responsive button text, stacked mobile header |
-| `src/components/PersonnelInvitations.tsx` | Add `flex-wrap`, stack layout on mobile |
-| `src/components/WorkerInvitations.tsx` | Add `flex-wrap`, stack layout on mobile |
-| `src/components/PersonnelDetail.tsx` | Add `flex-wrap` to action bars, responsive icons |
-| `src/pages/WorkerDashboard.tsx` | Add `flex-wrap` to header buttons |
-| `src/components/DashboardStats.tsx` | Improve grid responsiveness for very small screens |
-| `src/components/PersonnelFilters.tsx` | Already has `flex-wrap`, but may need vertical stacking improvements |
-| `src/components/ProjectDetail.tsx` | Already has `flex-wrap` on buttons, verify proper behavior |
+| `src/components/AddCertificateDialog.tsx` | Type selector, role-based logic, alias checkbox |
+| `src/components/EditCertificateDialog.tsx` | Type selector, role-based requirements |
+| `src/components/CategoriesSection.tsx` | Add standardization management tab |
+| `src/types/index.ts` | Extend Certificate interface |
+
+### Database Migrations
+
+1. Create `certificate_types` with `is_active` flag and RLS
+2. Create `certificate_aliases` with indexes and RLS
+3. Extend `certificates` with new columns
+4. Add performance indexes for review queue
+5. Add `use_canonical_certificates` flag to businesses
 
 ---
 
-## Testing Recommendations
+## Safety Constraints Summary
 
-After implementation:
-1. Test on iPhone SE (320px width) - smallest common mobile viewport
-2. Test on iPhone 12/13 (390px width) - common modern mobile size
-3. Test on iPad (768px width) - tablet breakpoint
-4. Verify all buttons are accessible and clickable
-5. Ensure no horizontal scrolling occurs on any screen size
-6. Check that all dropdowns and popovers remain fully visible
+| Constraint | Implementation |
+|------------|----------------|
+| Worker selections are reviewable | `needs_review = true` unless alias match |
+| Alias creation is admin-confirmed | Checkbox + confirmation, warning for generic |
+| No token-count ambiguity | Pattern matching only, acronyms bypass |
+| Backfill prioritizes alias match | Alias lookup before ambiguity detection |
+| No hard delete of types | `is_active` flag for soft delete |
+| Review queue is performant | Indexes on `needs_review` and `title_normalized` |
+| No auto-creation from OCR | OCR suggests only, explicit mapping required |
+| All changes additive | New columns nullable, feature-flagged |
 
 ---
 
-## Summary
+## Acceptance Criteria
 
-This plan systematically addresses mobile overflow issues by:
-- Adding `flex-wrap` to all button groups
-- Using responsive Tailwind classes to stack content vertically on mobile
-- Hiding button text while preserving icons on smaller screens
-- Ensuring cards and containers adapt to narrow viewports
+| Scenario | Expected Result |
+|----------|-----------------|
+| Worker uploads with no alias match, selects type | `needs_review = true`, type saved |
+| Worker uploads with alias match | `needs_review = false`, auto-matched |
+| Worker uploads with no selection | `needs_review = true`, no type |
+| Admin uploads with no alias, checks "Remember" | Alias created, `needs_review = false` |
+| Admin creates alias for "diving" | Warning dialog shown, requires confirmation |
+| "HUET" processed | NOT flagged as ambiguous |
+| "Diving" processed | Flagged as ambiguous |
+| Backfill finds existing alias | Sets type, skips ambiguity check |
+| Admin archives certificate type | Type hidden, historical data preserved |
+| Review queue with 10k certificates | Fast loading via indexes |
 
-The changes follow existing Tailwind patterns in the codebase and maintain consistency with the current design system.
