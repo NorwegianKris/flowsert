@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Plus,
   Pencil,
@@ -37,6 +37,8 @@ import {
   Loader2,
   Search,
   Award,
+  Merge,
+  Settings,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +52,7 @@ import {
   useCertificateTypeUsageCount,
   CertificateType,
 } from "@/hooks/useCertificateTypes";
+import { TypeMergingPane } from "@/components/TypeMergingPane";
 
 interface Category {
   id: string;
@@ -59,6 +62,40 @@ interface Category {
 type FilterStatus = "active" | "archived" | "all";
 
 export function CertificateTypesManager() {
+  const { businessId } = useAuth();
+  const [activeView, setActiveView] = useState<"merge" | "manage">("merge");
+
+  return (
+    <div className="space-y-4">
+      {/* View selector */}
+      <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "merge" | "manage")}>
+        <TabsList>
+          <TabsTrigger value="merge" className="gap-2">
+            <Merge className="h-4 w-4" />
+            <span className="hidden sm:inline">Group Types</span>
+          </TabsTrigger>
+          <TabsTrigger value="manage" className="gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Manage Types</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="merge" className="mt-4">
+          <TypeMergingPane />
+        </TabsContent>
+        
+        <TabsContent value="manage" className="mt-4">
+          <TypesManageList />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/**
+ * The original types management list - for editing/archiving types
+ */
+function TypesManageList() {
   const { businessId } = useAuth();
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("active");
   const [searchQuery, setSearchQuery] = useState("");
@@ -194,7 +231,7 @@ export function CertificateTypesManager() {
     <div className="space-y-4">
       {/* Header with filters */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -442,7 +479,7 @@ export function CertificateTypesManager() {
                   Are you sure you want to archive "{selectedType?.name}"?
                 </p>
                 {usageCount > 0 && (
-                  <p className="text-amber-600">
+                  <p className="text-warning">
                     This type is currently used by {usageCount} certificate
                     {usageCount !== 1 ? "s" : ""}. Archiving will hide it from
                     future selections but won't affect existing certificates.
