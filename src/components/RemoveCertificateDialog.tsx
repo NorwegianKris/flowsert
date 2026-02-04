@@ -92,8 +92,8 @@ export function RemoveCertificateDialog({
   if (showConfirm) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
               Confirm Removal
@@ -104,17 +104,19 @@ export function RemoveCertificateDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-2">
-            {certificates
-              .filter((c) => selectedIds.has(c.id))
-              .map((cert) => (
-                <div key={cert.id} className="text-sm">
-                  • {cert.name}
-                </div>
-              ))}
-          </div>
+          <ScrollArea className="flex-1 min-h-0 max-h-[40vh]">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-2">
+              {certificates
+                .filter((c) => selectedIds.has(c.id))
+                .map((cert) => (
+                  <div key={cert.id} className="text-sm">
+                    • {cert.name}
+                  </div>
+                ))}
+            </div>
+          </ScrollArea>
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0">
             <Button variant="outline" onClick={() => setShowConfirm(false)}>
               Cancel
             </Button>
@@ -133,8 +135,8 @@ export function RemoveCertificateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-destructive" />
             Remove Certificates from {personnelName}
@@ -147,8 +149,8 @@ export function RemoveCertificateDialog({
             <p className="text-muted-foreground">No certificates to remove</p>
           </div>
         ) : (
-          <>
-            <div className="flex items-center gap-2 pb-2 border-b">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex items-center gap-2 px-6 py-3 border-b flex-shrink-0">
               <Checkbox
                 checked={selectedIds.size === certificates.length}
                 onCheckedChange={handleSelectAll}
@@ -158,7 +160,7 @@ export function RemoveCertificateDialog({
               </span>
             </div>
 
-            <ScrollArea className="flex-1 border rounded-lg">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="p-4 space-y-2">
                 {certificates.map((cert) => {
                   const status = getCertificateStatus(cert.expiryDate);
@@ -198,13 +200,13 @@ export function RemoveCertificateDialog({
               </div>
             </ScrollArea>
 
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground px-6 py-2 border-t flex-shrink-0">
               {selectedIds.size} certificate(s) selected for removal
             </div>
-          </>
+          </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
