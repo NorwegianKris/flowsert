@@ -135,7 +135,7 @@ export function RemoveCertificateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-destructive" />
@@ -149,7 +149,7 @@ export function RemoveCertificateDialog({
             <p className="text-muted-foreground">No certificates to remove</p>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <>
             <div className="flex items-center gap-2 px-6 py-3 border-b flex-shrink-0">
               <Checkbox
                 checked={selectedIds.size === certificates.length}
@@ -160,7 +160,8 @@ export function RemoveCertificateDialog({
               </span>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0">
+            {/* Native scrolling container with explicit max-height */}
+            <div className="overflow-y-auto flex-1" style={{ maxHeight: 'calc(85vh - 220px)' }}>
               <div className="p-4 space-y-2">
                 {certificates.map((cert) => {
                   const status = getCertificateStatus(cert.expiryDate);
@@ -198,12 +199,12 @@ export function RemoveCertificateDialog({
                   );
                 })}
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="text-sm text-muted-foreground px-6 py-2 border-t flex-shrink-0">
               {selectedIds.size} certificate(s) selected for removal
             </div>
-          </div>
+          </>
         )}
 
         <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
