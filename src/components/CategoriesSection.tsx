@@ -79,7 +79,7 @@ export function CategoriesSection() {
               <TabsContent value="types">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Manage canonical certificate types for standardized mapping.
+                    Manage the official certificate types used to organize and group certificates consistently.
                   </p>
                 </div>
                 <CertificateTypesManager />
