@@ -14,6 +14,7 @@ export interface CertificateType {
   updated_at: string;
   // Joined data
   category_name?: string;
+  usage_count?: number;
 }
 
 export interface CreateCertificateTypeInput {
@@ -61,10 +62,36 @@ export function useCertificateTypes(options?: { includeInactive?: boolean }) {
         throw error;
       }
 
-      return (data || []).map((type: any) => ({
+      const types = (data || []).map((type: any) => ({
         ...type,
         category_name: type.certificate_categories?.name || null,
       })) as CertificateType[];
+
+      // Fetch usage counts for all types in one query
+      if (types.length > 0) {
+        const typeIds = types.map(t => t.id);
+        const { data: counts, error: countError } = await supabase
+          .from("certificates")
+          .select("certificate_type_id")
+          .in("certificate_type_id", typeIds);
+
+        if (!countError && counts) {
+          // Count occurrences per type
+          const countMap = new Map<string, number>();
+          counts.forEach((c: any) => {
+            if (c.certificate_type_id) {
+              countMap.set(c.certificate_type_id, (countMap.get(c.certificate_type_id) || 0) + 1);
+            }
+          });
+
+          // Attach counts to types
+          types.forEach(type => {
+            type.usage_count = countMap.get(type.id) || 0;
+          });
+        }
+      }
+
+      return types;
     },
     enabled: !!businessId,
   });

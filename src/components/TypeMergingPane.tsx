@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
   CollapsibleContent,
@@ -85,8 +86,13 @@ export function TypeMergingPane() {
   const { businessId } = useAuth();
   const queryClient = useQueryClient();
 
+  // Show mapped toggle
+  const [showMapped, setShowMapped] = useState(false);
+
   // Data
-  const { data: inputtedTypes = [], isLoading: loadingInputted, refetch: refetchInputted } = useInputtedTypes();
+  const { data: inputtedTypes = [], isLoading: loadingInputted, refetch: refetchInputted } = useInputtedTypes({ 
+    includeMapped: showMapped 
+  });
   const { data: mergedTypes = [], isLoading: loadingMerged } = useCertificateTypes();
   const createTypeMutation = useCreateCertificateType();
   const createAliasMutation = useCreateAlias();
@@ -326,6 +332,7 @@ export function TypeMergingPane() {
   }
 
   const unmappedCount = inputtedTypes.filter((t) => !t.is_mapped).length;
+  const mappedCount = inputtedTypes.filter((t) => t.is_mapped).length;
 
   return (
     <div className="space-y-4">
@@ -334,6 +341,14 @@ export function TypeMergingPane() {
         <span>
           {unmappedCount} unmapped type{unmappedCount !== 1 ? "s" : ""}
         </span>
+        {showMapped && mappedCount > 0 && (
+          <>
+            <span>•</span>
+            <span>
+              {mappedCount} mapped type{mappedCount !== 1 ? "s" : ""}
+            </span>
+          </>
+        )}
         <span>•</span>
         <span>
           {mergedTypes.filter((t) => t.is_active).length} merged type{mergedTypes.filter((t) => t.is_active).length !== 1 ? "s" : ""}
@@ -350,7 +365,9 @@ export function TypeMergingPane() {
               <Badge variant="secondary">{filteredInputted.length}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Names entered by personnel during uploads. Select items to group them into official types.
+              {showMapped 
+                ? "All certificate names from uploads. Mapped items show their current type."
+                : "Names entered by personnel during uploads. Select items to group them into official types."}
             </p>
             <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -361,6 +378,19 @@ export function TypeMergingPane() {
                 onChange={(e) => setLeftSearch(e.target.value)}
                 className="pl-9 h-8"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch 
+                id="show-mapped" 
+                checked={showMapped} 
+                onCheckedChange={setShowMapped}
+              />
+              <Label 
+                htmlFor="show-mapped" 
+                className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap"
+              >
+                Show mapped
+              </Label>
             </div>
           </div>
             {filteredInputted.length > 0 && (
@@ -441,26 +471,35 @@ export function TypeMergingPane() {
                               </p>
                               
                               {/* Tertiary: Contextual hint */}
-                              {tertiaryHint && (
+                              {inputted.is_mapped && inputted.mapped_type_name ? (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <CheckCircle2 className="h-3 w-3 text-status-valid" />
+                                  <span className="text-xs text-status-valid">
+                                    Mapped to: {inputted.mapped_type_name}
+                                  </span>
+                                </div>
+                              ) : tertiaryHint ? (
                                 <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">
                                   {tertiaryHint}
                                 </p>
-                              )}
+                              ) : null}
                             </div>
                             
                             {/* Delete button */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTypeToDelete(inputted);
-                                setDismissDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {!inputted.is_mapped && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTypeToDelete(inputted);
+                                  setDismissDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                             
                             {/* Expand chevron */}
                             <CollapsibleTrigger asChild>
@@ -678,6 +717,10 @@ export function TypeMergingPane() {
                               {merged.description}
                             </p>
                           )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <FileText className="h-3 w-3 inline mr-1" />
+                            {(merged as any).usage_count || 0} certificate{(merged as any).usage_count !== 1 ? 's' : ''}
+                          </p>
                         </div>
                       </div>
                     </div>
