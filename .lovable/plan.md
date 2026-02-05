@@ -1,123 +1,193 @@
 
-# Plan: Show Only Merged Type Names in Certificate Filter Dropdown
+# Plan: Fix Document Viewing in Inputted Types List
 
 ## Problem
 
-The certificate filter dropdown on the admin dashboard currently displays raw certificate names like:
-- `3.2 CSWIP Inspection`
-- `3.2U`
-- `3.2U Inspection`
-- `3.2u`
-- `3.2u inspection`
+When clicking "View" on a certificate document in the Inputted Types list (e.g., `1770122349798.jpeg` for "surface oriented diver"), users receive an error. This happens because:
 
-Even after merging these into the official "CSWIP 3.2U Inspector" type, the variations still appear because:
-1. The filter pulls from `certificates.name` (the original uploaded name)
-2. Merging only updates `certificate_type_id`, not the `name` field
-3. The original names are preserved for historical reference
+1. The `certificate-documents` storage bucket is **private** (access requires authentication)
+2. The current code uses a direct `<a href={cert.document_url}>` link
+3. Direct links to private buckets fail without proper authentication headers
+4. Other parts of the app (like CertificateTable) correctly use the Supabase SDK to download files securely
 
 ## Solution
 
-Update the system to use **canonical type names** for filtering instead of raw certificate names. When a certificate has been mapped to an official type, use that type's name. Only show the raw name for unmapped certificates.
-
-### Current Flow
-```
-Certificate Record → name: "3.2u inspection" → Appears in dropdown as "3.2u inspection"
-```
-
-### New Flow
-```
-Certificate Record → certificate_type_id → lookup certificate_types.name → Appears as "CSWIP 3.2U Inspector"
-```
+Update the TypeMergingPane component to:
+1. Replace the direct link with a button that triggers secure document viewing
+2. Open a dialog that downloads the file using `supabase.storage.download()`
+3. Display images and PDFs using blob URLs and the existing PdfViewer component
+4. Match the pattern already used in CertificateTable.tsx
 
 ## Technical Changes
 
-### File 1: `src/hooks/usePersonnel.ts`
+### File: `src/components/TypeMergingPane.tsx`
 
-Update the certificate query to join with `certificate_types` and include the canonical type name:
-
+**Add imports:**
 ```typescript
-// Line ~78-80: Update the certificates query
-const { data, error: certError } = await supabase
-  .from('certificates')
-  .select(`
-    *, 
-    certificate_categories(name),
-    certificate_types(name)
-  `)
-  .in('personnel_id', personnelIds);
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { PdfViewer } from "./PdfViewer";
 ```
 
-Update the mapping to include the type name (lines ~120-129):
-
+**Add state for document viewing:**
 ```typescript
-.map((c: DbCertificate): Certificate => ({
-  id: c.id,
-  // Use canonical type name if mapped, otherwise fall back to raw name
-  name: c.certificate_types?.name || c.name,
-  dateOfIssue: c.date_of_issue,
-  expiryDate: c.expiry_date,
-  placeOfIssue: c.place_of_issue,
-  issuingAuthority: c.issuing_authority || undefined,
-  documentUrl: c.document_url || undefined,
-  category: c.certificate_categories?.name || undefined,
-  certificateTypeId: c.certificate_type_id || undefined,
-}))
+const [documentViewOpen, setDocumentViewOpen] = useState(false);
+const [viewingDocument, setViewingDocument] = useState<{ url: string | null; fileName: string } | null>(null);
+const [documentBlobUrl, setDocumentBlobUrl] = useState<string | null>(null);
+const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+const [loadingDocument, setLoadingDocument] = useState(false);
 ```
 
-### File 2: `src/types/index.ts`
-
-Ensure the `Certificate` interface has the necessary fields (already has `certificateTypeId`, just confirming).
-
-### File 3: Update DbCertificate interface
-
-Add the certificate_types join result to the interface:
-
+**Add document viewing function:**
 ```typescript
-interface DbCertificate {
-  // ... existing fields ...
-  certificate_type_id: string | null;
-  certificate_types: { name: string } | null;
-}
+const handleViewDocument = async (documentUrl: string, fileName: string) => {
+  setViewingDocument({ url: documentUrl, fileName });
+  setDocumentViewOpen(true);
+  setLoadingDocument(true);
+  setDocumentBlobUrl(null);
+  setPdfData(null);
+
+  // Extract file path from URL
+  let path = documentUrl;
+  if (documentUrl.includes('certificate-documents/')) {
+    const match = documentUrl.match(/certificate-documents\/(.+)/);
+    if (match) path = match[1];
+  }
+
+  // Download file via Supabase SDK (bypasses CORS/ad blocker issues)
+  const { data, error } = await supabase.storage
+    .from('certificate-documents')
+    .download(path);
+
+  if (error) {
+    console.error('Error downloading document:', error);
+    setLoadingDocument(false);
+    return;
+  }
+
+  if (data) {
+    setDocumentBlobUrl(URL.createObjectURL(data));
+    
+    // For PDFs, also prepare ArrayBuffer for PdfViewer
+    if (/\.pdf$/i.test(documentUrl)) {
+      const buffer = await data.arrayBuffer();
+      setPdfData(buffer);
+    }
+  }
+  setLoadingDocument(false);
+};
 ```
 
-## Result After Implementation
+**Replace the direct link with a button:**
 
-Before:
-```
-Dropdown shows:
-- 3.2 CSWIP Inspection
-- 3.2U
-- 3.2U Inspection  
-- 3.2u
-- 3.2u inspection
-- CSWIP 3.2U Inspector  ← (if any cert was created with this exact name)
+Before (lines 557-568):
+```tsx
+{cert.document_url ? (
+  <a
+    href={cert.document_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="truncate max-w-[140px] text-primary hover:underline flex items-center gap-1"
+    onClick={(e) => e.stopPropagation()}
+  >
+    {cert.file_name}
+    <ExternalLink className="h-3 w-3 shrink-0" />
+  </a>
+) : ...
 ```
 
 After:
+```tsx
+{cert.document_url ? (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      handleViewDocument(cert.document_url!, cert.file_name || 'Document');
+    }}
+    className="truncate max-w-[140px] text-primary hover:underline flex items-center gap-1 text-left"
+  >
+    {cert.file_name}
+    <ExternalLink className="h-3 w-3 shrink-0" />
+  </button>
+) : ...
 ```
-Dropdown shows:
-- CSWIP 3.2U Inspector  ← (consolidated, all mapped variations)
-- BOSIET                ← (unmapped, shows raw name)
+
+**Add document viewer dialog (at end of component, before closing tag):**
+```tsx
+{/* Document Viewer Dialog */}
+<Dialog 
+  open={documentViewOpen} 
+  onOpenChange={(open) => {
+    if (!open) {
+      if (documentBlobUrl) URL.revokeObjectURL(documentBlobUrl);
+      setDocumentBlobUrl(null);
+      setPdfData(null);
+      setViewingDocument(null);
+    }
+    setDocumentViewOpen(open);
+  }}
+>
+  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2">
+        <FileText className="h-5 w-5" />
+        {viewingDocument?.fileName || 'Document'}
+      </DialogTitle>
+    </DialogHeader>
+    
+    <div className="mt-4">
+      {loadingDocument ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading document...</span>
+        </div>
+      ) : pdfData && viewingDocument?.url && /\.pdf$/i.test(viewingDocument.url) ? (
+        <PdfViewer pdfData={pdfData} />
+      ) : documentBlobUrl && viewingDocument?.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(viewingDocument.url) ? (
+        <img
+          src={documentBlobUrl}
+          alt={viewingDocument.fileName}
+          className="max-h-[70vh] w-auto mx-auto object-contain rounded"
+        />
+      ) : documentBlobUrl ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
+          <Button asChild>
+            <a href={documentBlobUrl} download={viewingDocument?.fileName}>
+              Download File
+            </a>
+          </Button>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-destructive">
+          Failed to load document. Please try again.
+        </div>
+      )}
+    </div>
+  </DialogContent>
+</Dialog>
 ```
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/hooks/usePersonnel.ts` | Join certificate_types, use type name for Certificate.name when mapped |
-| Same file | Update DbCertificate interface to include certificate_types |
+| `src/components/TypeMergingPane.tsx` | Add document viewer dialog, replace direct link with secure download |
 
-## Impact
+## How It Works
 
-1. **Admin Dashboard Filter**: Will show only official type names for mapped certificates
-2. **Personnel Search**: Will search by canonical type names
-3. **Certificate Lists**: Will display the official type name throughout the UI
-4. **Historical Data**: Original names are preserved in `title_raw` for reference but not displayed in filters
-5. **Backward Compatibility**: Unmapped certificates still show their original name
+```text
+Before:
+  Click "View" → Direct link to private URL → 403 Error
 
-## Workflow
+After:
+  Click "View" → Open dialog → supabase.storage.download() → Blob URL → Display in dialog
+```
 
-After this change:
-1. Merge all CSWIP variations in Settings → Certificates → Types
-2. Refresh the admin dashboard
-3. The filter will now show only "CSWIP 3.2U Inspector" instead of 5 variations
+## Benefits
+
+1. **Secure**: Uses authenticated Supabase SDK for file access
+2. **Consistent**: Matches the pattern used in CertificateTable
+3. **Reliable**: Works with private storage buckets
+4. **User-friendly**: Inline preview in a dialog (images and PDFs)
+5. **Fallback**: Download option for unsupported file types
