@@ -20,6 +20,7 @@ export interface InputtedType {
   count: number;
   certificate_type_id: string | null;
   is_mapped: boolean;
+  mapped_type_name: string | null;
   raw_examples: string[];
   personnel_count: number;
   // Enhanced details
@@ -36,17 +37,17 @@ export interface InputtedType {
  * 
  * Inputted types = unique free-text titles from uploaded certificates
  */
-export function useInputtedTypes() {
+export function useInputtedTypes(options?: { includeMapped?: boolean }) {
   const { businessId } = useAuth();
+  const includeMapped = options?.includeMapped ?? false;
 
   return useQuery({
-    queryKey: ["inputted-types", businessId],
+    queryKey: ["inputted-types", businessId, includeMapped],
     queryFn: async () => {
       if (!businessId) return [];
 
-      // Fetch only certificates that were entered via free text (certificate_type_id is null)
-      // and have not been marked as "unmapped" by an admin
-      const { data: certificates, error } = await supabase
+      // Build query - optionally include mapped certificates
+      let query = supabase
         .from("certificates")
         .select(`
           id,
@@ -57,16 +58,23 @@ export function useInputtedTypes() {
           created_at,
           expiry_date,
           document_url,
+          certificate_types ( name ),
           personnel!inner (
             business_id,
             name
           )
         `)
         .eq("personnel.business_id", businessId)
-        .is("certificate_type_id", null) // Only show custom-entered types (not mapped to official type)
         .is("unmapped_by", null) // Not dismissed by admin
         .not("title_raw", "is", null) // Must have a title_raw (was entered via custom type field)
         .order("created_at", { ascending: false });
+
+      // Only filter for unmapped when not including mapped
+      if (!includeMapped) {
+        query = query.is("certificate_type_id", null);
+      }
+
+      const { data: certificates, error } = await query;
 
       if (error) {
         console.error("Error fetching inputted types:", error);
@@ -78,6 +86,7 @@ export function useInputtedTypes() {
         count: number;
         raw_examples: Set<string>;
         certificate_type_id: string | null;
+        mapped_type_name: string | null;
         has_multiple_types: boolean;
         personnel_ids: Set<string>;
         personnel_names: Set<string>;
@@ -95,12 +104,14 @@ export function useInputtedTypes() {
         const fileName = cert.document_url 
           ? decodeURIComponent(cert.document_url.split('/').pop() || '').replace(/^\d+-/, '')
           : null;
+        const mappedTypeName = cert.certificate_types?.name || null;
 
         if (!groupMap.has(normalized)) {
           groupMap.set(normalized, {
             count: 0,
             raw_examples: new Set(),
             certificate_type_id: cert.certificate_type_id,
+            mapped_type_name: mappedTypeName,
             has_multiple_types: false,
             personnel_ids: new Set(),
             personnel_names: new Set(),
@@ -120,6 +131,11 @@ export function useInputtedTypes() {
         // Track if there are mixed mappings
         if (cert.certificate_type_id !== group.certificate_type_id) {
           group.has_multiple_types = true;
+        }
+        
+        // Update mapped type name if we have one
+        if (mappedTypeName && !group.mapped_type_name) {
+          group.mapped_type_name = mappedTypeName;
         }
 
         // Update latest upload date
@@ -152,7 +168,7 @@ export function useInputtedTypes() {
         }
       });
 
-      // Convert to array - all items are unmapped since we filtered for certificate_type_id IS NULL
+      // Convert to array
       const inputtedTypes: InputtedType[] = Array.from(groupMap.entries())
         .map(([title_normalized, data]) => ({
           title_normalized,
@@ -160,8 +176,9 @@ export function useInputtedTypes() {
             ? Array.from(data.raw_examples)[0] 
             : title_normalized,
           count: data.count,
-          certificate_type_id: null, // Always null since we only fetch unmapped
-          is_mapped: false, // Always false since we only fetch unmapped
+          certificate_type_id: data.certificate_type_id,
+          is_mapped: data.certificate_type_id !== null,
+          mapped_type_name: data.mapped_type_name,
           raw_examples: Array.from(data.raw_examples).slice(0, 5),
           personnel_count: data.personnel_ids.size,
           personnel_names: Array.from(data.personnel_names).slice(0, 10),
