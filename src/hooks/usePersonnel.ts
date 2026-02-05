@@ -47,6 +47,8 @@ interface DbCertificate {
   document_url: string | null;
   category_id: string | null;
   certificate_categories: { name: string } | null;
+  certificate_type_id: string | null;
+  certificate_types: { name: string } | null;
 }
 
 export function usePersonnel() {
@@ -77,7 +79,7 @@ export function usePersonnel() {
       if (personnelIds.length > 0) {
         const { data, error: certError } = await supabase
           .from('certificates')
-          .select('*, certificate_categories(name)')
+          .select('*, certificate_categories(name), certificate_types(name)')
           .in('personnel_id', personnelIds);
 
         if (certError) throw certError;
@@ -119,13 +121,14 @@ export function usePersonnel() {
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
             id: c.id,
-            name: c.name,
+            name: c.certificate_types?.name || c.name,
             dateOfIssue: c.date_of_issue,
             expiryDate: c.expiry_date,
             placeOfIssue: c.place_of_issue,
             issuingAuthority: c.issuing_authority || undefined,
             documentUrl: c.document_url || undefined,
             category: c.certificate_categories?.name || undefined,
+            certificateTypeId: c.certificate_type_id || undefined,
           })),
       }));
 
@@ -181,10 +184,10 @@ export function useWorkerPersonnel() {
 
       const p = personnelData as any;
 
-      // Fetch certificates with category
+      // Fetch certificates with category and type
       const { data: certificatesData, error: certError } = await supabase
         .from('certificates')
-        .select('*, certificate_categories(name)')
+        .select('*, certificate_categories(name), certificate_types(name)')
         .eq('personnel_id', p.id);
 
       if (certError) throw certError;
@@ -221,13 +224,14 @@ export function useWorkerPersonnel() {
         certificateExpiryNotifications: p.certificate_expiry_notifications || false,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
-          name: c.name,
+          name: c.certificate_types?.name || c.name,
           dateOfIssue: c.date_of_issue,
           expiryDate: c.expiry_date,
           placeOfIssue: c.place_of_issue,
           issuingAuthority: c.issuing_authority || undefined,
           documentUrl: c.document_url || undefined,
           category: c.certificate_categories?.name || undefined,
+          certificateTypeId: c.certificate_type_id || undefined,
         })),
       };
 
