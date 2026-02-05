@@ -1,88 +1,123 @@
 
+# Plan: Show Only Merged Type Names in Certificate Filter Dropdown
 
-# Plan: Backfill Missing Certificate Title Data
+## Problem
 
-## The Problem
-
-You're seeing 5 CSWIP variations in the dropdown:
+The certificate filter dropdown on the admin dashboard currently displays raw certificate names like:
 - `3.2 CSWIP Inspection`
 - `3.2U`
 - `3.2U Inspection`
 - `3.2u`
 - `3.2u inspection`
 
-However, only 1 certificate appears in the "Inputted Types" merging list because the other certificates are missing the `title_raw` and `title_normalized` data that the merging UI requires.
-
-| Certificate Name | title_raw | title_normalized | Status |
-|-----------------|-----------|------------------|--------|
-| 3.2U | 3.2U | 3 2u | Already mapped |
-| 3.2u inspection | NULL | NULL | Invisible in merging UI |
-| 3.2 CSWIP Inspection | NULL | NULL | Invisible in merging UI |
-| Cswip 3.2u | NULL | NULL | Invisible in merging UI |
-| 3.2U Inspection | NULL | NULL | Invisible in merging UI |
-| 3.2u | NULL | NULL | Invisible in merging UI |
-| CSWIP 3.2U | NULL | NULL | Invisible in merging UI |
-| CSWIP 3.1 U | NULL | NULL | Invisible in merging UI |
+Even after merging these into the official "CSWIP 3.2U Inspector" type, the variations still appear because:
+1. The filter pulls from `certificates.name` (the original uploaded name)
+2. Merging only updates `certificate_type_id`, not the `name` field
+3. The original names are preserved for historical reference
 
 ## Solution
 
-Create a one-time "Backfill Tool" that populates `title_raw` and `title_normalized` for all certificates where these fields are NULL, using the certificate `name` as the source value.
+Update the system to use **canonical type names** for filtering instead of raw certificate names. When a certificate has been mapped to an official type, use that type's name. Only show the raw name for unmapped certificates.
 
-After backfilling:
-1. All 7+ variations will appear in the "Inputted Types" list
-2. You can select them all and merge them into "CSWIP 3.2U Inspector"
-3. Aliases will be created for each variation for future auto-matching
+### Current Flow
+```
+Certificate Record → name: "3.2u inspection" → Appears in dropdown as "3.2u inspection"
+```
+
+### New Flow
+```
+Certificate Record → certificate_type_id → lookup certificate_types.name → Appears as "CSWIP 3.2U Inspector"
+```
 
 ## Technical Changes
 
-### 1. Database Migration
+### File 1: `src/hooks/usePersonnel.ts`
 
-Add a function to backfill missing title data:
+Update the certificate query to join with `certificate_types` and include the canonical type name:
 
-```sql
--- Backfill title_raw and title_normalized from certificate name
-UPDATE certificates
-SET 
-  title_raw = name,
-  title_normalized = lower(regexp_replace(name, '[^a-zA-Z0-9\s]', ' ', 'g'))
-WHERE title_raw IS NULL
-  AND title_normalized IS NULL
-  AND name IS NOT NULL;
+```typescript
+// Line ~78-80: Update the certificates query
+const { data, error: certError } = await supabase
+  .from('certificates')
+  .select(`
+    *, 
+    certificate_categories(name),
+    certificate_types(name)
+  `)
+  .in('personnel_id', personnelIds);
 ```
 
-### 2. Modify Backfill Tool UI
+Update the mapping to include the type name (lines ~120-129):
 
-Update the existing `CertificateBackfillTool.tsx` to include a "Backfill Titles" action that:
-- Counts certificates missing `title_raw`/`title_normalized`
-- Shows a preview of what will be updated
-- Executes the backfill with confirmation
-- Refreshes the Inputted Types list
+```typescript
+.map((c: DbCertificate): Certificate => ({
+  id: c.id,
+  // Use canonical type name if mapped, otherwise fall back to raw name
+  name: c.certificate_types?.name || c.name,
+  dateOfIssue: c.date_of_issue,
+  expiryDate: c.expiry_date,
+  placeOfIssue: c.place_of_issue,
+  issuingAuthority: c.issuing_authority || undefined,
+  documentUrl: c.document_url || undefined,
+  category: c.certificate_categories?.name || undefined,
+  certificateTypeId: c.certificate_type_id || undefined,
+}))
+```
 
-### 3. Update useInputtedTypes Hook
+### File 2: `src/types/index.ts`
 
-Add an alternative query path that can also group by certificate `name` for certificates where `title_normalized` is null. This ensures all certificates appear in the list even if they lack normalized titles.
+Ensure the `Certificate` interface has the necessary fields (already has `certificateTypeId`, just confirming).
+
+### File 3: Update DbCertificate interface
+
+Add the certificate_types join result to the interface:
+
+```typescript
+interface DbCertificate {
+  // ... existing fields ...
+  certificate_type_id: string | null;
+  certificate_types: { name: string } | null;
+}
+```
+
+## Result After Implementation
+
+Before:
+```
+Dropdown shows:
+- 3.2 CSWIP Inspection
+- 3.2U
+- 3.2U Inspection  
+- 3.2u
+- 3.2u inspection
+- CSWIP 3.2U Inspector  ← (if any cert was created with this exact name)
+```
+
+After:
+```
+Dropdown shows:
+- CSWIP 3.2U Inspector  ← (consolidated, all mapped variations)
+- BOSIET                ← (unmapped, shows raw name)
+```
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| Database migration | Add SQL to backfill NULL title_raw/title_normalized from name |
-| `src/components/CertificateBackfillTool.tsx` | Add "Backfill Titles" action |
-| `src/hooks/useInputtedTypes.ts` | Include certificates with NULL title_normalized using name as fallback |
+| File | Changes |
+|------|---------|
+| `src/hooks/usePersonnel.ts` | Join certificate_types, use type name for Certificate.name when mapped |
+| Same file | Update DbCertificate interface to include certificate_types |
 
-## Workflow After Implementation
+## Impact
 
-1. Go to **Settings > Certificates > Types > Advanced Tools > Backfill Tool**
-2. Click "Backfill Titles" to populate missing data
-3. The 7+ CSWIP variations will now appear in the Inputted Types list
-4. Select all variations
-5. Select "CSWIP 3.2U Inspector" on the right
-6. Click "Group into selected" to merge them all
+1. **Admin Dashboard Filter**: Will show only official type names for mapped certificates
+2. **Personnel Search**: Will search by canonical type names
+3. **Certificate Lists**: Will display the official type name throughout the UI
+4. **Historical Data**: Original names are preserved in `title_raw` for reference but not displayed in filters
+5. **Backward Compatibility**: Unmapped certificates still show their original name
 
-## Safety Considerations
+## Workflow
 
-- The backfill only affects certificates where `title_raw IS NULL`
-- Existing mappings are not affected
-- The normalization uses the same algorithm as the main application
-- All changes can be reviewed before confirmation
-
+After this change:
+1. Merge all CSWIP variations in Settings → Certificates → Types
+2. Refresh the admin dashboard
+3. The filter will now show only "CSWIP 3.2U Inspector" instead of 5 variations
