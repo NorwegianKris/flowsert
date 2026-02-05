@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +63,7 @@ import {
 import { useCreateAlias } from "@/hooks/useCertificateAliases";
 import { useBulkUpdateCertificates } from "@/hooks/useCertificatesNeedingReview";
 import { MAX_BATCH_SIZE } from "@/components/BulkUpdateConfirmDialog";
+import { PdfViewer } from "./PdfViewer";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -115,6 +116,51 @@ export function TypeMergingPane() {
   const [newTypeDescription, setNewTypeDescription] = useState("");
   const [newTypeCategoryId, setNewTypeCategoryId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Document viewer state
+  const [documentViewOpen, setDocumentViewOpen] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<{ url: string | null; fileName: string } | null>(null);
+  const [documentBlobUrl, setDocumentBlobUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [loadingDocument, setLoadingDocument] = useState(false);
+
+  // Handle document viewing with secure download
+  const handleViewDocument = useCallback(async (documentUrl: string, fileName: string) => {
+    setViewingDocument({ url: documentUrl, fileName });
+    setDocumentViewOpen(true);
+    setLoadingDocument(true);
+    setDocumentBlobUrl(null);
+    setPdfData(null);
+
+    // Extract file path from URL
+    let path = documentUrl;
+    if (documentUrl.includes('certificate-documents/')) {
+      const match = documentUrl.match(/certificate-documents\/(.+)/);
+      if (match) path = match[1];
+    }
+
+    // Download file via Supabase SDK (bypasses CORS/ad blocker issues)
+    const { data, error } = await supabase.storage
+      .from('certificate-documents')
+      .download(path);
+
+    if (error) {
+      console.error('Error downloading document:', error);
+      setLoadingDocument(false);
+      return;
+    }
+
+    if (data) {
+      setDocumentBlobUrl(URL.createObjectURL(data));
+      
+      // For PDFs, also prepare ArrayBuffer for PdfViewer
+      if (/\.pdf$/i.test(documentUrl)) {
+        const buffer = await data.arrayBuffer();
+        setPdfData(buffer);
+      }
+    }
+    setLoadingDocument(false);
+  }, []);
 
   // Fetch categories for create dialog
   useEffect(() => {
@@ -556,16 +602,16 @@ export function TypeMergingPane() {
                                     <span className="text-muted-foreground/50">—</span>
                                     {cert.file_name ? (
                                       cert.document_url ? (
-                                        <a
-                                          href={cert.document_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="truncate max-w-[140px] text-primary hover:underline flex items-center gap-1"
-                                          onClick={(e) => e.stopPropagation()}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewDocument(cert.document_url!, cert.file_name || 'Document');
+                                          }}
+                                          className="truncate max-w-[140px] text-primary hover:underline flex items-center gap-1 text-left"
                                         >
                                           {cert.file_name}
                                           <ExternalLink className="h-3 w-3 shrink-0" />
-                                        </a>
+                                        </button>
                                       ) : (
                                         <span className="truncate max-w-[140px]">{cert.file_name}</span>
                                       )
@@ -908,6 +954,59 @@ export function TypeMergingPane() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog 
+        open={documentViewOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            if (documentBlobUrl) URL.revokeObjectURL(documentBlobUrl);
+            setDocumentBlobUrl(null);
+            setPdfData(null);
+            setViewingDocument(null);
+          }
+          setDocumentViewOpen(open);
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {viewingDocument?.fileName || 'Document'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {loadingDocument ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Loading document...</span>
+              </div>
+            ) : pdfData && viewingDocument?.url && /\.pdf$/i.test(viewingDocument.url) ? (
+              <PdfViewer pdfData={pdfData} />
+            ) : documentBlobUrl && viewingDocument?.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(viewingDocument.url) ? (
+              <img
+                src={documentBlobUrl}
+                alt={viewingDocument.fileName}
+                className="max-h-[70vh] w-auto mx-auto object-contain rounded"
+              />
+            ) : documentBlobUrl ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
+                <Button asChild>
+                  <a href={documentBlobUrl} download={viewingDocument?.fileName}>
+                    Download File
+                  </a>
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-destructive">
+                Failed to load document. Please try again.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
