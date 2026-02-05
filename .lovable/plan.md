@@ -1,175 +1,88 @@
 
-# Plan: Show Previously Mapped Certificates in Type Merging UI
 
-## Problem
+# Plan: Backfill Missing Certificate Title Data
 
-When personnel upload certificates with custom names, they appear in the "Inputted Types" list. However, once these are grouped into an official type (like "CSWIP 3.2U Inspector"), they disappear from view because the current filter only shows unmapped certificates (`certificate_type_id IS NULL`).
+## The Problem
 
-This makes it impossible to:
-- See what certificates have already been grouped into each official type
-- Find older uploads with different naming variations to add to the same type
-- Re-assign certificates to a different type if needed
+You're seeing 5 CSWIP variations in the dropdown:
+- `3.2 CSWIP Inspection`
+- `3.2U`
+- `3.2U Inspection`
+- `3.2u`
+- `3.2u inspection`
+
+However, only 1 certificate appears in the "Inputted Types" merging list because the other certificates are missing the `title_raw` and `title_normalized` data that the merging UI requires.
+
+| Certificate Name | title_raw | title_normalized | Status |
+|-----------------|-----------|------------------|--------|
+| 3.2U | 3.2U | 3 2u | Already mapped |
+| 3.2u inspection | NULL | NULL | Invisible in merging UI |
+| 3.2 CSWIP Inspection | NULL | NULL | Invisible in merging UI |
+| Cswip 3.2u | NULL | NULL | Invisible in merging UI |
+| 3.2U Inspection | NULL | NULL | Invisible in merging UI |
+| 3.2u | NULL | NULL | Invisible in merging UI |
+| CSWIP 3.2U | NULL | NULL | Invisible in merging UI |
+| CSWIP 3.1 U | NULL | NULL | Invisible in merging UI |
 
 ## Solution
 
-Add a **"Show mapped"** toggle to the Inputted Types pane that reveals all historical uploads, including those already assigned to a type. Additionally, display certificate counts on each Merged Type so you can see how many are grouped under each.
+Create a one-time "Backfill Tool" that populates `title_raw` and `title_normalized` for all certificates where these fields are NULL, using the certificate `name` as the source value.
 
-## Visual Changes
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Inputted Types                                     │  Merged Types         │
-│  ─────────────────────────────────────────          │  ─────────────────    │
-│                              [Toggle] Show mapped   │                       │
-│  ┌──────────────────────────────────────┐          │  ○ CSWIP 3.2U Inspector│
-│  │ ☐ BOSIET                             │          │    3 certificates     │
-│  │   1 certificate • John Doe           │   ──►    │                       │
-│  │   (Not yet mapped)                   │          │  ○ Diver Medical      │
-│  └──────────────────────────────────────┘          │    4 certificates     │
-│  ┌──────────────────────────────────────┐          │                       │
-│  │ ☐ 3.2U Inspector                     │          │  ○ Class B            │
-│  │   1 certificate • Jane Smith         │          │    1 certificate      │
-│  │   ✓ Mapped to: CSWIP 3.2U Inspector  │          │                       │
-│  └──────────────────────────────────────┘          │                       │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-When toggle is ON:
-- All historical uploads appear (both mapped and unmapped)
-- Already-mapped items show a green badge indicating their current type
-- These can still be selected and re-grouped to a different type
+After backfilling:
+1. All 7+ variations will appear in the "Inputted Types" list
+2. You can select them all and merge them into "CSWIP 3.2U Inspector"
+3. Aliases will be created for each variation for future auto-matching
 
 ## Technical Changes
 
-### File 1: `src/hooks/useInputtedTypes.ts`
+### 1. Database Migration
 
-**Add options parameter:**
+Add a function to backfill missing title data:
 
-```typescript
-export function useInputtedTypes(options?: { includeMapped?: boolean }) {
-  const { businessId } = useAuth();
-  const includeMapped = options?.includeMapped ?? false;
-
-  return useQuery({
-    queryKey: ["inputted-types", businessId, includeMapped],
-    queryFn: async () => {
-      // ... existing setup ...
-      
-      let query = supabase
-        .from("certificates")
-        .select(`
-          id,
-          title_raw,
-          title_normalized,
-          certificate_type_id,
-          personnel_id,
-          created_at,
-          expiry_date,
-          document_url,
-          certificate_types ( name ),
-          personnel!inner (
-            business_id,
-            name
-          )
-        `)
-        .eq("personnel.business_id", businessId)
-        .is("unmapped_by", null)
-        .not("title_raw", "is", null);
-      
-      // Only filter for unmapped when not including mapped
-      if (!includeMapped) {
-        query = query.is("certificate_type_id", null);
-      }
-      
-      // ... rest of query
-    }
-  });
-}
+```sql
+-- Backfill title_raw and title_normalized from certificate name
+UPDATE certificates
+SET 
+  title_raw = name,
+  title_normalized = lower(regexp_replace(name, '[^a-zA-Z0-9\s]', ' ', 'g'))
+WHERE title_raw IS NULL
+  AND title_normalized IS NULL
+  AND name IS NOT NULL;
 ```
 
-**Update InputtedType interface:**
+### 2. Modify Backfill Tool UI
 
-Add a `mapped_type_name` field to track what type each group is mapped to (when showing mapped items).
+Update the existing `CertificateBackfillTool.tsx` to include a "Backfill Titles" action that:
+- Counts certificates missing `title_raw`/`title_normalized`
+- Shows a preview of what will be updated
+- Executes the backfill with confirmation
+- Refreshes the Inputted Types list
 
-### File 2: `src/components/TypeMergingPane.tsx`
+### 3. Update useInputtedTypes Hook
 
-**Add state and toggle:**
-
-```tsx
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-
-// Add state
-const [showMapped, setShowMapped] = useState(false);
-
-// Update hook usage
-const { data: inputtedTypes = [], ... } = useInputtedTypes({ 
-  includeMapped: showMapped 
-});
-```
-
-**Add toggle UI in header (after search):**
-
-```tsx
-<div className="flex items-center gap-2 pt-2">
-  <Switch 
-    id="show-mapped" 
-    checked={showMapped} 
-    onCheckedChange={setShowMapped}
-  />
-  <Label htmlFor="show-mapped" className="text-xs text-muted-foreground cursor-pointer">
-    Show mapped
-  </Label>
-</div>
-```
-
-**Add visual indicator for mapped items:**
-
-When an inputted type has a `certificate_type_id`, show which official type it belongs to:
-
-```tsx
-{inputted.is_mapped && inputted.mapped_type_name && (
-  <div className="flex items-center gap-1 mt-1">
-    <CheckCircle2 className="h-3 w-3 text-green-600" />
-    <span className="text-xs text-green-700">
-      Mapped to: {inputted.mapped_type_name}
-    </span>
-  </div>
-)}
-```
-
-**Show certificate counts on Merged Types:**
-
-In the right pane, display how many certificates are assigned to each type:
-
-```tsx
-<span className="text-xs text-muted-foreground">
-  {merged.usage_count || 0} certificate{merged.usage_count !== 1 ? 's' : ''}
-</span>
-```
-
-### File 3: `src/hooks/useCertificateTypes.ts`
-
-Update to include certificate usage counts per type (batch fetch for efficiency).
+Add an alternative query path that can also group by certificate `name` for certificates where `title_normalized` is null. This ensures all certificates appear in the list even if they lack normalized titles.
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/hooks/useInputtedTypes.ts` | Add `includeMapped` option, join to `certificate_types` table, track mapped type name |
-| `src/components/TypeMergingPane.tsx` | Add toggle switch, show mapped indicator, show certificate counts on merged types |
-| `src/hooks/useCertificateTypes.ts` | Add certificate count per type |
+| File | Change |
+|------|--------|
+| Database migration | Add SQL to backfill NULL title_raw/title_normalized from name |
+| `src/components/CertificateBackfillTool.tsx` | Add "Backfill Titles" action |
+| `src/hooks/useInputtedTypes.ts` | Include certificates with NULL title_normalized using name as fallback |
 
-## Behavior Summary
+## Workflow After Implementation
 
-1. **Default (toggle OFF)**: Same as current - shows only unmapped certificate names
-2. **Toggle ON**: Shows all certificate names including those already assigned
-   - Mapped items display a green indicator showing current type
-   - Can still select and re-group to a different type
-3. **Merged Types pane**: Shows certificate count for each type for visibility
+1. Go to **Settings > Certificates > Types > Advanced Tools > Backfill Tool**
+2. Click "Backfill Titles" to populate missing data
+3. The 7+ CSWIP variations will now appear in the Inputted Types list
+4. Select all variations
+5. Select "CSWIP 3.2U Inspector" on the right
+6. Click "Group into selected" to merge them all
 
-## Edge Cases
+## Safety Considerations
 
-- Re-grouping an already-mapped certificate updates its `certificate_type_id` to the new type
-- Alias creation still works - new aliases are added for the normalized title
-- The "dismiss" option only available for unmapped items (mapped items already have a destination)
+- The backfill only affects certificates where `title_raw IS NULL`
+- Existing mappings are not affected
+- The normalization uses the same algorithm as the main application
+- All changes can be reviewed before confirmation
+
