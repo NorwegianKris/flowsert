@@ -16,7 +16,8 @@ import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
-import { PersonnelFilters, PersonnelSortOption } from '@/components/PersonnelFilters';
+import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/components/PersonnelFilters';
+import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
 import { JobSeekerFilters } from '@/components/JobSeekerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -73,6 +74,7 @@ export default function AdminDashboard() {
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('recent');
+  const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('types');
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -80,6 +82,7 @@ export default function AdminDashboard() {
   const { business, refetch: refetchBusiness } = useBusinessInfo();
   const { signOut, profile } = useAuth();
   const { unreadCounts, totalUnread, refetchCounts } = useUnreadDirectMessages();
+  const { categories: certCategories } = useCertificateCategories();
   
   const loading = personnelLoading || projectsLoading;
 
@@ -125,13 +128,33 @@ export default function AdminDashboard() {
     return locations;
   }, [personnel]);
 
-  // Get unique certificate names for filter dropdown
+  // Get unique certificate names for filter dropdown (types)
   const uniqueCertificates = useMemo(() => {
     const certs = new Set<string>();
     personnel.forEach(p => {
       p.certificates.forEach(c => certs.add(c.name));
     });
     return [...certs].sort();
+  }, [personnel]);
+
+  // Get unique certificate category names for filter dropdown
+  const uniqueCertificateCategories = useMemo(() => {
+    return certCategories.map(c => c.name).sort();
+  }, [certCategories]);
+
+  // Get personnel certificate categories (from their actual certificates)
+  const personnelCertificateCategoriesMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    personnel.forEach(p => {
+      const categories = new Set<string>();
+      p.certificates.forEach(c => {
+        if (c.category) {
+          categories.add(c.category);
+        }
+      });
+      map.set(p.id, categories);
+    });
+    return map;
   }, [personnel]);
 
   const filteredPersonnel = useMemo(() => {
@@ -170,11 +193,19 @@ export default function AdminDashboard() {
       // Category filter (multi-select: fixed_employee or freelancer)
       if (categoryFilters.length > 0 && (!p.category || !categoryFilters.includes(p.category))) return false;
       
-      // Certificate filter (multi-select: personnel must have ALL selected certificates)
+      // Certificate filter (multi-select: personnel must have ALL selected certificates/categories)
       if (certificateFilters.length > 0) {
-        const personnelCertNames = p.certificates.map(c => c.name);
-        const hasAllCerts = certificateFilters.every(cert => personnelCertNames.includes(cert));
-        if (!hasAllCerts) return false;
+        if (certificateFilterMode === 'categories') {
+          // Filter by certificate categories
+          const personnelCategories = personnelCertificateCategoriesMap.get(p.id) || new Set<string>();
+          const hasAllCategories = certificateFilters.every(cat => personnelCategories.has(cat));
+          if (!hasAllCategories) return false;
+        } else {
+          // Filter by certificate types/names
+          const personnelCertNames = p.certificates.map(c => c.name);
+          const hasAllCerts = certificateFilters.every(cert => personnelCertNames.includes(cert));
+          if (!hasAllCerts) return false;
+        }
       }
       
       // Department filter (multi-select)
@@ -197,7 +228,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly, aiFilteredPersonnelIds, sortOption]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -435,10 +466,13 @@ export default function AdminDashboard() {
               onDepartmentFiltersChange={setDepartmentFilters}
               locations={uniqueLocations}
               certificates={uniqueCertificates}
+              certificateCategories={uniqueCertificateCategories}
               availabilityDateRange={availabilityDateRange}
               onAvailabilityDateRangeChange={setAvailabilityDateRange}
               sortOption={sortOption}
               onSortOptionChange={setSortOption}
+              certificateFilterMode={certificateFilterMode}
+              onCertificateFilterModeChange={setCertificateFilterMode}
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">

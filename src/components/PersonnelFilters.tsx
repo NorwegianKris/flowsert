@@ -4,13 +4,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export type PersonnelSortOption = 'recent' | 'alphabetical';
+export type CertificateFilterMode = 'types' | 'categories';
 
 interface PersonnelFiltersProps {
   roleFilters: string[];
@@ -25,10 +27,13 @@ interface PersonnelFiltersProps {
   onDepartmentFiltersChange: (values: string[]) => void;
   locations: string[];
   certificates: string[];
+  certificateCategories?: string[];
   availabilityDateRange: DateRange | undefined;
   onAvailabilityDateRangeChange: (range: DateRange | undefined) => void;
   sortOption: PersonnelSortOption;
   onSortOptionChange: (option: PersonnelSortOption) => void;
+  certificateFilterMode?: CertificateFilterMode;
+  onCertificateFilterModeChange?: (mode: CertificateFilterMode) => void;
 }
 
 export function PersonnelFilters({
@@ -44,10 +49,13 @@ export function PersonnelFilters({
   onDepartmentFiltersChange,
   locations,
   certificates,
+  certificateCategories = [],
   availabilityDateRange,
   onAvailabilityDateRangeChange,
   sortOption,
   onSortOptionChange,
+  certificateFilterMode = 'types',
+  onCertificateFilterModeChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
@@ -58,6 +66,9 @@ export function PersonnelFilters({
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+
+  // Determine which list to show based on mode
+  const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificates;
 
   const sortOptions = [
     { value: 'recent' as PersonnelSortOption, label: 'Most Recent' },
@@ -308,35 +319,75 @@ export function PersonnelFilters({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[250px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
-          <div className="space-y-1">
-            {certificates.map((cert) => (
-              <label
-                key={cert}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-              >
-                <Checkbox
-                  checked={certificateFilters.includes(cert)}
-                  onCheckedChange={() =>
-                    toggleFilter(cert, certificateFilters, onCertificateFiltersChange)
+        <PopoverContent className="w-[280px] p-0 bg-popover border shadow-md z-50" align="start">
+          {/* Toggle between Categories and Types */}
+          {onCertificateFilterModeChange && certificateCategories.length > 0 && (
+            <div className="p-2 border-b">
+              <ToggleGroup
+                type="single"
+                value={certificateFilterMode}
+                onValueChange={(value) => {
+                  if (value) {
+                    // Clear filters when switching modes
+                    onCertificateFiltersChange([]);
+                    onCertificateFilterModeChange(value as CertificateFilterMode);
                   }
-                />
-                <span className="text-sm truncate">{cert}</span>
-              </label>
-            ))}
-            {certificates.length === 0 && (
-              <p className="text-sm text-muted-foreground px-2 py-1">No certificates</p>
-            )}
+                }}
+                className="w-full"
+              >
+                <ToggleGroupItem
+                  value="types"
+                  className="flex-1 gap-1.5 text-xs"
+                  aria-label="Filter by types"
+                >
+                  <Tag className="h-3.5 w-3.5" />
+                  Types
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="categories"
+                  className="flex-1 gap-1.5 text-xs"
+                  aria-label="Filter by categories"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Categories
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+          )}
+          <div className="p-2 max-h-[250px] overflow-y-auto">
+            <div className="space-y-1">
+              {certificateListItems.map((cert) => (
+                <label
+                  key={cert}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                >
+                  <Checkbox
+                    checked={certificateFilters.includes(cert)}
+                    onCheckedChange={() =>
+                      toggleFilter(cert, certificateFilters, onCertificateFiltersChange)
+                    }
+                  />
+                  <span className="text-sm truncate">{cert}</span>
+                </label>
+              ))}
+              {certificateListItems.length === 0 && (
+                <p className="text-sm text-muted-foreground px-2 py-1">
+                  No {certificateFilterMode === 'categories' ? 'categories' : 'certificates'}
+                </p>
+              )}
+            </div>
           </div>
           {certificateFilters.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => onCertificateFiltersChange([])}
-            >
-              Clear
-            </Button>
+            <div className="p-2 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => onCertificateFiltersChange([])}
+              >
+                Clear
+              </Button>
+            </div>
           )}
         </PopoverContent>
       </Popover>
