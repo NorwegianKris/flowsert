@@ -530,13 +530,11 @@ export default function Auth() {
                 <div className="w-3 h-3 rounded-full bg-green-500/60" />
                 <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
               </div>
-              <div className="bg-gradient-to-br from-muted/20 to-muted/40 p-2 md:p-3">
-                <img 
-                  src={dashboardPreview} 
-                  alt="FlowSert Dashboard Preview" 
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
+              <img 
+                src={dashboardPreview} 
+                alt="FlowSert Dashboard Preview" 
+                className="w-full h-auto"
+              />
             </div>
           </div>
         </div>
