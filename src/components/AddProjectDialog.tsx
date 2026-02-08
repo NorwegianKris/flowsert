@@ -592,9 +592,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 </div>
               ) : selectablePersonnel.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  {includeJobSeekers
+                  {includeFreelancers
                     ? 'No personnel available for project assignment.'
-                    : 'No personnel available. Toggle "Include job seekers" to see more options.'}
+                    : 'No personnel available. Toggle "Include freelancers" to see more options.'}
                 </p>
               ) : (
                 <div className="space-y-1">
