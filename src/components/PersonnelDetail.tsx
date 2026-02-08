@@ -121,7 +121,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         {hideBackButton && <div />}
         
         <div className="flex flex-wrap gap-2 justify-end">
-          {/* Activate/Deactivate button for admins - only for job seekers */}
+          {/* Activate/Deactivate button for admins - only for freelancers */}
           {isAdmin && personnel.isJobSeeker && (
             <Button
               variant={isActivated ? 'outline' : 'default'}
@@ -167,7 +167,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </div>
       </div>
 
-      {/* Activation Status Banner - only for job seekers */}
+      {/* Activation Status Banner - only for freelancers */}
       {isAdmin && personnel.isJobSeeker && !isActivated && (
         <Alert className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
           <Lock className="h-4 w-4 text-amber-600" />
@@ -350,7 +350,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </Card>
       </div>
 
-      {/* Tell me about yourself - only for job seekers */}
+      {/* Tell me about yourself - only for freelancers/job seekers */}
       {personnel.isJobSeeker && (
         <Card className="border-border/50 border-sky-200 bg-sky-50/50">
           <CardHeader className="flex flex-row items-center justify-between py-3">
@@ -423,7 +423,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           </div>
         </CardHeader>
         <CardContent>
-          {/* Encouraging message for job seekers */}
+          {/* Encouraging message for freelancers */}
           {personnel.isJobSeeker && (
             <Alert className="mb-4 bg-[#C4B5FD]/10 border-[#C4B5FD]/50">
               <FileCheck className="h-4 w-4 text-[#4338CA]" />

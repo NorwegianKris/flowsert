@@ -12,7 +12,7 @@ import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
-import JobSeekerRedirect from "./pages/JobSeekerRedirect";
+import FreelancerRedirect from "./pages/FreelancerRedirect";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -28,7 +28,8 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
-            <Route path="/register/jobseeker/:companyCode" element={<JobSeekerRedirect />} />
+            <Route path="/register/freelancer/:companyCode" element={<FreelancerRedirect />} />
+            <Route path="/register/jobseeker/:companyCode" element={<FreelancerRedirect />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />

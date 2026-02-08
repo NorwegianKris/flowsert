@@ -19,7 +19,7 @@ import { FeedbackList } from '@/components/FeedbackList';
 import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/components/PersonnelFilters';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
-import { JobSeekerFilters } from '@/components/JobSeekerFilters';
+import { FreelancerFilters } from '@/components/FreelancerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
@@ -68,8 +68,8 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
-  const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
-  const [showJobSeekersOnly, setShowJobSeekersOnly] = useState(false);
+  const [includeFreelancers, setIncludeFreelancers] = useState(false);
+  const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
@@ -164,14 +164,14 @@ export default function AdminDashboard() {
         return aiFilteredPersonnelIds.includes(p.id);
       }
       
-      // Job seeker filter logic
-      const isJobSeeker = p.isJobSeeker || false;
+      // Freelancer filter logic - now using category instead of isJobSeeker
+      const isFreelancer = p.category === 'freelancer';
       
-      // If showing job seekers only, filter out non-job seekers
-      if (showJobSeekersOnly && !isJobSeeker) return false;
+      // If showing freelancers only, filter out non-freelancers
+      if (showFreelancersOnly && !isFreelancer) return false;
       
-      // If not including job seekers and not showing only, exclude job seekers
-      if (!includeJobSeekers && !showJobSeekersOnly && isJobSeeker) return false;
+      // If not including freelancers and not showing only, exclude freelancers
+      if (!includeFreelancers && !showFreelancersOnly && isFreelancer) return false;
       
       // Search query filter
       if (searchQuery.trim()) {
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeJobSeekers, showJobSeekersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -436,11 +436,11 @@ export default function AdminDashboard() {
             </div>
             
             <div className="mb-4">
-              <JobSeekerFilters
-                includeJobSeekers={includeJobSeekers}
-                onIncludeJobSeekersChange={setIncludeJobSeekers}
-                showJobSeekersOnly={showJobSeekersOnly}
-                onShowJobSeekersOnlyChange={setShowJobSeekersOnly}
+              <FreelancerFilters
+                includeFreelancers={includeFreelancers}
+                onIncludeFreelancersChange={setIncludeFreelancers}
+                showFreelancersOnly={showFreelancersOnly}
+                onShowFreelancersOnlyChange={setShowFreelancersOnly}
               />
             </div>
             
@@ -449,7 +449,7 @@ export default function AdminDashboard() {
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
-              onIncludeJobSeekersChange={setIncludeJobSeekers}
+              onIncludeJobSeekersChange={setIncludeFreelancers}
               onFilterByAI={setAiFilteredPersonnelIds}
             />
             

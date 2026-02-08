@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export interface JobSeekerInvitation {
+export interface FreelancerInvitation {
   id: string;
   token: string;
   name: string;
@@ -11,7 +11,7 @@ export interface JobSeekerInvitation {
   createdAt: string;
 }
 
-interface DbJobSeekerInvitation {
+interface DbFreelancerInvitation {
   id: string;
   token: string;
   name: string;
@@ -20,8 +20,8 @@ interface DbJobSeekerInvitation {
   business_id: string;
 }
 
-export function useJobSeekerInvitations() {
-  const [invitations, setInvitations] = useState<JobSeekerInvitation[]>([]);
+export function useFreelancerInvitations() {
+  const [invitations, setInvitations] = useState<FreelancerInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const { businessId } = useAuth();
   const { toast } = useToast();
@@ -43,7 +43,7 @@ export function useJobSeekerInvitations() {
       if (error) throw error;
 
       setInvitations(
-        ((data || []) as DbJobSeekerInvitation[]).map((inv) => ({
+        ((data || []) as DbFreelancerInvitation[]).map((inv) => ({
           id: inv.id,
           token: inv.token,
           name: inv.name,
@@ -52,7 +52,7 @@ export function useJobSeekerInvitations() {
         }))
       );
     } catch (error) {
-      console.error('Error fetching job seeker invitations:', error);
+      console.error('Error fetching freelancer invitations:', error);
     } finally {
       setLoading(false);
     }
@@ -72,17 +72,17 @@ export function useJobSeekerInvitations() {
 
       toast({
         title: 'Invitation Created',
-        description: 'Job seeker invitation link has been created.',
+        description: 'Freelancer invitation link has been created.',
       });
 
       await fetchInvitations();
       return data;
     } catch (error) {
-      console.error('Error creating job seeker invitation:', error);
+      console.error('Error creating freelancer invitation:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to create job seeker invitation.',
+        description: 'Failed to create freelancer invitation.',
       });
       return null;
     }
@@ -104,7 +104,7 @@ export function useJobSeekerInvitations() {
 
       await fetchInvitations();
     } catch (error) {
-      console.error('Error toggling job seeker invitation:', error);
+      console.error('Error toggling freelancer invitation:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -124,12 +124,12 @@ export function useJobSeekerInvitations() {
 
       toast({
         title: 'Invitation Deleted',
-        description: 'Job seeker invitation has been deleted.',
+        description: 'Freelancer invitation has been deleted.',
       });
 
       await fetchInvitations();
     } catch (error) {
-      console.error('Error deleting job seeker invitation:', error);
+      console.error('Error deleting freelancer invitation:', error);
       toast({
         variant: 'destructive',
         title: 'Error',

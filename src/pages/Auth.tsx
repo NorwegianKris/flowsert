@@ -182,7 +182,7 @@ export default function Auth() {
             toast({
               variant: 'destructive',
               title: 'Invalid Link',
-              description: 'This job seeker signup link is invalid or inactive.',
+              description: 'This freelancer signup link is invalid or inactive.',
             });
           }
         } catch (error) {

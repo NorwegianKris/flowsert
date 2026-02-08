@@ -44,7 +44,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     phone: '',
     role: '',
     location: '',
-    category: 'fixed_employee' as 'fixed_employee' | 'freelancer' | 'job_seeker',
+    category: 'employee' as 'employee' | 'freelancer',
     nationality: '',
     department: '',
     gender: '',
@@ -68,7 +68,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         phone: personnel.phone || '',
         role: personnel.role || '',
         location: personnel.location || '',
-        category: personnel.category || 'fixed_employee',
+        category: (personnel.category === 'employee' || personnel.category === 'freelancer') ? personnel.category : 'employee',
         nationality: personnel.nationality || '',
         department: personnel.department || '',
         gender: personnel.gender || '',
@@ -309,16 +309,16 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             {/* Category - locked for job seekers */}
             {!isJobSeeker && (
               <div className="space-y-2">
-                <Label htmlFor="edit-category">Category</Label>
+              <Label htmlFor="edit-category">Category</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value: 'fixed_employee' | 'freelancer') => setFormData({ ...formData, category: value })}
+                  onValueChange={(value: 'employee' | 'freelancer') => setFormData({ ...formData, category: value })}
                 >
                   <SelectTrigger id="edit-category">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="fixed_employee">Fixed Employee</SelectItem>
+                    <SelectItem value="employee">Employee</SelectItem>
                     <SelectItem value="freelancer">Freelancer</SelectItem>
                   </SelectContent>
                 </Select>

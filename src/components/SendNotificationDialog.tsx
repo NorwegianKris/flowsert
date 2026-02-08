@@ -19,7 +19,7 @@ interface SendNotificationDialogProps {
   personnel: Personnel[];
 }
 
-type RecipientGroup = 'fixed_employee' | 'freelancer' | 'job_seeker';
+type RecipientGroup = 'employee' | 'freelancer';
 
 export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNotificationDialogProps) {
   const [subject, setSubject] = useState('');
@@ -36,9 +36,8 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
   const { toast } = useToast();
 
   const groupLabels: Record<RecipientGroup, string> = {
-    fixed_employee: 'Fixed Employees',
+    employee: 'Employees',
     freelancer: 'Freelancers',
-    job_seeker: 'Job Seekers',
   };
 
   const toggleGroup = (group: RecipientGroup) => {
@@ -59,9 +58,8 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
   const getRecipients = (): Personnel[] => {
     const groupRecipients = personnel.filter(p => {
-      if (selectedGroups.includes('job_seeker') && p.isJobSeeker) return true;
-      if (selectedGroups.includes('fixed_employee') && p.category === 'fixed_employee' && !p.isJobSeeker) return true;
-      if (selectedGroups.includes('freelancer') && p.category === 'freelancer' && !p.isJobSeeker) return true;
+      if (selectedGroups.includes('employee') && p.category === 'employee') return true;
+      if (selectedGroups.includes('freelancer') && p.category === 'freelancer') return true;
       return false;
     });
     

@@ -214,12 +214,10 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
               <div className="flex-1 min-w-0">
                 <SheetTitle className="text-xl">{personnel.name}</SheetTitle>
                 <div className="flex items-center gap-2 flex-wrap mt-1">
-                  {personnel.isJobSeeker ? (
-                    <Badge className="bg-violet-100 text-violet-700 border-violet-200">Job Seeker</Badge>
-                  ) : personnel.category === 'freelancer' ? (
+                  {personnel.category === 'freelancer' ? (
                     <Badge variant="secondary">Freelancer</Badge>
                   ) : (
-                    <Badge variant="default">Fixed Employee</Badge>
+                    <Badge variant="default">Employee</Badge>
                   )}
                   {personnel.department && (
                     <Badge variant="outline" className="text-xs">

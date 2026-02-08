@@ -19,7 +19,7 @@ export interface Certificate {
   unmappedAt?: string | null;
 }
 
-export type PersonnelCategory = 'fixed_employee' | 'freelancer' | 'job_seeker';
+export type PersonnelCategory = 'employee' | 'freelancer';
 
 export interface Personnel {
   id: string;

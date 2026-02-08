@@ -9,7 +9,7 @@ interface RegistrationData {
   token: string;
 }
 
-export default function JobSeekerRedirect() {
+export default function FreelancerRedirect() {
   const { companyCode } = useParams<{ companyCode: string }>();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export default function JobSeekerRedirect() {
       }
 
       try {
-        // Look up business and active job seeker invitation by company code
+        // Look up business and active freelancer invitation by company code
         const { data, error } = await (supabase.rpc as any)(
           'get_job_seeker_registration_by_code', 
           { lookup_code: companyCode }

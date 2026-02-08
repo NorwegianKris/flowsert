@@ -33,7 +33,7 @@ interface PersonnelForAI {
   nationality: string | null;
   department: string | null;
   bio: string | null;
-  employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker';
+  employmentType: 'employee' | 'freelancer';
   certificates: { 
     name: string; 
     expiryDate: string | null;
@@ -90,14 +90,12 @@ export function useSuggestPersonnel() {
         const docCount = documentCounts?.get(p.id) || 0;
         const { percentage, status } = calculateProfileCompletion(p, docCount);
         
-        // Determine employment type based on category and isJobSeeker
-        let employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker' = 'fixed_employee';
-        if (p.isJobSeeker) {
-          employmentType = 'job_seeker';
-        } else if (p.category === 'freelancer') {
+        // Determine employment type based on category
+        let employmentType: 'employee' | 'freelancer' = 'employee';
+        if (p.category === 'freelancer') {
           employmentType = 'freelancer';
-        } else if (p.category === 'fixed_employee') {
-          employmentType = 'fixed_employee';
+        } else {
+          employmentType = 'employee';
         }
         
         // Truncate bio to avoid token limits (max 500 chars)

@@ -105,7 +105,7 @@ export function PersonnelFilters({
   };
 
   const employmentTypes = [
-    { value: 'fixed_employee', label: 'Fixed Employee' },
+    { value: 'employee', label: 'Employee' },
     { value: 'freelancer', label: 'Freelancer' },
   ];
 

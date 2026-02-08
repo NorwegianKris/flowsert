@@ -123,7 +123,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
     }
   };
 
-  const isJobSeeker = personnel.isJobSeeker || false;
+  const isFreelancer = personnel.category === 'freelancer';
   const isActivated = personnel.activated || false;
 
   return (
@@ -134,7 +134,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
             ? 'ring-2 ring-primary shadow-lg shadow-primary/20'
             : ''
         } ${
-          isJobSeeker 
+          isFreelancer 
             ? 'border-[#C4B5FD] bg-[#C4B5FD]/10 dark:bg-[#C4B5FD]/10 dark:border-[#C4B5FD]/50' 
             : 'border-border/50'
         }`}
@@ -183,8 +183,8 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
                   {personnel.name}
                 </h3>
                 <StatusBadge status={overallStatus} size="sm" />
-                {/* Activation status indicator - only for job seekers */}
-                {isJobSeeker && (
+                {/* Activation status indicator - only for freelancers */}
+                {isFreelancer && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className={`p-0.5 rounded ${isActivated ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -203,18 +203,12 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
               </div>
               
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                {isJobSeeker ? (
-                  <Badge className="font-normal bg-[#C4B5FD]/20 text-[#4338CA] border-[#C4B5FD] dark:bg-[#C4B5FD]/20 dark:text-[#C4B5FD] dark:border-[#C4B5FD]/50">
-                    Job Seeker
-                  </Badge>
-                ) : (
-                  <Badge 
-                    variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
-                    className="font-normal"
-                  >
-                    {personnel.category === 'freelancer' ? 'Freelancer' : 'Fixed Employee'}
-                  </Badge>
-                )}
+                <Badge 
+                  variant={personnel.category === 'freelancer' ? 'secondary' : 'default'}
+                  className="font-normal"
+                >
+                  {personnel.category === 'freelancer' ? 'Freelancer' : 'Employee'}
+                </Badge>
                 {personnel.department && (
                   <Badge variant="outline" className="font-normal text-muted-foreground">
                     {personnel.department}
