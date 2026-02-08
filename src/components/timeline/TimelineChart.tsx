@@ -104,9 +104,10 @@ export function TimelineChart({
     const labels: { label: string; percent: number; isToday: boolean }[] = [];
     const startDate = subDays(today, Math.abs(timelineStartDays));
     
-    // Add "Today" marker
+    // Add "Today" marker with date
     const todayPercent = (Math.abs(timelineStartDays) / totalDays) * 100;
-    labels.push({ label: 'Today', percent: todayPercent, isToday: true });
+    const todayDate = format(today, 'dd.MM.yy');
+    labels.push({ label: `Today\n${todayDate}`, percent: todayPercent, isToday: true });
     
     // Determine interval based on total range
     let interval: number;
