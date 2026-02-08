@@ -1,81 +1,79 @@
 
-# Zoomable Event Timeline
+# Fix Overdue Certificate Visibility on Event Timeline
 
-## Overview
-Add zoom functionality to the Expiry Timeline, allowing admins to expand the view beyond the current 90-day range to see certificates expiring further in the future (up to 2 years).
+## Problem
+The "Overdue" card shows 14 expired certificates, but only 6 red dots are visible on the timeline. This is because:
+1. The timeline only extends 30 days into the past
+2. Certificates expired more than 30 days ago are clamped to the left edge (0% position) and stack on top of each other
+3. There's no way to "zoom backwards" to see older expired certificates
+
+## Solution
+Add a **Past Range Control** that allows admins to extend how far back in time the timeline shows, similar to how the future zoom works. This will spread out the overdue certificates so all 14 become visible as individual dots.
+
+---
 
 ## User Experience
 
-### Zoom Controls
-A control bar will appear above the Event Timeline section with:
-1. **Preset buttons**: Quick-select common ranges (3 months, 6 months, 1 year, 2 years)
-2. **Slider**: Fine-tune the end range from 90 days to 730 days (2 years)
-3. **Reset button**: Return to default 90-day view
+### Updated Controls Layout
+```text
+Left side:                                          Right side:
+[Past: 30d ▾] [3m] [6m] [1y] [2y] | [===o===] 90d   [Category ▾] [Type ▾] [↺]
+```
+
+### Past Range Dropdown Options
+| Option | Days Back | Use Case |
+|--------|-----------|----------|
+| 30 days | -30 | Default view |
+| 90 days | -90 | See 3 months of overdue |
+| 6 months | -180 | See half year of overdue |
+| 1 year | -365 | See full year of overdue |
 
 ### Visual Behavior
-- Zooming out compresses existing events to fit more time on the axis
-- New lane categories appear for extended ranges (91-180 days, 181-365 days, 365+ days)
-- Time axis labels adapt to show appropriate markers (months, quarters)
-- Events beyond 90 days get a neutral gray color to distinguish from urgent items
+- When past range is extended, the "Overdue" lane stretches to accommodate more time
+- All overdue certificates spread out proportionally instead of stacking
+- Time axis adds markers for past dates (e.g., -30d, -60d, -90d)
+- "Today" marker remains as the reference point
 
 ---
 
 ## Technical Changes
 
-### 1. Update Types (`src/components/timeline/types.ts`)
+### 1. Add `timelineStartDays` State (`src/components/ExpiryTimeline.tsx`)
 
-Add new status types and lane configurations for extended ranges:
-
-| New Status | Days Range | Color | Label |
-|------------|------------|-------|-------|
-| `days91to180` | 91-180 | Blue | 91-180 Days |
-| `days181to365` | 181-365 | Indigo | 6-12 Months |
-| `beyond365` | 365+ | Gray | 1+ Year |
-
-Update `getEventStatus()` and `getEventColor()` functions to handle extended ranges.
-
-### 2. Add Zoom State to ExpiryTimeline (`src/components/ExpiryTimeline.tsx`)
-
+Add a new state variable alongside the existing `timelineEndDays`:
 ```text
 State:
-- timelineEndDays: number (default: 90, max: 730)
-
-Props passed to TimelineChart:
-- timelineEndDays
-- onZoomChange callback
+- timelineStartDays: number (default: -30, options: -30, -90, -180, -365)
 ```
 
-### 3. Create Zoom Controls Component (`src/components/timeline/TimelineZoomControls.tsx`)
+Pass both values to the TimelineChart and ZoomControls.
 
-New component containing:
-- Preset buttons (3m, 6m, 1y, 2y)
-- Radix Slider for fine control
-- Current range display (e.g., "Showing next 180 days")
-- Reset button when not at default
+### 2. Update TimelineZoomControls (`src/components/timeline/TimelineZoomControls.tsx`)
 
-```text
-Layout:
-[3m] [6m] [1y] [2y]  |  [====o=====]  |  "180 days"  [Reset]
-```
+Add a dropdown for past range selection:
 
-### 4. Update TimelineChart (`src/components/timeline/TimelineChart.tsx`)
+| Component | Description |
+|-----------|-------------|
+| Select dropdown | "Past: 30d", "Past: 90d", "Past: 6mo", "Past: 1y" |
+| Position | Left side, before the preset buttons |
 
-Dynamic calculations based on zoom level:
-- Accept `timelineEndDays` prop
-- Calculate `TOTAL_DAYS` dynamically: `timelineEndDays - TIMELINE_START_DAYS`
-- Generate appropriate time axis labels based on range:
-  - Under 6 months: Monthly markers (+30d, +60d, +90d...)
-  - 6-12 months: Quarterly markers (+3mo, +6mo, +9mo, +12mo)
-  - Over 1 year: Bi-annual markers (+6mo, +1y, +18mo, +2y)
-- Include extended lane configurations when zoomed out
-- Filter events based on dynamic range instead of hardcoded 90 days
+Props interface updated:
+- `timelineStartDays: number`
+- `onTimelineStartDaysChange: (days: number) => void`
 
-### 5. Update Event Filtering in ExpiryTimeline
+Reset button clears both past and future ranges.
 
-Remove the `status !== 'beyond90'` filter and replace with dynamic filtering:
-```text
-daysUntil <= timelineEndDays
-```
+### 3. Update TimelineChart (`src/components/timeline/TimelineChart.tsx`)
+
+Dynamic calculations based on both ranges:
+- Accept `timelineStartDays` prop (negative value, e.g., -90)
+- Calculate `totalDays = timelineEndDays - timelineStartDays`
+- Update event positioning: `daysFromStart = differenceInDays(event.expiryDate, subDays(today, Math.abs(timelineStartDays)))`
+- Add past time axis labels (e.g., -30d, -60d, -90d) when zoomed back
+
+### 4. Update types.ts if needed
+
+No changes required - the overdue lane already handles negative `daysUntilExpiry` values correctly.
 
 ---
 
@@ -83,63 +81,60 @@ daysUntil <= timelineEndDays
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/timeline/types.ts` | Modify | Add extended lane configs and update status functions |
-| `src/components/timeline/TimelineZoomControls.tsx` | Create | New zoom control component with slider and presets |
-| `src/components/timeline/TimelineChart.tsx` | Modify | Accept dynamic range, update position/label calculations |
-| `src/components/ExpiryTimeline.tsx` | Modify | Add zoom state, render zoom controls, pass props |
+| `src/components/ExpiryTimeline.tsx` | Modify | Add `timelineStartDays` state, pass to child components |
+| `src/components/timeline/TimelineZoomControls.tsx` | Modify | Add past range dropdown selector |
+| `src/components/timeline/TimelineChart.tsx` | Modify | Accept dynamic start days, update positioning and axis labels |
 
 ---
 
-## Extended Lane Configuration
+## Implementation Details
 
+### Past Range Select Component
 ```text
-Default view (90 days):
-  [Overdue] [Next 30] [31-60] [61-90]
+<Select value={timelineStartDays}>
+  <SelectItem value={-30}>Past: 30d</SelectItem>
+  <SelectItem value={-90}>Past: 90d</SelectItem>
+  <SelectItem value={-180}>Past: 6mo</SelectItem>
+  <SelectItem value={-365}>Past: 1y</SelectItem>
+</Select>
+```
 
-Zoomed to 180 days:
-  [Overdue] [Next 30] [31-60] [61-90] [91-180]
+### Updated Position Calculation
+```text
+Current (broken for old overdue):
+  daysFromStart = differenceInDays(expiryDate, subDays(today, 30))
+  xPercent = clamp(0, 100, daysFromStart / totalDays * 100)
 
-Zoomed to 365 days:
-  [Overdue] [Next 30] [31-60] [61-90] [91-180] [181-365]
+Fixed:
+  startDate = subDays(today, Math.abs(timelineStartDays))
+  daysFromStart = differenceInDays(expiryDate, startDate)
+  xPercent = clamp(0, 100, daysFromStart / totalDays * 100)
+```
 
-Zoomed to 730 days:
-  [Overdue] [Next 30] [31-60] [61-90] [91-180] [181-365] [1-2 Years]
+### Updated Time Axis Labels
+When `timelineStartDays = -90`:
+```text
+-90d    -60d    -30d    Today    +30d    +60d    +90d
 ```
 
 ---
 
-## Interaction Details
-
-1. **Default State**: Timeline shows -30 to +90 days (current behavior)
-2. **Zoom Out**: User clicks "6m" or drags slider right
-   - Timeline expands to show 180 days
-   - New "91-180 Days" lane appears (if events exist)
-   - Existing dots compress horizontally
-   - Time axis updates with new markers
-3. **Zoom In**: User clicks "3m" or drags slider left
-   - Returns to default 90-day view
-   - Extended lanes disappear
-4. **Reset**: One-click return to default view
-
 ## Visual Mockup
 
+### Before (current - broken)
 ```text
-Expiry Timeline
-Click any group or lane to view affected certificates and personnel
+Past 30 days only - certificates older than 30 days stack at left edge
 
-[Status Cards Grid - unchanged]
+[Overdue     ] |●●●●●●●●●●●●●●                                          |
+               ↑ All 14 stacked here                     
+               -30d            Today                              +90d
+```
 
-────────────────────────────────────────
+### After (fixed)
+```text
+Past 90 days - all certificates spread out properly
 
-Event Timeline
-                                    
-[3m] [6m] [1y] [2y]    [====o=========]    Showing next 180 days    [↺]
-
-[Overdue     ] |●●      ●  |                                            |
-[Next 30 Days] |   ●●● ●   |                                            |
-[31-60 Days  ] |           | ●●●●●                                      |
-[61-90 Days  ] |           |       ●●●                                  |
-[91-180 Days ] |           |              ●●     ●                      |
-               ─────────────────────────────────────────────────────────
-               Today      +30d    +60d    +90d         +120d      +180d
+[Overdue     ] |●    ●    ●●   ●   ●●    ● ● ●  ●●●  ●|                 |
+               ↑ Spread across visible range
+               -90d      -60d      -30d      Today              +90d
 ```
