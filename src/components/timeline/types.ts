@@ -9,6 +9,9 @@ export interface TimelineEvent {
   daysUntilExpiry: number;
   status: TimelineEventStatus;
   color: string;
+  // Filter properties
+  certificateTypeId: string | null;
+  certificateCategoryId: string | null;
 }
 
 export interface LaneConfig {
