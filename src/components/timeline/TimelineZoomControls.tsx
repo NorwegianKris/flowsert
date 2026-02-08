@@ -14,6 +14,8 @@ import { CertificateCategory } from '@/hooks/useCertificateCategories';
 interface TimelineZoomControlsProps {
   timelineEndDays: number;
   onTimelineEndDaysChange: (days: number) => void;
+  timelineStartDays: number;
+  onTimelineStartDaysChange: (days: number) => void;
   // Filter props
   certificateTypes: CertificateType[];
   certificateCategories: CertificateCategory[];
@@ -23,14 +25,22 @@ interface TimelineZoomControlsProps {
   onCategoryChange: (categoryId: string | null) => void;
 }
 
-const PRESETS = [
+const FUTURE_PRESETS = [
   { label: '3m', days: 90 },
   { label: '6m', days: 180 },
   { label: '1y', days: 365 },
   { label: '2y', days: 730 },
 ];
 
-const DEFAULT_DAYS = 90;
+const PAST_OPTIONS = [
+  { label: 'Past: 30d', days: -30 },
+  { label: 'Past: 90d', days: -90 },
+  { label: 'Past: 6mo', days: -180 },
+  { label: 'Past: 1y', days: -365 },
+];
+
+const DEFAULT_END_DAYS = 90;
+const DEFAULT_START_DAYS = -30;
 const MIN_DAYS = 90;
 const MAX_DAYS = 730;
 
@@ -45,6 +55,8 @@ function formatDaysLabel(days: number): string {
 export function TimelineZoomControls({
   timelineEndDays,
   onTimelineEndDaysChange,
+  timelineStartDays,
+  onTimelineStartDaysChange,
   certificateTypes,
   certificateCategories,
   selectedTypeId,
@@ -52,22 +64,42 @@ export function TimelineZoomControls({
   onTypeChange,
   onCategoryChange,
 }: TimelineZoomControlsProps) {
-  const isDefault = timelineEndDays === DEFAULT_DAYS;
+  const isEndDefault = timelineEndDays === DEFAULT_END_DAYS;
+  const isStartDefault = timelineStartDays === DEFAULT_START_DAYS;
   const hasFilters = selectedTypeId !== null || selectedCategoryId !== null;
+  const hasChanges = hasFilters || !isEndDefault || !isStartDefault;
 
   const clearAllFilters = () => {
     onTypeChange(null);
     onCategoryChange(null);
-    onTimelineEndDaysChange(DEFAULT_DAYS);
+    onTimelineEndDaysChange(DEFAULT_END_DAYS);
+    onTimelineStartDaysChange(DEFAULT_START_DAYS);
   };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       {/* Left side: Zoom controls */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* Past range selector */}
+        <Select
+          value={timelineStartDays.toString()}
+          onValueChange={(value) => onTimelineStartDaysChange(parseInt(value))}
+        >
+          <SelectTrigger className="h-7 w-[100px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PAST_OPTIONS.map((option) => (
+              <SelectItem key={option.days} value={option.days.toString()}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* Preset buttons */}
         <div className="flex items-center gap-1">
-          {PRESETS.map((preset) => (
+          {FUTURE_PRESETS.map((preset) => (
             <Button
               key={preset.label}
               variant={timelineEndDays === preset.days ? 'default' : 'outline'}
@@ -142,7 +174,7 @@ export function TimelineZoomControls({
         </Select>
 
         {/* Reset button */}
-        {(hasFilters || !isDefault) && (
+        {hasChanges && (
           <Button
             variant="ghost"
             size="sm"
