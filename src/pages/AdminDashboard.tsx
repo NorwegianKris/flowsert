@@ -76,7 +76,9 @@ export default function AdminDashboard() {
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('recent');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('types');
-  const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers'>('all');
+  const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
+  const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
+  const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -507,10 +509,18 @@ export default function AdminDashboard() {
               personnel={personnel}
               personnelFilter={complianceFilter}
               onPersonnelFilterChange={setComplianceFilter}
+              customPersonnelIds={customFilterPersonnelIds}
+              customRoles={customFilterRoles}
+              onCustomFilterChange={(ids, roles) => {
+                setCustomFilterPersonnelIds(ids);
+                setCustomFilterRoles(roles);
+              }}
             />
             <ExpiryTimeline 
               personnel={personnel} 
               personnelFilter={complianceFilter}
+              customPersonnelIds={customFilterPersonnelIds}
+              customRoles={customFilterRoles}
             />
           </TabsContent>
           
