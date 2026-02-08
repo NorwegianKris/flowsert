@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
 import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
+import dashboardPreview from '@/assets/dashboard-preview.png';
 import { PublicHeader } from '@/components/PublicHeader';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -529,33 +530,12 @@ export default function Auth() {
                 <div className="w-3 h-3 rounded-full bg-green-500/60" />
                 <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
               </div>
-              <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Personnel</span>
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">24</p>
-                    <p className="text-xs text-muted-foreground mt-1">Active workers</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Certificates</span>
-                      <FileCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">156</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total tracked</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Expiring Soon</span>
-                      <Clock className="h-4 w-4 text-destructive" />
-                    </div>
-                    <p className="text-3xl font-bold text-destructive">3</p>
-                    <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
-                  </div>
-                </div>
+              <div className="bg-gradient-to-br from-muted/20 to-muted/40 p-2 md:p-3">
+                <img 
+                  src={dashboardPreview} 
+                  alt="FlowSert Dashboard Preview" 
+                  className="w-full h-auto rounded-lg"
+                />
               </div>
             </div>
           </div>
