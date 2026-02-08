@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { RotateCcw, Filter, X } from 'lucide-react';
+import { RotateCcw, Filter } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { CertificateType } from '@/hooks/useCertificateTypes';
 import { CertificateCategory } from '@/hooks/useCertificateCategories';
 
@@ -55,7 +54,6 @@ export function TimelineZoomControls({
 }: TimelineZoomControlsProps) {
   const isDefault = timelineEndDays === DEFAULT_DAYS;
   const hasFilters = selectedTypeId !== null || selectedCategoryId !== null;
-  const activeFilterCount = (selectedTypeId ? 1 : 0) + (selectedCategoryId ? 1 : 0);
 
   const clearAllFilters = () => {
     onTypeChange(null);
@@ -64,9 +62,9 @@ export function TimelineZoomControls({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Zoom controls row */}
-      <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Left side: Zoom controls */}
+      <div className="flex flex-wrap items-center gap-3">
         {/* Preset buttons */}
         <div className="flex items-center gap-1">
           {PRESETS.map((preset) => (
@@ -86,7 +84,7 @@ export function TimelineZoomControls({
         <div className="h-5 w-px bg-border hidden sm:block" />
 
         {/* Slider */}
-        <div className="flex items-center gap-3 flex-1 min-w-[120px] max-w-[200px]">
+        <div className="flex items-center gap-3 min-w-[100px] max-w-[160px]">
           <Slider
             value={[timelineEndDays]}
             min={MIN_DAYS}
@@ -98,25 +96,22 @@ export function TimelineZoomControls({
         </div>
 
         {/* Current value display */}
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
           {formatDaysLabel(timelineEndDays)}
         </span>
       </div>
 
-      {/* Filter controls row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Filter className="h-3.5 w-3.5" />
-          <span>Filter by:</span>
-        </div>
+      {/* Right side: Filter controls */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Filter className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
 
         {/* Category filter */}
         <Select
           value={selectedCategoryId ?? 'all'}
           onValueChange={(value) => onCategoryChange(value === 'all' ? null : value)}
         >
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue placeholder="All Categories" />
+          <SelectTrigger className="h-7 w-[120px] text-xs">
+            <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
@@ -133,8 +128,8 @@ export function TimelineZoomControls({
           value={selectedTypeId ?? 'all'}
           onValueChange={(value) => onTypeChange(value === 'all' ? null : value)}
         >
-          <SelectTrigger className="h-8 w-[160px] text-xs">
-            <SelectValue placeholder="All Types" />
+          <SelectTrigger className="h-7 w-[130px] text-xs">
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
@@ -146,24 +141,17 @@ export function TimelineZoomControls({
           </SelectContent>
         </Select>
 
-        {/* Active filters badge & clear */}
+        {/* Reset button */}
         {(hasFilters || !isDefault) && (
-          <>
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active
-              </Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs gap-1"
-              onClick={clearAllFilters}
-            >
-              <RotateCcw className="h-3 w-3" />
-              Reset all
-            </Button>
-          </>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={clearAllFilters}
+            title="Reset all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
         )}
       </div>
     </div>
