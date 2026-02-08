@@ -8,8 +8,8 @@ import { ProjectDetail } from '@/components/ProjectDetail';
 import { ChatBot } from '@/components/ChatBot';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
-import { TeamCalendar } from '@/components/TeamCalendar';
 import { ComplianceSnapshot } from '@/components/ComplianceSnapshot';
+import { ExpiryTimeline } from '@/components/ExpiryTimeline';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
 
@@ -508,10 +508,9 @@ export default function AdminDashboard() {
               personnelFilter={complianceFilter}
               onPersonnelFilterChange={setComplianceFilter}
             />
-            <TeamCalendar 
+            <ExpiryTimeline 
               personnel={personnel} 
-              projects={projects} 
-              onAddCalendarItem={handleAddCalendarItem}
+              personnelFilter={complianceFilter}
             />
           </TabsContent>
           
