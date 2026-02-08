@@ -9,6 +9,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { TeamCalendar } from '@/components/TeamCalendar';
+import { ComplianceSnapshot } from '@/components/ComplianceSnapshot';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
 
@@ -29,7 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, Calendar, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, MessageCircle } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, LayoutDashboard, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
@@ -75,6 +76,7 @@ export default function AdminDashboard() {
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('recent');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('types');
+  const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers'>('all');
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
@@ -412,9 +414,9 @@ export default function AdminDashboard() {
               <Users className="h-5 w-5" />
               Personnel
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2 text-base">
-              <Calendar className="h-5 w-5" />
-              Calendar
+            <TabsTrigger value="overview" className="flex items-center gap-2 text-base">
+              <LayoutDashboard className="h-5 w-5" />
+              Overview
             </TabsTrigger>
             <TabsTrigger value="projects" className="flex items-center gap-2 text-base">
               <FolderOpen className="h-5 w-5" />
@@ -500,7 +502,12 @@ export default function AdminDashboard() {
             )}
           </TabsContent>
           
-          <TabsContent value="calendar" className="mt-6">
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            <ComplianceSnapshot 
+              personnel={personnel}
+              personnelFilter={complianceFilter}
+              onPersonnelFilterChange={setComplianceFilter}
+            />
             <TeamCalendar 
               personnel={personnel} 
               projects={projects} 
