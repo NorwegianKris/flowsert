@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Personnel } from '@/types';
 import { getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { Clock, AlertTriangle, AlertCircle, CheckCircle, Users, Award, ChevronRight } from 'lucide-react';
 import { TimelineChart } from '@/components/timeline/TimelineChart';
+import { TimelineZoomControls } from '@/components/timeline/TimelineZoomControls';
 import { TimelineEvent, getEventStatus, getEventColor } from '@/components/timeline/types';
 
 interface ExpiryTimelineProps {
@@ -36,6 +37,7 @@ export function ExpiryTimeline({
   customRoles = [],
 }: ExpiryTimelineProps) {
   const navigate = useNavigate();
+  const [timelineEndDays, setTimelineEndDays] = useState(90);
 
   // Filter personnel based on the selected filter
   const filteredPersonnel = useMemo(() => {
@@ -131,7 +133,7 @@ export function ExpiryTimeline({
     ];
   }, [filteredPersonnel]);
 
-  // Compute timeline events from filtered personnel (fixed range: -30 to +90 days)
+  // Compute timeline events from filtered personnel (dynamic range based on zoom)
   const timelineEvents = useMemo((): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
     
@@ -143,19 +145,17 @@ export function ExpiryTimeline({
         const daysUntil = getDaysUntilExpiry(cert.expiryDate);
         const status = getEventStatus(daysUntil);
         
-        // Only include events within the fixed range (-30 to +90 days)
-        if (status !== 'beyond90') {
-          events.push({
-            id: cert.id,
-            personnelId: person.id,
-            personnelName: person.name,
-            certificateName: cert.name,
-            expiryDate,
-            daysUntilExpiry: daysUntil ?? 0,
-            status,
-            color: getEventColor(daysUntil),
-          });
-        }
+        // Include all events - filtering will happen in TimelineChart based on zoom
+        events.push({
+          id: cert.id,
+          personnelId: person.id,
+          personnelName: person.name,
+          certificateName: cert.name,
+          expiryDate,
+          daysUntilExpiry: daysUntil ?? 0,
+          status,
+          color: getEventColor(daysUntil),
+        });
       });
     });
     
@@ -258,8 +258,18 @@ export function ExpiryTimeline({
         <Separator className="my-6" />
         
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted-foreground">Event Timeline</h4>
-          <TimelineChart events={timelineEvents} personnelFilter={personnelFilter} />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Event Timeline</h4>
+            <TimelineZoomControls 
+              timelineEndDays={timelineEndDays} 
+              onTimelineEndDaysChange={setTimelineEndDays} 
+            />
+          </div>
+          <TimelineChart 
+            events={timelineEvents} 
+            personnelFilter={personnelFilter}
+            timelineEndDays={timelineEndDays}
+          />
         </div>
       </CardContent>
     </Card>
