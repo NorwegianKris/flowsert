@@ -15,14 +15,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useJobSeekerInvitations } from '@/hooks/useJobSeekerInvitations';
+import { useFreelancerInvitations } from '@/hooks/useFreelancerInvitations';
 import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 import { Plus, Copy, Trash2, QrCode, Loader2, Link2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-export function JobSeekerInvitationsManager() {
+export function FreelancerInvitationsManager() {
   const { invitations, loading, createInvitation, toggleInvitation, deleteInvitation } =
-    useJobSeekerInvitations();
+    useFreelancerInvitations();
   const { business } = useBusinessInfo();
   const [newName, setNewName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -33,7 +33,7 @@ export function JobSeekerInvitationsManager() {
   const getSignupUrl = () => {
     const baseUrl = window.location.origin;
     const companyCode = business?.company_code || '';
-    return `${baseUrl}/register/jobseeker/${companyCode}`;
+    return `${baseUrl}/register/freelancer/${companyCode}`;
   };
 
   const handleCreate = async () => {
@@ -49,7 +49,7 @@ export function JobSeekerInvitationsManager() {
       await navigator.clipboard.writeText(getSignupUrl());
       toast({
         title: 'Link Copied',
-        description: 'Job seeker signup link copied to clipboard.',
+        description: 'Freelancer signup link copied to clipboard.',
       });
     } catch (error) {
       toast({
@@ -81,10 +81,10 @@ export function JobSeekerInvitationsManager() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Link2 className="h-5 w-5" />
-            Job Seeker Invitation Links
+            Freelancer Invitation Links
           </CardTitle>
           <CardDescription>
-            Create signup links for job seekers to register on your business profile. These can be
+            Create signup links for freelancers to register on your business profile. These can be
             shared on your website or as QR codes.
           </CardDescription>
         </CardHeader>
@@ -190,7 +190,7 @@ export function JobSeekerInvitationsManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>QR Code</AlertDialogTitle>
             <AlertDialogDescription>
-              Scan this QR code to access the job seeker signup page.
+              Scan this QR code to access the freelancer signup page.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-center py-4">
@@ -209,7 +209,7 @@ export function JobSeekerInvitationsManager() {
                 if (showQrFor) {
                   const link = document.createElement('a');
                   link.href = getQrCodeUrl();
-                  link.download = 'job-seeker-qr.png';
+                  link.download = 'freelancer-qr.png';
                   link.click();
                 }
               }}

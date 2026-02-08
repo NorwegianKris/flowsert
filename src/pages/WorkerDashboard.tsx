@@ -67,12 +67,12 @@ export default function WorkerDashboard() {
             {/* Welcome dialog for new workers */}
             <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
             
-            {/* Profile completion indicator for job seekers */}
+            {/* Profile completion indicator for freelancers (formerly job seekers) */}
             {personnel.isJobSeeker && (
               <ProfileCompletionIndicator personnel={personnel} />
             )}
             
-            {/* Show pending invitations at the top - not for job seekers */}
+            {/* Show pending invitations at the top - not for freelancers/job seekers */}
             {!personnel.isJobSeeker && <WorkerInvitations personnelId={personnel.id} />}
             
             <PersonnelDetail

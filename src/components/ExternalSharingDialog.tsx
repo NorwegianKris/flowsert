@@ -35,7 +35,7 @@ interface ExternalSharingDialogProps {
   personnel: Personnel[];
 }
 
-type RecipientGroup = 'fixed_employee' | 'freelancer' | 'job_seeker';
+type RecipientGroup = 'employee' | 'freelancer';
 
 export function ExternalSharingDialog({
   open,
@@ -52,9 +52,8 @@ export function ExternalSharingDialog({
   const [listHeight, setListHeight] = useState(160);
 
   const groupLabels: Record<RecipientGroup, string> = {
-    fixed_employee: 'Fixed Employees',
+    employee: 'Employees',
     freelancer: 'Freelancers',
-    job_seeker: 'Job Seekers',
   };
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
@@ -85,9 +84,8 @@ export function ExternalSharingDialog({
 
   const getSelectedPersonnel = (): Personnel[] => {
     const groupRecipients = personnel.filter(p => {
-      if (selectedGroups.includes('job_seeker') && p.isJobSeeker) return true;
-      if (selectedGroups.includes('fixed_employee') && p.category === 'fixed_employee' && !p.isJobSeeker) return true;
-      if (selectedGroups.includes('freelancer') && p.category === 'freelancer' && !p.isJobSeeker) return true;
+      if (selectedGroups.includes('employee') && p.category === 'employee') return true;
+      if (selectedGroups.includes('freelancer') && p.category === 'freelancer') return true;
       return false;
     });
 

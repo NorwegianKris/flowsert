@@ -8,9 +8,9 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ personnel }: DashboardStatsProps) {
-  // Split counts: Personnel = non-job seekers, Job Seekers = is_job_seeker true
-  const personnelCount = personnel.filter(p => !p.isJobSeeker).length;
-  const jobSeekerCount = personnel.filter(p => p.isJobSeeker).length;
+  // Split counts: Employees = category='employee', Freelancers = category='freelancer'
+  const employeeCount = personnel.filter(p => p.category === 'employee').length;
+  const freelancerCount = personnel.filter(p => p.category === 'freelancer').length;
 
   const personnelByStatus = personnel.reduce(
     (acc, p) => {
@@ -55,12 +55,12 @@ export function DashboardStats({ personnel }: DashboardStatsProps) {
           </div>
           <div className="flex gap-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{personnelCount}</p>
-              <p className="text-xs text-muted-foreground">Personnel</p>
+              <p className="text-2xl font-bold text-foreground">{employeeCount}</p>
+              <p className="text-xs text-muted-foreground">Employees</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{jobSeekerCount}</p>
-              <p className="text-xs text-muted-foreground">Job Seekers</p>
+              <p className="text-2xl font-bold text-foreground">{freelancerCount}</p>
+              <p className="text-xs text-muted-foreground">Freelancers</p>
             </div>
           </div>
         </CardContent>

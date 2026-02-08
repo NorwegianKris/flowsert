@@ -34,7 +34,7 @@ export function ActivateProfileDialog({
   isJobSeeker,
   onSuccess,
 }: ActivateProfileDialogProps) {
-  const [category, setCategory] = useState<'fixed_employee' | 'freelancer'>('fixed_employee');
+  const [category, setCategory] = useState<'employee' | 'freelancer'>('employee');
   const [loading, setLoading] = useState(false);
 
   const handleActivate = async () => {
@@ -166,13 +166,13 @@ export function ActivateProfileDialog({
             <Label>Select Category</Label>
             <RadioGroup
               value={category}
-              onValueChange={(value) => setCategory(value as 'fixed_employee' | 'freelancer')}
+              onValueChange={(value) => setCategory(value as 'employee' | 'freelancer')}
               className="flex flex-col space-y-2"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="fixed_employee" id="fixed_employee" />
-                <Label htmlFor="fixed_employee" className="font-normal cursor-pointer">
-                  Fixed Employee
+                <RadioGroupItem value="employee" id="employee" />
+                <Label htmlFor="employee" className="font-normal cursor-pointer">
+                  Employee
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

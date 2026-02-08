@@ -25,7 +25,7 @@ export function RegistrationLinkCard() {
   const [showQr, setShowQr] = useState(false);
 
   const companyCode = business?.company_code || '';
-  const registrationUrl = `https://flowsert.com/register/jobseeker/${companyCode}`;
+  const registrationUrl = `https://flowsert.com/register/freelancer/${companyCode}`;
 
   const copyToClipboard = async (text: string, type: 'code' | 'link') => {
     try {
@@ -75,10 +75,10 @@ export function RegistrationLinkCard() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Link2 className="h-5 w-5" />
-            Job Seeker Registration Link
+            Freelancer Registration Link
           </CardTitle>
           <CardDescription>
-            Share this link with job seekers to let them register for your company profile.
+            Share this link with freelancers to let them register for your company profile.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -139,7 +139,7 @@ export function RegistrationLinkCard() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Job seekers can use this link to register and be automatically associated with your company.
+            Freelancers can use this link to register and be automatically associated with your company.
           </p>
         </CardContent>
       </Card>
@@ -150,7 +150,7 @@ export function RegistrationLinkCard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Registration QR Code</AlertDialogTitle>
             <AlertDialogDescription>
-              Scan this QR code to access the job seeker signup page for {business?.name}.
+              Scan this QR code to access the freelancer signup page for {business?.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col items-center gap-2 py-4">

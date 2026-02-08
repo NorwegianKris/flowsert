@@ -51,7 +51,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
-  const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
+  const [includeFreelancers, setIncludeFreelancers] = useState(false);
   const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions, getSuggestionForPersonnel } = useSuggestPersonnel();
 
   // Personnel preview state
@@ -76,7 +76,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       toast.error('Please enter project requirements first');
       return;
     }
-    await getSuggestions(aiPrompt, personnel, includeJobSeekers);
+    await getSuggestions(aiPrompt, personnel, includeFreelancers);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,7 +165,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setProjectManager('');
     setGlobalMode('invite');
     setAiPrompt('');
-    setIncludeJobSeekers(false);
+    setIncludeFreelancers(false);
     setIsPosted(false);
     clearSuggestions();
   };
@@ -252,16 +252,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     });
   };
 
-  // Filter personnel based on job seeker toggle
+  // Filter personnel based on freelancer toggle
   const getFilteredPersonnel = () => {
-    if (includeJobSeekers) {
+    if (includeFreelancers) {
       return personnel.filter(p => !p.isJobSeeker || p.activated);
     }
     return personnel.filter(p => !p.isJobSeeker);
   };
 
   const selectablePersonnel = getSortedPersonnel(getFilteredPersonnel());
-  const nonSelectablePersonnel = includeJobSeekers 
+  const nonSelectablePersonnel = includeFreelancers 
     ? personnel.filter(p => p.isJobSeeker && !p.activated)
     : [];
 
@@ -284,16 +284,17 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const getCategoryLabel = (person: Personnel) => {
-    // Job seekers get a distinct lavender tag
+    // Freelancers get a distinct tag
     if (person.isJobSeeker) {
-      return { label: 'Job Seeker', className: 'bg-violet-100 text-violet-700 border-violet-200' };
+      // Keep this for backward compatibility with old data, but label as Freelancer
+      return { label: 'Freelancer', className: 'bg-violet-100 text-violet-700 border-violet-200' };
     }
     
     const category = person.category;
     if (!category) return null;
     const lowerCategory = category.toLowerCase();
     if (lowerCategory.includes('fixed') || lowerCategory.includes('employee')) {
-      return { label: 'Fixed Employee', variant: 'default' as const };
+      return { label: 'Employee', variant: 'default' as const };
     }
     if (lowerCategory.includes('freelance') || lowerCategory.includes('contractor')) {
       return { label: 'Freelancer', variant: 'secondary' as const };
@@ -340,12 +341,12 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Switch
-                    id="includeJobSeekers"
-                    checked={includeJobSeekers}
-                    onCheckedChange={setIncludeJobSeekers}
+                    id="includeFreelancers"
+                    checked={includeFreelancers}
+                    onCheckedChange={setIncludeFreelancers}
                   />
-                  <Label htmlFor="includeJobSeekers" className="text-sm cursor-pointer">
-                    Include job seekers
+                  <Label htmlFor="includeFreelancers" className="text-sm cursor-pointer">
+                    Include freelancers
                   </Label>
                 </div>
                 <Button
