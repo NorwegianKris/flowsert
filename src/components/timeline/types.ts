@@ -11,10 +11,49 @@ export interface TimelineEvent {
   color: string;
 }
 
-export interface TimelineRange {
-  start: Date;
-  end: Date;
+export interface LaneConfig {
+  id: TimelineEventStatus;
+  label: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  filterParams: { minDays?: number; maxDays?: number; overdue?: boolean };
 }
+
+export const LANE_CONFIGS: LaneConfig[] = [
+  { 
+    id: 'overdue', 
+    label: 'Overdue', 
+    color: '#ef4444', 
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/30',
+    filterParams: { overdue: true }
+  },
+  { 
+    id: 'next30', 
+    label: 'Next 30 Days', 
+    color: '#f97316', 
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/30',
+    filterParams: { minDays: 0, maxDays: 30 }
+  },
+  { 
+    id: 'days31to60', 
+    label: '31-60 Days', 
+    color: '#eab308', 
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/30',
+    filterParams: { minDays: 31, maxDays: 60 }
+  },
+  { 
+    id: 'days61to90', 
+    label: '61-90 Days', 
+    color: '#22c55e', 
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+    filterParams: { minDays: 61, maxDays: 90 }
+  },
+];
 
 export function getEventStatus(daysUntil: number | null): TimelineEventStatus {
   if (daysUntil === null) return 'beyond90';
