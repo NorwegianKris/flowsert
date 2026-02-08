@@ -1,22 +1,57 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Personnel } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { UserPlus, MapPin, Briefcase, FileCheck, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface RecentRegistrationsProps {
   personnel: Personnel[];
   onPersonnelClick: (person: Personnel) => void;
-  limit?: number;
+  initialLimit?: number;
+  incrementAmount?: number;
+}
+
+// Calculate profile completion percentage based on required fields
+function calculateCompletion(personnel: Personnel): { percentage: number; color: string } {
+  const checks = [
+    !!personnel.name && personnel.name.trim().length > 0,
+    !!personnel.role && personnel.role.trim().length > 0,
+    !!personnel.nationality,
+    !!personnel.gender,
+    !!personnel.phone && personnel.phone.trim().length > 0,
+    !!personnel.email && personnel.email.trim().length > 0,
+    !!personnel.location && personnel.location.trim().length > 0 && personnel.location !== 'Not specified',
+    personnel.certificates.length > 0,
+  ];
+  
+  const completed = checks.filter(Boolean).length;
+  const percentage = Math.round((completed / checks.length) * 100);
+  
+  let color: string;
+  if (percentage >= 80) {
+    color = 'bg-[hsl(var(--status-valid))] text-[hsl(var(--status-valid-foreground))]';
+  } else if (percentage >= 50) {
+    color = 'bg-[hsl(var(--status-warning))] text-[hsl(var(--status-warning-foreground))]';
+  } else {
+    color = 'bg-destructive text-destructive-foreground';
+  }
+  
+  return { percentage, color };
 }
 
 export function RecentRegistrations({
   personnel,
   onPersonnelClick,
-  limit = 8,
+  initialLimit = 5,
+  incrementAmount = 5,
 }: RecentRegistrationsProps) {
+  const [displayLimit, setDisplayLimit] = useState(initialLimit);
+
   const recentRegistrations = useMemo(() => {
     return personnel
       .filter((p) => p.createdAt)
@@ -24,9 +59,11 @@ export function RecentRegistrations({
         const dateA = new Date(a.createdAt!).getTime();
         const dateB = new Date(b.createdAt!).getTime();
         return dateB - dateA;
-      })
-      .slice(0, limit);
-  }, [personnel, limit]);
+      });
+  }, [personnel]);
+
+  const displayedRegistrations = recentRegistrations.slice(0, displayLimit);
+  const hasMore = recentRegistrations.length > displayLimit;
 
   const getInitials = (name: string) => {
     return name
@@ -44,41 +81,12 @@ export function RecentRegistrations({
     return 'Invited by admin';
   };
 
-  const getPersonType = (person: Personnel) => {
-    if (person.category === 'freelancer') {
-      return 'Freelancer';
-    }
-    return 'Employee';
-  };
-
   const getRelativeTime = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
-  // Profile completeness check based on the 9-item checklist
-  const getProfileStatus = (person: Personnel) => {
-    const hasCertificates = person.certificates.length > 0;
-    
-    // Check basic profile fields
-    const hasName = !!person.name;
-    const hasRole = !!person.role;
-    const hasNationality = !!person.nationality;
-    const hasGender = !!person.gender;
-    const hasPhone = !!person.phone;
-    const hasEmail = !!person.email;
-    const hasLocation = !!person.location && person.location !== 'Not specified';
-    
-    const basicFieldsComplete = hasName && hasRole && hasNationality && hasGender && hasPhone && hasEmail && hasLocation;
-    
-    if (basicFieldsComplete && hasCertificates) {
-      return { label: 'Profile complete', variant: 'complete' as const };
-    } else if (hasCertificates) {
-      return { label: 'Profile incomplete', variant: 'incomplete' as const };
-    } else if (basicFieldsComplete) {
-      return { label: 'Missing certificates', variant: 'warning' as const };
-    } else {
-      return { label: 'Profile incomplete', variant: 'incomplete' as const };
-    }
+  const handleViewMore = () => {
+    setDisplayLimit((prev) => prev + incrementAmount);
   };
 
   if (recentRegistrations.length === 0) {
@@ -94,53 +102,108 @@ export function RecentRegistrations({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-          {recentRegistrations.map((person) => {
-            const profileStatus = getProfileStatus(person);
-            const certCount = person.certificates.length;
+        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+          {displayedRegistrations.map((person) => {
+            const { percentage, color } = calculateCompletion(person);
+            const isFreelancer = person.category === 'freelancer';
+            const initials = getInitials(person.name);
             
             return (
-              <button
+              <Card
                 key={person.id}
                 onClick={() => onPersonnelClick(person)}
-                className="w-full flex items-center gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors text-left"
+                className={cn(
+                  "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative",
+                  isFreelancer 
+                    ? 'border-[#C4B5FD] bg-[#C4B5FD]/10 dark:bg-[#C4B5FD]/10 dark:border-[#C4B5FD]/50' 
+                    : 'border-border/50'
+                )}
               >
-                <Avatar className="h-10 w-10 shrink-0">
-                  {person.avatarUrl && <AvatarImage src={person.avatarUrl} alt={person.name} />}
-                  <AvatarFallback className="bg-muted text-muted-foreground text-sm">
-                    {getInitials(person.name)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{person.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {getPersonType(person)} · {getRegistrationSource(person)} · {getRelativeTime(person.createdAt!)}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span 
-                      className={`text-xs ${
-                        profileStatus.variant === 'complete' 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : profileStatus.variant === 'warning'
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {profileStatus.label}
-                    </span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">
-                      Certificates: {certCount}
-                    </span>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 border-2 border-border shrink-0">
+                      {person.avatarUrl && (
+                        <AvatarImage src={person.avatarUrl} alt={person.name} />
+                      )}
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-semibold text-foreground truncate">
+                          {person.name}
+                        </h3>
+                        <Badge 
+                          variant={isFreelancer ? 'secondary' : 'default'}
+                          className="font-normal text-xs"
+                        >
+                          {isFreelancer ? 'Freelancer' : 'Employee'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-3.5 w-3.5 flex-shrink-0 text-indigo-500" />
+                          <span className="truncate">{person.role}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-rose-500" />
+                          <span className="truncate">{person.location}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                        <span>{getRegistrationSource(person)}</span>
+                        <span>·</span>
+                        <span>{getRelativeTime(person.createdAt!)}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </button>
+                  
+                  <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileCheck className="h-4 w-4 text-blue-500" />
+                      <span>{person.certificates.length} Certificates</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Profile completion</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={cn(
+                            "px-2 py-0.5 rounded-full text-xs font-semibold",
+                            color
+                          )}>
+                            {percentage}%
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Profile {percentage}% complete
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
+        
+        {hasMore && (
+          <div className="pt-4 text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleViewMore}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ChevronDown className="h-4 w-4 mr-2" />
+              View more
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

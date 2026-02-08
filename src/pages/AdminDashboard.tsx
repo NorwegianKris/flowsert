@@ -526,7 +526,8 @@ export default function AdminDashboard() {
             <RecentRegistrations 
               personnel={personnel}
               onPersonnelClick={setSelectedPersonnel}
-              limit={8}
+              initialLimit={5}
+              incrementAmount={5}
             />
           </TabsContent>
           
