@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
@@ -28,6 +29,7 @@ import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 import { useUnreadDirectMessages } from '@/hooks/useUnreadDirectMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
+import { getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut, Plus, Users, LayoutDashboard, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, MessageCircle } from 'lucide-react';
@@ -48,6 +50,7 @@ import {
 import { DateRange } from 'react-day-picker';
 
 export default function AdminDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -78,6 +81,11 @@ export default function AdminDashboard() {
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('types');
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers'>('all');
   
+  // Expiry-based filter from URL navigation
+  const [expiryFilterStatus, setExpiryFilterStatus] = useState<'overdue' | null>(null);
+  const [expiryFilterRange, setExpiryFilterRange] = useState<{ min: number; max: number } | null>(null);
+  const [expiryFilterLabel, setExpiryFilterLabel] = useState<string | null>(null);
+  
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
@@ -87,6 +95,75 @@ export default function AdminDashboard() {
   const { categories: certCategories } = useCertificateCategories();
   
   const loading = personnelLoading || projectsLoading;
+
+  // Sync URL params to state
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['personnel', 'overview', 'projects'].includes(tab)) {
+      setActiveTab(tab);
+    }
+    
+    const status = searchParams.get('status');
+    if (status === 'overdue') {
+      setExpiryFilterStatus('overdue');
+      setExpiryFilterRange(null);
+      setExpiryFilterLabel('Overdue');
+    } else {
+      setExpiryFilterStatus(null);
+    }
+    
+    const expiryMin = searchParams.get('expiryMin');
+    const expiryMax = searchParams.get('expiryMax');
+    if (expiryMin && expiryMax) {
+      const min = parseInt(expiryMin);
+      const max = parseInt(expiryMax);
+      setExpiryFilterRange({ min, max });
+      setExpiryFilterStatus(null);
+      // Set label based on range
+      if (min === 0 && max === 30) {
+        setExpiryFilterLabel('Next 30 Days');
+      } else if (min === 31 && max === 60) {
+        setExpiryFilterLabel('31–60 Days');
+      } else if (min === 61 && max === 90) {
+        setExpiryFilterLabel('61–90 Days');
+      } else {
+        setExpiryFilterLabel(`${min}–${max} Days`);
+      }
+    } else if (!status) {
+      setExpiryFilterRange(null);
+      if (!status) setExpiryFilterLabel(null);
+    }
+    
+    // Apply category filter from URL
+    const category = searchParams.get('category');
+    if (category === 'employees') {
+      setCategoryFilters(['employee']);
+      setIncludeFreelancers(false);
+      setShowFreelancersOnly(false);
+    } else if (category === 'freelancers') {
+      setCategoryFilters(['freelancer']);
+      setIncludeFreelancers(true);
+      setShowFreelancersOnly(true);
+    }
+  }, [searchParams]);
+
+  // Clear expiry filter and URL params
+  const clearExpiryFilter = useCallback(() => {
+    setExpiryFilterStatus(null);
+    setExpiryFilterRange(null);
+    setExpiryFilterLabel(null);
+    // Clear URL params
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('status');
+    newParams.delete('expiryMin');
+    newParams.delete('expiryMax');
+    newParams.delete('category');
+    setSearchParams(newParams, { replace: true });
+    // Reset category filters
+    setCategoryFilters([]);
+    setIncludeFreelancers(false);
+    setShowFreelancersOnly(false);
+  }, [searchParams, setSearchParams]);
 
   // Fetch admin user IDs for personnel with admin roles
   useEffect(() => {
@@ -216,6 +293,23 @@ export default function AdminDashboard() {
       // Availability filter
       if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
       
+      // Expiry-based filter (from ExpiryTimeline navigation)
+      if (expiryFilterStatus === 'overdue') {
+        const hasOverdueCert = p.certificates.some(c => {
+          const days = getDaysUntilExpiry(c.expiryDate);
+          return days !== null && days < 0;
+        });
+        if (!hasOverdueCert) return false;
+      }
+      
+      if (expiryFilterRange) {
+        const hasMatchingCert = p.certificates.some(c => {
+          const days = getDaysUntilExpiry(c.expiryDate);
+          return days !== null && days >= expiryFilterRange.min && days <= expiryFilterRange.max;
+        });
+        if (!hasMatchingCert) return false;
+      }
+      
       return true;
     });
 
@@ -230,7 +324,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, expiryFilterStatus, expiryFilterRange]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -425,6 +519,23 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
+            {/* Expiry filter indicator */}
+            {expiryFilterLabel && (
+              <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                <span className="text-sm font-medium text-foreground">
+                  Showing personnel with certificates: <span className="text-primary">{expiryFilterLabel}</span>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearExpiryFilter}
+                  className="ml-auto h-7 px-2 text-xs"
+                >
+                  Clear Filter
+                </Button>
+              </div>
+            )}
+            
             {/* Search field */}
             <div className="relative w-full sm:w-80 mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
