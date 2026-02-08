@@ -487,10 +487,10 @@ export default function Auth() {
         />
         
         {/* Hero Section */}
-        <section className="pt-16 pb-8 md:pt-24 md:pb-12 relative z-10">
+        <section className="pt-8 pb-4 md:pt-12 md:pb-6 relative z-10">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-rajdhani text-foreground mb-4 leading-[1.1] tracking-tight">
                 Make personnel
                 <span className="block">
                   compliance{' '}
@@ -504,14 +504,14 @@ export default function Auth() {
                   </span>
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl mx-auto">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto">
                 Transform your work, hiring and compliance operations with smart certificate management software—built for industrial SMEs.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button size="lg" onClick={() => navigate('/contact')} className="h-12 px-8 text-base gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <Button size="lg" onClick={() => navigate('/contact')} className="h-11 px-6 text-base gap-2">
                   Get in Touch <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-12 px-8 text-base">
+                <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-11 px-6 text-base">
                   Book a Demo
                 </Button>
               </div>
@@ -520,7 +520,7 @@ export default function Auth() {
         </section>
 
         {/* Product Preview */}
-        <section className="pb-16 md:pb-24 relative z-10">
+        <section className="pb-8 md:pb-12 relative z-10">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
