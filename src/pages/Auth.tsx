@@ -520,46 +520,130 @@ export default function Auth() {
 
         {/* Product Preview */}
         <section className="pb-16 md:pb-24 relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
-              <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
-              </div>
-              <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Personnel</span>
-                      <Users className="h-4 w-4 text-primary" />
+          <div className="container mx-auto px-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
+                {/* Window Chrome */}
+                <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-destructive/60" />
+                  <div className="w-3 h-3 rounded-full bg-[hsl(var(--status-warning))]/60" />
+                  <div className="w-3 h-3 rounded-full bg-[hsl(var(--status-valid))]/60" />
+                  <span className="ml-4 text-xs text-muted-foreground font-medium">FlowSert — Compliance Overview</span>
+                </div>
+                
+                <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40 space-y-6">
+                  {/* Top Stats Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-background rounded-lg p-4 border border-border/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground">Team</span>
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">32</p>
                     </div>
-                    <p className="text-3xl font-bold text-foreground">24</p>
-                    <p className="text-xs text-muted-foreground mt-1">Active workers</p>
+                    <div className="bg-background rounded-lg p-4 border border-border/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground">Certificates</span>
+                        <FileCheck className="h-4 w-4 text-primary" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">248</p>
+                    </div>
+                    <div className="bg-background rounded-lg p-4 border border-border/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground">Compliant</span>
+                        <CheckCircle className="h-4 w-4 text-[hsl(var(--status-valid))]" />
+                      </div>
+                      <p className="text-2xl font-bold text-[hsl(var(--status-valid))]">94%</p>
+                    </div>
+                    <div className="bg-background rounded-lg p-4 border border-border/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-muted-foreground">Active Projects</span>
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                      </div>
+                      <p className="text-2xl font-bold text-foreground">5</p>
+                    </div>
                   </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Certificates</span>
-                      <FileCheck className="h-4 w-4 text-primary" />
+
+                  {/* Expiry Timeline Preview */}
+                  <div className="bg-background rounded-lg border border-border/50 p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-medium text-foreground">Expiry Timeline</span>
+                      <span className="text-xs text-muted-foreground">Next 90 days</span>
                     </div>
-                    <p className="text-3xl font-bold text-foreground">156</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total tracked</p>
+                    <div className="space-y-2">
+                      {/* Lane: Overdue */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-20 shrink-0">Overdue</span>
+                        <div className="flex-1 h-6 bg-destructive/10 rounded-full relative overflow-hidden">
+                          <div className="absolute left-[8%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-destructive" />
+                          <div className="absolute left-[15%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-destructive" />
+                        </div>
+                        <span className="text-xs font-medium text-destructive w-6 text-right">2</span>
+                      </div>
+                      {/* Lane: Next 30 Days */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-20 shrink-0">Next 30d</span>
+                        <div className="flex-1 h-6 bg-[hsl(var(--status-warning))]/10 rounded-full relative overflow-hidden">
+                          <div className="absolute left-[22%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-warning))]" />
+                          <div className="absolute left-[45%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-warning))]" />
+                          <div className="absolute left-[52%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-warning))]" />
+                          <div className="absolute left-[68%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-warning))]" />
+                        </div>
+                        <span className="text-xs font-medium text-[hsl(var(--status-warning))] w-6 text-right">4</span>
+                      </div>
+                      {/* Lane: 31-60 Days */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-20 shrink-0">31-60d</span>
+                        <div className="flex-1 h-6 rounded-full relative overflow-hidden" style={{ backgroundColor: 'hsl(48 96% 53% / 0.1)' }}>
+                          <div className="absolute left-[35%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(48 96% 53%)' }} />
+                          <div className="absolute left-[60%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(48 96% 53%)' }} />
+                          <div className="absolute left-[78%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(48 96% 53%)' }} />
+                        </div>
+                        <span className="text-xs font-medium w-6 text-right" style={{ color: 'hsl(48 96% 40%)' }}>3</span>
+                      </div>
+                      {/* Lane: 61-90 Days */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-20 shrink-0">61-90d</span>
+                        <div className="flex-1 h-6 bg-[hsl(var(--status-valid))]/10 rounded-full relative overflow-hidden">
+                          <div className="absolute left-[40%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-valid))]" />
+                          <div className="absolute left-[55%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-valid))]" />
+                          <div className="absolute left-[70%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-valid))]" />
+                          <div className="absolute left-[82%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-valid))]" />
+                          <div className="absolute left-[90%] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[hsl(var(--status-valid))]" />
+                        </div>
+                        <span className="text-xs font-medium text-[hsl(var(--status-valid))] w-6 text-right">5</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Expiring Soon</span>
-                      <Clock className="h-4 w-4 text-destructive" />
+
+                  {/* Bottom Row: Mini Cards */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-background rounded-lg p-3 border border-border/50 text-center">
+                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--status-valid))]/10 flex items-center justify-center mx-auto mb-2">
+                        <Shield className="h-4 w-4 text-[hsl(var(--status-valid))]" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">All Valid</p>
+                      <p className="text-lg font-bold text-foreground">28</p>
                     </div>
-                    <p className="text-3xl font-bold text-destructive">3</p>
-                    <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
+                    <div className="bg-background rounded-lg p-3 border border-border/50 text-center">
+                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--status-warning))]/10 flex items-center justify-center mx-auto mb-2">
+                        <Clock className="h-4 w-4 text-[hsl(var(--status-warning))]" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Expiring</p>
+                      <p className="text-lg font-bold text-foreground">3</p>
+                    </div>
+                    <div className="bg-background rounded-lg p-3 border border-border/50 text-center">
+                      <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-2">
+                        <FileCheck className="h-4 w-4 text-destructive" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Expired</p>
+                      <p className="text-lg font-bold text-foreground">1</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </section>
       </div>
 
