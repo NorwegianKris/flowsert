@@ -10,6 +10,7 @@ import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { ComplianceSnapshot } from '@/components/ComplianceSnapshot';
 import { ExpiryTimeline } from '@/components/ExpiryTimeline';
+import { RecentRegistrations } from '@/components/RecentRegistrations';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
 
@@ -521,6 +522,12 @@ export default function AdminDashboard() {
               personnelFilter={complianceFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
+            />
+            <RecentRegistrations 
+              personnel={personnel}
+              onPersonnelClick={setSelectedPersonnel}
+              onViewAll={() => setActiveTab('personnel')}
+              limit={8}
             />
           </TabsContent>
           
