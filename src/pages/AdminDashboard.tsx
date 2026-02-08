@@ -526,7 +526,6 @@ export default function AdminDashboard() {
             <RecentRegistrations 
               personnel={personnel}
               onPersonnelClick={setSelectedPersonnel}
-              onViewAll={() => setActiveTab('personnel')}
               limit={8}
             />
           </TabsContent>
