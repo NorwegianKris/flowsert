@@ -9,6 +9,8 @@ import { Clock, AlertTriangle, AlertCircle, CheckCircle, Users, Award, ChevronRi
 import { TimelineChart } from '@/components/timeline/TimelineChart';
 import { TimelineZoomControls } from '@/components/timeline/TimelineZoomControls';
 import { TimelineEvent, getEventStatus, getEventColor } from '@/components/timeline/types';
+import { useCertificateTypes } from '@/hooks/useCertificateTypes';
+import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 
 interface ExpiryTimelineProps {
   personnel: Personnel[];
@@ -38,6 +40,12 @@ export function ExpiryTimeline({
 }: ExpiryTimelineProps) {
   const navigate = useNavigate();
   const [timelineEndDays, setTimelineEndDays] = useState(90);
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  
+  // Fetch certificate types and categories
+  const { data: certificateTypes = [] } = useCertificateTypes();
+  const { categories: certificateCategories } = useCertificateCategories();
 
   // Filter personnel based on the selected filter
   const filteredPersonnel = useMemo(() => {
@@ -141,6 +149,16 @@ export function ExpiryTimeline({
       person.certificates.forEach(cert => {
         if (!cert.expiryDate) return; // Skip non-expiring
         
+        // Apply type filter
+        if (selectedTypeId && cert.certificateTypeId !== selectedTypeId) return;
+        
+        // Apply category filter - need to check via certificate type's category
+        if (selectedCategoryId) {
+          // Find the certificate type to check its category
+          const certType = certificateTypes.find(t => t.id === cert.certificateTypeId);
+          if (!certType || certType.category_id !== selectedCategoryId) return;
+        }
+        
         const expiryDate = parseISO(cert.expiryDate);
         const daysUntil = getDaysUntilExpiry(cert.expiryDate);
         const status = getEventStatus(daysUntil);
@@ -155,12 +173,14 @@ export function ExpiryTimeline({
           daysUntilExpiry: daysUntil ?? 0,
           status,
           color: getEventColor(daysUntil),
+          certificateTypeId: cert.certificateTypeId ?? null,
+          certificateCategoryId: certificateTypes.find(t => t.id === cert.certificateTypeId)?.category_id ?? null,
         });
       });
     });
     
     return events.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime());
-  }, [filteredPersonnel]);
+  }, [filteredPersonnel, selectedTypeId, selectedCategoryId, certificateTypes]);
 
   const handleGroupClick = (group: ExpiryGroup) => {
     // Build query params for navigation to a filtered certificate view
@@ -257,16 +277,22 @@ export function ExpiryTimeline({
         {/* Timeline Section */}
         <Separator className="my-6" />
         
-        <div className="space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3">
             <h4 className="text-sm font-medium text-muted-foreground">Event Timeline</h4>
             <TimelineZoomControls 
               timelineEndDays={timelineEndDays} 
-              onTimelineEndDaysChange={setTimelineEndDays} 
+              onTimelineEndDaysChange={setTimelineEndDays}
+              certificateTypes={certificateTypes}
+              certificateCategories={certificateCategories}
+              selectedTypeId={selectedTypeId}
+              selectedCategoryId={selectedCategoryId}
+              onTypeChange={setSelectedTypeId}
+              onCategoryChange={setSelectedCategoryId}
             />
           </div>
           <TimelineChart 
-            events={timelineEvents} 
+            events={timelineEvents}
             personnelFilter={personnelFilter}
             timelineEndDays={timelineEndDays}
           />
