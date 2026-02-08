@@ -517,54 +517,10 @@ export default function Auth() {
             </div>
           </div>
         </section>
-
-        {/* Product Preview */}
-        <section className="pb-16 md:pb-24 relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
-              <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
-              </div>
-              <div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Personnel</span>
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">24</p>
-                    <p className="text-xs text-muted-foreground mt-1">Active workers</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Certificates</span>
-                      <FileCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-3xl font-bold text-foreground">156</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total tracked</p>
-                  </div>
-                  <div className="bg-background rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Expiring Soon</span>
-                      <Clock className="h-4 w-4 text-destructive" />
-                    </div>
-                    <p className="text-3xl font-bold text-destructive">3</p>
-                    <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </section>
       </div>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-primary/5">
+      <section className="pt-8 pb-20 bg-primary/5">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4 text-center">How It Works</h2>
