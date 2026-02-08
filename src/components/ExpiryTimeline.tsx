@@ -40,6 +40,7 @@ export function ExpiryTimeline({
 }: ExpiryTimelineProps) {
   const navigate = useNavigate();
   const [timelineEndDays, setTimelineEndDays] = useState(90);
+  const [timelineStartDays, setTimelineStartDays] = useState(-30);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   
@@ -283,6 +284,8 @@ export function ExpiryTimeline({
             <TimelineZoomControls 
               timelineEndDays={timelineEndDays} 
               onTimelineEndDaysChange={setTimelineEndDays}
+              timelineStartDays={timelineStartDays}
+              onTimelineStartDaysChange={setTimelineStartDays}
               certificateTypes={certificateTypes}
               certificateCategories={certificateCategories}
               selectedTypeId={selectedTypeId}
@@ -295,6 +298,7 @@ export function ExpiryTimeline({
             events={timelineEvents}
             personnelFilter={personnelFilter}
             timelineEndDays={timelineEndDays}
+            timelineStartDays={timelineStartDays}
           />
         </div>
       </CardContent>

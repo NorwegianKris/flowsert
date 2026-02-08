@@ -13,6 +13,7 @@ interface TimelineChartProps {
   events: TimelineEvent[];
   personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
   timelineEndDays?: number;
+  timelineStartDays?: number;
 }
 
 interface PositionedEvent extends TimelineEvent {
@@ -20,31 +21,32 @@ interface PositionedEvent extends TimelineEvent {
   yOffset: number;
 }
 
-const TIMELINE_START_DAYS = -30; // 30 days ago for overdue
-
 export function TimelineChart({ 
   events, 
   personnelFilter,
   timelineEndDays = 90,
+  timelineStartDays = -30,
 }: TimelineChartProps) {
   const navigate = useNavigate();
   const today = new Date();
   
-  // Calculate total days dynamically based on zoom level
-  const totalDays = timelineEndDays - TIMELINE_START_DAYS;
+  // Calculate total days dynamically based on both zoom levels
+  const totalDays = timelineEndDays - timelineStartDays;
   
   // Get lane configs based on zoom level
   const laneConfigs = useMemo(() => getLaneConfigsForRange(timelineEndDays), [timelineEndDays]);
   
-  // Filter events to only those within the current range
+  // Filter events to only those within the current range (both past and future)
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
-      // Include overdue events (negative days)
-      if (event.daysUntilExpiry < 0) return true;
-      // Include events within the timeline range
+      // Include overdue events within the past range
+      if (event.daysUntilExpiry < 0) {
+        return event.daysUntilExpiry >= timelineStartDays;
+      }
+      // Include events within the future timeline range
       return event.daysUntilExpiry <= timelineEndDays;
     });
-  }, [events, timelineEndDays]);
+  }, [events, timelineEndDays, timelineStartDays]);
   
   // Group events by lane and calculate positions
   const laneData = useMemo(() => {
@@ -59,8 +61,9 @@ export function TimelineChart({
     filteredEvents.forEach(event => {
       const laneEvents = lanes.get(event.status);
       if (laneEvents) {
-        // Calculate X position as percentage
-        const daysFromStart = differenceInDays(event.expiryDate, subDays(today, 30));
+        // Calculate X position as percentage based on dynamic start
+        const startDate = subDays(today, Math.abs(timelineStartDays));
+        const daysFromStart = differenceInDays(event.expiryDate, startDate);
         const xPercent = Math.max(0, Math.min(100, (daysFromStart / totalDays) * 100));
         
         laneEvents.push({
@@ -94,45 +97,61 @@ export function TimelineChart({
     });
     
     return lanes;
-  }, [filteredEvents, today, totalDays, laneConfigs]);
+  }, [filteredEvents, today, totalDays, laneConfigs, timelineStartDays]);
   
   // Generate time axis labels based on zoom level
   const timeLabels = useMemo(() => {
     const labels: { label: string; percent: number; isToday: boolean }[] = [];
-    const startDate = subDays(today, 30);
+    const startDate = subDays(today, Math.abs(timelineStartDays));
     
     // Add "Today" marker
-    const todayPercent = (30 / totalDays) * 100;
+    const todayPercent = (Math.abs(timelineStartDays) / totalDays) * 100;
     labels.push({ label: 'Today', percent: todayPercent, isToday: true });
     
-    // Determine interval based on range
+    // Determine interval based on total range
     let interval: number;
-    let formatLabel: (days: number) => string;
-    
-    if (timelineEndDays <= 180) {
-      // Under 6 months: monthly markers
+    if (totalDays <= 180) {
       interval = 30;
-      formatLabel = (days) => `+${days}d`;
-    } else if (timelineEndDays <= 365) {
-      // 6-12 months: quarterly markers
+    } else if (totalDays <= 365) {
+      interval = 60;
+    } else if (totalDays <= 730) {
       interval = 90;
-      formatLabel = (days) => `+${Math.round(days / 30)}mo`;
     } else {
-      // Over 1 year: bi-annual markers
       interval = 180;
-      formatLabel = (days) => {
-        if (days < 365) return `+${Math.round(days / 30)}mo`;
-        return `+${(days / 365).toFixed(1)}y`;
-      };
     }
     
-    // Add interval markers
+    // Format label helper
+    const formatLabel = (days: number): string => {
+      if (days === 0) return 'Today';
+      const absDays = Math.abs(days);
+      const sign = days < 0 ? '-' : '+';
+      if (absDays < 90) return `${sign}${absDays}d`;
+      if (absDays < 365) return `${sign}${Math.round(absDays / 30)}mo`;
+      return `${sign}${(absDays / 365).toFixed(1)}y`;
+    };
+    
+    // Add past markers (negative days)
+    for (let days = -interval; days >= timelineStartDays; days -= interval) {
+      const date = addDays(today, days);
+      const daysFromStart = differenceInDays(date, startDate);
+      const percent = (daysFromStart / totalDays) * 100;
+      
+      if (percent >= 0 && percent <= 100) {
+        labels.push({ 
+          label: formatLabel(days), 
+          percent, 
+          isToday: false 
+        });
+      }
+    }
+    
+    // Add future markers (positive days)
     for (let days = interval; days <= timelineEndDays; days += interval) {
       const date = addDays(today, days);
       const daysFromStart = differenceInDays(date, startDate);
       const percent = (daysFromStart / totalDays) * 100;
       
-      if (percent <= 100) {
+      if (percent >= 0 && percent <= 100) {
         labels.push({ 
           label: formatLabel(days), 
           percent, 
@@ -142,7 +161,7 @@ export function TimelineChart({
     }
     
     return labels;
-  }, [today, totalDays, timelineEndDays]);
+  }, [today, totalDays, timelineEndDays, timelineStartDays]);
   
   const handleEventClick = (event: TimelineEvent) => {
     navigate(`/admin?tab=personnel&personnelId=${event.personnelId}`);
@@ -210,7 +229,7 @@ export function TimelineChart({
                   {/* Today marker line */}
                   <div 
                     className="absolute top-0 bottom-0 w-px bg-primary/50"
-                    style={{ left: `${(30 / totalDays) * 100}%` }}
+                    style={{ left: `${(Math.abs(timelineStartDays) / totalDays) * 100}%` }}
                   />
                   
                   {/* Event dots */}
