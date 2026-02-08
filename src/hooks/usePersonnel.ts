@@ -117,6 +117,7 @@ export function usePersonnel() {
         updatedAt: p.updated_at || undefined,
         profileCode: p.profile_code || undefined,
         certificateExpiryNotifications: p.certificate_expiry_notifications || false,
+        createdAt: p.created_at || undefined,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -222,6 +223,7 @@ export function useWorkerPersonnel() {
         updatedAt: p.updated_at || undefined,
         profileCode: p.profile_code || undefined,
         certificateExpiryNotifications: p.certificate_expiry_notifications || false,
+        createdAt: p.created_at || undefined,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.certificate_types?.name || c.name,
