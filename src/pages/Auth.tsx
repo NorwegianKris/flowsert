@@ -533,7 +533,7 @@ export default function Auth() {
               <img 
                 src={dashboardPreview} 
                 alt="FlowSert Dashboard Preview" 
-                className="w-full h-auto"
+                className="w-full h-auto rounded-lg"
               />
             </div>
           </div>
