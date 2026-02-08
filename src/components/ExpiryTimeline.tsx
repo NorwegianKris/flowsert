@@ -1,9 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { parseISO, subDays, addDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Personnel } from '@/types';
 import { getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { Clock, AlertTriangle, AlertCircle, CheckCircle, Users, Award, ChevronRight } from 'lucide-react';
+import { TimelineChart } from '@/components/timeline/TimelineChart';
+import { TimelineControls } from '@/components/timeline/TimelineControls';
+import { TimelineEvent, TimelineRange, getEventStatus, getEventColor } from '@/components/timeline/types';
 
 interface ExpiryTimelineProps {
   personnel: Personnel[];
@@ -25,6 +30,14 @@ interface ExpiryGroup {
 
 export function ExpiryTimeline({ personnel, personnelFilter }: ExpiryTimelineProps) {
   const navigate = useNavigate();
+  
+  // Default timeline range: -30 days (overdue) to +90 days (future)
+  const getDefaultRange = (): TimelineRange => ({
+    start: subDays(new Date(), 30),
+    end: addDays(new Date(), 90),
+  });
+  
+  const [timelineRange, setTimelineRange] = useState<TimelineRange>(getDefaultRange);
 
   // Filter personnel based on the selected filter
   const filteredPersonnel = useMemo(() => {
@@ -114,6 +127,40 @@ export function ExpiryTimeline({ personnel, personnelFilter }: ExpiryTimelinePro
       },
     ];
   }, [filteredPersonnel]);
+
+  // Compute timeline events from filtered personnel
+  const timelineEvents = useMemo((): TimelineEvent[] => {
+    const events: TimelineEvent[] = [];
+    
+    filteredPersonnel.forEach(person => {
+      person.certificates.forEach(cert => {
+        if (!cert.expiryDate) return; // Skip non-expiring
+        
+        const expiryDate = parseISO(cert.expiryDate);
+        const daysUntil = getDaysUntilExpiry(cert.expiryDate);
+        
+        // Only include events within the visible range
+        if (expiryDate >= timelineRange.start && expiryDate <= timelineRange.end) {
+          events.push({
+            id: cert.id,
+            personnelId: person.id,
+            personnelName: person.name,
+            certificateName: cert.name,
+            expiryDate,
+            daysUntilExpiry: daysUntil ?? 0,
+            status: getEventStatus(daysUntil),
+            color: getEventColor(daysUntil),
+          });
+        }
+      });
+    });
+    
+    return events.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime());
+  }, [filteredPersonnel, timelineRange]);
+
+  const handleResetRange = () => {
+    setTimelineRange(getDefaultRange());
+  };
 
   const handleGroupClick = (group: ExpiryGroup) => {
     // Build query params for navigation to a filtered certificate view
@@ -207,6 +254,19 @@ export function ExpiryTimeline({ personnel, personnelFilter }: ExpiryTimelinePro
               </button>
             );
           })}
+        </div>
+        
+        {/* Timeline Section */}
+        <Separator className="my-6" />
+        
+        <div className="space-y-4">
+          <TimelineControls
+            range={timelineRange}
+            onRangeChange={setTimelineRange}
+            onReset={handleResetRange}
+          />
+          
+          <TimelineChart events={timelineEvents} range={timelineRange} />
         </div>
       </CardContent>
     </Card>
