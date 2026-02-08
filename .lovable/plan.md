@@ -1,79 +1,145 @@
 
-
-# Replace FlowSert Dashboard Mock with Actual Screenshot
+# Zoomable Event Timeline
 
 ## Overview
-Replace the current hand-coded mock dashboard preview in the Auth page's Product Preview section with the uploaded dashboard screenshot. The screenshot will be styled with rounded corners and sized to fit within the browser frame without requiring scrolling.
+Add zoom functionality to the Expiry Timeline, allowing admins to expand the view beyond the current 90-day range to see certificates expiring further in the future (up to 2 years).
 
-## Current State
-The Product Preview section (lines 521-563 in Auth.tsx) contains:
-- A browser-style window frame with traffic light dots
-- "FlowSert Dashboard" label
-- Three hardcoded cards (Personnel, Certificates, Expiring Soon) with static values
+## User Experience
 
-## Changes
+### Zoom Controls
+A control bar will appear above the Event Timeline section with:
+1. **Preset buttons**: Quick-select common ranges (3 months, 6 months, 1 year, 2 years)
+2. **Slider**: Fine-tune the end range from 90 days to 730 days (2 years)
+3. **Reset button**: Return to default 90-day view
 
-### 1. Copy Image to Assets
-Copy the uploaded image to the project assets folder:
-- Source: `user-uploads://image-4.png`
-- Destination: `src/assets/dashboard-preview.png`
-
-### 2. Update Auth.tsx
-
-**Import the new image:**
-```typescript
-import dashboardPreview from '@/assets/dashboard-preview.png';
-```
-
-**Replace the mock cards (lines 532-558) with the screenshot:**
-
-Current structure:
-```text
-<div className="p-6 md:p-8 bg-gradient-to-br from-muted/20 to-muted/40">
-  <div className="grid md:grid-cols-3 gap-4">
-    <!-- 3 hardcoded cards -->
-  </div>
-</div>
-```
-
-New structure:
-```text
-<div className="bg-gradient-to-br from-muted/20 to-muted/40 p-2 md:p-3">
-  <img 
-    src={dashboardPreview} 
-    alt="FlowSert Dashboard Preview" 
-    className="w-full h-auto rounded-lg"
-  />
-</div>
-```
-
-### 3. Styling Improvements
-
-| Property | Value | Purpose |
-|----------|-------|---------|
-| `rounded-lg` | On the image | Rounded corners for polished look |
-| `w-full h-auto` | On the image | Scale proportionally to fit container |
-| Reduced padding | `p-2 md:p-3` | Tighter frame around screenshot |
-| `object-contain` | Optional | Ensure image doesn't crop |
-
-### 4. Size Optimization
-The outer container (`max-w-5xl`) already constrains the width. The image will scale responsively to fill the available space while maintaining aspect ratio. No scrolling will be needed since:
-- The image is naturally sized to fit within the viewport
-- Using `h-auto` maintains aspect ratio without overflow
+### Visual Behavior
+- Zooming out compresses existing events to fit more time on the axis
+- New lane categories appear for extended ranges (91-180 days, 181-365 days, 365+ days)
+- Time axis labels adapt to show appropriate markers (months, quarters)
+- Events beyond 90 days get a neutral gray color to distinguish from urgent items
 
 ---
 
-## Files to Modify
+## Technical Changes
+
+### 1. Update Types (`src/components/timeline/types.ts`)
+
+Add new status types and lane configurations for extended ranges:
+
+| New Status | Days Range | Color | Label |
+|------------|------------|-------|-------|
+| `days91to180` | 91-180 | Blue | 91-180 Days |
+| `days181to365` | 181-365 | Indigo | 6-12 Months |
+| `beyond365` | 365+ | Gray | 1+ Year |
+
+Update `getEventStatus()` and `getEventColor()` functions to handle extended ranges.
+
+### 2. Add Zoom State to ExpiryTimeline (`src/components/ExpiryTimeline.tsx`)
+
+```text
+State:
+- timelineEndDays: number (default: 90, max: 730)
+
+Props passed to TimelineChart:
+- timelineEndDays
+- onZoomChange callback
+```
+
+### 3. Create Zoom Controls Component (`src/components/timeline/TimelineZoomControls.tsx`)
+
+New component containing:
+- Preset buttons (3m, 6m, 1y, 2y)
+- Radix Slider for fine control
+- Current range display (e.g., "Showing next 180 days")
+- Reset button when not at default
+
+```text
+Layout:
+[3m] [6m] [1y] [2y]  |  [====o=====]  |  "180 days"  [Reset]
+```
+
+### 4. Update TimelineChart (`src/components/timeline/TimelineChart.tsx`)
+
+Dynamic calculations based on zoom level:
+- Accept `timelineEndDays` prop
+- Calculate `TOTAL_DAYS` dynamically: `timelineEndDays - TIMELINE_START_DAYS`
+- Generate appropriate time axis labels based on range:
+  - Under 6 months: Monthly markers (+30d, +60d, +90d...)
+  - 6-12 months: Quarterly markers (+3mo, +6mo, +9mo, +12mo)
+  - Over 1 year: Bi-annual markers (+6mo, +1y, +18mo, +2y)
+- Include extended lane configurations when zoomed out
+- Filter events based on dynamic range instead of hardcoded 90 days
+
+### 5. Update Event Filtering in ExpiryTimeline
+
+Remove the `status !== 'beyond90'` filter and replace with dynamic filtering:
+```text
+daysUntil <= timelineEndDays
+```
+
+---
+
+## File Changes Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/assets/dashboard-preview.png` | Create | Copy uploaded image |
-| `src/pages/Auth.tsx` | Modify | Import image and replace mock cards with `<img>` |
+| `src/components/timeline/types.ts` | Modify | Add extended lane configs and update status functions |
+| `src/components/timeline/TimelineZoomControls.tsx` | Create | New zoom control component with slider and presets |
+| `src/components/timeline/TimelineChart.tsx` | Modify | Accept dynamic range, update position/label calculations |
+| `src/components/ExpiryTimeline.tsx` | Modify | Add zoom state, render zoom controls, pass props |
 
-## Visual Result
-The browser frame mock will now show an actual screenshot of the FlowSert dashboard with:
-- Traffic light dots and "FlowSert Dashboard" label (kept)
-- The real Overview tab showing compliance stats and expiry timeline
-- Rounded corners on the screenshot image
-- No scrolling required - fits within the visible frame
+---
 
+## Extended Lane Configuration
+
+```text
+Default view (90 days):
+  [Overdue] [Next 30] [31-60] [61-90]
+
+Zoomed to 180 days:
+  [Overdue] [Next 30] [31-60] [61-90] [91-180]
+
+Zoomed to 365 days:
+  [Overdue] [Next 30] [31-60] [61-90] [91-180] [181-365]
+
+Zoomed to 730 days:
+  [Overdue] [Next 30] [31-60] [61-90] [91-180] [181-365] [1-2 Years]
+```
+
+---
+
+## Interaction Details
+
+1. **Default State**: Timeline shows -30 to +90 days (current behavior)
+2. **Zoom Out**: User clicks "6m" or drags slider right
+   - Timeline expands to show 180 days
+   - New "91-180 Days" lane appears (if events exist)
+   - Existing dots compress horizontally
+   - Time axis updates with new markers
+3. **Zoom In**: User clicks "3m" or drags slider left
+   - Returns to default 90-day view
+   - Extended lanes disappear
+4. **Reset**: One-click return to default view
+
+## Visual Mockup
+
+```text
+Expiry Timeline
+Click any group or lane to view affected certificates and personnel
+
+[Status Cards Grid - unchanged]
+
+────────────────────────────────────────
+
+Event Timeline
+                                    
+[3m] [6m] [1y] [2y]    [====o=========]    Showing next 180 days    [↺]
+
+[Overdue     ] |●●      ●  |                                            |
+[Next 30 Days] |   ●●● ●   |                                            |
+[31-60 Days  ] |           | ●●●●●                                      |
+[61-90 Days  ] |           |       ●●●                                  |
+[91-180 Days ] |           |              ●●     ●                      |
+               ─────────────────────────────────────────────────────────
+               Today      +30d    +60d    +90d         +120d      +180d
+```
