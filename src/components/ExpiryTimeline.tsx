@@ -11,7 +11,9 @@ import { TimelineEvent, getEventStatus, getEventColor } from '@/components/timel
 
 interface ExpiryTimelineProps {
   personnel: Personnel[];
-  personnelFilter: 'all' | 'employees' | 'freelancers';
+  personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
+  customPersonnelIds?: string[];
+  customRoles?: string[];
 }
 
 interface ExpiryGroup {
@@ -27,7 +29,12 @@ interface ExpiryGroup {
   filterParams: { minDays?: number; maxDays?: number; overdue?: boolean };
 }
 
-export function ExpiryTimeline({ personnel, personnelFilter }: ExpiryTimelineProps) {
+export function ExpiryTimeline({ 
+  personnel, 
+  personnelFilter,
+  customPersonnelIds = [],
+  customRoles = [],
+}: ExpiryTimelineProps) {
   const navigate = useNavigate();
 
   // Filter personnel based on the selected filter
@@ -35,8 +42,13 @@ export function ExpiryTimeline({ personnel, personnelFilter }: ExpiryTimelinePro
     if (personnelFilter === 'all') return personnel;
     if (personnelFilter === 'employees') return personnel.filter(p => p.category === 'employee');
     if (personnelFilter === 'freelancers') return personnel.filter(p => p.category === 'freelancer');
+    if (personnelFilter === 'custom') {
+      return personnel.filter(p => 
+        customPersonnelIds.includes(p.id) || customRoles.includes(p.role)
+      );
+    }
     return personnel;
-  }, [personnel, personnelFilter]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles]);
 
   // Calculate expiry groups
   const expiryGroups = useMemo((): ExpiryGroup[] => {

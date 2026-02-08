@@ -11,7 +11,7 @@ import {
 
 interface TimelineChartProps {
   events: TimelineEvent[];
-  personnelFilter: 'all' | 'employees' | 'freelancers';
+  personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
 }
 
 interface PositionedEvent extends TimelineEvent {
