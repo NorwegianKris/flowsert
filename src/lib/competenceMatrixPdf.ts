@@ -12,11 +12,11 @@ export interface CompetenceMatrixOptions {
 }
 
 const STATUS_SYMBOLS: Record<string, string> = {
-  valid: '\u2714',    // ✔
-  expiring: '\u26A0', // ⚠
-  expired: '\u2716',  // ✖
+  valid: 'V',
+  expiring: 'E',
+  expired: 'X',
 };
-const NOT_HELD_SYMBOL = '\u2014'; // —
+const NOT_HELD_SYMBOL = '-';
 
 export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): jsPDF {
   const { personnel, projectName, companyName, location } = options;
@@ -73,7 +73,8 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
   // Build table data
   const tableHead = ['Personnel', 'Role', ...certTypes];
   const tableBody = personnel.map(person => {
-    const row: string[] = [person.name, person.role];
+    const role = person.role && person.role !== 'N/A' ? person.role : '-';
+    const row: string[] = [person.name, role];
     certTypes.forEach(certType => {
       const cert = person.certificates.find(c => c.name === certType);
       if (!cert) {
@@ -137,7 +138,7 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
   doc.text(
-    `${STATUS_SYMBOLS.valid} Valid    ${STATUS_SYMBOLS.expiring} Expiring within warning period    ${STATUS_SYMBOLS.expired} Expired    ${NOT_HELD_SYMBOL} Not held / not applicable`,
+    `V = Valid    E = Expiring within warning period    X = Expired    - = Not held / not applicable`,
     14,
     legendY
   );
