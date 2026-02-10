@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Project } from '@/hooks/useProjects';
+import { ProjectPhase } from '@/hooks/useProjectPhases';
 import { Personnel } from '@/types';
 import { useProjectTimelineData, buildPersonnelTimelineData } from '@/hooks/useProjectTimelineData';
 import { TimelineHeader } from './TimelineHeader';
 import { MilestoneLane } from './MilestoneLane';
 import { PersonnelGroup } from './PersonnelGroup';
+import { PhaseLane } from './PhaseLane';
 import { LABEL_WIDTH, MIN_TIMELINE_WIDTH } from './types';
 import { dateToX } from './utils';
 import { Clock, AlertTriangle, Plus } from 'lucide-react';
@@ -17,17 +19,21 @@ import { Button } from '@/components/ui/button';
 interface ProjectTimelineProps {
   project: Project;
   personnel: Personnel[];
+  phases?: ProjectPhase[];
   onPersonnelClick?: (person: Personnel) => void;
   onEditProject?: () => void;
   onAddItem?: () => void;
+  onAddPhase?: () => void;
 }
 
 export function ProjectTimeline({
   project,
   personnel,
+  phases = [],
   onPersonnelClick,
   onEditProject,
   onAddItem,
+  onAddPhase,
 }: ProjectTimelineProps) {
   const assignedPersonnel = useMemo(
     () =>
@@ -120,13 +126,22 @@ export function ProjectTimeline({
               Compliance, availability, and key project events over time
             </p>
           </div>
-          {onAddItem && (
-            <Button variant="outline" size="sm" onClick={onAddItem} className="gap-1.5 flex-shrink-0">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add event or milestone</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {onAddItem && (
+              <Button variant="outline" size="sm" onClick={onAddItem} className="gap-1.5 flex-shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add event or milestone</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            )}
+            {onAddPhase && (
+              <Button variant="outline" size="sm" onClick={onAddPhase} className="gap-1.5 flex-shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Define phase</span>
+                <span className="sm:hidden">Phase</span>
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -160,6 +175,14 @@ export function ProjectTimeline({
                 {/* Milestone lane */}
                 <MilestoneLane
                   calendarItems={project.calendarItems || []}
+                  projectStart={project.startDate}
+                  projectEnd={project.endDate}
+                  totalWidth={totalWidth}
+                />
+
+                {/* Phase lane */}
+                <PhaseLane
+                  phases={phases}
                   projectStart={project.startDate}
                   projectEnd={project.endDate}
                   totalWidth={totalWidth}

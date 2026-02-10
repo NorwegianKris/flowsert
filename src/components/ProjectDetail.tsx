@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectTimeline } from '@/components/project-timeline/ProjectTimeline';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
+import { AddPhaseDialog } from '@/components/AddPhaseDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
@@ -13,6 +14,7 @@ import { ProjectDocuments } from '@/components/ProjectDocuments';
 import { ProjectChat } from '@/components/ProjectChat';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
+import { useProjectPhases } from '@/hooks/useProjectPhases';
 import {
   ArrowLeft,
   Clock,
@@ -58,9 +60,12 @@ const statusConfig = {
 
 export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick, businessName }: ProjectDetailProps) {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [isAddPhaseOpen, setIsAddPhaseOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const { phases, addPhase } = useProjectPhases(project.id);
 
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
@@ -254,9 +259,11 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       <ProjectTimeline
         project={project}
         personnel={personnel}
+        phases={phases}
         onPersonnelClick={onPersonnelClick}
         onEditProject={() => setIsEditOpen(true)}
         onAddItem={() => setIsAddItemOpen(true)}
+        onAddPhase={() => setIsAddPhaseOpen(true)}
       />
 
       {/* Main Content - Tabs with Side Panels */}
@@ -486,6 +493,13 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         projectEndDate={project.endDate}
       />
 
+      <AddPhaseDialog
+        open={isAddPhaseOpen}
+        onOpenChange={setIsAddPhaseOpen}
+        onAdd={addPhase}
+        projectStartDate={project.startDate}
+        projectEndDate={project.endDate}
+      />
       <ShareProjectDialog
         open={isShareOpen}
         onOpenChange={setIsShareOpen}
