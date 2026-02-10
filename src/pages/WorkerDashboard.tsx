@@ -7,6 +7,9 @@ import { ChatBot } from '@/components/ChatBot';
 import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
 import { WelcomeDialog } from '@/components/WelcomeDialog';
 import { ProfileCompletionIndicator } from '@/components/ProfileCompletionIndicator';
+import { DataProcessingAcknowledgementDialog } from '@/components/DataProcessingAcknowledgementDialog';
+import { useDataAcknowledgement } from '@/hooks/useDataAcknowledgement';
+import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,8 +19,14 @@ import { Logo } from '@/components/Logo';
 export default function WorkerDashboard() {
   const { signOut, profile } = useAuth();
   const { personnel, loading, refetch } = useWorkerPersonnel();
+  const { business } = useBusinessInfo();
+  const {
+    hasAcknowledged,
+    loading: ackLoading,
+    submitAcknowledgement,
+  } = useDataAcknowledgement(personnel?.id, personnel?.businessId);
 
-  if (loading) {
+  if (loading || ackLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -64,6 +73,13 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {personnel ? (
           <>
+            {/* GDPR acknowledgement dialog - blocking */}
+            <DataProcessingAcknowledgementDialog
+              open={!hasAcknowledged}
+              companyName={business?.name || 'your employer'}
+              onAcknowledge={() => submitAcknowledgement('registration')}
+            />
+
             {/* Welcome dialog for new workers */}
             <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
             

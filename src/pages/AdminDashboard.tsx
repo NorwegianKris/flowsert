@@ -13,6 +13,7 @@ import { ExpiryTimeline } from '@/components/ExpiryTimeline';
 import { RecentRegistrations } from '@/components/RecentRegistrations';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
+import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsManager';
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
@@ -594,6 +595,15 @@ export default function AdminDashboard() {
                 </Tabs>
                 
                 <CategoriesSection />
+
+                <DataAcknowledgementsManager
+                  personnel={personnel}
+                  businessId={profile?.business_id ?? undefined}
+                  onPersonnelClick={(person) => {
+                    setSettingsOpen(false);
+                    setSelectedPersonnel(person);
+                  }}
+                />
                 
                 <RegistrationLinkCard />
                 

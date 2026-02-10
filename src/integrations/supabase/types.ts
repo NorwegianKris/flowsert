@@ -372,6 +372,51 @@ export type Database = {
           },
         ]
       }
+      data_processing_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          acknowledgement_type: string
+          acknowledgement_version: string
+          business_id: string
+          created_at: string
+          id: string
+          personnel_id: string
+        }
+        Insert: {
+          acknowledged_at: string
+          acknowledgement_type: string
+          acknowledgement_version: string
+          business_id: string
+          created_at?: string
+          id?: string
+          personnel_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledgement_type?: string
+          acknowledgement_version?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          personnel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_processing_acknowledgements_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_processing_acknowledgements_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           business_id: string
