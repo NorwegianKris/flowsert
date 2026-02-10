@@ -26,18 +26,7 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
     }
 
     try {
-      let version = externalVersion || FALLBACK_VERSION;
-
-      // Only fetch from businesses if no external version was provided
-      if (!externalVersion) {
-        const { data: bizData } = await supabase
-          .from('businesses')
-          .select('required_ack_version')
-          .eq('id', businessId)
-          .single();
-
-        version = (bizData as any)?.required_ack_version || FALLBACK_VERSION;
-      }
+      const version = externalVersion || FALLBACK_VERSION;
 
       setRequiredVersion(version);
 
@@ -54,7 +43,10 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
 
       const record = (data as any)?.[0] || null;
       setAcknowledgement(record);
-      setHasAcknowledged(!!record);
+      // Only update hasAcknowledged if we found a record — never reset to false
+      if (record) {
+        setHasAcknowledged(true);
+      }
     } catch (error) {
       console.error('Error fetching data acknowledgement:', error);
     } finally {

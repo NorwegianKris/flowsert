@@ -87,12 +87,14 @@ export default function WorkerDashboard() {
           </div>
         ) : personnel ? (
           <>
-            {/* GDPR acknowledgement dialog - blocking */}
-            <DataProcessingAcknowledgementDialog
-              open={!hasAcknowledged}
-              companyName={business?.name || 'your employer'}
-              onAcknowledge={() => submitAcknowledgement('registration')}
-            />
+            {/* GDPR acknowledgement dialog - blocking, only show when business is loaded */}
+            {!!business && !ackLoading && (
+              <DataProcessingAcknowledgementDialog
+                open={!hasAcknowledged}
+                companyName={business.name}
+                onAcknowledge={() => submitAcknowledgement('registration')}
+              />
+            )}
 
             {/* Welcome dialog for new workers */}
             <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
