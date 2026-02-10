@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProjectCalendar } from '@/components/ProjectCalendar';
+import { ProjectTimeline } from '@/components/project-timeline/ProjectTimeline';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
@@ -144,7 +144,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
           </Button>
           <Button variant="outline" size="sm" onClick={() => setIsAddItemOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Calendar Item
+            Add Milestone
           </Button>
           <Button variant="outline" size="sm" onClick={() => setIsShareOpen(true)} className="gap-2">
             <Share2 className="h-4 w-4" />
@@ -254,16 +254,18 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         </Card>
       </div>
 
-      {/* Main Content - Calendar with Side Tabs */}
+      {/* Timeline */}
+      <ProjectTimeline
+        project={project}
+        personnel={personnel}
+        onPersonnelClick={onPersonnelClick}
+        onEditProject={() => setIsEditOpen(true)}
+      />
+
+      {/* Main Content - Tabs with Side Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar Section */}
+        {/* Chat Section */}
         <div className="lg:col-span-2 space-y-6">
-          <ProjectCalendar 
-            project={project} 
-            onUpdateDates={handleUpdateDates}
-            editable={!!onUpdateProject}
-          />
-          
           {/* Project Chat */}
           <ProjectChat projectId={project.id} projectName={project.name} />
         </div>
@@ -462,7 +464,9 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       </Card>
 
       {/* Certificate Status Section */}
-      <ProjectCertificateStatus personnel={assignedPersonnel} />
+      <div data-certificate-status>
+        <ProjectCertificateStatus personnel={assignedPersonnel} />
+      </div>
 
       {/* Dialogs */}
       <EditProjectDialog
