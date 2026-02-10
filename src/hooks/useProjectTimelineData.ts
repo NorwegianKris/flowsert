@@ -103,6 +103,10 @@ export function useProjectTimelineData(
   return { availabilityMap, loading };
 }
 
+/**
+ * Build timeline data for each person. If a person has no availability records,
+ * they default to "available" for the entire project period.
+ */
 export function buildPersonnelTimelineData(
   personnel: Personnel[],
   availabilityMap: Map<string, AvailabilitySpan[]>,
@@ -110,7 +114,19 @@ export function buildPersonnelTimelineData(
   projectEnd: string
 ): PersonnelTimelineData[] {
   return personnel.map((person) => {
-    const availabilitySpans = availabilityMap.get(person.id) || [];
+    let availabilitySpans = availabilityMap.get(person.id);
+
+    // Default: full project span as available when no data exists
+    if (!availabilitySpans || availabilitySpans.length === 0) {
+      availabilitySpans = [
+        {
+          personnelId: person.id,
+          startDate: projectStart,
+          endDate: projectEnd,
+          status: 'available',
+        },
+      ];
+    }
 
     const complianceBars: ComplianceBar[] = person.certificates
       .filter((cert) => cert.expiryDate !== null)
