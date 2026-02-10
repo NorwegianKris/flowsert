@@ -153,7 +153,14 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {project.imageUrl && (
+              <img
+                src={project.imageUrl}
+                alt={project.name}
+                className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
+              />
+            )}
             <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
             {isPosted && (
               <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0">
