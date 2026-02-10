@@ -106,12 +106,12 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
 
       {/* End line indicator in header */}
       <div
-        className="absolute top-0 h-full w-px bg-muted-foreground/50 z-10"
-        style={{ left: endX }}
+        className="absolute top-0 h-full w-px bg-destructive z-10"
+        style={{ left: endX - 2 }}
       >
         <div className="absolute -top-0 right-1 flex flex-col items-end whitespace-nowrap">
-          <span className="text-[9px] text-muted-foreground font-medium">End</span>
-          <span className="text-[8px] text-muted-foreground/70">{format(end, 'MMM d')}</span>
+          <span className="text-[9px] text-destructive font-medium">End</span>
+          <span className="text-[8px] text-destructive/70">{format(end, 'MMM d')}</span>
         </div>
       </div>
     </div>
