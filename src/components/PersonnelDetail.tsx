@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { ProfileCompletionBar } from '@/components/ProfileCompletionBar';
 import { CertificateExpiryNotificationDialog } from '@/components/CertificateExpiryNotificationDialog';
+import { useDataAcknowledgement } from '@/hooks/useDataAcknowledgement';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -31,7 +32,7 @@ import {
 } from '@/lib/certificateUtils';
 import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock, Clock, RefreshCw, Hash
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock, Clock, RefreshCw, Hash, Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { PersonnelDocuments } from './PersonnelDocuments';
@@ -549,6 +550,9 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             </Card>
           )}
 
+          {/* Data handling / Privacy Section */}
+          <DataPrivacySection personnelId={personnel.id} businessId={personnel.businessId} />
+
           {/* Documents Section */}
           <PersonnelDocuments personnelId={personnel.id} isProfileActivated={personnel.isJobSeeker || isActivated} />
         </div>
@@ -628,5 +632,44 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         onSuccess={() => onRefresh?.()}
       />
     </div>
+  );
+}
+
+function DataPrivacySection({ personnelId, businessId }: { personnelId: string; businessId: string }) {
+  const { acknowledgement, loading } = useDataAcknowledgement(personnelId, businessId);
+
+  if (loading) return null;
+
+  return (
+    <Card className="border-border/50">
+      <CardHeader className="py-3">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Shield className="h-4 w-4 text-primary" />
+          Data handling / Privacy
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">Acknowledged</p>
+            <p className="text-sm font-medium text-foreground">{acknowledgement ? 'Yes' : 'No'}</p>
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">Acknowledged at</p>
+            <p className="text-sm font-medium text-foreground">
+              {acknowledgement
+                ? format(new Date(acknowledgement.acknowledged_at), 'dd MMM yyyy · HH:mm')
+                : '—'}
+            </p>
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">Version</p>
+            <p className="text-sm font-medium text-foreground">
+              {acknowledgement?.acknowledgement_version || '—'}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
