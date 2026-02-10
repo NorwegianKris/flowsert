@@ -17,17 +17,70 @@ interface DemoRequestPayload {
 // FlowSert logo URL from storage
 const logoUrl = "https://frgsnallgwkufyzabeje.supabase.co/storage/v1/object/public/avatars/email-logo.jpg";
 
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(ip) || [];
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  rateLimitMap.set(ip, recent);
+  return false;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting
+    const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+    if (isRateLimited(ip)) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { name, email, message }: DemoRequestPayload = await req.json();
 
     if (!name || !email) {
       throw new Error("Name and email are required");
     }
+
+    // Validate lengths
+    if (name.length > 100 || email.length > 255 || (message && message.length > 5000)) {
+      throw new Error("Input exceeds maximum allowed length");
+    }
+
+    // Validate email format
+    if (!EMAIL_REGEX.test(email)) {
+      throw new Error("Invalid email format");
+    }
+
+    // Escape all user inputs
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeMessage = message ? escapeHtml(message) : '';
 
     const emailResponse = await resend.emails.send({
       from: "FlowSert <noreply@flowsert.com>",
@@ -60,14 +113,14 @@ const handler = async (req: Request): Promise<Response> => {
               <!-- Content -->
               <div style="padding: 30px;">
                 <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                  <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${name}</p>
-                  <p style="margin: 0;"><strong>Email:</strong> ${email}</p>
+                  <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${safeName}</p>
+                  <p style="margin: 0;"><strong>Email:</strong> ${safeEmail}</p>
                 </div>
                 
-                ${message ? `
+                ${safeMessage ? `
                 <div style="padding: 20px; border-left: 4px solid #667eea; background: #f8fafc; border-radius: 0 8px 8px 0;">
                   <h3 style="margin-top: 0; color: #1e293b;">Message:</h3>
-                  <p style="white-space: pre-wrap; margin-bottom: 0; color: #475569;">${message}</p>
+                  <p style="white-space: pre-wrap; margin-bottom: 0; color: #475569;">${safeMessage}</p>
                 </div>
                 ` : ''}
               </div>
@@ -93,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error sending demo request email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to send request. Please try again later." }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
