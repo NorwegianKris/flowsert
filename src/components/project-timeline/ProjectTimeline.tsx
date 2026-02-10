@@ -197,7 +197,7 @@ export function ProjectTimeline({
                       projectStart={project.startDate}
                       projectEnd={project.endDate!}
                       totalWidth={totalWidth}
-                      defaultExpanded={i < 5}
+                      defaultExpanded={false}
                       onPersonnelClick={() => onPersonnelClick?.(data.person)}
                       onScrollToCertificates={handleScrollToCertificates}
                     />
