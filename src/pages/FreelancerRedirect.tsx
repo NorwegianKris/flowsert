@@ -24,7 +24,7 @@ export default function FreelancerRedirect() {
       try {
         // Look up business and active freelancer invitation by company code
         const { data, error } = await (supabase.rpc as any)(
-          'get_job_seeker_registration_by_code', 
+          'get_freelancer_registration_by_code', 
           { lookup_code: companyCode }
         ) as { data: RegistrationData[] | null; error: any };
 

@@ -44,7 +44,7 @@ export interface Personnel {
   nextOfKinName?: string;
   nextOfKinRelation?: string;
   nextOfKinPhone?: string;
-  isJobSeeker?: boolean;
+  isFreelancer?: boolean;
   bio?: string;
   activated?: boolean; // When true, full document access is enabled and profile counts toward billing
   lastLoginAt?: string; // Timestamp of last user login

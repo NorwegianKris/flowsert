@@ -27,7 +27,7 @@ interface DbPersonnel {
   next_of_kin_name: string | null;
   next_of_kin_relation: string | null;
   next_of_kin_phone: string | null;
-  is_job_seeker: boolean | null;
+  is_freelancer: boolean | null;
   bio: string | null;
   activated: boolean | null;
   last_login_at: string | null;
@@ -110,7 +110,7 @@ export function usePersonnel() {
         nextOfKinName: p.next_of_kin_name || undefined,
         nextOfKinRelation: p.next_of_kin_relation || undefined,
         nextOfKinPhone: p.next_of_kin_phone || undefined,
-        isJobSeeker: p.is_job_seeker || false,
+        isFreelancer: p.is_freelancer || false,
         bio: p.bio || undefined,
         activated: p.activated || false,
         lastLoginAt: p.last_login_at || undefined,
@@ -216,7 +216,7 @@ export function useWorkerPersonnel() {
         nextOfKinName: p.next_of_kin_name || undefined,
         nextOfKinRelation: p.next_of_kin_relation || undefined,
         nextOfKinPhone: p.next_of_kin_phone || undefined,
-        isJobSeeker: p.is_job_seeker || false,
+        isFreelancer: p.is_freelancer || false,
         bio: p.bio || undefined,
         activated: p.activated || false,
         lastLoginAt: p.last_login_at || undefined,

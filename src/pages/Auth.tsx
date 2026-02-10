@@ -145,7 +145,7 @@ export default function Auth() {
       
       const fetchJobSeekerInvitation = async () => {
         try {
-          const { data, error } = await (supabase as any).rpc('get_job_seeker_invitation_by_token', {
+          const { data, error } = await (supabase as any).rpc('get_freelancer_invitation_by_token', {
             lookup_token: jobSeekerToken
           });
           
@@ -166,7 +166,7 @@ export default function Auth() {
             });
             
             // Fetch worker categories for role dropdown
-            const { data: categoriesData } = await (supabase as any).rpc('get_worker_categories_for_job_seeker_token', {
+            const { data: categoriesData } = await (supabase as any).rpc('get_worker_categories_for_freelancer_token', {
               lookup_token: jobSeekerToken
             });
             
