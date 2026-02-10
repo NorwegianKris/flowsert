@@ -17,6 +17,7 @@ export interface BusinessInfo {
   company_code: string;
   custom_domain: string | null;
   use_canonical_certificates: boolean;
+  required_ack_version: string;
 }
 
 export function useBusinessInfo() {

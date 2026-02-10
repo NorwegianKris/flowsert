@@ -111,6 +111,7 @@ export type Database = {
           phone: string | null
           postal_address: string | null
           postal_code: string | null
+          required_ack_version: string
           updated_at: string
           use_canonical_certificates: boolean
           website: string | null
@@ -129,6 +130,7 @@ export type Database = {
           phone?: string | null
           postal_address?: string | null
           postal_code?: string | null
+          required_ack_version?: string
           updated_at?: string
           use_canonical_certificates?: boolean
           website?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           phone?: string | null
           postal_address?: string | null
           postal_code?: string | null
+          required_ack_version?: string
           updated_at?: string
           use_canonical_certificates?: boolean
           website?: string | null

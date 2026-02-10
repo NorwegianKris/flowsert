@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, CheckCircle, XCircle, ChevronDown, Search, ChevronDownIcon } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, ChevronDown, Search, ChevronDownIcon, ShieldAlert } from 'lucide-react';
 import { Personnel } from '@/types';
 import { useBusinessAcknowledgements } from '@/hooks/useDataAcknowledgement';
 import { format } from 'date-fns';
+import { RequestReAcknowledgementDialog } from './RequestReAcknowledgementDialog';
+import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 
 interface DataAcknowledgementsManagerProps {
   personnel: Personnel[];
@@ -25,11 +27,13 @@ export function DataAcknowledgementsManager({
   onPersonnelClick,
 }: DataAcknowledgementsManagerProps) {
   const { acknowledgements, loading } = useBusinessAcknowledgements(businessId);
+  const { business, refetch: refetchBusiness } = useBusinessInfo();
   const [searchQuery, setSearchQuery] = useState('');
   const [missingOnly, setMissingOnly] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isOpen, setIsOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [reAckOpen, setReAckOpen] = useState(false);
   const PAGE_SIZE = 10;
 
   // Build a map of personnel_id -> latest acknowledgement
@@ -82,14 +86,29 @@ export function DataAcknowledgementsManager({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            {/* Coverage indicator */}
-            <div className="text-sm text-muted-foreground">
-              Acknowledgement coverage:{' '}
-              <span className="font-semibold text-foreground">
-                {acknowledgedCount} of {personnel.length}
-              </span>{' '}
-              personnel acknowledged
+            {/* Coverage indicator + action */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Acknowledgement coverage:{' '}
+                <span className="font-semibold text-foreground">
+                  {acknowledgedCount} of {personnel.length}
+                </span>{' '}
+                personnel acknowledged
+                <span className="ml-2 text-xs">(v{business?.required_ack_version || '1.0'})</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setReAckOpen(true)}>
+                <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+                Request Re-acknowledgement
+              </Button>
             </div>
+
+            <RequestReAcknowledgementDialog
+              open={reAckOpen}
+              onOpenChange={setReAckOpen}
+              personnel={personnel}
+              currentVersion={business?.required_ack_version || '1.0'}
+              onSuccess={refetchBusiness}
+            />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-4">
