@@ -40,8 +40,8 @@ export function DataAcknowledgementsManager({
   const filteredPersonnel = useMemo(() => {
     return personnel.filter((p) => {
       // Type filter
-      if (typeFilter === 'employees' && p.isJobSeeker) return false;
-      if (typeFilter === 'freelancers' && !p.isJobSeeker) return false;
+      if (typeFilter === 'employees' && p.category === 'freelancer') return false;
+      if (typeFilter === 'freelancers' && p.category !== 'freelancer') return false;
 
       // Missing only
       if (missingOnly && ackMap.has(p.id)) return false;
@@ -122,7 +122,7 @@ export function DataAcknowledgementsManager({
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {p.isJobSeeker ? 'Freelancer' : 'Employee'}
+                        {p.category === 'freelancer' ? 'Freelancer' : 'Employee'}
                       </Badge>
                     </TableCell>
                     <TableCell>
