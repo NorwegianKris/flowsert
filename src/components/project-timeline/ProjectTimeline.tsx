@@ -1,5 +1,5 @@
-import { useMemo, useCallback } from 'react';
-import { parseISO, isWithinInterval } from 'date-fns';
+import { useMemo, useCallback, useRef, useState, useEffect } from 'react';
+import { parseISO, isWithinInterval, differenceInDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -56,7 +56,23 @@ export function ProjectTimeline({
     [assignedPersonnel, availabilityMap, project.startDate, project.endDate]
   );
 
-  const totalWidth = Math.max(MIN_TIMELINE_WIDTH, 800);
+  // Measure container width to fill available space
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Timeline content width = container minus the label column, at least MIN_TIMELINE_WIDTH
+  const totalWidth = Math.max(MIN_TIMELINE_WIDTH, containerWidth - LABEL_WIDTH);
 
   const today = new Date();
   const hasEndDate = !!project.endDate;
@@ -115,7 +131,7 @@ export function ProjectTimeline({
       </CardHeader>
       <CardContent className="p-0">
         <TooltipProvider delayDuration={200}>
-          <ScrollArea className="w-full">
+          <ScrollArea className="w-full" ref={containerRef}>
             <div style={{ minWidth: totalWidth + LABEL_WIDTH }}>
               {/* Time axis header */}
               <div className="flex">
