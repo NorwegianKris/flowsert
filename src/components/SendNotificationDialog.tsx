@@ -294,9 +294,9 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                           />
                           <span className="text-sm flex-1 truncate">{p.name}</span>
                           <span className="text-xs text-muted-foreground truncate max-w-[120px]">{p.role}</span>
-                          {p.isJobSeeker && (
+                          {p.category === 'freelancer' && (
                             <Badge variant="secondary" className="text-xs bg-lavender-100 text-lavender-700 shrink-0">
-                              Job Seeker
+                              Freelancer
                             </Badge>
                           )}
                         </div>

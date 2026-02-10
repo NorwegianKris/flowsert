@@ -306,7 +306,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 placeholder="Oslo, Norway"
               />
             </div>
-            {/* Category - locked for job seekers */}
+            {/* Category - locked for freelancers */}
             {!isFreelancer && (
               <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
@@ -424,7 +424,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               />
             </div>
           </div>
-          {/* Bio Section - only for job seekers */}
+          {/* Bio Section - only for freelancers */}
           {isFreelancer && (
             <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold text-foreground mb-2">Tell me about yourself</h3>
@@ -439,7 +439,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
           )}
 
-          {/* Next of Kin Section - hidden for job seekers */}
+          {/* Next of Kin Section - hidden for freelancers */}
           {!isFreelancer && (
             <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>

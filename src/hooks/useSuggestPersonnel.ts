@@ -28,7 +28,6 @@ interface PersonnelForAI {
   role: string;
   location: string;
   category: string | null;
-  isJobSeeker: boolean;
   activated: boolean;
   nationality: string | null;
   department: string | null;
@@ -74,7 +73,7 @@ export function useSuggestPersonnel() {
   const getSuggestions = async (
     prompt: string,
     personnel: Personnel[],
-    includeJobSeekers: boolean,
+    includeFreelancers: boolean,
     documentCounts?: Map<string, number>
   ): Promise<SuggestionResult | null> => {
     if (!prompt.trim()) {
@@ -107,7 +106,6 @@ export function useSuggestPersonnel() {
           role: p.role,
           location: p.location,
           category: p.category || null,
-          isJobSeeker: p.isJobSeeker || false,
           activated: p.activated || false,
           nationality: p.nationality || null,
           department: p.department || null,
@@ -128,7 +126,7 @@ export function useSuggestPersonnel() {
         body: {
           prompt,
           personnel: personnelForAI,
-          includeJobSeekers
+          includeFreelancers
         }
       });
 

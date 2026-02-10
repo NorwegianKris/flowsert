@@ -20,7 +20,7 @@ interface AIPersonnelSuggestionsProps {
   }) => void;
   onHighlightPersonnel: (personnelIds: string[]) => void;
   onClearHighlight: () => void;
-  onIncludeJobSeekersChange?: (value: boolean) => void;
+  onIncludeFreelancersChange?: (value: boolean) => void;
   onFilterByAI?: (personnelIds: string[] | null) => void;
 }
 
@@ -29,12 +29,12 @@ export function AIPersonnelSuggestions({
   onApplyFilters,
   onHighlightPersonnel,
   onClearHighlight,
-  onIncludeJobSeekersChange,
+  onIncludeFreelancersChange,
   onFilterByAI,
 }: AIPersonnelSuggestionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
-  const [includeJobSeekers, setIncludeJobSeekers] = useState(false);
+  const [includeFreelancers, setIncludeFreelancers] = useState(false);
   const [documentCounts, setDocumentCounts] = useState<Map<string, number>>(new Map());
   const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions } = useSuggestPersonnel();
 
@@ -66,7 +66,7 @@ export function AIPersonnelSuggestions({
       toast.error('Please enter search requirements first');
       return;
     }
-    const result = await getSuggestions(aiPrompt, personnel, includeJobSeekers, documentCounts);
+    const result = await getSuggestions(aiPrompt, personnel, includeFreelancers, documentCounts);
     if (result?.suggestedPersonnel && result.suggestedPersonnel.length > 0) {
       const matchedIds = result.suggestedPersonnel.map(s => s.id);
       onHighlightPersonnel(matchedIds);
@@ -76,14 +76,14 @@ export function AIPersonnelSuggestions({
         onFilterByAI(matchedIds);
       }
       
-      // Check if any suggested personnel are job seekers and sync the main toggle
-      const hasJobSeekers = result.suggestedPersonnel.some(s => {
+      // Check if any suggested personnel are freelancers and sync the main toggle
+      const hasFreelancers = result.suggestedPersonnel.some(s => {
         const person = personnel.find(p => p.id === s.id);
-        return person?.isJobSeeker;
+        return person?.category === 'freelancer';
       });
       
-      if (hasJobSeekers && includeJobSeekers && onIncludeJobSeekersChange) {
-        onIncludeJobSeekersChange(true);
+      if (hasFreelancers && includeFreelancers && onIncludeFreelancersChange) {
+        onIncludeFreelancersChange(true);
       }
       
       toast.success(`Found ${result.suggestedPersonnel.length} matching personnel`);
@@ -158,12 +158,12 @@ export function AIPersonnelSuggestions({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Switch
-                id="aiIncludeJobSeekers"
-                checked={includeJobSeekers}
-                onCheckedChange={setIncludeJobSeekers}
+                id="aiIncludeFreelancers"
+                checked={includeFreelancers}
+                onCheckedChange={setIncludeFreelancers}
               />
-              <Label htmlFor="aiIncludeJobSeekers" className="text-sm cursor-pointer">
-                Include job seekers
+              <Label htmlFor="aiIncludeFreelancers" className="text-sm cursor-pointer">
+                Include freelancers
               </Label>
             </div>
             <Button

@@ -650,8 +650,8 @@ export default function Auth() {
                   📥
                 </div>
                 <div>
-                  <h4 className="font-semibold text-foreground">Job applicant funnel</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Receive job seekers and certificate submissions in one structured flow, instead of emails and cold calls.</p>
+                  <h4 className="font-semibold text-foreground">Freelancer funnel</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Receive freelancer applications and certificate submissions in one structured flow, instead of emails and cold calls.</p>
                 </div>
               </div>
             </div>
@@ -725,7 +725,7 @@ export default function Auth() {
                   {storyExpanded && (
                     <>
                       <p>
-                        With FlowSert, fixed employees, regularly used freelancers, and job seekers all register their certificates in a shared system. Workers upload documentation themselves, while admins monitor certificate validity and compliance across projects in real time.
+                        With FlowSert, employees and freelancers all register their certificates in a shared system. Workers upload documentation themselves, while admins monitor certificate validity and compliance across projects in real time.
                       </p>
                       <p>
                         The result is a clearer overview, reduced administrative overhead, and fewer last-minute surprises related to expiring certificates — supporting better work flow in day-to-day operations.
@@ -825,7 +825,7 @@ export default function Auth() {
           <DialogHeader>
             <DialogTitle className="text-center font-rajdhani text-2xl">
               {authMode === 'signin' && 'Welcome Back'}
-              {authMode === 'signup' && (inviteToken ? 'Complete Registration' : jobSeekerToken ? 'Job Seeker Registration' : 'Create Account')}
+              {authMode === 'signup' && (inviteToken ? 'Complete Registration' : jobSeekerToken ? 'Freelancer Registration' : 'Create Account')}
               {authMode === 'forgot' && 'Reset Password'}
             </DialogTitle>
             <DialogDescription className="text-center">
@@ -939,7 +939,7 @@ export default function Auth() {
                     </div>
                   )}
                   <p className="text-sm font-medium text-foreground">
-                    Register as a Job Seeker with <strong>{jobSeekerDetails.businessName}</strong>
+                    Register as a Freelancer with <strong>{jobSeekerDetails.businessName}</strong>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Complete your profile with all relevant certificates and documents to increase your chances of being hired. A detailed profile helps employers see your qualifications quickly.
@@ -956,7 +956,7 @@ export default function Auth() {
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
-              {/* Job Role dropdown for job seekers */}
+              {/* Job Role dropdown for freelancers */}
               {jobSeekerToken && workerCategories.length > 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="signup-role">Job Role</Label>
