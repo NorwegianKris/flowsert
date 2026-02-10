@@ -1,145 +1,75 @@
 
 
-# GDPR Data Processing Acknowledgement
+# Notification-Triggered Data Handling Re-Acknowledgement
 
 ## Overview
-Implement a GDPR-compliant acknowledgement system that documents personnel have been informed about data processing. This is an **acknowledgement** (not consent) -- recording that the user read and understood the data handling information.
+Allow admins to send a notification that requires personnel to re-acknowledge data handling terms. When a worker receives this type of notification, they will see a blocking acknowledgement modal on their next login (or immediately if already logged in).
 
-## What Changes
+## How It Works
 
-### 1. Database: New `data_processing_acknowledgements` table
+### Admin Side
+1. In the **Privacy & Data** section under Settings, add a "Request Re-acknowledgement" button
+2. Clicking it opens a dialog where the admin can:
+   - Select recipients (all personnel, or filtered by employees/freelancers/individuals)
+   - Optionally include a reason or note (e.g., "Updated privacy policy")
+   - Specify a new acknowledgement version (auto-incremented, e.g., `1.1`)
+3. On confirmation:
+   - A system notification is sent to selected recipients informing them about updated data handling terms
+   - The acknowledgement version is bumped for those recipients, triggering the blocking modal on their next visit
 
-Create an immutable audit table:
-
-```text
-data_processing_acknowledgements
-  id                      uuid (PK, default gen_random_uuid())
-  personnel_id            uuid (FK -> personnel.id, NOT NULL)
-  business_id             uuid (FK -> businesses.id, NOT NULL)
-  acknowledged_at         timestamptz (NOT NULL)
-  acknowledgement_version text (NOT NULL, e.g. "1.0")
-  acknowledgement_type    text (NOT NULL, e.g. "registration", "policy_update")
-  created_at              timestamptz (default now())
-```
-
-**RLS policies:**
-- Workers can SELECT their own acknowledgements (via personnel.user_id)
-- Workers can INSERT their own acknowledgements
-- Admins/managers can SELECT acknowledgements for their business
-- No UPDATE or DELETE policies for any role
-
-### 2. Acknowledgement Modal (Worker Flow)
-
-**New component: `DataProcessingAcknowledgementDialog.tsx`**
-
-Shown on the Worker Dashboard **before** the user can interact with the system. It checks the database for an existing acknowledgement record for the current personnel + business combination.
-
-**Modal content (exact wording from requirements):**
-- Title: "Handling of personal data and documentation"
-- Body text explaining controller/processor roles, with company name dynamically inserted
-- Required checkbox: "I confirm that I have read and understood this information"
-- "Continue" button (disabled until checkbox is checked)
-
-**Flow:**
-1. On WorkerDashboard load, query `data_processing_acknowledgements` for the personnel's latest record
-2. If no record exists, show the blocking modal
-3. On acknowledgement, INSERT a row and dismiss the modal
-4. The Welcome Dialog continues to work independently (shown after acknowledgement if applicable)
-
-### 3. Personnel Profile: Read-only "Data handling / Privacy" Section
-
-Add a new Card in `PersonnelDetail.tsx` (visible to admins viewing any profile, and workers viewing their own) below the "Next of Kin" section:
-
-```text
-Data handling / Privacy
-  Acknowledged:    Yes / No
-  Acknowledged at: 27 Jan 2026 · 08:31 (or "---")
-  Version:         1.0
-```
-
-Read-only, no actions.
-
-### 4. Admin Settings: Privacy & Data Acknowledgements List
-
-Add a new section in the Settings panel (`AdminDashboard.tsx`), rendered as a new component `DataAcknowledgementsManager.tsx`.
-
-**Location:** Below the existing "Categories" section in Settings, as a new Card titled "Privacy & Data".
-
-**Coverage indicator at top:**
-"Acknowledgement coverage: 46 of 50 personnel acknowledged"
-
-**Table columns:**
-- Person (name)
-- Personnel type (Employee / Freelancer)
-- Acknowledged (Yes / No)
-- Acknowledged at
-- Version
-- Source (Self-registered / Invited)
-
-**Filters:**
-- Missing acknowledgement only (toggle)
-- Employees / Freelancers (dropdown)
-
-**Interaction:** Clicking a row closes settings and opens the personnel profile.
-
----
-
-## File Changes Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| Migration SQL | Create | New `data_processing_acknowledgements` table + RLS |
-| `src/components/DataProcessingAcknowledgementDialog.tsx` | Create | Blocking modal for workers on first use |
-| `src/components/DataAcknowledgementsManager.tsx` | Create | Admin list view for Settings panel |
-| `src/pages/WorkerDashboard.tsx` | Modify | Add acknowledgement check before rendering content |
-| `src/components/PersonnelDetail.tsx` | Modify | Add read-only "Data handling / Privacy" card |
-| `src/pages/AdminDashboard.tsx` | Modify | Add Privacy & Data section in Settings panel |
-| `src/hooks/useDataAcknowledgement.ts` | Create | Hook to query/insert acknowledgement records |
-
----
+### Worker Side
+1. Worker receives a notification: "Data handling terms have been updated. Please review and acknowledge."
+2. On next page load (or immediately if online), the blocking `DataProcessingAcknowledgementDialog` appears because no acknowledgement record exists for the new version
+3. Worker must acknowledge before continuing
+4. A new row is inserted into `data_processing_acknowledgements` with the updated version
 
 ## Technical Details
 
-### RLS Policy Design
+### Database Changes
+None required -- the existing `data_processing_acknowledgements` table already supports versioning. A new version string simply means existing acknowledgements no longer satisfy the check.
 
-```sql
--- Workers view own acknowledgements
-CREATE POLICY "Workers can view own acknowledgements"
-ON data_processing_acknowledgements FOR SELECT
-TO authenticated
-USING (
-  personnel_id IN (
-    SELECT id FROM personnel WHERE user_id = auth.uid()
-  )
-);
+### Version Management
+- Add a `business_acknowledgement_settings` column or small config table to store the **current required version** per business (instead of hardcoding `1.0` in the hook)
+- Alternatively, store it in the `businesses` table as a new column: `required_ack_version TEXT DEFAULT '1.0'`
 
--- Admins view business acknowledgements
-CREATE POLICY "Admins can view business acknowledgements"
-ON data_processing_acknowledgements FOR SELECT
-TO authenticated
-USING (
-  business_id = get_user_business_id(auth.uid())
-  AND (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'manager'))
-);
-
--- Workers can insert own acknowledgements
-CREATE POLICY "Workers can insert own acknowledgements"
-ON data_processing_acknowledgements FOR INSERT
-TO authenticated
-WITH CHECK (
-  personnel_id IN (
-    SELECT id FROM personnel WHERE user_id = auth.uid()
-  )
-);
+**New column on `businesses` table:**
+```text
+required_ack_version TEXT NOT NULL DEFAULT '1.0'
 ```
 
-No UPDATE or DELETE policies -- records are immutable.
+### Hook Changes (`useDataAcknowledgement.ts`)
+- Instead of checking against a hardcoded `CURRENT_VERSION = '1.0'`, fetch the business's `required_ack_version` and compare against that
+- This makes version bumps dynamic and per-business
 
-### Acknowledgement Version Strategy
+### New Component: `RequestReAcknowledgementDialog.tsx`
+- Version input (auto-suggested as current + 0.1)
+- Recipient selection (reuse pattern from `SendNotificationDialog`)
+- On submit:
+  1. Update `businesses.required_ack_version` to the new version
+  2. Send a notification to selected recipients via the existing notification system
 
-Version `"1.0"` is hardcoded for v1. If the legal text changes in the future, bumping the version string will trigger re-acknowledgement (query checks for the current version).
+### File Changes
 
-### Worker Dashboard Blocking Logic
+| File | Action | Description |
+|------|--------|-------------|
+| Migration SQL | Create | Add `required_ack_version` column to `businesses` |
+| `src/components/RequestReAcknowledgementDialog.tsx` | Create | Admin dialog to trigger re-acknowledgement |
+| `src/components/DataAcknowledgementsManager.tsx` | Modify | Add "Request Re-acknowledgement" button |
+| `src/hooks/useDataAcknowledgement.ts` | Modify | Fetch version from business record instead of hardcoded constant |
+| `src/hooks/useBusinessInfo.ts` | Modify | Include `required_ack_version` in business data fetch |
 
-The acknowledgement dialog renders as a blocking overlay. The existing `WelcomeDialog` remains separate and shows after the acknowledgement is complete (it uses localStorage, acknowledgement uses the database).
+### Flow Summary
+
+```text
+Admin clicks "Request Re-acknowledgement"
+  -> Sets new version on business record (e.g., 1.0 -> 1.1)
+  -> Sends notification to selected personnel
+  -> Workers see notification in their bell icon
+
+Worker opens dashboard
+  -> Hook checks: does an acknowledgement exist for version 1.1?
+  -> No -> Blocking modal appears
+  -> Worker acknowledges -> New row inserted with version 1.1
+  -> Modal dismissed, worker continues
+```
 
