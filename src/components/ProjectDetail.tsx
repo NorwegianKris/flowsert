@@ -169,9 +169,17 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       <Card className="border-border/50">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
-            <div className={`p-4 rounded-xl ${config.color}/10`}>
-              <StatusIcon className={`h-12 w-12 ${config.color === 'bg-primary' ? 'text-primary' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
-            </div>
+            {project.imageUrl ? (
+              <img
+                src={project.imageUrl}
+                alt={project.name}
+                className="h-20 w-20 rounded-xl object-cover border border-border"
+              />
+            ) : (
+              <div className={`p-4 rounded-xl ${config.color}/10`}>
+                <StatusIcon className={`h-12 w-12 ${config.color === 'bg-primary' ? 'text-primary' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
+              </div>
+            )}
 
             <div className="flex-1 space-y-4">
               <div>

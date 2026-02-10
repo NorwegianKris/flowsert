@@ -1193,6 +1193,7 @@ export type Database = {
           description: string
           end_date: string | null
           id: string
+          image_url: string | null
           is_posted: boolean
           location: string | null
           name: string
@@ -1211,6 +1212,7 @@ export type Database = {
           description: string
           end_date?: string | null
           id?: string
+          image_url?: string | null
           is_posted?: boolean
           location?: string | null
           name: string
@@ -1229,6 +1231,7 @@ export type Database = {
           description?: string
           end_date?: string | null
           id?: string
+          image_url?: string | null
           is_posted?: boolean
           location?: string | null
           name?: string
