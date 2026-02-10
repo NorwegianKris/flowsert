@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-const CURRENT_VERSION = '1.0';
+const FALLBACK_VERSION = '1.0';
 
 interface Acknowledgement {
   id: string;
@@ -17,6 +17,7 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
   const [acknowledgement, setAcknowledgement] = useState<Acknowledgement | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasAcknowledged, setHasAcknowledged] = useState(false);
+  const [requiredVersion, setRequiredVersion] = useState(FALLBACK_VERSION);
 
   const fetchAcknowledgement = useCallback(async () => {
     if (!personnelId || !businessId) {
@@ -25,12 +26,22 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
     }
 
     try {
+      // Fetch the required version from the business record
+      const { data: bizData } = await supabase
+        .from('businesses')
+        .select('required_ack_version')
+        .eq('id', businessId)
+        .single();
+
+      const version = (bizData as any)?.required_ack_version || FALLBACK_VERSION;
+      setRequiredVersion(version);
+
       const { data, error } = await supabase
         .from('data_processing_acknowledgements' as any)
         .select('*')
         .eq('personnel_id', personnelId)
         .eq('business_id', businessId)
-        .eq('acknowledgement_version', CURRENT_VERSION)
+        .eq('acknowledgement_version', version)
         .order('acknowledged_at', { ascending: false })
         .limit(1);
 
@@ -60,7 +71,7 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
           personnel_id: personnelId,
           business_id: businessId,
           acknowledged_at: new Date().toISOString(),
-          acknowledgement_version: CURRENT_VERSION,
+          acknowledgement_version: requiredVersion,
           acknowledgement_type: type,
         } as any);
 
@@ -80,7 +91,7 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
     loading,
     hasAcknowledged,
     submitAcknowledgement,
-    currentVersion: CURRENT_VERSION,
+    currentVersion: requiredVersion,
   };
 }
 

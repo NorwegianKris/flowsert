@@ -1,0 +1,1 @@
+ALTER TABLE public.businesses ADD COLUMN required_ack_version TEXT NOT NULL DEFAULT '1.0';
