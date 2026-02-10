@@ -143,7 +143,7 @@ export function ProjectTimeline({
                 />
               </div>
 
-              {/* Today vertical line across all lanes */}
+              {/* Today + End vertical lines across all lanes */}
               <div className="relative">
                 {todayX !== null && (
                   <div
@@ -151,6 +151,11 @@ export function ProjectTimeline({
                     style={{ left: LABEL_WIDTH + todayX }}
                   />
                 )}
+                {/* End line */}
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-muted-foreground/30 z-20 pointer-events-none"
+                  style={{ left: LABEL_WIDTH + totalWidth }}
+                />
 
                 {/* Milestone lane */}
                 <MilestoneLane

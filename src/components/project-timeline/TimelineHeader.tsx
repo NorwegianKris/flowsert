@@ -55,6 +55,7 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
   }, [projectStart, projectEnd, totalWidth, totalDays]);
 
   const todayX = showToday ? dateToX(today, start, end, totalWidth) : null;
+  const endX = totalWidth; // End date is always at the far right
 
   return (
     <div className="relative border-b border-border/50" style={{ width: totalWidth }}>
@@ -96,11 +97,23 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
           className="absolute top-0 h-full w-px bg-destructive z-10"
           style={{ left: todayX }}
         >
-          <span className="absolute top-0 left-1 text-[9px] text-destructive font-medium whitespace-nowrap">
-            Today
-          </span>
+          <div className="absolute -top-0 left-1 flex flex-col whitespace-nowrap">
+            <span className="text-[9px] text-destructive font-medium">Today</span>
+            <span className="text-[8px] text-destructive/70">{format(today, 'MMM d')}</span>
+          </div>
         </div>
       )}
+
+      {/* End line indicator in header */}
+      <div
+        className="absolute top-0 h-full w-px bg-muted-foreground/50 z-10"
+        style={{ left: endX }}
+      >
+        <div className="absolute -top-0 right-1 flex flex-col items-end whitespace-nowrap">
+          <span className="text-[9px] text-muted-foreground font-medium">End</span>
+          <span className="text-[8px] text-muted-foreground/70">{format(end, 'MMM d')}</span>
+        </div>
+      </div>
     </div>
   );
 }
