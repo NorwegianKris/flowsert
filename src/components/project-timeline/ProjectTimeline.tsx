@@ -153,8 +153,8 @@ export function ProjectTimeline({
                 )}
                 {/* End line */}
                 <div
-                  className="absolute top-0 bottom-0 w-px bg-muted-foreground/30 z-20 pointer-events-none"
-                  style={{ left: LABEL_WIDTH + totalWidth }}
+                  className="absolute top-0 bottom-0 w-px bg-destructive/40 z-20 pointer-events-none"
+                  style={{ left: LABEL_WIDTH + totalWidth - 2 }}
                 />
 
                 {/* Milestone lane */}
