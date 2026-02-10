@@ -123,7 +123,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         
         <div className="flex flex-wrap gap-2 justify-end">
           {/* Activate/Deactivate button for admins - only for freelancers */}
-          {isAdmin && personnel.isJobSeeker && (
+          {isAdmin && personnel.category === 'freelancer' && (
             <Button
               variant={isActivated ? 'outline' : 'default'}
               onClick={() => setIsActivateDialogOpen(true)}
@@ -169,7 +169,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       </div>
 
       {/* Activation Status Banner - only for freelancers */}
-      {isAdmin && personnel.isJobSeeker && !isActivated && (
+      {isAdmin && personnel.category === 'freelancer' && !isActivated && (
         <Alert className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
           <Lock className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800 dark:text-amber-200">
@@ -352,7 +352,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       </div>
 
       {/* Tell me about yourself - only for freelancers/job seekers */}
-      {personnel.isJobSeeker && (
+      {personnel.category === 'freelancer' && (
         <Card className="border-border/50 border-sky-200 bg-sky-50/50">
           <CardHeader className="flex flex-row items-center justify-between py-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -425,7 +425,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </CardHeader>
         <CardContent>
           {/* Encouraging message for freelancers */}
-          {personnel.isJobSeeker && (
+          {personnel.category === 'freelancer' && (
             <Alert className="mb-4 bg-[#C4B5FD]/10 border-[#C4B5FD]/50">
               <FileCheck className="h-4 w-4 text-[#4338CA]" />
               <AlertDescription className="text-sm text-muted-foreground">
@@ -436,7 +436,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <CertificateTable 
             certificates={personnel.certificates} 
             onCertificateUpdated={handleCertificateChange}
-            isProfileActivated={!personnel.isJobSeeker || isActivated}
+            isProfileActivated={personnel.category !== 'freelancer' || isActivated}
           />
         </CardContent>
       </Card>
@@ -445,7 +445,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       {!hideInvitations && <PersonnelInvitations personnelId={personnel.id} />}
 
       {/* Assigned Projects Section - hidden for job seekers */}
-      {!personnel.isJobSeeker && <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />}
+      {personnel.category !== 'freelancer' && <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />}
 
       {/* Personal Info + Next of Kin + Documents on left, Chat + Calendar on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -514,7 +514,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           </Card>
 
           {/* Next of Kin Section - hidden for job seekers */}
-          {!personnel.isJobSeeker && (
+          {personnel.category !== 'freelancer' && (
             <Card className="border-border/50">
               <CardHeader className="flex flex-row items-center justify-between py-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -554,7 +554,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
           <DataPrivacySection personnelId={personnel.id} businessId={personnel.businessId} />
 
           {/* Documents Section */}
-          <PersonnelDocuments personnelId={personnel.id} isProfileActivated={personnel.isJobSeeker || isActivated} />
+          <PersonnelDocuments personnelId={personnel.id} isProfileActivated={personnel.category === 'freelancer' || isActivated} />
         </div>
         
         {/* Right column: Compact Chat notification + Calendar */}
