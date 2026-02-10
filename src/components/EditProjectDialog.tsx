@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { ImagePlus, X, Loader2 } from 'lucide-react';
 
 interface EditProjectDialogProps {
   open: boolean;
@@ -49,6 +51,9 @@ export function EditProjectDialog({
   const [projectNumber, setProjectNumber] = useState(project.projectNumber || '');
   const [location, setLocation] = useState(project.location || '');
   const [projectManager, setProjectManager] = useState(project.projectManager || '');
+  const [imageUrl, setImageUrl] = useState(project.imageUrl || '');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -63,6 +68,7 @@ export function EditProjectDialog({
       setProjectNumber(project.projectNumber || '');
       setLocation(project.location || '');
       setProjectManager(project.projectManager || '');
+      setImageUrl(project.imageUrl || '');
     }
   }, [open, project]);
 
@@ -72,6 +78,49 @@ export function EditProjectDialog({
     } else {
       setAssignedPersonnel(assignedPersonnel.filter((id) => id !== personnelId));
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const ext = file.name.split('.').pop();
+      const filePath = `${project.id}/project-image.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('project-documents')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-documents')
+        .getPublicUrl(filePath);
+
+      // For private buckets, use signed URL
+      const { data: signedData } = await supabase.storage
+        .from('project-documents')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+
+      setImageUrl(signedData?.signedUrl || filePath);
+      toast.success('Image uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl('');
   };
 
   const handleSave = () => {
@@ -97,6 +146,7 @@ export function EditProjectDialog({
       projectNumber: projectNumber.trim() || undefined,
       location: location.trim() || undefined,
       projectManager: projectManager.trim() || undefined,
+      imageUrl: imageUrl || undefined,
     });
     onOpenChange(false);
     toast.success('Project updated successfully');
@@ -113,6 +163,64 @@ export function EditProjectDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Project Image Upload */}
+          <div className="space-y-2">
+            <Label>Project Image</Label>
+            <div className="flex items-center gap-4">
+              {imageUrl ? (
+                <div className="relative">
+                  <img
+                    src={imageUrl}
+                    alt="Project"
+                    className="h-20 w-20 rounded-xl object-cover border border-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="h-20 w-20 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  {uploading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-6 w-6" />
+                      <span className="text-[10px]">Upload</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              {imageUrl && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Change
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Project Name</Label>
             <Input
