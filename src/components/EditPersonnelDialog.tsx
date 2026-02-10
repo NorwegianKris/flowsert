@@ -35,8 +35,8 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Check if this is a job seeker profile
-  const isJobSeeker = personnel.isJobSeeker === true;
+  // Check if this is a freelancer profile
+  const isFreelancer = personnel.category === 'freelancer';
   
   const [formData, setFormData] = useState({
     name: '',
@@ -307,7 +307,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
               />
             </div>
             {/* Category - locked for job seekers */}
-            {!isJobSeeker && (
+            {!isFreelancer && (
               <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
                 <Select
@@ -425,7 +425,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
           </div>
           {/* Bio Section - only for job seekers */}
-          {isJobSeeker && (
+          {isFreelancer && (
             <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold text-foreground mb-2">Tell me about yourself</h3>
               <p className="text-xs text-muted-foreground mb-3">Write freely about why you're applying for a job and what makes you a great candidate.</p>
@@ -440,7 +440,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           )}
 
           {/* Next of Kin Section - hidden for job seekers */}
-          {!isJobSeeker && (
+          {!isFreelancer && (
             <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
