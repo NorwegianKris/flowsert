@@ -33,6 +33,7 @@ import { Personnel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut, Plus, Users, LayoutDashboard, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, MessageCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
@@ -92,13 +93,18 @@ export default function AdminDashboard() {
   
   const loading = personnelLoading || projectsLoading;
 
-  // Fetch admin user IDs for personnel with admin roles
+  // Defer fetching admin user IDs until after initial render
+  const [deferredReady, setDeferredReady] = useState(false);
   useEffect(() => {
-    const fetchAdminUserIds = async () => {
-      if (!profile?.business_id) return;
+    const timer = setTimeout(() => setDeferredReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
+  useEffect(() => {
+    if (!deferredReady || !profile?.business_id) return;
+
+    const fetchAdminUserIds = async () => {
       try {
-        // Fetch all admin user roles
         const { data: adminRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id')
@@ -109,7 +115,6 @@ export default function AdminDashboard() {
         if (adminRoles && adminRoles.length > 0) {
           const adminIds = adminRoles.map((r) => r.user_id);
           
-          // Fetch profiles for these admin users in the same business
           const { data: profiles, error: profilesError } = await supabase
             .from('profiles')
             .select('id')
@@ -126,7 +131,7 @@ export default function AdminDashboard() {
     };
 
     fetchAdminUserIds();
-  }, [profile?.business_id]);
+  }, [deferredReady, profile?.business_id]);
 
   // Get unique locations for filter dropdown
   const uniqueLocations = useMemo(() => {
@@ -251,13 +256,7 @@ export default function AdminDashboard() {
     await addCalendarItem(projectId, { date, description });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  // No full-screen spinner - we render the shell immediately and show skeletons in content areas
 
   if (selectedPersonnel) {
     // Find the latest version of selected personnel from the list
@@ -482,28 +481,38 @@ export default function AdminDashboard() {
               onCertificateFilterModeChange={setCertificateFilterMode}
             />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
-              {filteredPersonnel.map((p) => (
-                <PersonnelCard
-                  key={p.id}
-                  personnel={p}
-                  onClick={() => setSelectedPersonnel(p)}
-                  onRemoved={refetch}
-                  highlighted={highlightedPersonnelIds.includes(p.id)}
-                  isAdmin={p.userId ? adminUserIds.has(p.userId) : false}
-                />
-              ))}
-            </div>
-            
-            {filteredPersonnel.length === 0 && !loading && (
-              <div className="text-center py-12">
-                <div className="text-5xl mb-4">👤</div>
-                <p className="text-muted-foreground">
-                  {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from
-                    ? 'No personnel found matching your filters'
-                    : 'No personnel yet. Add your first team member to get started.'}
-                </p>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-40 w-full rounded-lg" />
+                ))}
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                  {filteredPersonnel.map((p) => (
+                    <PersonnelCard
+                      key={p.id}
+                      personnel={p}
+                      onClick={() => setSelectedPersonnel(p)}
+                      onRemoved={refetch}
+                      highlighted={highlightedPersonnelIds.includes(p.id)}
+                      isAdmin={p.userId ? adminUserIds.has(p.userId) : false}
+                    />
+                  ))}
+                </div>
+                
+                {filteredPersonnel.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="text-5xl mb-4">👤</div>
+                    <p className="text-muted-foreground">
+                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from
+                        ? 'No personnel found matching your filters'
+                        : 'No personnel yet. Add your first team member to get started.'}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
           

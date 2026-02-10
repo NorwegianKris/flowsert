@@ -13,7 +13,7 @@ interface Acknowledgement {
   created_at: string;
 }
 
-export function useDataAcknowledgement(personnelId: string | undefined, businessId: string | undefined) {
+export function useDataAcknowledgement(personnelId: string | undefined, businessId: string | undefined, externalVersion?: string) {
   const [acknowledgement, setAcknowledgement] = useState<Acknowledgement | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasAcknowledged, setHasAcknowledged] = useState(false);
@@ -26,14 +26,19 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
     }
 
     try {
-      // Fetch the required version from the business record
-      const { data: bizData } = await supabase
-        .from('businesses')
-        .select('required_ack_version')
-        .eq('id', businessId)
-        .single();
+      let version = externalVersion || FALLBACK_VERSION;
 
-      const version = (bizData as any)?.required_ack_version || FALLBACK_VERSION;
+      // Only fetch from businesses if no external version was provided
+      if (!externalVersion) {
+        const { data: bizData } = await supabase
+          .from('businesses')
+          .select('required_ack_version')
+          .eq('id', businessId)
+          .single();
+
+        version = (bizData as any)?.required_ack_version || FALLBACK_VERSION;
+      }
+
       setRequiredVersion(version);
 
       const { data, error } = await supabase
@@ -55,7 +60,7 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
     } finally {
       setLoading(false);
     }
-  }, [personnelId, businessId]);
+  }, [personnelId, businessId, externalVersion]);
 
   useEffect(() => {
     fetchAcknowledgement();
