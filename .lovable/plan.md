@@ -1,83 +1,48 @@
 
-# Login Performance Investigation - Findings and Fixes
 
-## Root Cause Analysis
+# Fix: GDPR Dialog Appearing for Already-Acknowledged Users
 
-The slow login is caused by a **waterfall of sequential operations** and **duplicate database queries**. Here is what happens step-by-step after a user enters their credentials:
+## Problem
+The GDPR confirmation dialog appears every login even though the user has already acknowledged it. The database confirms acknowledgement version 1.1 exists and matches the required version.
 
-### The Waterfall Problem
+## Root Cause
+A **race condition** between `useBusinessInfo` and `useDataAcknowledgement`:
 
-```text
-Step 1: Auth sign-in (Supabase auth)               ~100-200ms
-Step 2: AuthContext fetches profile + role           ~200-400ms  (waits for Step 1)
-Step 3: RoleRedirect navigates to /admin or /worker  ~50ms      (waits for Step 2)
-Step 4: Dashboard mounts and fires many queries      ~500-1500ms (waits for Step 3)
-         Total perceived login time:                 ~1-3 seconds
-```
+1. On mount, `business` is `null`, so `externalVersion` is `undefined`
+2. `useDataAcknowledgement` runs immediately with `undefined` version, fetches version "1.1" from the database itself
+3. Then `business` loads and passes `required_ack_version = "1.1"` as `externalVersion`
+4. This changes the `externalVersion` dependency in `useCallback`, triggering a **complete re-fetch** that resets `hasAcknowledged` back to `false`
+5. During this re-fetch window, the dialog flashes open because `hasAcknowledged` is `false`
 
-Each step must fully complete before the next one starts. The user sees a spinner throughout all of this.
+Additionally, `hasAcknowledged` defaults to `false` and `loading` defaults to `true` -- so any time the hook re-initializes, the dialog will briefly show.
 
-### Specific Issues Found
+## Fix
 
-1. **Duplicate `businesses` table query (Worker Dashboard)**
-   - `useBusinessInfo` fetches the full business record
-   - `useDataAcknowledgement` fetches `required_ack_version` from the **same** `businesses` table in a separate query
-   - This is an unnecessary extra round-trip
+### File: `src/hooks/useDataAcknowledgement.ts`
 
-2. **Sequential queries in `useDataAcknowledgement`**
-   - First queries `businesses` for the version, then queries `data_processing_acknowledgements`
-   - These could be parallelized or the version could be passed from `useBusinessInfo`
+**Change 1:** Don't reset state on re-fetch. Keep `hasAcknowledged` as `true` once set, and don't reset `loading` to `true` on subsequent fetches.
 
-3. **Admin Dashboard fires 7+ simultaneous queries on mount**
-   - All personnel + all certificates
-   - All projects + calendar items
-   - Business info
-   - Unread direct messages
-   - Certificate categories
-   - Admin user IDs (2 queries)
-   - While parallelized, this many simultaneous connections can be slow
+**Change 2:** Skip fetching entirely until dependencies are stable. If `externalVersion` is expected (i.e., we know the caller will provide it), wait for it before querying.
 
-4. **`usePersonnel` fetches ALL certificates separately**
-   - First fetches all personnel, then fetches all certificates in a second query
-   - These are sequential, not parallel
+### File: `src/pages/WorkerDashboard.tsx`
 
-## Proposed Fixes
+**Change 3:** Don't render the `DataProcessingAcknowledgementDialog` until the business info has loaded. Guard the dialog with `business` being available, so we don't show it during the initial loading race.
 
-### Fix 1: Eliminate duplicate business query in worker flow
-Pass the `required_ack_version` from the already-fetched business record into `useDataAcknowledgement` instead of fetching it again.
+## Technical Details
+
+In `useDataAcknowledgement.ts`:
+- Remove the re-setting of `loading = true` at the start of `fetchAcknowledgement` to avoid flickering
+- Preserve `hasAcknowledged = true` once confirmed -- never reset it to `false` on re-fetch
+- Only transition `loading` from `true` to `false`, never back
+
+In `WorkerDashboard.tsx`:
+- Add a guard: only show the GDPR dialog when `business` is loaded (not null), preventing the dialog from appearing during the loading race
+- Change the dialog condition from `!hasAcknowledged` to `!hasAcknowledged && !ackLoading && !!business`
+
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/hooks/useDataAcknowledgement.ts` | Accept `requiredVersion` as a parameter instead of fetching from `businesses` table |
-| `src/pages/WorkerDashboard.tsx` | Pass `business?.required_ack_version` to `useDataAcknowledgement` |
+| `src/hooks/useDataAcknowledgement.ts` | Prevent state reset on re-fetch; keep `hasAcknowledged` sticky once true |
+| `src/pages/WorkerDashboard.tsx` | Guard dialog rendering on `business` being loaded and `ackLoading` being false |
 
-### Fix 2: Parallelize acknowledgement check
-Once the duplicate query is removed, the acknowledgement lookup becomes a single query instead of two sequential ones, cutting the wait time in half.
-
-### Fix 3: Defer non-critical admin dashboard queries
-Delay loading of admin user IDs, unread message counts, and availability data until after the main personnel list is displayed. This lets the UI render faster.
-
-| File | Change |
-|------|--------|
-| `src/pages/AdminDashboard.tsx` | Defer `fetchAdminUserIds` and non-critical hooks using a `useEffect` with a small delay or lazy loading pattern |
-
-### Fix 4: Show dashboard shell immediately
-Instead of showing a full-screen spinner while data loads, render the dashboard layout (header, tabs, skeleton cards) immediately so users see progress.
-
-| File | Change |
-|------|--------|
-| `src/pages/AdminDashboard.tsx` | Replace full-screen loader with skeleton UI for the content area |
-| `src/pages/WorkerDashboard.tsx` | Same approach - show header immediately, skeleton for profile content |
-
-## Summary of File Changes
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/hooks/useDataAcknowledgement.ts` | Modify | Accept version as parameter, remove duplicate businesses query |
-| `src/pages/WorkerDashboard.tsx` | Modify | Pass business version to hook, show header immediately with skeleton loading |
-| `src/pages/AdminDashboard.tsx` | Modify | Show dashboard shell with skeletons instead of full-screen spinner, defer non-critical queries |
-
-## Expected Impact
-- Worker login: ~30-40% faster (eliminating 1-2 redundant queries)
-- Admin login: Perceived as faster due to skeleton UI appearing immediately, even if total data load time is similar
-- Both: Reduced database connection pressure from fewer simultaneous queries
