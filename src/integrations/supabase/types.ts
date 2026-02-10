@@ -544,6 +544,36 @@ export type Database = {
           },
         ]
       }
+      freelancer_invitations: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           business_id: string
@@ -597,36 +627,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      job_seeker_invitations: {
-        Row: {
-          business_id: string
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          token: string
-          updated_at: string
-        }
-        Insert: {
-          business_id: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          token?: string
-          updated_at?: string
-        }
-        Update: {
-          business_id?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          token?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       notification_recipients: {
         Row: {
@@ -716,7 +716,7 @@ export type Database = {
           email: string
           gender: string | null
           id: string
-          is_job_seeker: boolean
+          is_freelancer: boolean
           language: string | null
           last_login_at: string | null
           location: string
@@ -748,7 +748,7 @@ export type Database = {
           email: string
           gender?: string | null
           id?: string
-          is_job_seeker?: boolean
+          is_freelancer?: boolean
           language?: string | null
           last_login_at?: string | null
           location?: string
@@ -780,7 +780,7 @@ export type Database = {
           email?: string
           gender?: string | null
           id?: string
-          is_job_seeker?: boolean
+          is_freelancer?: boolean
           language?: string | null
           last_login_at?: string | null
           location?: string
@@ -1287,6 +1287,23 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      get_freelancer_invitation_by_token: {
+        Args: { lookup_token: string }
+        Returns: {
+          business_id: string
+          id: string
+          is_active: boolean
+          name: string
+        }[]
+      }
+      get_freelancer_registration_by_code: {
+        Args: { lookup_code: string }
+        Returns: {
+          business_id: string
+          business_name: string
+          token: string
+        }[]
+      }
       get_invitation_by_token: {
         Args: { lookup_token: string }
         Returns: {
@@ -1300,29 +1317,12 @@ export type Database = {
           status: string
         }[]
       }
-      get_job_seeker_invitation_by_token: {
-        Args: { lookup_token: string }
-        Returns: {
-          business_id: string
-          id: string
-          is_active: boolean
-          name: string
-        }[]
-      }
-      get_job_seeker_registration_by_code: {
-        Args: { lookup_code: string }
-        Returns: {
-          business_id: string
-          business_name: string
-          token: string
-        }[]
-      }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      get_worker_categories_for_job_seeker_token: {
+      get_worker_categories_for_freelancer_token: {
         Args: { lookup_token: string }
         Returns: {
           id: string
@@ -1336,7 +1336,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_job_seeker_personnel: {
+      is_freelancer_personnel: {
         Args: { _personnel_id: string }
         Returns: boolean
       }

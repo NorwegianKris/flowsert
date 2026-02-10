@@ -35,7 +35,7 @@ export function useFreelancerInvitations() {
 
     try {
       const { data, error } = await (supabase as any)
-        .from('job_seeker_invitations')
+        .from('freelancer_invitations')
         .select('*')
         .eq('business_id', businessId)
         .order('created_at', { ascending: false });
@@ -63,7 +63,7 @@ export function useFreelancerInvitations() {
 
     try {
       const { data, error } = await (supabase as any)
-        .from('job_seeker_invitations')
+        .from('freelancer_invitations')
         .insert({ business_id: businessId, name })
         .select()
         .single();
@@ -91,7 +91,7 @@ export function useFreelancerInvitations() {
   const toggleInvitation = async (id: string, isActive: boolean) => {
     try {
       const { error } = await (supabase as any)
-        .from('job_seeker_invitations')
+        .from('freelancer_invitations')
         .update({ is_active: isActive })
         .eq('id', id);
 
@@ -116,7 +116,7 @@ export function useFreelancerInvitations() {
   const deleteInvitation = async (id: string) => {
     try {
       const { error } = await (supabase as any)
-        .from('job_seeker_invitations')
+        .from('freelancer_invitations')
         .delete()
         .eq('id', id);
 

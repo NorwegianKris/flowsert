@@ -135,7 +135,7 @@ export function AdminOverview() {
           location: 'Not specified',
           business_id: profile.business_id,
           user_id: admin.id,
-          is_job_seeker: false,
+          is_freelancer: false,
           activated: true,
         });
 
