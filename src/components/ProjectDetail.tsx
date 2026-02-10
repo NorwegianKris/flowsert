@@ -142,10 +142,6 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
             <Pencil className="h-4 w-4" />
             Edit Project
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsAddItemOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Milestone
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsShareOpen(true)} className="gap-2">
             <Share2 className="h-4 w-4" />
             Share Project
@@ -260,6 +256,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         personnel={personnel}
         onPersonnelClick={onPersonnelClick}
         onEditProject={() => setIsEditOpen(true)}
+        onAddItem={() => setIsAddItemOpen(true)}
       />
 
       {/* Main Content - Tabs with Side Panels */}

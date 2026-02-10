@@ -11,7 +11,7 @@ import { MilestoneLane } from './MilestoneLane';
 import { PersonnelGroup } from './PersonnelGroup';
 import { LABEL_WIDTH, MIN_TIMELINE_WIDTH } from './types';
 import { dateToX } from './utils';
-import { Clock, AlertTriangle } from 'lucide-react';
+import { Clock, AlertTriangle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ProjectTimelineProps {
@@ -19,6 +19,7 @@ interface ProjectTimelineProps {
   personnel: Personnel[];
   onPersonnelClick?: (person: Personnel) => void;
   onEditProject?: () => void;
+  onAddItem?: () => void;
 }
 
 export function ProjectTimeline({
@@ -26,6 +27,7 @@ export function ProjectTimeline({
   personnel,
   onPersonnelClick,
   onEditProject,
+  onAddItem,
 }: ProjectTimelineProps) {
   const assignedPersonnel = useMemo(
     () =>
@@ -92,13 +94,24 @@ export function ProjectTimeline({
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Clock className="h-5 w-5 text-sky-500" />
-          Project Timeline
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Compliance, availability, and key project events over time
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Clock className="h-5 w-5 text-sky-500" />
+              Project Timeline
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Compliance, availability, and key project events over time
+            </p>
+          </div>
+          {onAddItem && (
+            <Button variant="outline" size="sm" onClick={onAddItem} className="gap-1.5 flex-shrink-0">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add event or milestone</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <TooltipProvider delayDuration={200}>
