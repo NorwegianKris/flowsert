@@ -1143,6 +1143,47 @@ export type Database = {
           },
         ]
       }
+      project_phases: {
+        Row: {
+          color: string | null
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          project_id: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          project_id: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          project_id?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           assigned_personnel: string[] | null
