@@ -1,75 +1,83 @@
 
+# Login Performance Investigation - Findings and Fixes
 
-# Notification-Triggered Data Handling Re-Acknowledgement
+## Root Cause Analysis
 
-## Overview
-Allow admins to send a notification that requires personnel to re-acknowledge data handling terms. When a worker receives this type of notification, they will see a blocking acknowledgement modal on their next login (or immediately if already logged in).
+The slow login is caused by a **waterfall of sequential operations** and **duplicate database queries**. Here is what happens step-by-step after a user enters their credentials:
 
-## How It Works
+### The Waterfall Problem
 
-### Admin Side
-1. In the **Privacy & Data** section under Settings, add a "Request Re-acknowledgement" button
-2. Clicking it opens a dialog where the admin can:
-   - Select recipients (all personnel, or filtered by employees/freelancers/individuals)
-   - Optionally include a reason or note (e.g., "Updated privacy policy")
-   - Specify a new acknowledgement version (auto-incremented, e.g., `1.1`)
-3. On confirmation:
-   - A system notification is sent to selected recipients informing them about updated data handling terms
-   - The acknowledgement version is bumped for those recipients, triggering the blocking modal on their next visit
-
-### Worker Side
-1. Worker receives a notification: "Data handling terms have been updated. Please review and acknowledge."
-2. On next page load (or immediately if online), the blocking `DataProcessingAcknowledgementDialog` appears because no acknowledgement record exists for the new version
-3. Worker must acknowledge before continuing
-4. A new row is inserted into `data_processing_acknowledgements` with the updated version
-
-## Technical Details
-
-### Database Changes
-None required -- the existing `data_processing_acknowledgements` table already supports versioning. A new version string simply means existing acknowledgements no longer satisfy the check.
-
-### Version Management
-- Add a `business_acknowledgement_settings` column or small config table to store the **current required version** per business (instead of hardcoding `1.0` in the hook)
-- Alternatively, store it in the `businesses` table as a new column: `required_ack_version TEXT DEFAULT '1.0'`
-
-**New column on `businesses` table:**
 ```text
-required_ack_version TEXT NOT NULL DEFAULT '1.0'
+Step 1: Auth sign-in (Supabase auth)               ~100-200ms
+Step 2: AuthContext fetches profile + role           ~200-400ms  (waits for Step 1)
+Step 3: RoleRedirect navigates to /admin or /worker  ~50ms      (waits for Step 2)
+Step 4: Dashboard mounts and fires many queries      ~500-1500ms (waits for Step 3)
+         Total perceived login time:                 ~1-3 seconds
 ```
 
-### Hook Changes (`useDataAcknowledgement.ts`)
-- Instead of checking against a hardcoded `CURRENT_VERSION = '1.0'`, fetch the business's `required_ack_version` and compare against that
-- This makes version bumps dynamic and per-business
+Each step must fully complete before the next one starts. The user sees a spinner throughout all of this.
 
-### New Component: `RequestReAcknowledgementDialog.tsx`
-- Version input (auto-suggested as current + 0.1)
-- Recipient selection (reuse pattern from `SendNotificationDialog`)
-- On submit:
-  1. Update `businesses.required_ack_version` to the new version
-  2. Send a notification to selected recipients via the existing notification system
+### Specific Issues Found
 
-### File Changes
+1. **Duplicate `businesses` table query (Worker Dashboard)**
+   - `useBusinessInfo` fetches the full business record
+   - `useDataAcknowledgement` fetches `required_ack_version` from the **same** `businesses` table in a separate query
+   - This is an unnecessary extra round-trip
+
+2. **Sequential queries in `useDataAcknowledgement`**
+   - First queries `businesses` for the version, then queries `data_processing_acknowledgements`
+   - These could be parallelized or the version could be passed from `useBusinessInfo`
+
+3. **Admin Dashboard fires 7+ simultaneous queries on mount**
+   - All personnel + all certificates
+   - All projects + calendar items
+   - Business info
+   - Unread direct messages
+   - Certificate categories
+   - Admin user IDs (2 queries)
+   - While parallelized, this many simultaneous connections can be slow
+
+4. **`usePersonnel` fetches ALL certificates separately**
+   - First fetches all personnel, then fetches all certificates in a second query
+   - These are sequential, not parallel
+
+## Proposed Fixes
+
+### Fix 1: Eliminate duplicate business query in worker flow
+Pass the `required_ack_version` from the already-fetched business record into `useDataAcknowledgement` instead of fetching it again.
+
+| File | Change |
+|------|--------|
+| `src/hooks/useDataAcknowledgement.ts` | Accept `requiredVersion` as a parameter instead of fetching from `businesses` table |
+| `src/pages/WorkerDashboard.tsx` | Pass `business?.required_ack_version` to `useDataAcknowledgement` |
+
+### Fix 2: Parallelize acknowledgement check
+Once the duplicate query is removed, the acknowledgement lookup becomes a single query instead of two sequential ones, cutting the wait time in half.
+
+### Fix 3: Defer non-critical admin dashboard queries
+Delay loading of admin user IDs, unread message counts, and availability data until after the main personnel list is displayed. This lets the UI render faster.
+
+| File | Change |
+|------|--------|
+| `src/pages/AdminDashboard.tsx` | Defer `fetchAdminUserIds` and non-critical hooks using a `useEffect` with a small delay or lazy loading pattern |
+
+### Fix 4: Show dashboard shell immediately
+Instead of showing a full-screen spinner while data loads, render the dashboard layout (header, tabs, skeleton cards) immediately so users see progress.
+
+| File | Change |
+|------|--------|
+| `src/pages/AdminDashboard.tsx` | Replace full-screen loader with skeleton UI for the content area |
+| `src/pages/WorkerDashboard.tsx` | Same approach - show header immediately, skeleton for profile content |
+
+## Summary of File Changes
 
 | File | Action | Description |
 |------|--------|-------------|
-| Migration SQL | Create | Add `required_ack_version` column to `businesses` |
-| `src/components/RequestReAcknowledgementDialog.tsx` | Create | Admin dialog to trigger re-acknowledgement |
-| `src/components/DataAcknowledgementsManager.tsx` | Modify | Add "Request Re-acknowledgement" button |
-| `src/hooks/useDataAcknowledgement.ts` | Modify | Fetch version from business record instead of hardcoded constant |
-| `src/hooks/useBusinessInfo.ts` | Modify | Include `required_ack_version` in business data fetch |
+| `src/hooks/useDataAcknowledgement.ts` | Modify | Accept version as parameter, remove duplicate businesses query |
+| `src/pages/WorkerDashboard.tsx` | Modify | Pass business version to hook, show header immediately with skeleton loading |
+| `src/pages/AdminDashboard.tsx` | Modify | Show dashboard shell with skeletons instead of full-screen spinner, defer non-critical queries |
 
-### Flow Summary
-
-```text
-Admin clicks "Request Re-acknowledgement"
-  -> Sets new version on business record (e.g., 1.0 -> 1.1)
-  -> Sends notification to selected personnel
-  -> Workers see notification in their bell icon
-
-Worker opens dashboard
-  -> Hook checks: does an acknowledgement exist for version 1.1?
-  -> No -> Blocking modal appears
-  -> Worker acknowledges -> New row inserted with version 1.1
-  -> Modal dismissed, worker continues
-```
-
+## Expected Impact
+- Worker login: ~30-40% faster (eliminating 1-2 redundant queries)
+- Admin login: Perceived as faster due to skeleton UI appearing immediately, even if total data load time is similar
+- Both: Reduced database connection pressure from fewer simultaneous queries
