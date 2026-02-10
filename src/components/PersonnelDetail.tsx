@@ -351,7 +351,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </Card>
       </div>
 
-      {/* Tell me about yourself - only for freelancers/job seekers */}
+      {/* Tell me about yourself - only for freelancers */}
       {personnel.category === 'freelancer' && (
         <Card className="border-border/50 border-sky-200 bg-sky-50/50">
           <CardHeader className="flex flex-row items-center justify-between py-3">
@@ -444,7 +444,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
       {/* Pending Invitations Section */}
       {!hideInvitations && <PersonnelInvitations personnelId={personnel.id} />}
 
-      {/* Assigned Projects Section - hidden for job seekers */}
+      {/* Assigned Projects Section - hidden for freelancers */}
       {personnel.category !== 'freelancer' && <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />}
 
       {/* Personal Info + Next of Kin + Documents on left, Chat + Calendar on right */}
@@ -513,7 +513,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             </CardContent>
           </Card>
 
-          {/* Next of Kin Section - hidden for job seekers */}
+          {/* Next of Kin Section - hidden for freelancers */}
           {personnel.category !== 'freelancer' && (
             <Card className="border-border/50">
               <CardHeader className="flex flex-row items-center justify-between py-3">
@@ -628,7 +628,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         personnelId={personnel.id}
         personnelName={personnel.name}
         isCurrentlyActivated={isActivated}
-        isJobSeeker={personnel.isJobSeeker || false}
+        isFreelancer={personnel.category === 'freelancer'}
         onSuccess={() => onRefresh?.()}
       />
     </div>

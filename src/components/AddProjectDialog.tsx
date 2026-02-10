@@ -226,7 +226,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     if (!suggestions?.suggestedPersonnel) return;
     const suggestedIds = suggestions.suggestedPersonnel.map(s => s.id);
     const selectableIds = personnel
-      .filter(p => suggestedIds.includes(p.id) && (!p.isJobSeeker || p.activated))
+      .filter(p => suggestedIds.includes(p.id) && (p.category !== 'freelancer' || p.activated))
       .map(p => p.id);
     setPersonnelSelections(selectableIds.map(id => ({ id, mode: globalMode })));
   };
@@ -255,14 +255,14 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   // Filter personnel based on freelancer toggle
   const getFilteredPersonnel = () => {
     if (includeFreelancers) {
-      return personnel.filter(p => !p.isJobSeeker || p.activated);
+      return personnel.filter(p => p.category !== 'freelancer' || p.activated);
     }
-    return personnel.filter(p => !p.isJobSeeker);
+    return personnel.filter(p => p.category !== 'freelancer');
   };
 
   const selectablePersonnel = getSortedPersonnel(getFilteredPersonnel());
   const nonSelectablePersonnel = includeFreelancers 
-    ? personnel.filter(p => p.isJobSeeker && !p.activated)
+    ? personnel.filter(p => p.category === 'freelancer' && !p.activated)
     : [];
 
   const getInitials = (name: string) => {
@@ -285,8 +285,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const getCategoryLabel = (person: Personnel) => {
     // Freelancers get a distinct tag
-    if (person.isJobSeeker) {
-      // Keep this for backward compatibility with old data, but label as Freelancer
+    if (person.category === 'freelancer') {
       return { label: 'Freelancer', className: 'bg-violet-100 text-violet-700 border-violet-200' };
     }
     
@@ -685,7 +684,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     );
                   })}
                   
-                  {/* Non-selectable personnel - inactive job seekers */}
+                  {/* Non-selectable personnel - inactive freelancers */}
                   {nonSelectablePersonnel.length > 0 && (
                     <>
                       <div className="border-t my-2 pt-2">

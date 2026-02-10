@@ -47,7 +47,7 @@ export function DashboardStats({ personnel }: DashboardStatsProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Personnel & Job Seekers combined card */}
+      {/* Personnel & Freelancers combined card */}
       <Card className="border-border/50">
         <CardContent className="p-4 flex items-center gap-3">
           <div className="p-2.5 rounded-lg bg-primary/10">

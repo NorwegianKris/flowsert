@@ -175,7 +175,7 @@ export default function AdminDashboard() {
         return aiFilteredPersonnelIds.includes(p.id);
       }
       
-      // Freelancer filter logic - now using category instead of isJobSeeker
+      // Freelancer filter logic - using category
       const isFreelancer = p.category === 'freelancer';
       
       // If showing freelancers only, filter out non-freelancers
@@ -455,7 +455,7 @@ export default function AdminDashboard() {
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
-              onIncludeJobSeekersChange={setIncludeFreelancers}
+              onIncludeFreelancersChange={setIncludeFreelancers}
               onFilterByAI={setAiFilteredPersonnelIds}
             />
             

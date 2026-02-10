@@ -11,12 +11,11 @@ interface PersonnelData {
   role: string;
   location: string;
   category: string | null;
-  isJobSeeker: boolean;
   activated: boolean;
   nationality: string | null;
   department: string | null;
   bio: string | null;
-  employmentType: 'fixed_employee' | 'freelancer' | 'job_seeker';
+  employmentType: 'employee' | 'freelancer';
   certificates: { 
     name: string; 
     expiryDate: string | null;
@@ -52,7 +51,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, personnel, includeJobSeekers } = await req.json();
+    const { prompt, personnel, includeFreelancers } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return new Response(
@@ -66,10 +65,10 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Filter personnel based on job seeker toggle
+    // Filter personnel based on freelancer toggle
     const filteredPersonnel: PersonnelData[] = (personnel || []).filter((p: PersonnelData) => {
-      if (p.isJobSeeker) {
-        return includeJobSeekers && p.activated;
+      if (p.category === 'freelancer') {
+        return includeFreelancers && p.activated;
       }
       return true;
     });
@@ -81,7 +80,6 @@ serve(async (req) => {
       role: p.role,
       location: p.location,
       category: p.category || "unknown",
-      isJobSeeker: p.isJobSeeker,
       nationality: p.nationality,
       department: p.department,
       bio: p.bio,
@@ -151,10 +149,9 @@ IMPORTANT - Bio/Skills Matching:
 - Bio can contain valuable context not captured in formal certificate titles
 
 IMPORTANT - Employment Type Matching:
-- Each personnel has an 'employmentType' field: 'fixed_employee', 'freelancer', or 'job_seeker'
+- Each personnel has an 'employmentType' field: 'employee' or 'freelancer'
 - "freelancer", "contractor", "external", "consultant" queries → match employmentType = 'freelancer'
-- "fixed", "employee", "internal", "permanent", "staff" queries → match employmentType = 'fixed_employee'
-- "candidate", "applicant", "job seeker" queries → match employmentType = 'job_seeker'
+- "fixed", "employee", "internal", "permanent", "staff" queries → match employmentType = 'employee'
 
 IMPORTANT - Department Matching:
 - Personnel may have a 'department' field for organizational grouping

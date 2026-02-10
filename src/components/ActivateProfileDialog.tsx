@@ -21,7 +21,7 @@ interface ActivateProfileDialogProps {
   personnelId: string;
   personnelName: string;
   isCurrentlyActivated: boolean;
-  isJobSeeker: boolean;
+  isFreelancer: boolean;
   onSuccess: () => void;
 }
 
@@ -31,7 +31,7 @@ export function ActivateProfileDialog({
   personnelId,
   personnelName,
   isCurrentlyActivated,
-  isJobSeeker,
+  isFreelancer,
   onSuccess,
 }: ActivateProfileDialogProps) {
   const [category, setCategory] = useState<'employee' | 'freelancer'>('employee');
@@ -44,9 +44,8 @@ export function ActivateProfileDialog({
         activated: true,
       };
 
-      // If activating a job seeker, also convert them
-      if (isJobSeeker) {
-        updateData.is_job_seeker = false;
+      // If activating a freelancer, set the chosen category
+      if (isFreelancer) {
         updateData.category = category;
       }
 
@@ -161,7 +160,7 @@ export function ActivateProfileDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         
-        {isJobSeeker && (
+        {isFreelancer && (
           <div className="py-4 space-y-3">
             <Label>Select Category</Label>
             <RadioGroup

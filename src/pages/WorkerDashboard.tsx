@@ -97,15 +97,15 @@ export default function WorkerDashboard() {
             )}
 
             {/* Welcome dialog for new workers */}
-            <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isJobSeeker={personnel.isJobSeeker} />
+            <WelcomeDialog personnelId={personnel.id} businessId={personnel.businessId} isFreelancer={personnel.category === 'freelancer'} />
             
-            {/* Profile completion indicator for freelancers (formerly job seekers) */}
-            {personnel.isJobSeeker && (
+            {/* Profile completion indicator for freelancers */}
+            {personnel.category === 'freelancer' && (
               <ProfileCompletionIndicator personnel={personnel} />
             )}
             
-            {/* Show pending invitations at the top - not for freelancers/job seekers */}
-            {!personnel.isJobSeeker && <WorkerInvitations personnelId={personnel.id} />}
+            {/* Show pending invitations at the top - not for freelancers */}
+            {personnel.category !== 'freelancer' && <WorkerInvitations personnelId={personnel.id} />}
             
             <PersonnelDetail
               personnel={personnel}
@@ -134,8 +134,8 @@ export default function WorkerDashboard() {
         )}
         </main>
         
-        {/* Chat bot - only for regular workers, not job seekers */}
-        {personnel && !personnel.isJobSeeker && <ChatBot />}
+        {/* Chat bot - only for regular workers, not freelancers */}
+        {personnel && personnel.category !== 'freelancer' && <ChatBot />}
     </div>
   );
 }
