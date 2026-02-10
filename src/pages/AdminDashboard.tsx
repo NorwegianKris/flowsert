@@ -296,7 +296,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <DashboardHeader />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
-          <ProjectDetail
+           <ProjectDetail
             project={selectedProject}
             personnel={personnel}
             onBack={() => {
@@ -309,6 +309,7 @@ export default function AdminDashboard() {
               setSelectedProject(null);
               setSelectedPersonnel(person);
             }}
+            businessName={business?.name}
           />
         </main>
         <ChatBot isAdmin />
@@ -657,6 +658,7 @@ export default function AdminDashboard() {
           onOpenChange={setExternalSharingOpen}
           projects={projects}
           personnel={personnel}
+          businessName={business?.name}
         />
 
         <PersonnelChatSidebar

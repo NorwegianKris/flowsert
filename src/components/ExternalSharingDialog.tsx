@@ -27,12 +27,14 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from '@/lib/certificateUtils';
+import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 
 interface ExternalSharingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: Project[];
   personnel: Personnel[];
+  businessName?: string;
 }
 
 type RecipientGroup = 'employee' | 'freelancer';
@@ -42,6 +44,7 @@ export function ExternalSharingDialog({
   onOpenChange,
   projects,
   personnel,
+  businessName,
 }: ExternalSharingDialogProps) {
   const [selectedExports, setSelectedExports] = useState<string[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -284,94 +287,12 @@ export function ExternalSharingDialog({
   };
 
   const generatePersonnelCertificatesPdf = (selectedPersonnel: Personnel[]): jsPDF => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let yPosition = 20;
-
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Personnel & Certificates Report', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    selectedPersonnel.forEach((person, personIndex) => {
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
-      }
-
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${personIndex + 1}. ${person.name}`, 14, yPosition);
-      yPosition += 6;
-
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Role: ${person.role} | Location: ${person.location || 'N/A'}`, 18, yPosition);
-      yPosition += 8;
-
-      if (person.certificates && person.certificates.length > 0) {
-        const certTableData = person.certificates.map(cert => {
-          const status = getCertificateStatus(cert.expiryDate);
-          const daysUntil = getDaysUntilExpiry(cert.expiryDate);
-          const expiryText = formatExpiryText(daysUntil);
-          const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-
-          return [
-            cert.name,
-            cert.category || 'Uncategorized',
-            cert.dateOfIssue ? format(parseISO(cert.dateOfIssue), 'MMM d, yyyy') : 'N/A',
-            cert.expiryDate ? format(parseISO(cert.expiryDate), 'MMM d, yyyy') : 'No expiry',
-            statusText,
-            expiryText
-          ];
-        });
-
-        autoTable(doc, {
-          startY: yPosition,
-          head: [['Certificate', 'Category', 'Issue Date', 'Expiry Date', 'Status', 'Days Until Expiry']],
-          body: certTableData,
-          theme: 'striped',
-          headStyles: {
-            fillColor: [59, 130, 246],
-            fontSize: 8,
-            fontStyle: 'bold'
-          },
-          bodyStyles: { fontSize: 8 },
-          columnStyles: {
-            0: { cellWidth: 35 },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 20 },
-            5: { cellWidth: 35 }
-          },
-          margin: { left: 14, right: 14 },
-        });
-
-        yPosition = (doc as any).lastAutoTable.finalY + 12;
-      } else {
-        doc.setFontSize(9);
-        doc.setTextColor(128, 128, 128);
-        doc.text('No certificates on file', 18, yPosition);
-        doc.setTextColor(0, 0, 0);
-        yPosition += 10;
-      }
+    return generateCompetenceMatrixPdf({
+      personnel: selectedPersonnel,
+      projectName: selectedProject?.name,
+      companyName: businessName,
+      location: selectedProject?.location || undefined,
     });
-
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Generated on ${format(new Date(), 'MMM d, yyyy HH:mm')} | Page ${i} of ${pageCount}`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
-    }
-
-    return doc;
   };
 
   const handleDownloadPdfs = () => {

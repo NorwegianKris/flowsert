@@ -47,6 +47,7 @@ interface ProjectDetailProps {
   onBack: () => void;
   onUpdateProject?: (project: Project) => void;
   onPersonnelClick?: (person: Personnel) => void;
+  businessName?: string;
 }
 
 const statusConfig = {
@@ -55,7 +56,7 @@ const statusConfig = {
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, color: 'bg-amber-500' },
 };
 
-export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick }: ProjectDetailProps) {
+export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick, businessName }: ProjectDetailProps) {
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
@@ -489,6 +490,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         onOpenChange={setIsShareOpen}
         project={project}
         personnel={personnel}
+        businessName={businessName}
       />
 
       <AlertDialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
