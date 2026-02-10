@@ -1,48 +1,51 @@
 
 
-# Fix: GDPR Dialog Appearing for Already-Acknowledged Users
+# Fix: "Tell Me About Yourself" Section Missing for Freelancer Profiles
 
 ## Problem
-The GDPR confirmation dialog appears every login even though the user has already acknowledged it. The database confirms acknowledgement version 1.1 exists and matches the required version.
+The bio section ("Tell me about yourself") in `PersonnelDetail.tsx` and `EditPersonnelDialog.tsx` is gated by `personnel.isJobSeeker === true`. However, when an admin activates a freelancer profile via `ActivateProfileDialog`, it sets `is_job_seeker = false`. This means every activated freelancer permanently loses the bio section. Currently there are zero rows in the database with `is_job_seeker = true`, so no one sees the section.
 
 ## Root Cause
-A **race condition** between `useBusinessInfo` and `useDataAcknowledgement`:
+`is_job_seeker` serves double duty:
+- Registration origin marker ("arrived via freelancer funnel")
+- UI visibility flag ("show freelancer-specific sections like bio")
 
-1. On mount, `business` is `null`, so `externalVersion` is `undefined`
-2. `useDataAcknowledgement` runs immediately with `undefined` version, fetches version "1.1" from the database itself
-3. Then `business` loads and passes `required_ack_version = "1.1"` as `externalVersion`
-4. This changes the `externalVersion` dependency in `useCallback`, triggering a **complete re-fetch** that resets `hasAcknowledged` back to `false`
-5. During this re-fetch window, the dialog flashes open because `hasAcknowledged` is `false`
-
-Additionally, `hasAcknowledged` defaults to `false` and `loading` defaults to `true` -- so any time the hook re-initializes, the dialog will briefly show.
+Activation clears the flag, which removes all freelancer-specific UI.
 
 ## Fix
+Change the condition for showing freelancer-specific UI from `isJobSeeker` to `category === 'freelancer'`. This preserves the section after activation.
 
-### File: `src/hooks/useDataAcknowledgement.ts`
+### File: `src/components/PersonnelDetail.tsx`
 
-**Change 1:** Don't reset state on re-fetch. Keep `hasAcknowledged` as `true` once set, and don't reset `loading` to `true` on subsequent fetches.
+Replace all `personnel.isJobSeeker` checks that control UI visibility with `personnel.category === 'freelancer'` (or `personnel.category === 'freelancer' || personnel.isJobSeeker` for a safer transition). Specifically:
 
-**Change 2:** Skip fetching entirely until dependencies are stable. If `externalVersion` is expected (i.e., we know the caller will provide it), wait for it before querying.
+| Line Area | Current Condition | New Condition | What It Controls |
+|-----------|-------------------|---------------|------------------|
+| ~126 | `personnel.isJobSeeker` | `personnel.category === 'freelancer'` | Activate/Deactivate button |
+| ~172 | `personnel.isJobSeeker && !isActivated` | `personnel.category === 'freelancer' && !isActivated` | Activation status banner |
+| ~355 | `personnel.isJobSeeker` | `personnel.category === 'freelancer'` | "Tell me about yourself" card |
+| ~428 | `personnel.isJobSeeker` | `personnel.category === 'freelancer'` | Encouraging message in certificates |
+| ~439 | `!personnel.isJobSeeker \|\| isActivated` | `personnel.category !== 'freelancer' \|\| isActivated` | Profile activated check |
+| ~448 | `!personnel.isJobSeeker` | `!personnel.category === 'freelancer'` ... actually `personnel.category !== 'freelancer'` | Hide projects for freelancers |
+| ~517 | `!personnel.isJobSeeker` | `personnel.category !== 'freelancer'` | Hide Next of Kin for freelancers |
 
-### File: `src/pages/WorkerDashboard.tsx`
+### File: `src/components/EditPersonnelDialog.tsx`
 
-**Change 3:** Don't render the `DataProcessingAcknowledgementDialog` until the business info has loaded. Guard the dialog with `business` being available, so we don't show it during the initial loading race.
+| Line Area | Current Condition | New Condition | What It Controls |
+|-----------|-------------------|---------------|------------------|
+| ~42 | `personnel.isJobSeeker === true` | `personnel.category === 'freelancer'` | `isJobSeeker` local variable |
 
-## Technical Details
+This variable gates the bio textarea and the next-of-kin section. Renaming it to `isFreelancer` for clarity.
 
-In `useDataAcknowledgement.ts`:
-- Remove the re-setting of `loading = true` at the start of `fetchAcknowledgement` to avoid flickering
-- Preserve `hasAcknowledged = true` once confirmed -- never reset it to `false` on re-fetch
-- Only transition `loading` from `true` to `false`, never back
+### File: `src/components/ActivateProfileDialog.tsx`
 
-In `WorkerDashboard.tsx`:
-- Add a guard: only show the GDPR dialog when `business` is loaded (not null), preventing the dialog from appearing during the loading race
-- Change the dialog condition from `!hasAcknowledged` to `!hasAcknowledged && !ackLoading && !!business`
+No change needed to the `is_job_seeker = false` logic on activation -- it can still clear the registration flag. The UI will no longer depend on that flag.
 
-## Files Modified
+## Summary of Changes
 
 | File | Change |
 |------|--------|
-| `src/hooks/useDataAcknowledgement.ts` | Prevent state reset on re-fetch; keep `hasAcknowledged` sticky once true |
-| `src/pages/WorkerDashboard.tsx` | Guard dialog rendering on `business` being loaded and `ackLoading` being false |
+| `src/components/PersonnelDetail.tsx` | Replace `isJobSeeker` UI checks with `category === 'freelancer'` |
+| `src/components/EditPersonnelDialog.tsx` | Replace `isJobSeeker` check with `category === 'freelancer'` for bio/next-of-kin gating |
 
+No database changes required.
