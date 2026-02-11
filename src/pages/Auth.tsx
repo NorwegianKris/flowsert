@@ -475,7 +475,7 @@ export default function Auth() {
       <PublicHeader openAuthDialog={openAuthDialog} />
 
       {/* Hero + Product Preview with Background */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden min-h-[calc(100vh-73px)] flex flex-col justify-center">
         {/* Background Pattern */}
         <div 
           className="absolute inset-0 opacity-40"
