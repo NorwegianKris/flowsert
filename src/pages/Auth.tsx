@@ -487,10 +487,10 @@ export default function Auth() {
         />
         
         {/* Hero Section */}
-        <section className="pt-8 pb-4 md:pt-12 md:pb-6 relative z-10">
+        <section className="pt-6 pb-3 md:pt-8 md:pb-4 relative z-10">
           <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-rajdhani text-foreground mb-6 leading-[1.1] tracking-tight">
+            <div className="max-w-3xl mx-auto text-center">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-rajdhani text-foreground mb-4 leading-[1.1] tracking-tight">
                 Make personnel
                 <span className="block">
                   compliance{' '}
@@ -504,14 +504,14 @@ export default function Auth() {
                   </span>
                 </span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed mb-5 max-w-xl mx-auto">
                 Transform your work, hiring and compliance operations with smart certificate management software—built for industrial SMEs.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                <Button size="lg" onClick={() => navigate('/contact')} className="h-11 px-6 text-base gap-2">
-                  Get in Touch <ArrowRight className="h-4 w-4" />
+                <Button size="default" onClick={() => navigate('/contact')} className="h-9 px-5 text-sm gap-2">
+                  Get in Touch <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-11 px-6 text-base">
+                <Button size="default" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-9 px-5 text-sm">
                   Book a Demo
                 </Button>
               </div>
@@ -520,15 +520,15 @@ export default function Auth() {
         </section>
 
         {/* Product Preview */}
-        <section className="pb-8 md:pb-12 relative z-10">
+        <section className="pb-6 md:pb-8 relative z-10">
         <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-card rounded-2xl border border-border/50 shadow-2xl shadow-primary/5 overflow-hidden">
-              <div className="bg-muted/50 px-4 py-3 border-b border-border/50 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                <span className="ml-4 text-xs text-muted-foreground">FlowSert Dashboard</span>
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-card rounded-xl border border-border/50 shadow-xl shadow-primary/5 overflow-hidden">
+              <div className="bg-muted/50 px-3 py-2 border-b border-border/50 flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                <span className="ml-3 text-xs text-muted-foreground">FlowSert Dashboard</span>
               </div>
               <img 
                 src={dashboardPreview} 
