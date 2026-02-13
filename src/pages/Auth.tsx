@@ -490,7 +490,7 @@ export default function Auth() {
         <section className="pt-6 pb-3 md:pt-8 md:pb-4 relative z-10">
           <div className="container mx-auto px-6">
             <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-rajdhani text-foreground mb-4 leading-[1.1] tracking-tight">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-rajdhani text-foreground mb-4 leading-[1.1] tracking-tight">
                 Make personnel
                 <span className="block">
                   compliance{' '}
