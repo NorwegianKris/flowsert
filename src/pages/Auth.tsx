@@ -522,7 +522,7 @@ export default function Auth() {
         {/* Product Preview */}
         <section className="pb-6 md:pb-8 relative z-10">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <div className="bg-card rounded-xl border border-border/50 shadow-xl shadow-primary/5 overflow-hidden">
               <div className="bg-muted/50 px-3 py-2 border-b border-border/50 flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
