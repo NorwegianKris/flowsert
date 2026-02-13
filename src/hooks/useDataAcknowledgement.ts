@@ -25,6 +25,8 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
       return;
     }
 
+    setLoading(true);
+
     try {
       const version = externalVersion || FALLBACK_VERSION;
 
@@ -43,10 +45,7 @@ export function useDataAcknowledgement(personnelId: string | undefined, business
 
       const record = (data as any)?.[0] || null;
       setAcknowledgement(record);
-      // Only update hasAcknowledged if we found a record — never reset to false
-      if (record) {
-        setHasAcknowledged(true);
-      }
+      setHasAcknowledged(!!record);
     } catch (error) {
       console.error('Error fetching data acknowledgement:', error);
     } finally {
