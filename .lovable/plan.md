@@ -1,44 +1,52 @@
 
-# Remove Personnel Tab and Add Edit/Delete to Activation Overview
 
-## What Changes
+## "My Profile" Button in Admin Header
 
-1. **Remove the Personnel tab** from the Settings Tabs component -- the Admins/Personnel toggle becomes just the Admins card (no tabs needed, or keep as single content).
+### Overview
+Add a "My Profile" button to the sticky top header (DashboardHeader), positioned just left of the "Report improvement or issue" button. It checks if the logged-in admin has a linked personnel record and either navigates to their profile or shows a linking dialog.
 
-2. **Add Edit and Delete buttons** to each profile row in the Activation Overview, matching the style already used in PersonnelOverview (ghost icon buttons).
+### Risk Assessment
+This is a low-risk, straightforward change:
+- No database migrations needed
+- No new API calls -- reuses already-loaded personnel data
+- Reuses existing `PersonnelDetail` component
+- Simple conditional logic with a single `useMemo`
 
-3. **Add delete confirmation dialog** to ActivationOverview (reuse the same pattern from PersonnelOverview).
+### Changes
 
-## Files to Change
+**1. `src/components/DashboardHeader.tsx`**
+- Accept new props: `onMyProfileClick` callback and `hasLinkedProfile` boolean (to show a subtle indicator)
+- Add a "My Profile" button with a `User` icon, placed immediately left of the `ReportFeedbackDialog`
 
-### 1. `src/pages/AdminDashboard.tsx`
-- Remove the `<Tabs>` wrapper and the Personnel tab entirely
-- Render `<AdminOverview />` directly (no tabs needed since there's only one section left)
-- Remove the `PersonnelOverview` import
-- Pass `onEditPersonnel` and `onPersonnelRemoved` callbacks to `<ActivationOverview>` instead
+**2. `src/pages/AdminDashboard.tsx`**
+- Add a `useMemo` to find the admin's own personnel record: `personnel.find(p => p.userId === user?.id)`
+- Pass `onMyProfileClick` handler to `DashboardHeader`:
+  - If linked: sets `selectedPersonnel` to their own record (reusing the existing detail view)
+  - If not linked: opens a new `LinkProfileDialog`
 
-### 2. `src/components/ActivationOverview.tsx`
-- Add `onEditPersonnel` and `onPersonnelRemoved` optional props
-- Add Edit (pencil) and Delete (trash) icon buttons to each personnel row, positioned before the Active/Inactive toggle
-- Add a delete confirmation AlertDialog (same pattern as PersonnelOverview -- confirms removal, calls `supabase.from('personnel').delete()`)
-- Import `Pencil`, `Trash2`, `Loader2` icons and AlertDialog components
+**3. New: `src/components/LinkProfileDialog.tsx`**
+- A dialog shown when an unlinked admin clicks "My Profile"
+- Explains the benefit of linking ("Manage your own certificates, set expiry alerts, track your documents")
+- Two options:
+  - **Link existing**: Auto-detects a personnel record matching the admin's email (with `user_id` null). One-click to link by updating `user_id`
+  - **Create new**: Opens the existing `AddPersonnelDialog` pre-filled with the admin's name and email
+- A "Not now" dismiss button
 
-### 3. `src/components/PersonnelOverview.tsx`
-- No changes needed, but it will no longer be used in AdminDashboard. It can be kept for potential use elsewhere or removed.
+### Technical Details
 
-## Technical Details
+The `DashboardHeader` currently only contains `Logo` and `ReportFeedbackDialog`. The new button slots in between them:
 
-The edit button will call `onEditPersonnel(person)` which closes Settings and opens the edit dialog (same flow as before). The delete button opens a confirmation dialog within the ActivationOverview component, then calls `onPersonnelRemoved()` on success to refresh the list.
-
-The Settings layout simplifies from:
+```text
+[ Logo ]                    [ My Profile ] [ Report Improvement ]
 ```
-[Company Card button]
-[Admins | Personnel tabs]
-[Activation Overview]
+
+The lookup logic is a simple derived value from existing state:
+
+```text
+const myProfile = useMemo(() =>
+  personnel.find(p => p.userId === user?.id),
+  [personnel, user?.id]
+);
 ```
-To:
-```
-[Company Card button]
-[Admin Overview card]
-[Activation Overview card (with edit/delete)]
-```
+
+No new hooks, no new database queries, no new RLS policies needed. The `LinkProfileDialog` performs a single `supabase.from('personnel').update({ user_id })` call which is already covered by the existing admin UPDATE RLS policy.
