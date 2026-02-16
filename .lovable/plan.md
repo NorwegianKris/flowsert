@@ -1,28 +1,31 @@
 
 
-## Make Filter Sections Collapsible (Closed by Default) in New Project Dialog
+## Fix: Issuers Not Showing in New Project Filter
 
-### What Changes
-Inside the New Project dialog's filter popover (the one that opens when you click the "Filters" button), each filter section -- Availability, Job Role, Location, Certificates, and Department -- will be wrapped in a collapsible accordion that starts **closed** by default. You click a section header to expand it and see its options.
+### Root Cause
+The New Project dialog builds the issuers list from the `issuer_types` database table (canonical/mapped issuer types), which is currently empty. The admin dashboard, by contrast, derives issuers directly from the personnel's certificate data (`issuingAuthority` field), so it always shows actual issuers.
 
-This eliminates the awkward scrolling that happens when all filter sections and their checkbox lists are visible at once.
-
-### How It Will Look
-- Click "Filters" button -- the popover opens showing 5 compact section headers (e.g., "Availability", "Job Role", "Location", "Certificates", "Department")
-- Click any header to expand it and see its filter options
-- Click again to collapse
-- Active filters on a section will show a count badge on the header so you know filters are applied even when collapsed
+### Solution
+Change the New Project dialog to derive issuers the same way the admin dashboard does -- from the personnel's certificates -- instead of from the `issuer_types` table.
 
 ### Technical Details
 
-**File modified:** `src/components/AddProjectDialog.tsx`
+**File: `src/components/AddProjectDialog.tsx`**
 
-1. Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible` and `ChevronRight` from `lucide-react`
-2. Wrap each of the 5 filter sections (lines ~793-945) in a `Collapsible` component with `defaultOpen={false}`
-3. Replace the current `Label` headers with `CollapsibleTrigger` buttons styled as clickable rows with:
-   - The filter name and icon on the left
-   - A chevron icon on the right that rotates when expanded
-   - A small badge showing the count of active selections for that filter (if any)
-4. Wrap the filter content (checkboxes, calendar picker, toggle group) in `CollapsibleContent`
-5. No new state variables needed -- `Collapsible` manages its own open/closed state internally with `defaultOpen`
+1. Replace `uniqueIssuers` (line 359) from:
+   ```
+   const uniqueIssuers = [...new Set(issuerTypes.map(i => i.name))];
+   ```
+   to derive from the `personnel` prop, matching the admin dashboard pattern:
+   ```
+   const uniqueIssuers = [...new Set(
+     personnel.flatMap(p => p.certificates.map(c => c.issuingAuthority).filter(Boolean))
+   )].sort();
+   ```
+
+2. The `useIssuerTypes` import and hook call can be removed since they are no longer needed for this list.
+
+3. The toggle group condition on line 914 (`uniqueCertCategories.length > 0 || uniqueIssuers.length > 0`) will now correctly show the toggle when there are actual issuers in the data.
+
+4. No changes needed to the filtering logic itself (line 346: `c.issuingAuthority === filterVal`) since it already matches against the raw `issuingAuthority` field.
 
