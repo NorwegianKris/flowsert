@@ -13,8 +13,9 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
@@ -54,6 +55,12 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilters, setRoleFilters] = useState<string[]>([]);
+  const [locationFilters, setLocationFilters] = useState<string[]>([]);
+  const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -176,6 +183,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setIsPosted(false);
     setShowFreelancersOnly(false);
     setImageUrl('');
+    setSearchQuery('');
+    setRoleFilters([]);
+    setLocationFilters([]);
+    setDepartmentFilters([]);
     setUploading(false);
     clearSuggestions();
   };
@@ -262,16 +273,53 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     });
   };
 
-  // Filter personnel based on freelancer toggles
+  // Filter personnel based on freelancer toggles, search, and filters
   const getFilteredPersonnel = () => {
+    let filtered = personnel;
+    
+    // Freelancer filtering
     if (showFreelancersOnly) {
-      return personnel.filter(p => p.category === 'freelancer' && p.activated);
+      filtered = filtered.filter(p => p.category === 'freelancer' && p.activated);
+    } else if (includeFreelancers) {
+      filtered = filtered.filter(p => p.category !== 'freelancer' || p.activated);
+    } else {
+      filtered = filtered.filter(p => p.category !== 'freelancer');
     }
-    if (includeFreelancers) {
-      return personnel.filter(p => p.category !== 'freelancer' || p.activated);
+
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.role.toLowerCase().includes(q) ||
+        p.location?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q)
+      );
     }
-    return personnel.filter(p => p.category !== 'freelancer');
+
+    // Role filter
+    if (roleFilters.length > 0) {
+      filtered = filtered.filter(p => roleFilters.includes(p.category || ''));
+    }
+
+    // Location filter
+    if (locationFilters.length > 0) {
+      filtered = filtered.filter(p => locationFilters.includes(p.location || ''));
+    }
+
+    // Department filter
+    if (departmentFilters.length > 0) {
+      filtered = filtered.filter(p => departmentFilters.includes(p.department || ''));
+    }
+
+    return filtered;
   };
+
+  // Derive unique values for filter options
+  const uniqueLocations = [...new Set(personnel.map(p => p.location).filter(Boolean))] as string[];
+  const uniqueRoles = [...new Set(personnel.map(p => p.category).filter(Boolean))] as string[];
+  const uniqueDepartments = [...new Set(personnel.map(p => p.department).filter(Boolean))] as string[];
+  const activeFilterCount = roleFilters.length + locationFilters.length + departmentFilters.length;
 
   const selectablePersonnel = getSortedPersonnel(getFilteredPersonnel());
   const nonSelectablePersonnel = includeFreelancers 
@@ -669,6 +717,116 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               showFreelancersOnly={showFreelancersOnly}
               onShowFreelancersOnlyChange={setShowFreelancersOnly}
             />
+
+            {/* Search & Filter */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search personnel..."
+                  className="h-8 pl-8 text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 shrink-0">
+                    <Filter className="h-3.5 w-3.5" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px]">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[260px] p-3 space-y-4" align="end">
+                  {/* Role / Category filter */}
+                  {uniqueRoles.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                        {uniqueRoles.map(role => (
+                          <label key={role} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={roleFilters.includes(role)}
+                              onCheckedChange={() => {
+                                setRoleFilters(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+                              }}
+                            />
+                            <span className="text-sm">{role}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Location filter */}
+                  {uniqueLocations.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Location</Label>
+                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                        {uniqueLocations.map(loc => (
+                          <label key={loc} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={locationFilters.includes(loc)}
+                              onCheckedChange={() => {
+                                setLocationFilters(prev => prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc]);
+                              }}
+                            />
+                            <span className="text-sm truncate">{loc}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Department filter */}
+                  {uniqueDepartments.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground">Department</Label>
+                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                        {uniqueDepartments.map(dept => (
+                          <label key={dept} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={departmentFilters.includes(dept)}
+                              onCheckedChange={() => {
+                                setDepartmentFilters(prev => prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]);
+                              }}
+                            />
+                            <span className="text-sm">{dept}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {activeFilterCount > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setRoleFilters([]);
+                        setLocationFilters([]);
+                        setDepartmentFilters([]);
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Clear all filters
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
 
             <ScrollArea className="flex-1 border rounded-md p-2 min-h-[300px]">
               {aiLoading ? (
