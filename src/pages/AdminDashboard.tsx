@@ -612,13 +612,13 @@ export default function AdminDashboard() {
                 {/* Company Card Button */}
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start gap-2 bg-card"
+                  className="w-full justify-start gap-2 bg-card text-lg font-semibold h-auto p-4"
                   onClick={() => {
                     setSettingsOpen(false);
                     setCompanyCardOpen(true);
                   }}
                 >
-                  <Building2 className="h-4 w-4" />
+                  <Building2 className="h-5 w-5 text-primary" />
                   Company Card
                 </Button>
                 
