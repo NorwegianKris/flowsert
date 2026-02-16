@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -22,8 +22,8 @@ import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
-import { useCertificateTypes } from '@/hooks/useCertificateTypes';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
+import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
@@ -77,9 +77,35 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   // Fetch filter options from DB (same as personnel pool)
   const { categories: workerCategories } = useWorkerCategories();
   const { departments: dbDepartments } = useDepartments();
-  const { data: certificateTypes = [] } = useCertificateTypes();
   const { categories: certCategories } = useCertificateCategories();
-  
+
+  // Availability hook
+  const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
+
+  // Sort state
+  const [sortOption, setSortOption] = useState<'recent' | 'alphabetical'>('recent');
+
+  // Pre-computed maps for category and issuer filtering (matching dashboard pattern)
+  const personnelCertificateCategoriesMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    personnel.forEach(p => {
+      const cats = new Set<string>();
+      p.certificates.forEach(c => { if (c.category) cats.add(c.category); });
+      map.set(p.id, cats);
+    });
+    return map;
+  }, [personnel]);
+
+  const personnelIssuersMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    personnel.forEach(p => {
+      const issuers = new Set<string>();
+      p.certificates.forEach(c => { if (c.issuingAuthority) issuers.add(c.issuingAuthority); });
+      map.set(p.id, issuers);
+    });
+    return map;
+  }, [personnel]);
+
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -209,6 +235,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setCertificateFilters([]);
     setCertificateFilterMode('types');
     setAvailabilityDateRange(undefined);
+    setSortOption('recent');
     setUploading(false);
     clearSuggestions();
   };
@@ -274,25 +301,36 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setPersonnelSelections(selectableIds.map(id => ({ id, mode: globalMode })));
   };
 
-  // Sort personnel: suggested first (by score), then others
+  // Sort personnel: suggested first (by score), then apply sort option
   const getSortedPersonnel = (personnelList: Personnel[]) => {
-    if (!suggestions?.suggestedPersonnel || suggestions.suggestedPersonnel.length === 0) {
-      return personnelList;
-    }
-    
-    const suggestionMap = new Map(suggestions.suggestedPersonnel.map(s => [s.id, s]));
-    
-    return [...personnelList].sort((a, b) => {
-      const suggA = suggestionMap.get(a.id);
-      const suggB = suggestionMap.get(b.id);
-      
-      if (suggA && suggB) {
-        return suggB.matchScore - suggA.matchScore;
+    let sorted = [...personnelList];
+
+    // If AI suggestions exist, those take priority
+    if (suggestions?.suggestedPersonnel && suggestions.suggestedPersonnel.length > 0) {
+      const suggestionMap = new Map(suggestions.suggestedPersonnel.map(s => [s.id, s]));
+      sorted.sort((a, b) => {
+        const suggA = suggestionMap.get(a.id);
+        const suggB = suggestionMap.get(b.id);
+        if (suggA && suggB) return suggB.matchScore - suggA.matchScore;
+        if (suggA) return -1;
+        if (suggB) return 1;
+        return 0;
+      });
+    } else {
+      // Apply user sort option (matching dashboard)
+      if (sortOption === 'alphabetical') {
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        // 'recent' - sort by updatedAt descending
+        sorted.sort((a, b) => {
+          const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          return dateB - dateA;
+        });
       }
-      if (suggA) return -1;
-      if (suggB) return 1;
-      return 0;
-    });
+    }
+
+    return sorted;
   };
 
   // Filter personnel based on freelancer toggles, search, and filters
@@ -308,20 +346,21 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       filtered = filtered.filter(p => p.category !== 'freelancer');
     }
 
-    // Search query
+    // Search query (includes certificate names, matching dashboard)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.role.toLowerCase().includes(q) ||
         p.location?.toLowerCase().includes(q) ||
-        p.email?.toLowerCase().includes(q)
+        p.email?.toLowerCase().includes(q) ||
+        p.certificates.some(c => c.name.toLowerCase().includes(q))
       );
     }
 
-    // Role filter (uses worker categories)
+    // Role filter (matches p.role like dashboard, not p.category)
     if (roleFilters.length > 0) {
-      filtered = filtered.filter(p => roleFilters.includes(p.category || ''));
+      filtered = filtered.filter(p => roleFilters.includes(p.role));
     }
 
     // Location filter
@@ -334,19 +373,24 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       filtered = filtered.filter(p => departmentFilters.includes(p.department || ''));
     }
 
-    // Certificate filter - personnel must have ALL selected certificates
+    // Certificate filter - personnel must have ALL selected certificates (using pre-computed maps)
     if (certificateFilters.length > 0) {
       filtered = filtered.filter(p => {
         return certificateFilters.every(filterVal => {
           if (certificateFilterMode === 'types') {
             return p.certificates.some(c => c.name === filterVal);
           } else if (certificateFilterMode === 'categories') {
-            return p.certificates.some(c => c.category === filterVal);
+            return personnelCertificateCategoriesMap.get(p.id)?.has(filterVal) ?? false;
           } else {
-            return p.certificates.some(c => c.issuingAuthority === filterVal);
+            return personnelIssuersMap.get(p.id)?.has(filterVal) ?? false;
           }
         });
       });
+    }
+
+    // Availability filter
+    if (availabilityDateRange?.from) {
+      filtered = filtered.filter(p => isAvailable(p.id));
     }
 
     return filtered;
@@ -354,7 +398,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   // Derive unique values for filter options
   const uniqueLocations = [...new Set(personnel.map(p => p.location).filter(Boolean))] as string[];
-  const uniqueCertNames = [...new Set(certificateTypes.map(t => t.name))];
+  const uniqueCertNames = [...new Set(personnel.flatMap(p => p.certificates.map(c => c.name)).filter(Boolean))].sort();
   const uniqueCertCategories = [...new Set(certCategories.map(c => c.name))];
   const uniqueIssuers = [...new Set(personnel.flatMap(p => p.certificates.map(c => c.issuingAuthority).filter(Boolean)))].sort() as string[];
   const certificateListItems = certificateFilterMode === 'categories' ? uniqueCertCategories : certificateFilterMode === 'issuers' ? uniqueIssuers : uniqueCertNames;
@@ -1011,6 +1055,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   </div>
                 </PopoverContent>
               </Popover>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 shrink-0"
+                onClick={() => setSortOption(prev => prev === 'recent' ? 'alphabetical' : 'recent')}
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                {sortOption === 'recent' ? 'Recent' : 'A-Z'}
+              </Button>
             </div>
 
             <ScrollArea className="flex-1 border rounded-md p-2 min-h-[300px]">
