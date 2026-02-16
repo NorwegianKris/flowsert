@@ -6,6 +6,7 @@ import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
 import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
+import { IssuerTypesManager } from '@/components/IssuerTypesManager';
 import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
 import { Award, FileText, Users, Building2, ChevronDown, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -93,10 +94,10 @@ export function CategoriesSection() {
               <TabsContent value="issuers">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    A read-only list of all distinct issuing authorities found across your certificates.
+                    Manage the official issuing authorities used to organize and group certificates consistently.
                   </p>
                 </div>
-                <IssuersListInner />
+                <IssuerTypesManager />
               </TabsContent>
             </Tabs>
             

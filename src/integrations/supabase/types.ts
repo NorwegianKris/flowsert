@@ -297,6 +297,7 @@ export type Database = {
           expiry_date: string | null
           expiry_notification_sent: boolean
           id: string
+          issuer_type_id: string | null
           issuing_authority: string | null
           name: string
           needs_review: boolean
@@ -318,6 +319,7 @@ export type Database = {
           expiry_date?: string | null
           expiry_notification_sent?: boolean
           id?: string
+          issuer_type_id?: string | null
           issuing_authority?: string | null
           name: string
           needs_review?: boolean
@@ -339,6 +341,7 @@ export type Database = {
           expiry_date?: string | null
           expiry_notification_sent?: boolean
           id?: string
+          issuer_type_id?: string | null
           issuing_authority?: string | null
           name?: string
           needs_review?: boolean
@@ -364,6 +367,13 @@ export type Database = {
             columns: ["certificate_type_id"]
             isOneToOne: false
             referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_issuer_type_id_fkey"
+            columns: ["issuer_type_id"]
+            isOneToOne: false
+            referencedRelation: "issuer_types"
             referencedColumns: ["id"]
           },
           {
@@ -624,6 +634,95 @@ export type Database = {
             columns: ["personnel_id"]
             isOneToOne: false
             referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      issuer_aliases: {
+        Row: {
+          alias_normalized: string
+          alias_raw_example: string | null
+          business_id: string
+          confidence: number
+          created_at: string
+          created_by: string
+          id: string
+          issuer_type_id: string
+          last_seen_at: string
+        }
+        Insert: {
+          alias_normalized: string
+          alias_raw_example?: string | null
+          business_id: string
+          confidence?: number
+          created_at?: string
+          created_by: string
+          id?: string
+          issuer_type_id: string
+          last_seen_at?: string
+        }
+        Update: {
+          alias_normalized?: string
+          alias_raw_example?: string | null
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          issuer_type_id?: string
+          last_seen_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issuer_aliases_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issuer_aliases_issuer_type_id_fkey"
+            columns: ["issuer_type_id"]
+            isOneToOne: false
+            referencedRelation: "issuer_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      issuer_types: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issuer_types_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
