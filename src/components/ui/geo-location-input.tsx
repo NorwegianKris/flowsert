@@ -28,30 +28,35 @@ export function GeoLocationInput({
 
   const { results: geoResults, loading: geoLoading } = useGeoSearch(value, isOpen);
 
-  // Merge: geo results first, then matching existing DB locations
+  // Merge: DB matches shown instantly, geo results merged when available
   const suggestions = React.useMemo(() => {
     const merged: { label: string; source: 'geo' | 'db' }[] = [];
     const seen = new Set<string>();
+    const query = value.toLowerCase().trim();
 
-    // Add geo results first
-    for (const r of geoResults) {
-      const key = r.toLowerCase();
-      if (!seen.has(key)) {
+    if (query.length === 0) return merged;
+
+    // Always show matching existing DB locations first (instant, zero latency)
+    for (const loc of existingLocations) {
+      const key = loc.toLowerCase();
+      if (!seen.has(key) && (key.includes(query) || key.startsWith(query))) {
         seen.add(key);
-        merged.push({ label: r, source: 'geo' });
+        merged.push({ label: loc, source: 'db' });
       }
     }
 
-    // Add matching existing locations
-    if (value.trim().length > 0) {
-      const query = value.toLowerCase().trim();
-      for (const loc of existingLocations) {
-        const key = loc.toLowerCase();
-        if (!seen.has(key) && (key.includes(query) || key.startsWith(query))) {
+    // Merge geo results on top when available
+    if (geoResults.length > 0) {
+      // Insert geo results before DB results
+      const geoEntries: { label: string; source: 'geo' | 'db' }[] = [];
+      for (const r of geoResults) {
+        const key = r.toLowerCase();
+        if (!seen.has(key)) {
           seen.add(key);
-          merged.push({ label: loc, source: 'db' });
+          geoEntries.push({ label: r, source: 'geo' });
         }
       }
+      merged.unshift(...geoEntries);
     }
 
     return merged.slice(0, 8);
