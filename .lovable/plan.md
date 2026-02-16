@@ -1,23 +1,25 @@
 
+## Update Platform Features Text on Auth Page
 
-## Add Icons to Job Role and Location Filter Buttons
+I will update the descriptions for the six core features in the "Platform Features" section of the landing page (Auth page) to match your requested copy exactly, while maintaining the existing UI structure and icons.
 
-### What Changes
-Add a briefcase icon (matching the personnel card) to the **Job Role** filter and a globe icon to the **Location** filter, in both places where these filters appear:
+### Implementation Details
 
-1. **`src/components/PersonnelFilters.tsx`** (admin dashboard filters)
-2. **`src/components/AddProjectDialog.tsx`** (new project dialog filters)
+**File: `src/pages/Auth.tsx`**
 
-### Details
+I will replace the existing text for each feature within the "Features Section" (lines 603-656):
 
-**PersonnelFilters.tsx:**
-- Import `Briefcase` and `Globe` from `lucide-react` (line 7)
-- Job Role button (line 166): add `<Briefcase className="mr-2 h-4 w-4" />` before the label text
-- Location button (line 213): add `<Globe className="mr-2 h-4 w-4" />` before the label text
+1.  **Personnel overview**
+    - Update description to: `View employees and freelancers, roles, and competencies in one structured workforce pool.`
+2.  **Certificate tracking**
+    - Update description to: `Track certificates with issue and expiry dates, clearly marked as valid, expiring, or expired. Personnel receive notifications when renewal is due.`
+3.  **Worker self-service**
+    - Update description to: `Workers upload and update their own certificates through personal profiles, reducing admin workload and keeping data accurate.`
+4.  **Project compliance**
+    - Update description to: `Assign the right personnel to each project and verify competencies and certificates at a glance — for internal control and external sharing.`
+5.  **AI-assisted support**
+    - Update description to: `AI extracts data from document uploads and a chatbot assists with certificate handling, while keeping a human in control.`
+6.  **Freelancer funnel**
+    - Update description to: `Manage freelancer applications and certificate submissions in one structured flow, replacing scattered emails and cold calls for better hiring oversight.`
 
-**AddProjectDialog.tsx:**
-- Import `Briefcase` and `Globe` from `lucide-react` (line 16)
-- Job Role collapsible header (line 890): add `<Briefcase className="h-3 w-3" />` before "Job Role" text
-- Location collapsible header (line 920): add `<Globe className="h-3 w-3" />` before "Location" text
-
-This matches how the Certificates filter already has an `Award` icon, and keeps icons consistent with the personnel card where `Briefcase` is used for role.
+These changes will ensure the messaging is more precise and aligned with the latest platform terminology.
