@@ -189,6 +189,30 @@ export default function AdminDashboard() {
     return map;
   }, [personnel]);
 
+  // Get unique issuers for filter dropdown
+  const uniqueIssuers = useMemo(() => {
+    const issuers = new Set<string>();
+    personnel.forEach(p => {
+      p.certificates.forEach(c => {
+        if (c.issuingAuthority) issuers.add(c.issuingAuthority);
+      });
+    });
+    return [...issuers].sort();
+  }, [personnel]);
+
+  // Get personnel issuers map
+  const personnelIssuersMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    personnel.forEach(p => {
+      const issuers = new Set<string>();
+      p.certificates.forEach(c => {
+        if (c.issuingAuthority) issuers.add(c.issuingAuthority);
+      });
+      map.set(p.id, issuers);
+    });
+    return map;
+  }, [personnel]);
+
   const filteredPersonnel = useMemo(() => {
     const filtered = personnel.filter((p) => {
       // AI filter takes priority - if active, only show AI-matched personnel
@@ -230,6 +254,10 @@ export default function AdminDashboard() {
           const personnelCategories = personnelCertificateCategoriesMap.get(p.id) || new Set<string>();
           const hasAllCategories = certificateFilters.every(cat => personnelCategories.has(cat));
           if (!hasAllCategories) return false;
+        } else if (certificateFilterMode === 'issuers') {
+          const personnelIssuers = personnelIssuersMap.get(p.id) || new Set<string>();
+          const hasAllIssuers = certificateFilters.every(issuer => personnelIssuers.has(issuer));
+          if (!hasAllIssuers) return false;
         } else {
           // Filter by certificate types/names
           const personnelCertNames = p.certificates.map(c => c.name);
@@ -258,7 +286,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -490,6 +518,7 @@ export default function AdminDashboard() {
               locations={uniqueLocations}
               certificates={uniqueCertificates}
               certificateCategories={uniqueCertificateCategories}
+              certificateIssuers={uniqueIssuers}
               availabilityDateRange={availabilityDateRange}
               onAvailabilityDateRangeChange={setAvailabilityDateRange}
               sortOption={sortOption}
