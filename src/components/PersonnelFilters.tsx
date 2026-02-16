@@ -34,6 +34,7 @@ interface PersonnelFiltersProps {
   onSortOptionChange: (option: PersonnelSortOption) => void;
   certificateFilterMode?: CertificateFilterMode;
   onCertificateFilterModeChange?: (mode: CertificateFilterMode) => void;
+  resultCount?: number;
 }
 
 export function PersonnelFilters({
@@ -56,6 +57,7 @@ export function PersonnelFilters({
   onSortOptionChange,
   certificateFilterMode = 'types',
   onCertificateFilterModeChange,
+  resultCount,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
@@ -557,6 +559,13 @@ export function PersonnelFilters({
             </Badge>
           ))}
         </div>
+      )}
+
+      {/* Results count */}
+      {hasActiveFilters && resultCount !== undefined && (
+        <span className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
+          {resultCount} {resultCount === 1 ? 'result' : 'results'}
+        </span>
       )}
     </div>
   );

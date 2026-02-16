@@ -480,6 +480,7 @@ export default function AdminDashboard() {
               onSortOptionChange={setSortOption}
               certificateFilterMode={certificateFilterMode}
               onCertificateFilterModeChange={setCertificateFilterMode}
+              resultCount={filteredPersonnel.length}
             />
             
             {loading ? (
