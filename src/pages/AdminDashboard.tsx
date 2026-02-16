@@ -75,7 +75,7 @@ export default function AdminDashboard() {
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
   const [locationFilters, setLocationFilters] = useState<string[]>([]);
-  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
@@ -222,8 +222,6 @@ export default function AdminDashboard() {
       // Location filter (multi-select)
       if (locationFilters.length > 0 && !locationFilters.includes(p.location)) return false;
       
-      // Category filter (multi-select: fixed_employee or freelancer)
-      if (categoryFilters.length > 0 && (!p.category || !categoryFilters.includes(p.category))) return false;
       
       // Certificate filter (multi-select: personnel must have ALL selected certificates/categories)
       if (certificateFilters.length > 0) {
@@ -260,7 +258,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, categoryFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -485,8 +483,6 @@ export default function AdminDashboard() {
               onRoleFiltersChange={setRoleFilters}
               locationFilters={locationFilters}
               onLocationFiltersChange={setLocationFilters}
-              categoryFilters={categoryFilters}
-              onCategoryFiltersChange={setCategoryFilters}
               certificateFilters={certificateFilters}
               onCertificateFiltersChange={setCertificateFilters}
               departmentFilters={departmentFilters}
@@ -528,7 +524,7 @@ export default function AdminDashboard() {
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">👤</div>
                     <p className="text-muted-foreground">
-                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || categoryFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from
+                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from
                         ? 'No personnel found matching your filters'
                         : 'No personnel yet. Add your first team member to get started.'}
                     </p>
