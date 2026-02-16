@@ -1,53 +1,36 @@
 
 
-## Add Issuer Selector to Certificate Upload Form
-
-### Overview
-Replace the plain text "Issuing Authority" input in the Add Certificate dialog with an `IssuerTypeSelector` component that works identically to the existing `CertificateTypeSelector`. Users will see canonical issuers in a dropdown and can type free text if not found. Free text entries become "inputted issuers" available for later merging in Settings.
+## Add Project Image Upload to New Project Dialog
 
 ### What Changes
+Add a photo upload field to the "New Project" dialog, positioned between the AI Personnel Suggestions section and the Project Name field -- matching the same upload style already used in the Edit Project dialog.
 
-**1. New Component: `src/components/IssuerTypeSelector.tsx`**
-- Direct clone of `CertificateTypeSelector.tsx`
-- Uses `useIssuerTypes` instead of `useCertificateTypes`
-- Same props: `value`, `onChange`, `allowFreeText`, `freeTextValue`, `onFreeTextChange`, `autoMatched`, etc.
-- Same dropdown with search, same "or type if not found" free text layout
+### How It Works
+- A dashed upload area appears below the AI suggestions box
+- Click to select an image or drag-and-drop
+- Once uploaded, a thumbnail preview is shown with a remove button
+- The image is uploaded to the `project-documents` storage bucket using a temporary path (since the project ID doesn't exist yet)
+- After the project is created, the image URL is saved to the project's `image_url` field
 
-**2. Add Lookup Hook: `src/hooks/useIssuerAliases.ts`**
-- Add `useLookupIssuerAlias(rawIssuer)` -- mirrors `useLookupAlias` from `useCertificateAliases.ts`
-- Queries `issuer_aliases` table by `alias_normalized` to find a matching canonical issuer
-- Add `useCreateIssuerAlias` (already exists but verify it matches the pattern)
-- Add `useUpdateIssuerAliasLastSeen` for last_seen_at updates
+### User Experience
+1. Open "New Project" dialog
+2. (Optional) Use AI suggestions as before
+3. Click the image upload area or drag a photo
+4. See a thumbnail preview with option to remove/change
+5. Fill in remaining project details and submit
+6. The project is created with the image attached
 
-**3. Modified: `src/components/AddCertificateDialog.tsx`**
+### Technical Details
 
-Add new fields to `CertificateEntry` interface:
-```text
-issuerTypeId?: string | null;
-issuerTypeName?: string;
-issuerTypeFreeText?: string;
-rememberIssuerAlias?: boolean;
-issuerAliasAutoMatched?: boolean;
-```
+**File modified:** `src/components/AddProjectDialog.tsx`
 
-Replace the plain "Issuing Authority" `<Input>` (lines 603-614) with:
-- `IssuerTypeSelector` using `allowFreeText` mode (identical layout to the type selector)
-- Issuer alias lookup feedback ("Matched: DNV GL" with "Use this issuer" button)
-- "Remember this issuer" checkbox for admins (mirrors "Remember this name" for types)
+1. **Add state and ref** for image upload (`imageUrl`, `uploading`, `fileInputRef`) -- same pattern as `EditProjectDialog`
+2. **Add image upload handler** that uploads to `project-documents` storage bucket using a temporary UUID path, then stores the signed URL
+3. **Add image upload UI** between the AI Suggestions section (line ~372) and the Project Name field (line ~376), using the same visual style as `EditProjectDialog` (dashed border box with `ImagePlus` icon, thumbnail preview with remove button)
+4. **Include `imageUrl`** in the `newProject` object passed to `onProjectAdded`
+5. **Reset `imageUrl`** in the `resetForm` function
 
-On submit:
-- Store `issuer_type_id` on the certificate when a canonical issuer is selected
-- Create issuer alias if admin checked "Remember this issuer"
-- The free-text value still populates `issuing_authority` for backward compatibility
+**Imports to add:** `ImagePlus`, `X` from lucide-react, `useRef` from React, `supabase` client
 
-### No Database Changes
-The `issuer_type_id` column, `issuer_types` table, and `issuer_aliases` table already exist. No migrations needed.
-
-### Files Summary
-
-| File | Action |
-|---|---|
-| `src/components/IssuerTypeSelector.tsx` | New (clone of CertificateTypeSelector, uses useIssuerTypes) |
-| `src/hooks/useIssuerAliases.ts` | Modified (add useLookupIssuerAlias hook) |
-| `src/components/AddCertificateDialog.tsx` | Modified (replace Input with IssuerTypeSelector, add alias logic) |
+No database or schema changes needed -- the `image_url` column and storage bucket already exist.
 
