@@ -1,61 +1,102 @@
 
 
-## Add "Issuers" as a Third Toggle in the Certificate Filter Dropdown
+## Add Issuer Grouping System (Exact Clone of Certificate Type Grouping)
 
 ### Overview
-Add "Issuers" as a third toggle option inside the certificate filter dropdown on the personnel filter bar (alongside "Types" and "Categories"). When selected, it shows a list of distinct issuing authorities from the business's certificates. Filtering works identically to types/categories -- personnel must have ALL selected issuers to be shown.
+Replicate the certificate type grouping system -- identically -- for issuers. The Issuers tab under Settings > Certificates will get the same two-pane merging UI and manage tab that Types currently has. The left pane shows "Inputted Issuers" (distinct `issuing_authority` values from certificates), the right pane shows "Canonical Issuers" (from a new `issuer_types` table). Grouping works the same way: select inputted issuers on the left, select/create a canonical issuer on the right, click "Group".
 
-### Changes
+### What "exactly the same" means
 
-**1. `src/components/PersonnelFilters.tsx`**
-- Update the `CertificateFilterMode` type to include `'issuers'`: `'types' | 'categories' | 'issuers'`
-- Add a new prop `certificateIssuers` (string array) for the list of distinct issuing authorities
-- Update the `certificateListItems` logic to handle the third mode: when `'issuers'`, use the `certificateIssuers` list
-- Add a third `ToggleGroupItem` with value `"issuers"` and a suitable icon (e.g., `Building2` which is already imported) in the toggle group
-- Update the empty-state text to include "issuers" when in that mode
-- Show the toggle group when any of the three lists have items (adjust the condition to also check `certificateIssuers.length > 0`)
+The following components and hooks exist for Types:
 
-**2. `src/pages/AdminDashboard.tsx`**
-- Compute `uniqueIssuers` via a `useMemo` that collects distinct `issuingAuthority` values from all personnel certificates, sorted alphabetically
-- Build a `personnelIssuersMap` (similar to `personnelCertificateCategoriesMap`) that maps each personnel ID to a Set of their issuing authorities
-- Pass the new `certificateIssuers` prop to `PersonnelFilters`
-- Update the `filteredPersonnel` logic to add a third branch: when `certificateFilterMode === 'issuers'`, check that the personnel has certificates from ALL selected issuers (using `.every()`, same as types and categories)
+| Types System | Issuers System (new, cloned) |
+|---|---|
+| `certificate_types` table | `issuer_types` table |
+| `certificate_aliases` table | `issuer_aliases` table |
+| `certificates.certificate_type_id` column | `certificates.issuer_type_id` column |
+| `useCertificateTypes.ts` hook | `useIssuerTypes.ts` hook |
+| `useCertificateAliases.ts` hook | `useIssuerAliases.ts` hook |
+| `useInputtedTypes.ts` hook | `useInputtedIssuers.ts` hook |
+| `TypeMergingPane.tsx` component | `IssuerMergingPane.tsx` component |
+| `CertificateTypesManager.tsx` component | `IssuerTypesManager.tsx` component |
 
-### No Database Changes
-The `issuing_authority` field already exists on the `certificates` table and is already fetched in the `usePersonnel` hook. No migrations needed.
+Every hook and component is a direct clone with names/labels changed from "type" to "issuer" and the field being grouped changed from `title_normalized` / `certificate_type_id` to `issuing_authority` / `issuer_type_id`.
 
-### Technical Details
+### Database Changes (3 migrations)
 
-New computed values in AdminDashboard:
-```typescript
-const uniqueIssuers = useMemo(() => {
-  const issuers = new Set<string>();
-  personnel.forEach(p => {
-    p.certificates.forEach(c => {
-      if (c.issuingAuthority) issuers.add(c.issuingAuthority);
-    });
-  });
-  return [...issuers].sort();
-}, [personnel]);
+**Migration 1: `issuer_types` table** (clone of `certificate_types`)
 
-const personnelIssuersMap = useMemo(() => {
-  const map = new Map<string, Set<string>>();
-  personnel.forEach(p => {
-    const issuers = new Set<string>();
-    p.certificates.forEach(c => {
-      if (c.issuingAuthority) issuers.add(c.issuingAuthority);
-    });
-    map.set(p.id, issuers);
-  });
-  return map;
-}, [personnel]);
+```sql
+CREATE TABLE issuer_types (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id uuid REFERENCES businesses(id),
+  name text NOT NULL,
+  description text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+```
+- Same RLS policies as `certificate_types`
+
+**Migration 2: `issuer_aliases` table** (clone of `certificate_aliases`)
+
+```sql
+CREATE TABLE issuer_aliases (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id uuid NOT NULL REFERENCES businesses(id),
+  issuer_type_id uuid NOT NULL REFERENCES issuer_types(id),
+  alias_normalized text NOT NULL,
+  alias_raw_example text,
+  confidence integer NOT NULL DEFAULT 100,
+  created_by text NOT NULL,
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(business_id, alias_normalized)
+);
+```
+- Same RLS policies as `certificate_aliases`
+
+**Migration 3: Add `issuer_type_id` to `certificates`**
+
+```sql
+ALTER TABLE certificates ADD COLUMN issuer_type_id uuid REFERENCES issuer_types(id);
 ```
 
-Filter logic addition (inside `filteredPersonnel`):
-```typescript
-} else if (certificateFilterMode === 'issuers') {
-  const personnelIssuers = personnelIssuersMap.get(p.id) || new Set<string>();
-  const hasAllIssuers = certificateFilters.every(issuer => personnelIssuers.has(issuer));
-  if (!hasAllIssuers) return false;
-}
-```
+### New Files (5 files, all clones)
+
+**`src/hooks/useIssuerTypes.ts`** -- clone of `useCertificateTypes.ts`
+- `useIssuerTypes()`, `useCreateIssuerType()`, `useUpdateIssuerType()`, `useArchiveIssuerType()`, `useRestoreIssuerType()`, `useIssuerTypeUsageCount()`
+- Usage count queries `certificates` where `issuer_type_id` matches
+
+**`src/hooks/useIssuerAliases.ts`** -- clone of `useCertificateAliases.ts`
+- `useCreateIssuerAlias()`, `useIssuerAliases()`
+- Normalizes `issuing_authority` text the same way types normalize `title_raw`
+
+**`src/hooks/useInputtedIssuers.ts`** -- clone of `useInputtedTypes.ts`
+- `useInputtedIssuers()` -- groups certificates by normalized `issuing_authority`, shows unmapped ones (where `issuer_type_id` is null and `issuing_authority` is not null)
+- `useDismissInputtedIssuer()` -- uses same `unmapped_by`/`unmapped_at`/`unmapped_reason` pattern
+- Key difference: groups by `issuing_authority` instead of `title_normalized`, checks `issuer_type_id` instead of `certificate_type_id`
+
+**`src/components/IssuerMergingPane.tsx`** -- clone of `TypeMergingPane.tsx`
+- Left pane: "Inputted Issuers" with search, select-all, show-mapped toggle, expandable rows showing certificate details
+- Right pane: "Canonical Issuers" from `issuer_types` table
+- Same "Group" button, "Create and Group" flow, dismiss functionality, document viewer
+- Labels changed: "types" becomes "issuers", "Inputted Types" becomes "Inputted Issuers", "Merged Types" becomes "Merged Issuers"
+- Grouping logic: creates issuer alias, then bulk-updates `certificates.issuer_type_id`
+
+**`src/components/IssuerTypesManager.tsx`** -- clone of `CertificateTypesManager.tsx`
+- Two sub-tabs: "Group Issuers" (shows `IssuerMergingPane`) and "Manage Issuers" (CRUD list)
+- Manage list: create, edit, archive, restore canonical issuers -- identical UI to types
+
+### Modified File
+
+**`src/components/CategoriesSection.tsx`**
+- Replace `IssuersListInner` with `IssuerTypesManager`
+- Update description text from "A read-only list..." to "Manage the official issuing authorities used to organize and group certificates consistently."
+
+### No other changes
+- The personnel filter bar is not modified in this plan
+- No changes to certificate upload or edit flows
+- The existing type grouping system is completely untouched
+
