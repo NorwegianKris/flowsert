@@ -64,10 +64,11 @@ export function CategoriesSection() {
                 <TabsList>
                   <TabsTrigger value="categories">Categories</TabsTrigger>
                   <TabsTrigger value="types">Types</TabsTrigger>
+                  <TabsTrigger value="issuers">Issuers</TabsTrigger>
                 </TabsList>
                 <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <span>💡</span>
-                  Categories are broad groupings; Types are specific classifications within each.
+                  Categories are broad groupings; Types are specific classifications; Issuers are issuing authorities.
                 </span>
               </div>
               
@@ -87,6 +88,15 @@ export function CategoriesSection() {
                   </p>
                 </div>
                 <CertificateTypesManager />
+              </TabsContent>
+              
+              <TabsContent value="issuers">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    A read-only list of all distinct issuing authorities found across your certificates.
+                  </p>
+                </div>
+                <IssuersListInner />
               </TabsContent>
             </Tabs>
             
@@ -465,5 +475,65 @@ function DocumentCategoriesInner() {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function IssuersListInner() {
+  const { businessId } = useAuth();
+  const [issuers, setIssuers] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!businessId) return;
+    const fetchIssuers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('certificates')
+          .select('issuing_authority, personnel!inner(business_id)')
+          .eq('personnel.business_id', businessId)
+          .not('issuing_authority', 'is', null)
+          .neq('issuing_authority', '');
+        if (error) throw error;
+        const unique = [...new Set((data || []).map((r: any) => r.issuing_authority as string))].sort((a, b) => a.localeCompare(b));
+        setIssuers(unique);
+      } catch (error) {
+        console.error('Error fetching issuers:', error);
+        toast.error('Failed to load issuing authorities');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchIssuers();
+  }, [businessId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {issuers.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <div className="text-4xl mb-3">🏛️</div>
+          <p>No issuing authorities found yet.</p>
+          <p className="text-sm">Issuers will appear here once certificates with issuing authority data are added.</p>
+        </div>
+      ) : (
+        <div className="border rounded-lg divide-y">
+          {issuers.map((issuer) => (
+            <div key={issuer} className="flex items-center p-3 hover:bg-muted/50">
+              <span className="font-medium">{issuer}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">
+        {issuers.length} issuer{issuers.length !== 1 ? 's' : ''} found
+      </p>
+    </div>
   );
 }
