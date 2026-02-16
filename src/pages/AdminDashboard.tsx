@@ -696,7 +696,7 @@ export default function AdminDashboard() {
                   <Building2 className="h-5 w-5" />
                   Company Card
                 </h2>
-                <Button variant="ghost" size="icon" onClick={() => setCompanyCardOpen(false)}>
+                <Button variant="ghost" size="icon" onClick={() => { setCompanyCardOpen(false); setSettingsOpen(true); }}>
                   <span className="sr-only">Close</span>
                   ✕
                 </Button>
@@ -704,6 +704,7 @@ export default function AdminDashboard() {
               <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
                 <CompanyCard isAdmin onClose={() => {
                   setCompanyCardOpen(false);
+                  setSettingsOpen(true);
                   refetchBusiness();
                 }} />
               </div>
