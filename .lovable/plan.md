@@ -1,57 +1,37 @@
 
 
-# Redesign: Location Standardization Tool
+# Speed Up OpenStreetMap Location Search
 
-## Current Problem
-The tool automatically groups cities using string similarity, which causes false merges (e.g., grouping different cities that happen to have similar names). It also makes dozens of Photon API calls on load, making it slow and unreliable.
+## Problem
+The Photon API (photon.komoot.io) is a free service hosted in Europe. Network latency from the user's browser to that server adds noticeable delay on top of the 150ms debounce. There's no way to make the external API faster, but we can reduce perceived slowness.
 
-## New Design
+## Changes
 
-A two-panel layout where the admin has full control:
+### 1. Reduce debounce to 80ms (`src/hooks/useGeoSearch.ts`)
+- Drop from 150ms to 80ms -- still enough to avoid spamming on fast typing, but shaves ~70ms off every keystroke
+- The abort controller already cancels in-flight requests, so rapid typing won't cause issues
+
+### 2. Add a simple in-memory cache (`src/hooks/useGeoSearch.ts`)
+- Cache previous query results in a `Map<string, string[]>` (kept as a module-level variable so it persists across re-renders)
+- If the user types a query they already searched for (e.g., backspaces and retypes), results appear instantly without an API call
+- Cache is bounded to the last 50 queries to avoid memory bloat
+
+### 3. Show results immediately when cached, skip loading state
+- If a cache hit exists, set results directly and skip the debounce/fetch entirely
+- This makes repeat searches feel instant
+
+## Technical Detail
 
 ```text
-+----------------------------------+-----------------------------------+
-| USER-INPUTTED LOCATIONS          | STANDARDIZE TO                    |
-| (multi-select list)              | (OpenStreetMap search)             |
-|                                  |                                   |
-| [ ] Bergen (12)                  | [Search for a city...        ]    |
-| [x] Bergan (2)                   |                                   |
-| [x] bergen (1)                   |   > Bergen, Norway                |
-| [ ] Haugesund (5)                |   > Bergen op Zoom, Netherlands   |
-| [x] haugesnd (1)                 |                                   |
-| [ ] Kopervik (3)                 |                                   |
-| ...                              |  [Apply to 2 selected]            |
-+----------------------------------+-----------------------------------+
+User types "Ber"
+  -> 80ms debounce -> fetch from Photon -> cache result
+User types "Berg"
+  -> 80ms debounce -> fetch from Photon -> cache result
+User clears and types "Ber" again
+  -> cache hit -> instant results, no fetch, no spinner
 ```
 
-### How it works
-1. On load, fetch all unique location values from the database with their counts -- no Photon API calls, instant load
-2. Left panel: scrollable list of all locations with checkboxes, showing the personnel count next to each. Admin multi-selects the ones that should be merged
-3. Right panel: a single GeoLocationInput where the admin types and picks the correct standardized city from OpenStreetMap suggestions
-4. "Apply" button updates all selected locations to the chosen standard value
-5. After applying, those locations disappear from the list (or show as completed)
+### Files changed
+- `src/hooks/useGeoSearch.ts` -- reduce debounce, add cache lookup before fetch
 
-### Benefits
-- No automatic grouping or "hallucinated" merges -- the admin decides which cities belong together
-- No API calls on load -- the list appears instantly
-- Only one GeoLocationInput rendered at a time instead of 50+
-- Simple, clear workflow
-
-## Technical Changes
-
-### `src/components/LocationStandardizationTool.tsx` -- Full rewrite
-- Remove all auto-grouping logic (`groupSimilarLocations`, `fetchPhotonSuggestion`, background fetching)
-- Remove the `stringSimilarity` import
-- New state: `locations` (array of `{value, count}`), `selected` (Set of strings), `standardValue` (string from GeoLocationInput)
-- Left panel: `ScrollArea` with `Checkbox` + label for each location, sorted alphabetically with count badges
-- Right panel: single `GeoLocationInput` + "Apply" button
-- On apply: update all personnel records matching selected locations to the new standard value, then remove those entries from the list
-- Add a "Select All" / "Deselect All" toggle for convenience
-- Keep the Refresh button
-
-### `src/hooks/useGeoSearch.ts` -- Reduce debounce
-- Change debounce from 300ms to 150ms for snappier typing feel
-
-### No other files need changes
-The component is already imported and used in `AdminDashboard.tsx` in the Settings tab -- that stays the same.
-
+No other files need changes.
