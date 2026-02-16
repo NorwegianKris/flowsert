@@ -600,7 +600,7 @@ export default function AdminDashboard() {
                 <AdminOverview />
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-sm">Profile Activation Overview</span>
@@ -623,7 +623,7 @@ export default function AdminDashboard() {
                 <CategoriesSection />
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-sm">Standardize Locations</span>
@@ -645,7 +645,7 @@ export default function AdminDashboard() {
                 />
                 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <Link2 className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-sm">Freelancer Registration Link</span>
