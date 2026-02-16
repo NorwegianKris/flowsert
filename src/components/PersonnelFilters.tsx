@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Briefcase, Globe } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
@@ -164,6 +164,7 @@ export function PersonnelFilters({
       <Popover open={roleOpen} onOpenChange={setRoleOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+            <Briefcase className="mr-2 h-4 w-4" />
             <span className="truncate">
               {roleFilters.length === 0
                 ? 'Job Role'
@@ -211,6 +212,7 @@ export function PersonnelFilters({
       <Popover open={locationOpen} onOpenChange={setLocationOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-9 justify-between min-w-[180px]">
+            <Globe className="mr-2 h-4 w-4" />
             <span className="truncate">
               {locationFilters.length === 0
                 ? 'Location'
