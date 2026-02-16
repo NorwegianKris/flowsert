@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-sm">Profile Activation Overview</span>
+                      <span className="font-semibold text-lg">Profile Activation Overview</span>
                     </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -651,7 +651,7 @@ export default function AdminDashboard() {
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-sm">Standardize Locations</span>
+                      <span className="font-semibold text-lg">Standardize Locations</span>
                     </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -673,7 +673,7 @@ export default function AdminDashboard() {
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <Link2 className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-sm">Freelancer Registration Link</span>
+                      <span className="font-semibold text-lg">Freelancer Registration Link</span>
                     </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
