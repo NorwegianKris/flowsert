@@ -18,6 +18,8 @@ import { LocationStandardizationTool } from '@/components/LocationStandardizatio
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { MapPin, ShieldCheck, Link2 } from 'lucide-react';
 
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
@@ -597,19 +599,41 @@ export default function AdminDashboard() {
                 
                 <AdminOverview />
 
-                <ActivationOverview 
-                  personnel={personnel} 
-                  onRefresh={refetch}
-                  onEditPersonnel={(person) => {
-                    setSettingsOpen(false);
-                    setSelectedPersonnel(person);
-                  }}
-                  onPersonnelRemoved={refetch}
-                />
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-sm">Profile Activation Overview</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <ActivationOverview 
+                      personnel={personnel} 
+                      onRefresh={refetch}
+                      onEditPersonnel={(person) => {
+                        setSettingsOpen(false);
+                        setSelectedPersonnel(person);
+                      }}
+                      onPersonnelRemoved={refetch}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
                 
                 <CategoriesSection />
 
-                <LocationStandardizationTool />
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-sm">Standardize Locations</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <LocationStandardizationTool />
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <DataAcknowledgementsManager
                   personnel={personnel}
@@ -620,7 +644,18 @@ export default function AdminDashboard() {
                   }}
                 />
                 
-                <RegistrationLinkCard />
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Link2 className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-sm">Freelancer Registration Link</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <RegistrationLinkCard />
+                  </CollapsibleContent>
+                </Collapsible>
                 
                 <FeedbackList />
               </div>
