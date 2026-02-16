@@ -1,69 +1,54 @@
 
 
-# Make Location Suggestions Feel Almost Instant
+# Fill Availability Gaps with "Available" Default
 
 ## Problem
-Even with the 80ms debounce and caching, the Photon API still requires a network round-trip (~200-500ms) for every new query. Users notice this delay while typing.
 
-## Solution: Two-Tier Instant Suggestions
+Currently, if a person has even one availability record (e.g., 3 days marked unavailable), only those specific days render on the timeline. The rest of the project period appears as an empty gap instead of showing the green "available" bar.
 
-Show **existing database locations** immediately as the user types (zero latency), while the Photon API results load in the background and merge in when ready.
+**Expected behavior:** Assigned personnel are available for the entire project period by default. Only days explicitly marked as partial/unavailable/other override that default.
 
-### Changes
+## What Changes
 
-#### 1. `src/hooks/useGeoSearch.ts` -- Reduce debounce + add prefix cache matching
-- Drop debounce from 80ms to **30ms** -- the abort controller protects against request spam
-- Add **prefix cache matching**: if the user types "Berg" and we already have cached results for "Ber", show those filtered results instantly while the "Berg" fetch runs in the background
-- This means results appear on every keystroke from cached prefixes
+**One file:** `src/hooks/useProjectTimelineData.ts`
 
-#### 2. `src/components/ui/geo-location-input.tsx` -- Prioritize DB matches during loading
-- While the Photon API is still loading, **show matching `existingLocations` immediately** as suggestions (these are already in memory, zero latency)
-- When Photon results arrive, merge them in (geo results first, then DB matches, as it works today)
-- This ensures the dropdown opens with relevant suggestions on the very first keystroke, before any network call completes
+### Replace `mergeAvailabilitySpans` with `fillGapsWithAvailable`
 
-### How It Feels
+The new function:
+
+1. Creates a day-by-day status map from project start to project end, defaulting every day to "available"
+2. Overrides with any explicit availability records from the database
+3. Merges consecutive same-status days into spans
+4. Filters out "unavailable" spans (they appear as visual gaps in the timeline bar)
+
+### Update `buildPersonnelTimelineData`
+
+- Always call `fillGapsWithAvailable` with the raw records (or empty array), removing the special "no data" branch
+- The function handles both cases: no records (full green bar) and partial records (green with gaps)
+
+### Update `useProjectTimelineData` hook
+
+- Store raw records grouped by personnel ID instead of pre-merged spans
+- Pass raw records to `buildPersonnelTimelineData` so `fillGapsWithAvailable` can do the day-by-day mapping
+
+## Technical Detail
 
 ```text
-User types "B"
-  -> Instantly shows matching DB locations ("Bergen, Norway", "Berlin, Germany")
-  -> 30ms later, Photon fetch starts in background
+function fillGapsWithAvailable(records, personnelId, projectStart, projectEnd):
+  1. Loop from projectStart to projectEnd, set every day = "available"
+  2. For each record, override that day's status
+  3. Walk sorted dates, merge consecutive same-status into spans
+  4. Filter out "unavailable" spans
+  return spans
 
-User types "Be"
-  -> Instantly shows filtered DB locations
-  -> Prefix cache from "B" results shown immediately
-  -> Photon fetch for "Be" starts
+Hook change:
+  - availabilityMap stores Map<string, AvailabilityRecord[]> (raw records)
+  - buildPersonnelTimelineData calls fillGapsWithAvailable per person
 
-User types "Ber"
-  -> DB matches + prefix-cached results shown instantly
-  -> Photon results merge in ~200ms later
+Result:
+  - Person with no records -> full green "available" bar (unchanged)
+  - Person with 3 days unavailable -> green bar with a gap where those 3 days are
+  - Person with mixed partial/available/unavailable -> correct colored segments with gaps
 ```
 
-The user always sees suggestions within milliseconds because existing locations are already loaded in memory. The Photon results just enrich the list when they arrive.
-
-### Technical Details
-
-**`useGeoSearch.ts` prefix matching:**
-```text
-// Before fetching, check if any cached key is a prefix of the current query
-// e.g., cached "ber" results can be shown while "berg" is fetching
-for (const [cachedKey, cachedResults] of geoCache) {
-  if (cacheKey.startsWith(cachedKey)) {
-    setResults(cachedResults); // show immediately as interim
-    break;
-  }
-}
-```
-
-**`geo-location-input.tsx` immediate DB display:**
-```text
-// Show DB matches right away, even while geoLoading is true
-const suggestions = useMemo(() => {
-  // Always include matching existingLocations (instant)
-  // Merge geoResults on top when available
-});
-```
-
-### Files changed
-- `src/hooks/useGeoSearch.ts` -- reduce debounce to 30ms, add prefix cache matching
-- `src/components/ui/geo-location-input.tsx` -- show existingLocations immediately while Photon loads
-
+No database changes needed. No other files affected.
