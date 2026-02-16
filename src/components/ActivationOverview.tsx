@@ -2,25 +2,44 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Personnel } from '@/types';
-import { ShieldCheck, Users } from 'lucide-react';
+import { ShieldCheck, Users, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type FilterMode = 'all' | 'active' | 'inactive';
 
 interface ActivationOverviewProps {
   personnel: Personnel[];
   onRefresh: () => void;
+  onEditPersonnel?: (person: Personnel) => void;
+  onPersonnelRemoved?: () => void;
 }
 
-export function ActivationOverview({ personnel, onRefresh }: ActivationOverviewProps) {
+export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPersonnelRemoved }: ActivationOverviewProps) {
   const [filter, setFilter] = useState<FilterMode>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Personnel | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [personnelToDelete, setPersonnelToDelete] = useState<Personnel | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const activeCount = useMemo(
     () => personnel.filter((p) => p.activated).length,
@@ -46,6 +65,44 @@ export function ActivationOverview({ personnel, onRefresh }: ActivationOverviewP
   const handleToggle = (person: Personnel) => {
     setSelectedPerson(person);
     setDialogOpen(true);
+  };
+
+  const handleDeleteClick = (person: Personnel) => {
+    setPersonnelToDelete(person);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!personnelToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('personnel')
+        .delete()
+        .eq('id', personnelToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Personnel Removed',
+        description: `${personnelToDelete.name} has been removed successfully.`,
+      });
+
+      onPersonnelRemoved?.();
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting personnel:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to remove personnel. Please try again.',
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setPersonnelToDelete(null);
+    }
   };
 
   return (
@@ -113,14 +170,40 @@ export function ActivationOverview({ personnel, onRefresh }: ActivationOverviewP
                         <span className="text-xs text-muted-foreground truncate">{person.role}</span>
                         {person.category && (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
+                            {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
                           </Badge>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-xs font-medium ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {onEditPersonnel && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditPersonnel(person);
+                          }}
+                          title="Edit personnel"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(person);
+                        }}
+                        title="Remove personnel"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
                         {person.activated ? 'Active' : 'Inactive'}
                       </span>
                       <Switch
@@ -151,6 +234,35 @@ export function ActivationOverview({ personnel, onRefresh }: ActivationOverviewP
           onSuccess={onRefresh}
         />
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Personnel</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{personnelToDelete?.name}</strong>? 
+              This action cannot be undone and will also remove all their certificates and documents.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>No</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                'Yes'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

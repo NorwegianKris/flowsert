@@ -18,7 +18,7 @@ import { LocationStandardizationTool } from '@/components/LocationStandardizatio
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
-import { PersonnelOverview } from '@/components/PersonnelOverview';
+
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
 import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/components/PersonnelFilters';
@@ -578,35 +578,17 @@ export default function AdminDashboard() {
                   Company Card
                 </Button>
                 
-                <Tabs defaultValue="admins" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="admins" className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Admins
-                    </TabsTrigger>
-                    <TabsTrigger value="personnel" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Personnel
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="admins">
-                    <AdminOverview />
-                  </TabsContent>
-                  
-                  <TabsContent value="personnel">
-                    <PersonnelOverview 
-                      personnel={personnel} 
-                      onEditPersonnel={(person) => {
-                        setSettingsOpen(false);
-                        setSelectedPersonnel(person);
-                      }}
-                      onPersonnelRemoved={refetch}
-                    />
-                  </TabsContent>
-                </Tabs>
+                <AdminOverview />
 
-                <ActivationOverview personnel={personnel} onRefresh={refetch} />
+                <ActivationOverview 
+                  personnel={personnel} 
+                  onRefresh={refetch}
+                  onEditPersonnel={(person) => {
+                    setSettingsOpen(false);
+                    setSelectedPersonnel(person);
+                  }}
+                  onPersonnelRemoved={refetch}
+                />
                 
                 <CategoriesSection />
 
