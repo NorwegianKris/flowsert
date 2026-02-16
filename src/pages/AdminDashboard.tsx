@@ -14,6 +14,7 @@ import { RecentRegistrations } from '@/components/RecentRegistrations';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
 import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsManager';
+import { LocationStandardizationTool } from '@/components/LocationStandardizationTool';
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
@@ -604,6 +605,8 @@ export default function AdminDashboard() {
                 </Tabs>
                 
                 <CategoriesSection />
+
+                <LocationStandardizationTool />
 
                 <DataAcknowledgementsManager
                   personnel={personnel}

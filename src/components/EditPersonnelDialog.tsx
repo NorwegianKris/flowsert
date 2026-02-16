@@ -13,6 +13,7 @@ import { Personnel } from '@/types';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input';
+import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { MultiSelectInput } from '@/components/ui/multi-select-input';
 import { useLocations, useNationalities, useLanguages } from '@/hooks/useLocations';
 import { normalizeText } from '@/lib/stringUtils';
@@ -298,12 +299,12 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-location">Location *</Label>
-              <AutocompleteInput
+              <GeoLocationInput
                 id="edit-location"
-                options={locations}
+                existingLocations={locations}
                 value={formData.location}
                 onChange={(value) => setFormData({ ...formData, location: value })}
-                placeholder="Oslo, Norway"
+                placeholder="Search for a city..."
               />
             </div>
             {/* Category - locked for freelancers */}
