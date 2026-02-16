@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PersonnelPreviewSheet } from '@/components/PersonnelPreviewSheet';
+import { FreelancerFilters } from '@/components/FreelancerFilters';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
   const [isPosted, setIsPosted] = useState(false);
+  const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,6 +174,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAiPrompt('');
     setIncludeFreelancers(false);
     setIsPosted(false);
+    setShowFreelancersOnly(false);
     setImageUrl('');
     setUploading(false);
     clearSuggestions();
@@ -259,8 +262,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     });
   };
 
-  // Filter personnel based on freelancer toggle
+  // Filter personnel based on freelancer toggles
   const getFilteredPersonnel = () => {
+    if (showFreelancersOnly) {
+      return personnel.filter(p => p.category === 'freelancer' && p.activated);
+    }
     if (includeFreelancers) {
       return personnel.filter(p => p.category !== 'freelancer' || p.activated);
     }
@@ -344,17 +350,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 rows={3}
                 className="resize-y min-h-[80px]"
               />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="includeFreelancers"
-                    checked={includeFreelancers}
-                    onCheckedChange={setIncludeFreelancers}
-                  />
-                  <Label htmlFor="includeFreelancers" className="text-sm cursor-pointer">
-                    Include freelancers
-                  </Label>
-                </div>
+              <div className="flex items-center justify-end">
                 <Button
                   type="button"
                   variant="secondary"
@@ -666,6 +662,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 {globalMode === 'invite' ? 'Send invitations' : 'Direct assignment'}
               </p>
             </div>
+
+            <FreelancerFilters
+              includeFreelancers={includeFreelancers}
+              onIncludeFreelancersChange={setIncludeFreelancers}
+              showFreelancersOnly={showFreelancersOnly}
+              onShowFreelancersOnlyChange={setShowFreelancersOnly}
+            />
 
             <ScrollArea className="flex-1 border rounded-md p-2 min-h-[300px]">
               {aiLoading ? (
