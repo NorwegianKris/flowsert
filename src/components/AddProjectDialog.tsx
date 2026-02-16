@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
@@ -48,6 +49,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
   const [isPosted, setIsPosted] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -105,6 +109,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       location: location.trim() || undefined,
       projectManager: projectManager.trim() || undefined,
       isPosted,
+      imageUrl: imageUrl || undefined,
     };
 
     const createdProject = await onProjectAdded(newProject);
@@ -167,6 +172,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAiPrompt('');
     setIncludeFreelancers(false);
     setIsPosted(false);
+    setImageUrl('');
+    setUploading(false);
     clearSuggestions();
   };
 
@@ -368,6 +375,91 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     </>
                   )}
                 </Button>
+              </div>
+            </div>
+
+            {/* Project Image Upload */}
+            <div className="space-y-2">
+              <Label>Project Image</Label>
+              <div className="flex items-center gap-4">
+                {imageUrl ? (
+                  <div className="relative">
+                    <img
+                      src={imageUrl}
+                      alt="Project"
+                      className="h-20 w-20 rounded-xl object-cover border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="h-20 w-20 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <>
+                        <ImagePlus className="h-6 w-6" />
+                        <span className="text-[10px]">Upload</span>
+                      </>
+                    )}
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (!file.type.startsWith('image/')) {
+                      toast.error('Please upload an image file');
+                      return;
+                    }
+                    try {
+                      setUploading(true);
+                      const ext = file.name.split('.').pop();
+                      const tempId = crypto.randomUUID();
+                      const filePath = `${tempId}/project-image.${ext}`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('project-documents')
+                        .upload(filePath, file, { upsert: true });
+                      if (uploadError) throw uploadError;
+                      const { data: signedData } = await supabase.storage
+                        .from('project-documents')
+                        .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+                      setImageUrl(signedData?.signedUrl || filePath);
+                      toast.success('Image uploaded');
+                    } catch (error) {
+                      console.error('Upload error:', error);
+                      toast.error('Failed to upload image');
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                />
+                {imageUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    Change
+                  </Button>
+                )}
               </div>
             </div>
 
