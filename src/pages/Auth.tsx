@@ -606,7 +606,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Personnel overview</h4>
-                  <p className="text-sm text-muted-foreground mt-1">See your workforce, roles, and competencies in one structured view.</p>
+                  <p className="text-sm text-muted-foreground mt-1">View employees and freelancers, roles, and competencies in one structured workforce pool.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
@@ -615,7 +615,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Certificate tracking</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Track certificates with issue and expiry dates, clearly marked as valid, expiring, or expired.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Track certificates with issue and expiry dates, clearly marked as valid, expiring, or expired. Personnel receive notifications when renewal is due.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
@@ -624,7 +624,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Worker self-service</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Workers upload and update their own certificates, keeping data accurate and up to date.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Workers upload and update their own certificates through personal profiles, reducing admin workload and keeping data accurate.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
@@ -633,7 +633,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Project compliance</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Verify required competencies and certificates per project at a glance - for internal control and external sharing.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Assign the right personnel to each project and verify competencies and certificates at a glance — for internal control and external sharing.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
@@ -642,7 +642,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">AI-assisted support</h4>
-                  <p className="text-sm text-muted-foreground mt-1">An AI chatbot helps identify certificate details and answer document-related questions, with human confirmation.</p>
+                  <p className="text-sm text-muted-foreground mt-1">AI extracts data from document uploads and a chatbot assists with certificate handling, while keeping a human in control.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
@@ -651,7 +651,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">Freelancer funnel</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Receive freelancer applications and certificate submissions in one structured flow, instead of emails and cold calls.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Manage freelancer applications and certificate submissions in one structured flow, replacing scattered emails and cold calls for better hiring oversight.</p>
                 </div>
               </div>
             </div>
