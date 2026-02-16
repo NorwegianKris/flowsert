@@ -1,67 +1,29 @@
 
 
-# Geo-Suggested Location Field with Existing Data Cleanup
+# Fix: Location Standardization Tool Loading Forever
 
-## Overview
-Implement a live geocoding search for the location field using the Photon API (OpenStreetMap), and provide an admin tool to standardize existing location entries across all personnel profiles.
+## Problem
+The `LocationStandardizationTool` keeps `loading = true` (showing "Analyzing locations...") until every single Photon API call completes. With ~65 unique locations and 500ms delays between calls, the spinner runs for 30+ seconds, making it appear broken.
 
-## Part 1: Photon API — Is It Safe?
-Yes. Photon is:
-- Open-source, maintained by Komoot (a well-known outdoor navigation company)
-- Powered by OpenStreetMap — the same data behind millions of apps
-- Free, no API key required, no tracking
-- Used by thousands of applications worldwide
-- Falls back gracefully — if the API is down, users can still type freely
+The root cause is in `fetchLocations()` — it groups the data, then loops through groups making API calls one-by-one, and only sets `loading = false` in the `finally` block after ALL calls finish.
 
-The only consideration is rate limiting (~1-2 requests/second), which the 300ms debounce handles easily.
+## Solution
+Split into two phases:
 
-## Part 2: Live Geo Search Implementation
+1. **Phase 1 (instant)**: Query database, group similar entries, set `loading = false`, render the table immediately
+2. **Phase 2 (background)**: Only for groups with 2+ entries, fetch Photon suggestions progressively, updating each row as results arrive
 
-### New files:
-- **`src/hooks/useGeoSearch.ts`** — Debounced hook that calls `https://photon.komoot.io/api/?q={query}&limit=5&lang=en` with a Norway/Europe bias. Parses results into "City, Country" format.
-- **`src/components/ui/geo-location-input.tsx`** — New input component that merges live API suggestions (priority) with existing DB locations from `useLocations`. Shows a subtle "Powered by OpenStreetMap" note.
+For single-entry groups, add a small "Suggest" button so the admin can request a Photon lookup on demand.
 
-### Updated files:
-- **`src/components/EditPersonnelDialog.tsx`** — Replace location `AutocompleteInput` with `GeoLocationInput`
+## Changes
 
-## Part 3: Smooth Cleanup of Existing Data
-
-Rather than a one-time SQL migration (which could incorrectly standardize entries), the approach is an **admin-facing bulk cleanup tool**:
-
-### How it works:
-1. A new section in the admin settings (or a button on the Personnel page) called **"Standardize Locations"**
-2. It groups all unique location values currently in the database (e.g., "Bergen", "Bergen, Norway", "bergen", "Bergen, Norge")
-3. For each unique value, it suggests a standardized version from Photon (e.g., all three become "Bergen, Norway")
-4. The admin reviews and approves each mapping, then clicks "Apply" to bulk-update all personnel records with that location
-5. This ensures no data is changed without human review
-
-### New files:
-- **`src/components/LocationStandardizationTool.tsx`** — Admin tool that:
-  - Fetches all unique locations from the database
-  - Groups similar ones using fuzzy matching
-  - For each group, calls Photon to suggest the standardized form
-  - Shows a review table: "Current values" -> "Suggested standard" with approve/skip per group
-  - On approve, runs a bulk update on the `personnel` table
-
-### Technical flow:
-```text
-1. Fetch unique locations from personnel table
-2. Group similar entries (fuzzy match)
-3. For each group, query Photon for best match
-4. Present admin with: [Current entries] -> [Suggested standard]
-5. Admin approves/edits each suggestion
-6. Bulk UPDATE personnel SET location = 'Bergen, Norway' WHERE location IN ('Bergen', 'bergen', 'Bergen, Norge')
-```
-
-## No Database Changes Required
-This is purely a UI/UX improvement. The `location` column stays as a text field. Over time, as users pick from the standardized Photon suggestions, the data naturally stays clean. The cleanup tool handles the historical mess.
-
-## Summary of Changes
-| File | Change |
-|------|--------|
-| `src/hooks/useGeoSearch.ts` | New — Photon API search hook |
-| `src/components/ui/geo-location-input.tsx` | New — Location input with live geo suggestions |
-| `src/components/EditPersonnelDialog.tsx` | Update — Use GeoLocationInput for location field |
-| `src/components/LocationStandardizationTool.tsx` | New — Admin tool to bulk-standardize existing locations |
-| `src/pages/AdminDashboard.tsx` | Update — Add access to the standardization tool (e.g., in Settings tab) |
+### `src/components/LocationStandardizationTool.tsx`
+- Refactor `fetchLocations` to split into two phases:
+  - Phase 1: DB query + grouping + `setLoading(false)` + render table
+  - Phase 2: Background async loop that only targets multi-entry groups, updating state per-row as suggestions arrive
+- Remove the broad `!e.includes(',')` filter that was triggering API calls for nearly every group
+- Add a per-row "Suggest" button (MapPin icon) for single-entry groups to fetch on demand
+- Add a background progress indicator ("Fetching suggestions... 3/8") shown as a small badge
+- Reduce inter-request delay from 500ms to 300ms
+- Use an `AbortController` / ref to cancel background fetching if the component unmounts or user clicks Refresh
 
