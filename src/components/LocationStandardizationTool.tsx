@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -314,10 +314,11 @@ export function LocationStandardizationTool() {
                       {group.status === 'loading' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Input
+                        <GeoLocationInput
                           value={group.suggestedStandard}
-                          onChange={(e) => handleEditSuggestion(realIndex, e.target.value)}
+                          onChange={(value) => handleEditSuggestion(realIndex, value)}
                           className="h-8 text-sm"
+                          placeholder="Search for a city..."
                         />
                       )}
                     </TableCell>
