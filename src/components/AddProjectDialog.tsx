@@ -13,9 +13,17 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
+import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { useDepartments } from '@/hooks/useDepartments';
+import { useCertificateTypes } from '@/hooks/useCertificateTypes';
+import { useCertificateCategories } from '@/hooks/useCertificateCategories';
+import { useIssuerTypes } from '@/hooks/useIssuerTypes';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
@@ -61,6 +69,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
   const [locationFilters, setLocationFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
+  const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
+  const [certificateFilterMode, setCertificateFilterMode] = useState<'types' | 'categories' | 'issuers'>('types');
+  const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>();
+
+  // Fetch filter options from DB (same as personnel pool)
+  const { categories: workerCategories } = useWorkerCategories();
+  const { departments: dbDepartments } = useDepartments();
+  const { data: certificateTypes = [] } = useCertificateTypes();
+  const { categories: certCategories } = useCertificateCategories();
+  const { data: issuerTypes = [] } = useIssuerTypes();
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -187,6 +205,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setRoleFilters([]);
     setLocationFilters([]);
     setDepartmentFilters([]);
+    setCertificateFilters([]);
+    setCertificateFilterMode('types');
+    setAvailabilityDateRange(undefined);
     setUploading(false);
     clearSuggestions();
   };
@@ -297,7 +318,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       );
     }
 
-    // Role filter
+    // Role filter (uses worker categories)
     if (roleFilters.length > 0) {
       filtered = filtered.filter(p => roleFilters.includes(p.category || ''));
     }
@@ -312,14 +333,31 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       filtered = filtered.filter(p => departmentFilters.includes(p.department || ''));
     }
 
+    // Certificate filter - personnel must have ALL selected certificates
+    if (certificateFilters.length > 0) {
+      filtered = filtered.filter(p => {
+        return certificateFilters.every(filterVal => {
+          if (certificateFilterMode === 'types') {
+            return p.certificates.some(c => c.name === filterVal);
+          } else if (certificateFilterMode === 'categories') {
+            return p.certificates.some(c => c.category === filterVal);
+          } else {
+            return p.certificates.some(c => c.issuingAuthority === filterVal);
+          }
+        });
+      });
+    }
+
     return filtered;
   };
 
   // Derive unique values for filter options
   const uniqueLocations = [...new Set(personnel.map(p => p.location).filter(Boolean))] as string[];
-  const uniqueRoles = [...new Set(personnel.map(p => p.category).filter(Boolean))] as string[];
-  const uniqueDepartments = [...new Set(personnel.map(p => p.department).filter(Boolean))] as string[];
-  const activeFilterCount = roleFilters.length + locationFilters.length + departmentFilters.length;
+  const uniqueCertNames = [...new Set(certificateTypes.map(t => t.name))];
+  const uniqueCertCategories = [...new Set(certCategories.map(c => c.name))];
+  const uniqueIssuers = [...new Set(issuerTypes.map(i => i.name))];
+  const certificateListItems = certificateFilterMode === 'categories' ? uniqueCertCategories : certificateFilterMode === 'issuers' ? uniqueIssuers : uniqueCertNames;
+  const activeFilterCount = roleFilters.length + locationFilters.length + departmentFilters.length + certificateFilters.length + (availabilityDateRange?.from ? 1 : 0);
 
   const selectablePersonnel = getSortedPersonnel(getFilteredPersonnel());
   const nonSelectablePersonnel = includeFreelancers 
@@ -750,80 +788,182 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[260px] p-3 space-y-4" align="end">
-                  {/* Role / Category filter */}
-                  {uniqueRoles.length > 0 && (
+                <PopoverContent className="w-[300px] p-0 max-h-[70vh] overflow-y-auto" align="end">
+                  <div className="p-3 space-y-4">
+                    {/* Availability Date Range */}
                     <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                      <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        <CalendarIcon className="h-3 w-3" />
+                        Availability
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" size="sm" className="w-full justify-start text-left font-normal h-8">
+                            <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                            <span className="truncate text-xs">
+                              {availabilityDateRange?.from
+                                ? availabilityDateRange.to
+                                  ? `${format(availabilityDateRange.from, 'MMM d')} - ${format(availabilityDateRange.to, 'MMM d, yyyy')}`
+                                  : format(availabilityDateRange.from, 'MMM d, yyyy')
+                                : 'Select dates'}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={availabilityDateRange?.from}
+                            selected={availabilityDateRange}
+                            onSelect={setAvailabilityDateRange}
+                            numberOfMonths={2}
+                          />
+                          {availabilityDateRange?.from && (
+                            <div className="p-2 border-t">
+                              <Button type="button" variant="ghost" size="sm" className="w-full" onClick={() => setAvailabilityDateRange(undefined)}>
+                                Clear
+                              </Button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Job Role / Category filter */}
+                    {workerCategories.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground">Job Role</Label>
+                        <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                          {workerCategories.map(cat => (
+                            <label key={cat.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                              <Checkbox
+                                checked={roleFilters.includes(cat.name)}
+                                onCheckedChange={() => {
+                                  setRoleFilters(prev => prev.includes(cat.name) ? prev.filter(r => r !== cat.name) : [...prev, cat.name]);
+                                }}
+                              />
+                              <span className="text-sm">{cat.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Location filter */}
+                    {uniqueLocations.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground">Location</Label>
+                        <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                          {uniqueLocations.map(loc => (
+                            <label key={loc} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                              <Checkbox
+                                checked={locationFilters.includes(loc)}
+                                onCheckedChange={() => {
+                                  setLocationFilters(prev => prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc]);
+                                }}
+                              />
+                              <span className="text-sm truncate">{loc}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certificate filter */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                        <Award className="h-3 w-3" />
+                        Certificates
+                      </Label>
+                      {(uniqueCertCategories.length > 0 || uniqueIssuers.length > 0) && (
+                        <ToggleGroup
+                          type="single"
+                          value={certificateFilterMode}
+                          onValueChange={(value) => {
+                            if (value) {
+                              setCertificateFilters([]);
+                              setCertificateFilterMode(value as 'types' | 'categories' | 'issuers');
+                            }
+                          }}
+                          className="w-full"
+                        >
+                          <ToggleGroupItem value="types" className="flex-1 gap-1 text-xs" aria-label="Filter by types">
+                            <Tag className="h-3 w-3" />
+                            Types
+                          </ToggleGroupItem>
+                          <ToggleGroupItem value="categories" className="flex-1 gap-1 text-xs" aria-label="Filter by categories">
+                            <FolderOpen className="h-3 w-3" />
+                            Categories
+                          </ToggleGroupItem>
+                          <ToggleGroupItem value="issuers" className="flex-1 gap-1 text-xs" aria-label="Filter by issuers">
+                            <Building2 className="h-3 w-3" />
+                            Issuers
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                      )}
                       <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                        {uniqueRoles.map(role => (
-                          <label key={role} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                        {certificateListItems.map(item => (
+                          <label key={item} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
                             <Checkbox
-                              checked={roleFilters.includes(role)}
+                              checked={certificateFilters.includes(item)}
                               onCheckedChange={() => {
-                                setRoleFilters(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+                                setCertificateFilters(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
                               }}
                             />
-                            <span className="text-sm">{role}</span>
+                            <span className="text-sm truncate">{item}</span>
                           </label>
                         ))}
+                        {certificateListItems.length === 0 && (
+                          <p className="text-xs text-muted-foreground px-2 py-1">
+                            No {certificateFilterMode === 'categories' ? 'categories' : certificateFilterMode === 'issuers' ? 'issuers' : 'certificate types'}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  )}
-                  {/* Location filter */}
-                  {uniqueLocations.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground">Location</Label>
-                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                        {uniqueLocations.map(loc => (
-                          <label key={loc} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
-                            <Checkbox
-                              checked={locationFilters.includes(loc)}
-                              onCheckedChange={() => {
-                                setLocationFilters(prev => prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc]);
-                              }}
-                            />
-                            <span className="text-sm truncate">{loc}</span>
-                          </label>
-                        ))}
+
+                    {/* Department filter */}
+                    {dbDepartments.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          Department
+                        </Label>
+                        <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                          {dbDepartments.map(dept => (
+                            <label key={dept.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
+                              <Checkbox
+                                checked={departmentFilters.includes(dept.name)}
+                                onCheckedChange={() => {
+                                  setDepartmentFilters(prev => prev.includes(dept.name) ? prev.filter(d => d !== dept.name) : [...prev, dept.name]);
+                                }}
+                              />
+                              <span className="text-sm">{dept.name}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {/* Department filter */}
-                  {uniqueDepartments.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground">Department</Label>
-                      <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                        {uniqueDepartments.map(dept => (
-                          <label key={dept} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer">
-                            <Checkbox
-                              checked={departmentFilters.includes(dept)}
-                              onCheckedChange={() => {
-                                setDepartmentFilters(prev => prev.includes(dept) ? prev.filter(d => d !== dept) : [...prev, dept]);
-                              }}
-                            />
-                            <span className="text-sm">{dept}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {activeFilterCount > 0 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        setRoleFilters([]);
-                        setLocationFilters([]);
-                        setDepartmentFilters([]);
-                      }}
-                    >
-                      <X className="h-3.5 w-3.5 mr-1" />
-                      Clear all filters
-                    </Button>
-                  )}
+                    )}
+
+                    {/* Clear all */}
+                    {activeFilterCount > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          setRoleFilters([]);
+                          setLocationFilters([]);
+                          setDepartmentFilters([]);
+                          setCertificateFilters([]);
+                          setAvailabilityDateRange(undefined);
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        Clear all filters
+                      </Button>
+                    )}
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
