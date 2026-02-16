@@ -326,7 +326,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>New Project</DialogTitle>
           <DialogDescription>
