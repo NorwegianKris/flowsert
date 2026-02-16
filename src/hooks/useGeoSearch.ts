@@ -44,7 +44,7 @@ export function useGeoSearch(query: string, enabled = true) {
 
     setLoading(true);
 
-    // Debounce 300ms
+    // Debounce 150ms
     timeoutRef.current = setTimeout(async () => {
       // Cancel previous request
       if (abortRef.current) abortRef.current.abort();
@@ -78,7 +78,7 @@ export function useGeoSearch(query: string, enabled = true) {
           setLoading(false);
         }
       }
-    }, 300);
+    }, 150);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);

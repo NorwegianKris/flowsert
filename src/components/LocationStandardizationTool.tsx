@@ -1,88 +1,32 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Loader2, Check, X, MapPin, RefreshCw, Search } from 'lucide-react';
-import { stringSimilarity } from '@/lib/stringUtils';
+import { Loader2, MapPin, RefreshCw, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface LocationGroup {
-  entries: string[];
-  counts: Map<string, number>;
-  suggestedStandard: string;
-  status: 'pending' | 'loading' | 'approved' | 'skipped';
-}
-
-async function fetchPhotonSuggestion(query: string): Promise<string | null> {
-  try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=en&lat=60.47&lon=8.47`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const feature = data.features?.[0];
-    if (!feature) return null;
-    const props = feature.properties;
-    const city = props.city || props.name || props.county || props.state || '';
-    const country = props.country || '';
-    if (!city) return null;
-    return country ? `${city}, ${country}` : city;
-  } catch {
-    return null;
-  }
-}
-
-function groupSimilarLocations(locations: { location: string; count: number }[]): LocationGroup[] {
-  const groups: LocationGroup[] = [];
-  const assigned = new Set<string>();
-
-  for (const loc of locations) {
-    if (assigned.has(loc.location)) continue;
-
-    const group: LocationGroup = {
-      entries: [loc.location],
-      counts: new Map([[loc.location, loc.count]]),
-      suggestedStandard: loc.location,
-      status: 'pending',
-    };
-    assigned.add(loc.location);
-
-    for (const other of locations) {
-      if (assigned.has(other.location)) continue;
-      if (
-        stringSimilarity(loc.location, other.location) >= 0.6 ||
-        loc.location.toLowerCase().trim() === other.location.toLowerCase().trim()
-      ) {
-        group.entries.push(other.location);
-        group.counts.set(other.location, other.count);
-        assigned.add(other.location);
-      }
-    }
-
-    groups.push(group);
-  }
-
-  return groups.sort((a, b) => b.entries.length - a.entries.length);
+interface LocationEntry {
+  value: string;
+  count: number;
 }
 
 export function LocationStandardizationTool() {
   const { businessId } = useAuth();
-  const [groups, setGroups] = useState<LocationGroup[]>([]);
+  const [locations, setLocations] = useState<LocationEntry[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [standardValue, setStandardValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [applying, setApplying] = useState<string | null>(null);
-  const [fetchingProgress, setFetchingProgress] = useState<{ done: number; total: number } | null>(null);
-  const abortRef = useRef(false);
+  const [applying, setApplying] = useState(false);
 
   const fetchLocations = useCallback(async () => {
     if (!businessId) return;
-    abortRef.current = true; // cancel any previous background fetch
     setLoading(true);
-    setFetchingProgress(null);
-
     try {
       const { data, error } = await supabase
         .from('personnel')
@@ -100,145 +44,90 @@ export function LocationStandardizationTool() {
         countMap.set(loc, (countMap.get(loc) || 0) + 1);
       }
 
-      const locationsWithCount = Array.from(countMap.entries())
-        .map(([location, count]) => ({ location, count }))
-        .sort((a, b) => b.count - a.count);
+      const entries = Array.from(countMap.entries())
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => a.value.localeCompare(b.value));
 
-      const grouped = groupSimilarLocations(locationsWithCount);
-
-      // Phase 1: Show table immediately
-      setGroups(grouped);
-      setLoading(false);
-
-      // Phase 2: Background fetch for multi-entry groups only
-      const multiEntryIndices = grouped
-        .map((g, i) => (g.entries.length > 1 ? i : -1))
-        .filter(i => i >= 0);
-
-      if (multiEntryIndices.length === 0) return;
-
-      abortRef.current = false;
-      setFetchingProgress({ done: 0, total: multiEntryIndices.length });
-
-      for (let j = 0; j < multiEntryIndices.length; j++) {
-        if (abortRef.current) break;
-        const idx = multiEntryIndices[j];
-
-        // Mark row as loading
-        setGroups(prev => {
-          const next = [...prev];
-          next[idx] = { ...next[idx], status: 'loading' };
-          return next;
-        });
-
-        const suggestion = await fetchPhotonSuggestion(grouped[idx].entries[0]);
-
-        if (abortRef.current) break;
-
-        setGroups(prev => {
-          const next = [...prev];
-          next[idx] = {
-            ...next[idx],
-            suggestedStandard: suggestion || next[idx].suggestedStandard,
-            status: 'pending',
-          };
-          return next;
-        });
-
-        setFetchingProgress({ done: j + 1, total: multiEntryIndices.length });
-
-        if (j < multiEntryIndices.length - 1) {
-          await new Promise(r => setTimeout(r, 300));
-        }
-      }
-
-      setFetchingProgress(null);
+      setLocations(entries);
+      setSelected(new Set());
+      setStandardValue('');
     } catch (err: any) {
       console.error('Error fetching locations:', err);
       toast.error('Failed to load locations');
+    } finally {
       setLoading(false);
     }
   }, [businessId]);
 
   useEffect(() => {
     fetchLocations();
-    return () => { abortRef.current = true; };
   }, [fetchLocations]);
 
-  const handleSuggest = async (groupIndex: number) => {
-    setGroups(prev => {
-      const next = [...prev];
-      next[groupIndex] = { ...next[groupIndex], status: 'loading' };
-      return next;
-    });
-
-    const suggestion = await fetchPhotonSuggestion(groups[groupIndex].entries[0]);
-
-    setGroups(prev => {
-      const next = [...prev];
-      next[groupIndex] = {
-        ...next[groupIndex],
-        suggestedStandard: suggestion || next[groupIndex].suggestedStandard,
-        status: 'pending',
-      };
+  const toggleSelect = (value: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
       return next;
     });
   };
 
-  const handleApply = async (groupIndex: number) => {
-    const group = groups[groupIndex];
-    if (!businessId) return;
+  const toggleAll = () => {
+    if (selected.size === locations.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(locations.map(l => l.value)));
+    }
+  };
 
-    setApplying(group.suggestedStandard);
+  const handleApply = async () => {
+    if (selected.size === 0 || !standardValue.trim() || !businessId) return;
+
+    setApplying(true);
     try {
-      for (const entry of group.entries) {
-        if (entry === group.suggestedStandard) continue;
+      for (const entry of selected) {
+        if (entry === standardValue) continue;
         const { error } = await supabase
           .from('personnel')
-          .update({ location: group.suggestedStandard })
+          .update({ location: standardValue })
           .eq('business_id', businessId)
           .eq('location', entry);
         if (error) throw error;
       }
 
-      setGroups(prev => {
-        const next = [...prev];
-        next[groupIndex] = { ...group, status: 'approved' };
-        return next;
+      toast.success(`Updated ${selected.size} location(s) to "${standardValue}"`);
+
+      // Remove applied entries and add/update the standard value
+      setLocations(prev => {
+        const appliedSet = new Set(selected);
+        let newCount = 0;
+        const remaining: LocationEntry[] = [];
+        for (const loc of prev) {
+          if (appliedSet.has(loc.value)) {
+            newCount += loc.count;
+          } else {
+            remaining.push(loc);
+          }
+        }
+        // Add or update the standard value entry
+        const existingIdx = remaining.findIndex(l => l.value === standardValue);
+        if (existingIdx >= 0) {
+          remaining[existingIdx] = { ...remaining[existingIdx], count: remaining[existingIdx].count + newCount };
+        } else {
+          remaining.push({ value: standardValue, count: newCount });
+        }
+        return remaining.sort((a, b) => a.value.localeCompare(b.value));
       });
 
-      const count = group.entries.length;
-      toast.success(`Standardized ${count} location variant${count > 1 ? 's' : ''} to "${group.suggestedStandard}"`);
+      setSelected(new Set());
+      setStandardValue('');
     } catch (err: any) {
       console.error('Error applying standardization:', err);
       toast.error('Failed to apply standardization');
     } finally {
-      setApplying(null);
+      setApplying(false);
     }
   };
-
-  const handleSkip = (groupIndex: number) => {
-    setGroups(prev => {
-      const next = [...prev];
-      next[groupIndex] = { ...next[groupIndex], status: 'skipped' };
-      return next;
-    });
-  };
-
-  const handleEditSuggestion = (groupIndex: number, value: string) => {
-    setGroups(prev => {
-      const next = [...prev];
-      next[groupIndex] = { ...next[groupIndex], suggestedStandard: value };
-      return next;
-    });
-  };
-
-  const actionableGroups = groups.filter(
-    g => g.status !== 'approved' && g.status !== 'skipped' &&
-    (g.entries.length > 1 || g.entries.some(e => !e.includes(',')))
-  );
-
-  const completedCount = groups.filter(g => g.status === 'approved').length;
 
   return (
     <Card>
@@ -250,120 +139,113 @@ export function LocationStandardizationTool() {
               Standardize Locations
             </CardTitle>
             <CardDescription>
-              Review and standardize location entries across all personnel profiles.
-              Groups similar entries and suggests a standardized "City, Country" format.
+              Select locations on the left, then choose a standardized city on the right.
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => { abortRef.current = true; fetchLocations(); }} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={fetchLocations} disabled={loading}>
             <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
             Refresh
           </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          {completedCount > 0 && (
-            <Badge variant="secondary" className="w-fit">
-              {completedCount} group{completedCount > 1 ? 's' : ''} standardized
-            </Badge>
-          )}
-          {fetchingProgress && (
-            <Badge variant="outline" className="w-fit">
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              Fetching suggestions... {fetchingProgress.done}/{fetchingProgress.total}
-            </Badge>
-          )}
         </div>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Analyzing locations...</span>
+            <span className="ml-2 text-muted-foreground">Loading locations...</span>
           </div>
-        ) : actionableGroups.length === 0 ? (
+        ) : locations.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>All locations are already standardized!</p>
+            <p>No locations found.</p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Current Values</TableHead>
-                <TableHead>Suggested Standard</TableHead>
-                <TableHead className="w-[180px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {actionableGroups.map((group) => {
-                const realIndex = groups.indexOf(group);
-                return (
-                  <TableRow key={group.entries.join('|')}>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {group.entries.map(entry => (
-                          <Badge key={entry} variant="outline" className="text-xs">
-                            {entry}
-                            <span className="ml-1 text-muted-foreground">
-                              ({group.counts.get(entry) || 0})
-                            </span>
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {group.status === 'loading' ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <GeoLocationInput
-                          value={group.suggestedStandard}
-                          onChange={(value) => handleEditSuggestion(realIndex, value)}
-                          className="h-8 text-sm"
-                          placeholder="Search for a city..."
-                        />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Left panel: location list */}
+            <div className="border rounded-md">
+              <div className="flex items-center justify-between p-3 border-b bg-muted/50">
+                <span className="text-sm font-medium">
+                  User-inputted locations ({locations.length})
+                </span>
+                <Button variant="ghost" size="sm" onClick={toggleAll} className="h-7 text-xs">
+                  {selected.size === locations.length ? 'Deselect all' : 'Select all'}
+                </Button>
+              </div>
+              <ScrollArea className="h-[360px]">
+                <div className="p-2 space-y-0.5">
+                  {locations.map(loc => (
+                    <label
+                      key={loc.value}
+                      className={cn(
+                        'flex items-center gap-2 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-accent/50 transition-colors',
+                        selected.has(loc.value) && 'bg-accent'
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {group.entries.length === 1 && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleSuggest(realIndex)}
-                            disabled={group.status === 'loading'}
-                            className="h-8"
-                            title="Lookup suggestion"
-                          >
-                            <Search className="h-3 w-3" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => handleApply(realIndex)}
-                          disabled={applying !== null || group.status === 'loading'}
-                          className="h-8"
-                        >
-                          {applying === group.suggestedStandard ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Check className="h-3 w-3" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleSkip(realIndex)}
-                          className="h-8"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    >
+                      <Checkbox
+                        checked={selected.has(loc.value)}
+                        onCheckedChange={() => toggleSelect(loc.value)}
+                      />
+                      <span className="text-sm flex-1 truncate">{loc.value}</span>
+                      <Badge variant="secondary" className="text-xs shrink-0">
+                        {loc.count}
+                      </Badge>
+                    </label>
+                  ))}
+                </div>
+              </ScrollArea>
+              {selected.size > 0 && (
+                <div className="p-2 border-t bg-muted/50">
+                  <span className="text-xs text-muted-foreground">
+                    {selected.size} selected
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Right panel: standardize to */}
+            <div className="border rounded-md flex flex-col">
+              <div className="p-3 border-b bg-muted/50">
+                <span className="text-sm font-medium">Standardize to</span>
+              </div>
+              <div className="p-4 flex-1 flex flex-col gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1.5 block">
+                    Search for the correct city name
+                  </label>
+                  <GeoLocationInput
+                    value={standardValue}
+                    onChange={setStandardValue}
+                    placeholder="Type a city name..."
+                  />
+                </div>
+
+                {selected.size > 0 && standardValue.trim() && (
+                  <div className="rounded-md border p-3 bg-muted/30">
+                    <p className="text-sm mb-2">
+                      Will update <strong>{selected.size}</strong> location value{selected.size > 1 ? 's' : ''} to:
+                    </p>
+                    <Badge variant="default" className="text-sm">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {standardValue}
+                    </Badge>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleApply}
+                  disabled={selected.size === 0 || !standardValue.trim() || applying}
+                  className="mt-auto"
+                >
+                  {applying ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  Apply to {selected.size} selected
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
