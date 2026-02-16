@@ -43,7 +43,7 @@ export function ProjectTimeline({
     [project.assignedPersonnel, personnel]
   );
 
-  const { availabilityMap, loading } = useProjectTimelineData(
+  const { rawRecordsMap, loading } = useProjectTimelineData(
     project.assignedPersonnel,
     project.startDate,
     project.endDate
@@ -54,12 +54,12 @@ export function ProjectTimeline({
       project.endDate
         ? buildPersonnelTimelineData(
             assignedPersonnel,
-            availabilityMap,
+            rawRecordsMap,
             project.startDate,
             project.endDate
           )
         : [],
-    [assignedPersonnel, availabilityMap, project.startDate, project.endDate]
+    [assignedPersonnel, rawRecordsMap, project.startDate, project.endDate]
   );
 
   // Measure container width to fill available space

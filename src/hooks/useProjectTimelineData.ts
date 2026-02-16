@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Personnel } from '@/types';
 import { AvailabilitySpan, ComplianceBar, PersonnelTimelineData } from '@/components/project-timeline/types';
@@ -10,41 +10,64 @@ interface AvailabilityRecord {
   status: string;
 }
 
-function mergeAvailabilitySpans(records: AvailabilityRecord[]): AvailabilitySpan[] {
-  if (records.length === 0) return [];
+function fillGapsWithAvailable(
+  records: AvailabilityRecord[],
+  personnelId: string,
+  projectStart: string,
+  projectEnd: string
+): AvailabilitySpan[] {
+  // Build day-by-day status map, defaulting every day to "available"
+  const statusMap = new Map<string, string>();
+  const start = new Date(projectStart + 'T00:00:00');
+  const end = new Date(projectEnd + 'T00:00:00');
 
-  // Sort by date
-  const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date));
-  const spans: AvailabilitySpan[] = [];
-  let current: AvailabilitySpan = {
-    personnelId: sorted[0].personnel_id,
-    startDate: sorted[0].date,
-    endDate: sorted[0].date,
-    status: sorted[0].status as AvailabilitySpan['status'],
-  };
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    statusMap.set(d.toISOString().split('T')[0], 'available');
+  }
 
-  for (let i = 1; i < sorted.length; i++) {
-    const rec = sorted[i];
-    const prevDate = new Date(current.endDate);
-    prevDate.setDate(prevDate.getDate() + 1);
-    const nextDay = prevDate.toISOString().split('T')[0];
-
-    if (rec.status === current.status && rec.date === nextDay) {
-      current.endDate = rec.date;
-    } else {
-      if (current.status !== 'unavailable') {
-        spans.push(current);
-      }
-      current = {
-        personnelId: rec.personnel_id,
-        startDate: rec.date,
-        endDate: rec.date,
-        status: rec.status as AvailabilitySpan['status'],
-      };
+  // Override with explicit records
+  for (const rec of records) {
+    if (statusMap.has(rec.date)) {
+      statusMap.set(rec.date, rec.status);
     }
   }
-  if (current.status !== 'unavailable') {
-    spans.push(current);
+
+  // Walk sorted dates and merge consecutive same-status into spans
+  const sortedDates = Array.from(statusMap.keys()).sort();
+  if (sortedDates.length === 0) return [];
+
+  const spans: AvailabilitySpan[] = [];
+  let curStatus = statusMap.get(sortedDates[0])!;
+  let curStart = sortedDates[0];
+  let curEnd = sortedDates[0];
+
+  for (let i = 1; i < sortedDates.length; i++) {
+    const date = sortedDates[i];
+    const status = statusMap.get(date)!;
+    if (status === curStatus) {
+      curEnd = date;
+    } else {
+      if (curStatus !== 'unavailable') {
+        spans.push({
+          personnelId,
+          startDate: curStart,
+          endDate: curEnd,
+          status: curStatus as AvailabilitySpan['status'],
+        });
+      }
+      curStatus = status;
+      curStart = date;
+      curEnd = date;
+    }
+  }
+  // Push last span
+  if (curStatus !== 'unavailable') {
+    spans.push({
+      personnelId,
+      startDate: curStart,
+      endDate: curEnd,
+      status: curStatus as AvailabilitySpan['status'],
+    });
   }
 
   return spans;
@@ -55,12 +78,12 @@ export function useProjectTimelineData(
   startDate: string | undefined,
   endDate: string | undefined
 ) {
-  const [availabilityMap, setAvailabilityMap] = useState<Map<string, AvailabilitySpan[]>>(new Map());
+  const [rawRecordsMap, setRawRecordsMap] = useState<Map<string, AvailabilityRecord[]>>(new Map());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!startDate || !endDate || personnelIds.length === 0) {
-      setAvailabilityMap(new Map());
+      setRawRecordsMap(new Map());
       return;
     }
 
@@ -84,12 +107,7 @@ export function useProjectTimelineData(
           grouped.set(rec.personnel_id, existing);
         });
 
-        const result = new Map<string, AvailabilitySpan[]>();
-        grouped.forEach((records, pid) => {
-          result.set(pid, mergeAvailabilitySpans(records));
-        });
-
-        setAvailabilityMap(result);
+        setRawRecordsMap(grouped);
       } catch (err) {
         console.error('Error fetching timeline availability:', err);
       } finally {
@@ -100,33 +118,21 @@ export function useProjectTimelineData(
     fetchAvailability();
   }, [personnelIds.join(','), startDate, endDate]);
 
-  return { availabilityMap, loading };
+  return { rawRecordsMap, loading };
 }
 
 /**
- * Build timeline data for each person. If a person has no availability records,
- * they default to "available" for the entire project period.
+ * Build timeline data for each person. Fills gaps with "available" default.
  */
 export function buildPersonnelTimelineData(
   personnel: Personnel[],
-  availabilityMap: Map<string, AvailabilitySpan[]>,
+  rawRecordsMap: Map<string, AvailabilityRecord[]>,
   projectStart: string,
   projectEnd: string
 ): PersonnelTimelineData[] {
   return personnel.map((person) => {
-    let availabilitySpans = availabilityMap.get(person.id);
-
-    // Default: full project span as available when no data exists
-    if (!availabilitySpans || availabilitySpans.length === 0) {
-      availabilitySpans = [
-        {
-          personnelId: person.id,
-          startDate: projectStart,
-          endDate: projectEnd,
-          status: 'available',
-        },
-      ];
-    }
+    const records = rawRecordsMap.get(person.id) || [];
+    const availabilitySpans = fillGapsWithAvailable(records, person.id, projectStart, projectEnd);
 
     const complianceBars: ComplianceBar[] = person.certificates
       .filter((cert) => cert.expiryDate !== null)
