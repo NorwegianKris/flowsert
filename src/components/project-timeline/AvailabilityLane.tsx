@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { AvailabilitySpan } from './types';
 import { dateToX } from './utils';
 import { LANE_HEIGHT } from './types';
@@ -19,9 +19,9 @@ interface AvailabilityLaneProps {
 function statusColor(status: AvailabilitySpan['status']): string {
   switch (status) {
     case 'available':
-      return 'bg-emerald-500/80';
+      return 'bg-sky-500/80';
     case 'partial':
-      return 'bg-emerald-500/40 bg-[repeating-linear-gradient(45deg,transparent,transparent_3px,hsl(var(--background)/0.3)_3px,hsl(var(--background)/0.3)_6px)]';
+      return 'bg-sky-500/40 bg-[repeating-linear-gradient(45deg,transparent,transparent_3px,hsl(var(--background)/0.3)_3px,hsl(var(--background)/0.3)_6px)]';
     case 'other':
       return 'bg-blue-500/70';
     default:
@@ -58,7 +58,7 @@ export function AvailabilityLane({
 
       {/* Lane */}
       <div
-        className="relative flex-1 bg-emerald-500/[0.03] cursor-pointer"
+        className="relative flex-1 bg-sky-500/[0.03] cursor-pointer"
         style={{ minHeight: LANE_HEIGHT, width: totalWidth }}
         onClick={onClick}
       >
@@ -81,7 +81,7 @@ export function AvailabilityLane({
               <TooltipContent>
                 <p className="font-medium">{statusLabel(span.status)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {format(parseISO(span.startDate), 'MMM d')} – {format(parseISO(span.endDate), 'MMM d, yyyy')}
+                  {format(new Date(span.startDate + 'T00:00:00'), 'MMM d')} – {format(new Date(span.endDate + 'T00:00:00'), 'MMM d, yyyy')}
                 </p>
               </TooltipContent>
             </Tooltip>
