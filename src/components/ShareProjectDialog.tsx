@@ -319,7 +319,7 @@ export function ShareProjectDialog({
               <Checkbox 
                 id="projectCard"
                 checked={selectedExports.includes('projectCard')}
-                onCheckedChange={() => toggleExport('projectCard')}
+                className="pointer-events-none"
               />
               <div className="flex items-center gap-3 flex-1">
                 <FileText className="h-5 w-5 text-primary" />
@@ -342,7 +342,7 @@ export function ShareProjectDialog({
               <Checkbox 
                 id="personnelCertificates"
                 checked={selectedExports.includes('personnelCertificates')}
-                onCheckedChange={() => assignedPersonnel.length > 0 && toggleExport('personnelCertificates')}
+                className="pointer-events-none"
                 disabled={assignedPersonnel.length === 0}
               />
               <div className="flex items-center gap-3 flex-1">

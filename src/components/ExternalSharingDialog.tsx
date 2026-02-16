@@ -424,7 +424,7 @@ export function ExternalSharingDialog({
               <Checkbox
                 id="projectCard"
                 checked={selectedExports.includes('projectCard')}
-                onCheckedChange={() => toggleExport('projectCard')}
+                className="pointer-events-none"
               />
               <div className="flex items-center gap-3 flex-1">
                 <FileText className="h-5 w-5 text-primary" />
@@ -466,7 +466,7 @@ export function ExternalSharingDialog({
               <Checkbox
                 id="personnelCertificates"
                 checked={selectedExports.includes('personnelCertificates')}
-                onCheckedChange={() => toggleExport('personnelCertificates')}
+                className="pointer-events-none"
               />
               <div className="flex items-center gap-3 flex-1">
                 <Users className="h-5 w-5 text-primary" />
