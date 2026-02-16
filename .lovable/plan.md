@@ -1,27 +1,38 @@
 
 
-# Add Search Results Count to Personnel Filters
+# Fix Checkbox Double-Toggle Bug
 
-## What Changes
+## Problem
+When clicking directly on the checkbox square, both the checkbox's `onCheckedChange` and the parent div's `onClick` fire, causing the toggle to run twice (check then immediately uncheck = no visible change). Clicking elsewhere on the card only fires the parent `onClick`, which works correctly.
 
-A results count indicator (e.g., "12 results") will appear on the right side of the applied filter badges row, giving admins immediate feedback on how many personnel match the current filters.
+## Fix
+Remove `onCheckedChange` from the Checkbox components and add `pointer-events-none` so clicks pass through to the parent div. The checkbox becomes purely visual -- the parent div handles all click logic.
 
-## Changes
+## Files to Change
 
-### 1. `src/components/PersonnelFilters.tsx`
-- Add a new optional prop `resultCount?: number` to the interface
-- After the active filter badges section (line ~559), add a results count display that shows when filters are active
-- Display format: "X results" in muted text, right-aligned using `ml-auto`
+### 1. `src/components/ExternalSharingDialog.tsx`
+- **Line 427**: Remove `onCheckedChange` and add `pointer-events-none` class to the "Export Project Card" checkbox
+- **Line 469**: Same fix for the "Export Personnel & Certificates" checkbox
 
-### 2. `src/pages/AdminDashboard.tsx`
-- Pass `resultCount={filteredPersonnel.length}` to the `PersonnelFilters` component
+### 2. `src/components/ShareProjectDialog.tsx`
+- **Line 322**: Same fix for the "Export Project Card" checkbox
+- **Line 345**: Same fix for the "Export Personnel & Certificates" checkbox
 
-## Visual Result
+## Technical Detail
 
-When filters are applied, the filter row will show:
-```text
-[Filter badges...] ·····························  12 results
+Before:
+```tsx
+<div onClick={() => toggleExport('projectCard')}>
+  <Checkbox checked={...} onCheckedChange={() => toggleExport('projectCard')} />
+</div>
 ```
 
-When no filters are active, no count is shown (the full list is visible anyway).
+After:
+```tsx
+<div onClick={() => toggleExport('projectCard')}>
+  <Checkbox checked={...} className="pointer-events-none" />
+</div>
+```
+
+This ensures clicking anywhere on the card -- including the checkbox square -- triggers exactly one toggle.
 
