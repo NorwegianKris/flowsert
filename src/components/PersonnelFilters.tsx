@@ -12,7 +12,7 @@ import { DateRange } from 'react-day-picker';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export type PersonnelSortOption = 'recent' | 'alphabetical';
-export type CertificateFilterMode = 'types' | 'categories';
+export type CertificateFilterMode = 'types' | 'categories' | 'issuers';
 
 interface PersonnelFiltersProps {
   roleFilters: string[];
@@ -26,6 +26,7 @@ interface PersonnelFiltersProps {
   locations: string[];
   certificates: string[];
   certificateCategories?: string[];
+  certificateIssuers?: string[];
   availabilityDateRange: DateRange | undefined;
   onAvailabilityDateRangeChange: (range: DateRange | undefined) => void;
   sortOption: PersonnelSortOption;
@@ -47,6 +48,7 @@ export function PersonnelFilters({
   locations,
   certificates,
   certificateCategories = [],
+  certificateIssuers = [],
   availabilityDateRange,
   onAvailabilityDateRangeChange,
   sortOption,
@@ -66,7 +68,7 @@ export function PersonnelFilters({
   const [sortOpen, setSortOpen] = useState(false);
 
   // Determine which list to show based on mode
-  const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificates;
+  const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificateFilterMode === 'issuers' ? certificateIssuers : certificates;
 
   const sortOptions = [
     { value: 'recent' as PersonnelSortOption, label: 'Most Recent' },
@@ -269,7 +271,7 @@ export function PersonnelFilters({
         </PopoverTrigger>
         <PopoverContent className="w-[280px] p-0 bg-popover border shadow-md z-50" align="start">
           {/* Toggle between Categories and Types */}
-          {onCertificateFilterModeChange && certificateCategories.length > 0 && (
+          {onCertificateFilterModeChange && (certificateCategories.length > 0 || certificateIssuers.length > 0) && (
             <div className="p-2 border-b">
               <ToggleGroup
                 type="single"
@@ -299,6 +301,14 @@ export function PersonnelFilters({
                   <FolderOpen className="h-3.5 w-3.5" />
                   Categories
                 </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="issuers"
+                  className="flex-1 gap-1.5 text-xs"
+                  aria-label="Filter by issuers"
+                >
+                  <Building2 className="h-3.5 w-3.5" />
+                  Issuers
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           )}
@@ -320,7 +330,7 @@ export function PersonnelFilters({
               ))}
               {certificateListItems.length === 0 && (
                 <p className="text-sm text-muted-foreground px-2 py-1">
-                  No {certificateFilterMode === 'categories' ? 'categories' : 'certificates'}
+                  No {certificateFilterMode === 'categories' ? 'categories' : certificateFilterMode === 'issuers' ? 'issuers' : 'certificates'}
                 </p>
               )}
             </div>
