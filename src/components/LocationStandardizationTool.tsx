@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, MapPin, RefreshCw, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,8 @@ interface LocationEntry {
   count: number;
 }
 
+const isStandardized = (loc: string) => /^.+,\s*.+$/.test(loc);
+
 export function LocationStandardizationTool() {
   const { businessId } = useAuth();
   const [locations, setLocations] = useState<LocationEntry[]>([]);
@@ -23,6 +26,9 @@ export function LocationStandardizationTool() {
   const [standardValue, setStandardValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
+
+  const userInputted = locations.filter(l => !isStandardized(l.value));
+  const standardized = locations.filter(l => isStandardized(l.value));
 
   const fetchLocations = useCallback(async () => {
     if (!businessId) return;
@@ -73,10 +79,10 @@ export function LocationStandardizationTool() {
   };
 
   const toggleAll = () => {
-    if (selected.size === locations.length) {
+    if (selected.size === userInputted.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(locations.map(l => l.value)));
+      setSelected(new Set(userInputted.map(l => l.value)));
     }
   };
 
@@ -97,7 +103,6 @@ export function LocationStandardizationTool() {
 
       toast.success(`Updated ${selected.size} location(s) to "${standardValue}"`);
 
-      // Remove applied entries and add/update the standard value
       setLocations(prev => {
         const appliedSet = new Set(selected);
         let newCount = 0;
@@ -109,7 +114,6 @@ export function LocationStandardizationTool() {
             remaining.push(loc);
           }
         }
-        // Add or update the standard value entry
         const existingIdx = remaining.findIndex(l => l.value === standardValue);
         if (existingIdx >= 0) {
           remaining[existingIdx] = { ...remaining[existingIdx], count: remaining[existingIdx].count + newCount };
@@ -161,37 +165,48 @@ export function LocationStandardizationTool() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Left panel: location list */}
+            {/* Left panel: user-inputted locations only */}
             <div className="border rounded-md">
               <div className="flex items-center justify-between p-3 border-b bg-muted/50">
                 <span className="text-sm font-medium">
-                  User-inputted locations ({locations.length})
+                  User-inputted locations ({userInputted.length})
                 </span>
-                <Button variant="ghost" size="sm" onClick={toggleAll} className="h-7 text-xs">
-                  {selected.size === locations.length ? 'Deselect all' : 'Select all'}
-                </Button>
+                {userInputted.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={toggleAll} className="h-7 text-xs">
+                    {selected.size === userInputted.length ? 'Deselect all' : 'Select all'}
+                  </Button>
+                )}
               </div>
               <ScrollArea className="h-[360px]">
-                <div className="p-2 space-y-0.5">
-                  {locations.map(loc => (
-                    <label
-                      key={loc.value}
-                      className={cn(
-                        'flex items-center gap-2 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-accent/50 transition-colors',
-                        selected.has(loc.value) && 'bg-accent'
-                      )}
-                    >
-                      <Checkbox
-                        checked={selected.has(loc.value)}
-                        onCheckedChange={() => toggleSelect(loc.value)}
-                      />
-                      <span className="text-sm flex-1 truncate">{loc.value}</span>
-                      <Badge variant="secondary" className="text-xs shrink-0">
-                        {loc.count}
-                      </Badge>
-                    </label>
-                  ))}
-                </div>
+                {userInputted.length === 0 ? (
+                  <div className="flex items-center justify-center h-full py-12 text-muted-foreground text-sm">
+                    <div className="text-center">
+                      <Check className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p>All locations are standardized!</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2 space-y-0.5">
+                    {userInputted.map(loc => (
+                      <label
+                        key={loc.value}
+                        className={cn(
+                          'flex items-center gap-2 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-accent/50 transition-colors',
+                          selected.has(loc.value) && 'bg-accent'
+                        )}
+                      >
+                        <Checkbox
+                          checked={selected.has(loc.value)}
+                          onCheckedChange={() => toggleSelect(loc.value)}
+                        />
+                        <span className="text-sm flex-1 truncate">{loc.value}</span>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {loc.count}
+                        </Badge>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </ScrollArea>
               {selected.size > 0 && (
                 <div className="p-2 border-t bg-muted/50">
@@ -202,48 +217,86 @@ export function LocationStandardizationTool() {
               )}
             </div>
 
-            {/* Right panel: standardize to */}
+            {/* Right panel: tabs */}
             <div className="border rounded-md flex flex-col">
-              <div className="p-3 border-b bg-muted/50">
-                <span className="text-sm font-medium">Standardize to</span>
-              </div>
-              <div className="p-4 flex-1 flex flex-col gap-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1.5 block">
-                    Search for the correct city name
-                  </label>
-                  <GeoLocationInput
-                    value={standardValue}
-                    onChange={setStandardValue}
-                    placeholder="Type a city name..."
-                  />
+              <Tabs defaultValue="standardize" className="flex flex-col flex-1">
+                <div className="p-3 border-b bg-muted/50">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="standardize" className="flex-1">Standardize to</TabsTrigger>
+                    <TabsTrigger value="existing" className="flex-1">
+                      Standardized ({standardized.length})
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
 
-                {selected.size > 0 && standardValue.trim() && (
-                  <div className="rounded-md border p-3 bg-muted/30">
-                    <p className="text-sm mb-2">
-                      Will update <strong>{selected.size}</strong> location value{selected.size > 1 ? 's' : ''} to:
-                    </p>
-                    <Badge variant="default" className="text-sm">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {standardValue}
-                    </Badge>
-                  </div>
-                )}
+                <TabsContent value="standardize" className="flex-1 flex flex-col m-0">
+                  <div className="p-4 flex-1 flex flex-col gap-4">
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1.5 block">
+                        Search for the correct city name
+                      </label>
+                      <GeoLocationInput
+                        value={standardValue}
+                        onChange={setStandardValue}
+                        placeholder="Type a city name..."
+                      />
+                    </div>
 
-                <Button
-                  onClick={handleApply}
-                  disabled={selected.size === 0 || !standardValue.trim() || applying}
-                  className="mt-auto"
-                >
-                  {applying ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Check className="h-4 w-4 mr-2" />
-                  )}
-                  Apply to {selected.size} selected
-                </Button>
-              </div>
+                    {selected.size > 0 && standardValue.trim() && (
+                      <div className="rounded-md border p-3 bg-muted/30">
+                        <p className="text-sm mb-2">
+                          Will update <strong>{selected.size}</strong> location value{selected.size > 1 ? 's' : ''} to:
+                        </p>
+                        <Badge variant="default" className="text-sm">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {standardValue}
+                        </Badge>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleApply}
+                      disabled={selected.size === 0 || !standardValue.trim() || applying}
+                      className="mt-auto"
+                    >
+                      {applying ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-2" />
+                      )}
+                      Apply to {selected.size} selected
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="existing" className="flex-1 m-0">
+                  <ScrollArea className="h-[360px]">
+                    {standardized.length === 0 ? (
+                      <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                        <div className="text-center">
+                          <MapPin className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                          <p>No standardized locations yet.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2 space-y-0.5">
+                        {standardized.map(loc => (
+                          <div
+                            key={loc.value}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-sm"
+                          >
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-sm flex-1 truncate">{loc.value}</span>
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {loc.count}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         )}
