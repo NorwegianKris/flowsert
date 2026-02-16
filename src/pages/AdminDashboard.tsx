@@ -20,6 +20,7 @@ import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { PersonnelOverview } from '@/components/PersonnelOverview';
 import { FeedbackList } from '@/components/FeedbackList';
+import { ActivationOverview } from '@/components/ActivationOverview';
 import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/components/PersonnelFilters';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
@@ -604,6 +605,8 @@ export default function AdminDashboard() {
                     />
                   </TabsContent>
                 </Tabs>
+
+                <ActivationOverview personnel={personnel} onRefresh={refetch} />
                 
                 <CategoriesSection />
 
