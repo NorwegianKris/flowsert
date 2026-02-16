@@ -1,37 +1,36 @@
 
 
-# Speed Up OpenStreetMap Location Search
+# Separate Standardized vs User-Inputted Locations
 
-## Problem
-The Photon API (photon.komoot.io) is a free service hosted in Europe. Network latency from the user's browser to that server adds noticeable delay on top of the 150ms debounce. There's no way to make the external API faster, but we can reduce perceived slowness.
+## What Changes
 
-## Changes
+The left panel of the Standardize Locations tool currently shows all locations mixed together. We will split them into two groups based on format, and add a tab on the right "Standardize to" box to browse already-standardized locations.
 
-### 1. Reduce debounce to 80ms (`src/hooks/useGeoSearch.ts`)
-- Drop from 150ms to 80ms -- still enough to avoid spamming on fast typing, but shaves ~70ms off every keystroke
-- The abort controller already cancels in-flight requests, so rapid typing won't cause issues
+## How We Detect Standardized Locations
 
-### 2. Add a simple in-memory cache (`src/hooks/useGeoSearch.ts`)
-- Cache previous query results in a `Map<string, string[]>` (kept as a module-level variable so it persists across re-renders)
-- If the user types a query they already searched for (e.g., backspaces and retypes), results appear instantly without an API call
-- Cache is bounded to the last 50 queries to avoid memory bloat
+OpenStreetMap locations from the GeoLocationInput are always formatted as **"City, Country"** (e.g., "Bergen, Norway"). Locations without a comma are treated as user-inputted free-text (e.g., "bergen", "Bergan", "Oslo area").
 
-### 3. Show results immediately when cached, skip loading state
-- If a cache hit exists, set results directly and skip the debounce/fetch entirely
-- This makes repeat searches feel instant
+## UI Changes to `LocationStandardizationTool.tsx`
+
+### Left panel
+- Only show **non-standardized** locations (those without a comma pattern matching "City, Country")
+- Update the header to say "User-inputted locations" with the filtered count
+
+### Right panel -- add Tabs
+- **Tab 1: "Standardize to"** (default) -- the existing GeoLocationInput search + apply button, unchanged
+- **Tab 2: "Standardized locations"** -- a scrollable list showing all locations that match the "City, Country" format, with their personnel count badges. This is read-only, just for reference so you can see what's already clean.
 
 ## Technical Detail
 
+**Splitting logic** (inside the component, after fetching):
 ```text
-User types "Ber"
-  -> 80ms debounce -> fetch from Photon -> cache result
-User types "Berg"
-  -> 80ms debounce -> fetch from Photon -> cache result
-User clears and types "Ber" again
-  -> cache hit -> instant results, no fetch, no spinner
+const isStandardized = (loc: string) => /^.+,\s*.+$/.test(loc);
+
+const userInputted = locations.filter(l => !isStandardized(l.value));
+const standardized = locations.filter(l => isStandardized(l.value));
 ```
 
-### Files changed
-- `src/hooks/useGeoSearch.ts` -- reduce debounce, add cache lookup before fetch
+**Files changed:**
+- `src/components/LocationStandardizationTool.tsx` -- add the splitting logic, wrap right panel content in Tabs (using existing `@radix-ui/react-tabs`), add a "Standardized locations" tab showing the clean entries
 
-No other files need changes.
+No database changes needed.
