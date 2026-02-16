@@ -19,8 +19,6 @@ interface PersonnelFiltersProps {
   onRoleFiltersChange: (values: string[]) => void;
   locationFilters: string[];
   onLocationFiltersChange: (values: string[]) => void;
-  categoryFilters: string[];
-  onCategoryFiltersChange: (values: string[]) => void;
   certificateFilters: string[];
   onCertificateFiltersChange: (values: string[]) => void;
   departmentFilters: string[];
@@ -42,8 +40,6 @@ export function PersonnelFilters({
   onRoleFiltersChange,
   locationFilters,
   onLocationFiltersChange,
-  categoryFilters,
-  onCategoryFiltersChange,
   certificateFilters,
   onCertificateFiltersChange,
   departmentFilters,
@@ -63,7 +59,7 @@ export function PersonnelFilters({
   const { departments } = useDepartments();
   const [roleOpen, setRoleOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [categoryOpen, setCategoryOpen] = useState(false);
+  
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
@@ -80,7 +76,6 @@ export function PersonnelFilters({
   const hasActiveFilters = 
     roleFilters.length > 0 || 
     locationFilters.length > 0 || 
-    categoryFilters.length > 0 ||
     certificateFilters.length > 0 ||
     departmentFilters.length > 0 ||
     availabilityDateRange?.from !== undefined;
@@ -88,7 +83,6 @@ export function PersonnelFilters({
   const clearAllFilters = () => {
     onRoleFiltersChange([]);
     onLocationFiltersChange([]);
-    onCategoryFiltersChange([]);
     onCertificateFiltersChange([]);
     onDepartmentFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
@@ -106,10 +100,6 @@ export function PersonnelFilters({
     }
   };
 
-  const employmentTypes = [
-    { value: 'employee', label: 'Employee' },
-    { value: 'freelancer', label: 'Freelancer' },
-  ];
 
   const formatDateRange = () => {
     if (!availabilityDateRange?.from) return 'Availability';
@@ -255,50 +245,6 @@ export function PersonnelFilters({
               size="sm"
               className="w-full mt-2"
               onClick={() => onLocationFiltersChange([])}
-            >
-              Clear
-            </Button>
-          )}
-        </PopoverContent>
-      </Popover>
-
-      {/* Employment Type Filter */}
-      <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
-            <span className="truncate">
-              {categoryFilters.length === 0
-                ? 'Employment'
-                : categoryFilters.length === 1
-                ? employmentTypes.find((t) => t.value === categoryFilters[0])?.label
-                : `${categoryFilters.length} types`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[180px] p-2 bg-popover border shadow-md z-50" align="start">
-          <div className="space-y-1">
-            {employmentTypes.map((type) => (
-              <label
-                key={type.value}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-              >
-                <Checkbox
-                  checked={categoryFilters.includes(type.value)}
-                  onCheckedChange={() =>
-                    toggleFilter(type.value, categoryFilters, onCategoryFiltersChange)
-                  }
-                />
-                <span className="text-sm">{type.label}</span>
-              </label>
-            ))}
-          </div>
-          {categoryFilters.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => onCategoryFiltersChange([])}
             >
               Clear
             </Button>
@@ -518,17 +464,6 @@ export function PersonnelFilters({
               <button
                 className="ml-1 hover:text-destructive"
                 onClick={() => toggleFilter(location, locationFilters, onLocationFiltersChange)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-          {categoryFilters.map((cat) => (
-            <Badge key={cat} variant="secondary" className="text-xs">
-              {employmentTypes.find((t) => t.value === cat)?.label}
-              <button
-                className="ml-1 hover:text-destructive"
-                onClick={() => toggleFilter(cat, categoryFilters, onCategoryFiltersChange)}
               >
                 <X className="h-3 w-3" />
               </button>
