@@ -1,36 +1,69 @@
 
 
-# Separate Standardized vs User-Inputted Locations
+# Make Location Suggestions Feel Almost Instant
 
-## What Changes
+## Problem
+Even with the 80ms debounce and caching, the Photon API still requires a network round-trip (~200-500ms) for every new query. Users notice this delay while typing.
 
-The left panel of the Standardize Locations tool currently shows all locations mixed together. We will split them into two groups based on format, and add a tab on the right "Standardize to" box to browse already-standardized locations.
+## Solution: Two-Tier Instant Suggestions
 
-## How We Detect Standardized Locations
+Show **existing database locations** immediately as the user types (zero latency), while the Photon API results load in the background and merge in when ready.
 
-OpenStreetMap locations from the GeoLocationInput are always formatted as **"City, Country"** (e.g., "Bergen, Norway"). Locations without a comma are treated as user-inputted free-text (e.g., "bergen", "Bergan", "Oslo area").
+### Changes
 
-## UI Changes to `LocationStandardizationTool.tsx`
+#### 1. `src/hooks/useGeoSearch.ts` -- Reduce debounce + add prefix cache matching
+- Drop debounce from 80ms to **30ms** -- the abort controller protects against request spam
+- Add **prefix cache matching**: if the user types "Berg" and we already have cached results for "Ber", show those filtered results instantly while the "Berg" fetch runs in the background
+- This means results appear on every keystroke from cached prefixes
 
-### Left panel
-- Only show **non-standardized** locations (those without a comma pattern matching "City, Country")
-- Update the header to say "User-inputted locations" with the filtered count
+#### 2. `src/components/ui/geo-location-input.tsx` -- Prioritize DB matches during loading
+- While the Photon API is still loading, **show matching `existingLocations` immediately** as suggestions (these are already in memory, zero latency)
+- When Photon results arrive, merge them in (geo results first, then DB matches, as it works today)
+- This ensures the dropdown opens with relevant suggestions on the very first keystroke, before any network call completes
 
-### Right panel -- add Tabs
-- **Tab 1: "Standardize to"** (default) -- the existing GeoLocationInput search + apply button, unchanged
-- **Tab 2: "Standardized locations"** -- a scrollable list showing all locations that match the "City, Country" format, with their personnel count badges. This is read-only, just for reference so you can see what's already clean.
+### How It Feels
 
-## Technical Detail
-
-**Splitting logic** (inside the component, after fetching):
 ```text
-const isStandardized = (loc: string) => /^.+,\s*.+$/.test(loc);
+User types "B"
+  -> Instantly shows matching DB locations ("Bergen, Norway", "Berlin, Germany")
+  -> 30ms later, Photon fetch starts in background
 
-const userInputted = locations.filter(l => !isStandardized(l.value));
-const standardized = locations.filter(l => isStandardized(l.value));
+User types "Be"
+  -> Instantly shows filtered DB locations
+  -> Prefix cache from "B" results shown immediately
+  -> Photon fetch for "Be" starts
+
+User types "Ber"
+  -> DB matches + prefix-cached results shown instantly
+  -> Photon results merge in ~200ms later
 ```
 
-**Files changed:**
-- `src/components/LocationStandardizationTool.tsx` -- add the splitting logic, wrap right panel content in Tabs (using existing `@radix-ui/react-tabs`), add a "Standardized locations" tab showing the clean entries
+The user always sees suggestions within milliseconds because existing locations are already loaded in memory. The Photon results just enrich the list when they arrive.
 
-No database changes needed.
+### Technical Details
+
+**`useGeoSearch.ts` prefix matching:**
+```text
+// Before fetching, check if any cached key is a prefix of the current query
+// e.g., cached "ber" results can be shown while "berg" is fetching
+for (const [cachedKey, cachedResults] of geoCache) {
+  if (cacheKey.startsWith(cachedKey)) {
+    setResults(cachedResults); // show immediately as interim
+    break;
+  }
+}
+```
+
+**`geo-location-input.tsx` immediate DB display:**
+```text
+// Show DB matches right away, even while geoLoading is true
+const suggestions = useMemo(() => {
+  // Always include matching existingLocations (instant)
+  // Merge geoResults on top when available
+});
+```
+
+### Files changed
+- `src/hooks/useGeoSearch.ts` -- reduce debounce to 30ms, add prefix cache matching
+- `src/components/ui/geo-location-input.tsx` -- show existingLocations immediately while Photon loads
+
