@@ -61,7 +61,7 @@ export function CategoriesSection() {
           
           <TabsContent value="certificates">
             <Tabs defaultValue="categories" className="w-full">
-              <div className="flex items-center gap-4 mb-4 flex-wrap">
+              <div className="flex items-center gap-4 mb-4">
                 <TabsList>
                   <TabsTrigger value="categories">Categories</TabsTrigger>
                   <TabsTrigger value="types">Types</TabsTrigger>
