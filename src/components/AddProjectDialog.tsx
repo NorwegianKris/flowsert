@@ -24,7 +24,7 @@ import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useCertificateTypes } from '@/hooks/useCertificateTypes';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
-import { useIssuerTypes } from '@/hooks/useIssuerTypes';
+
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { useSuggestPersonnel, PersonnelSuggestion } from '@/hooks/useSuggestPersonnel';
@@ -79,7 +79,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const { departments: dbDepartments } = useDepartments();
   const { data: certificateTypes = [] } = useCertificateTypes();
   const { categories: certCategories } = useCertificateCategories();
-  const { data: issuerTypes = [] } = useIssuerTypes();
+  
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -356,7 +356,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const uniqueLocations = [...new Set(personnel.map(p => p.location).filter(Boolean))] as string[];
   const uniqueCertNames = [...new Set(certificateTypes.map(t => t.name))];
   const uniqueCertCategories = [...new Set(certCategories.map(c => c.name))];
-  const uniqueIssuers = [...new Set(issuerTypes.map(i => i.name))];
+  const uniqueIssuers = [...new Set(personnel.flatMap(p => p.certificates.map(c => c.issuingAuthority).filter(Boolean)))].sort() as string[];
   const certificateListItems = certificateFilterMode === 'categories' ? uniqueCertCategories : certificateFilterMode === 'issuers' ? uniqueIssuers : uniqueCertNames;
   const activeFilterCount = roleFilters.length + locationFilters.length + departmentFilters.length + certificateFilters.length + (availabilityDateRange?.from ? 1 : 0);
 
