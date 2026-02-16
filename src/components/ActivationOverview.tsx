@@ -217,6 +217,42 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
             </ScrollArea>
           )}
 
+          {/* Billing Tiers */}
+          {(() => {
+            const tiers = [
+              { name: 'Tier 1', range: '1–25 profiles', min: 1, max: 25 },
+              { name: 'Tier 2', range: '26–75 profiles', min: 26, max: 75 },
+              { name: 'Tier 3', range: '75+ profiles', min: 76, max: Infinity },
+            ];
+            const currentTierIndex = activeCount >= 76 ? 2 : activeCount >= 26 ? 1 : 0;
+
+            return (
+              <div className="grid grid-cols-3 gap-3">
+                {tiers.map((tier, i) => {
+                  const isCurrent = i === currentTierIndex;
+                  return (
+                    <div
+                      key={tier.name}
+                      className={`rounded-lg border-2 p-3 text-center transition-colors ${
+                        isCurrent
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border/50 bg-muted/30'
+                      }`}
+                    >
+                      <p className={`text-sm font-semibold ${isCurrent ? 'text-primary' : 'text-foreground'}`}>
+                        {tier.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{tier.range}</p>
+                      {isCurrent && (
+                        <p className="text-[10px] font-medium text-primary mt-1.5">Your Current Tier</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           <p className="text-xs text-muted-foreground">
             Active profiles count toward your billing tier. Inactive profiles retain their data but are excluded from projects and exports.
           </p>
