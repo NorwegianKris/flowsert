@@ -26,8 +26,10 @@ import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
 import { cn } from '@/lib/utils';
 import { CertificateTypeSelector } from './CertificateTypeSelector';
+import { IssuerTypeSelector } from './IssuerTypeSelector';
 import { AmbiguityWarningDialog } from './AmbiguityWarningDialog';
 import { useLookupAlias, useCreateAlias, useUpdateAliasLastSeen } from '@/hooks/useCertificateAliases';
+import { useLookupIssuerAlias, useCreateIssuerAlias } from '@/hooks/useIssuerAliases';
 import { normalizeCertificateTitle, isAmbiguousTitle } from '@/lib/certificateNormalization';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -59,11 +61,17 @@ interface CertificateEntry {
   };
   // Canonical mapping fields
   certificateTypeId?: string | null;
-  certificateTypeName?: string; // The name of the selected type from dropdown
+  certificateTypeName?: string;
   certificateTypeFreeText?: string;
   titleRaw?: string;
   rememberAlias?: boolean;
   aliasAutoMatched?: boolean;
+  // Issuer canonical mapping fields
+  issuerTypeId?: string | null;
+  issuerTypeName?: string;
+  issuerTypeFreeText?: string;
+  rememberIssuerAlias?: boolean;
+  issuerAliasAutoMatched?: boolean;
   // Manual upload flag
   isManualEntry?: boolean;
 }
@@ -101,6 +109,7 @@ export function AddCertificateDialog({
   
   // Alias mutation hooks
   const createAlias = useCreateAlias();
+  const createIssuerAlias = useCreateIssuerAlias();
   
   // Compute normalized free text for the currently expanded certificate
   const freeTextNormalized = useMemo(() => {
@@ -112,6 +121,17 @@ export function AddCertificateDialog({
   
   // Look up alias for the free text input
   const { data: aliasMatch, isLoading: isLoadingAlias } = useLookupAlias(freeTextNormalized);
+  
+  // Compute normalized issuer free text for the currently expanded certificate
+  const issuerFreeTextNormalized = useMemo(() => {
+    const currentCert = certificates.find(c => c.id === expandedCertId);
+    return currentCert?.issuerTypeFreeText?.trim()
+      ? normalizeCertificateTitle(currentCert.issuerTypeFreeText)
+      : null;
+  }, [certificates, expandedCertId]);
+  
+  // Look up issuer alias for the free text input
+  const { data: issuerAliasMatch } = useLookupIssuerAlias(issuerFreeTextNormalized);
 
   // Fetch certificate categories from database
   useEffect(() => {
@@ -285,6 +305,7 @@ export function AddCertificateDialog({
             title_raw: titleRaw,
             title_normalized: titleNormalized,
             certificate_type_id: cert.certificateTypeId || null,
+            issuer_type_id: cert.issuerTypeId || null,
             needs_review: needsReview,
           })
           .select()
@@ -326,6 +347,18 @@ export function AddCertificateDialog({
             });
           } catch (aliasError) {
             console.error('Error creating alias:', aliasError);
+          }
+        }
+        
+        // Create issuer alias if admin checked "Remember this issuer"
+        if (isAdminOrManager && cert.rememberIssuerAlias && cert.issuerTypeId && cert.issuingAuthority) {
+          try {
+            await createIssuerAlias.mutateAsync({
+              aliasRaw: cert.issuingAuthority,
+              issuerTypeId: cert.issuerTypeId,
+            });
+          } catch (aliasError) {
+            console.error('Error creating issuer alias:', aliasError);
           }
         }
       }
@@ -601,16 +634,67 @@ export function AddCertificateDialog({
                             </div>
 
                             {/* Issuing Authority */}
-                            <div className="space-y-1">
+                            <div className="sm:col-span-2 space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Issuing Authority
                                 {renderFieldIndicator(cert.fieldConfidence?.issuingAuthority)}
+                                {cert.issuerAliasAutoMatched && (
+                                  <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                                )}
                               </Label>
-                              <Input
-                                placeholder="e.g., DNV, Lloyd's Register"
-                                value={cert.issuingAuthority}
-                                onChange={(e) => handleFieldChange(cert.id, 'issuingAuthority', e.target.value)}
+                              <IssuerTypeSelector
+                                value={cert.issuerTypeId || null}
+                                onChange={(typeId, typeName) => {
+                                  handleFieldChange(cert.id, 'issuerTypeId', typeId);
+                                  handleFieldChange(cert.id, 'issuerTypeName', typeName || null);
+                                  if (typeId) {
+                                    handleFieldChange(cert.id, 'issuerTypeFreeText', '');
+                                    handleFieldChange(cert.id, 'issuingAuthority', typeName || '');
+                                    handleFieldChange(cert.id, 'issuerAliasAutoMatched', '');
+                                  }
+                                }}
+                                autoMatched={cert.issuerAliasAutoMatched}
+                                placeholder="Select issuer..."
+                                allowFreeText={true}
+                                freeTextValue={cert.issuerTypeFreeText || ''}
+                                onFreeTextChange={(text) => {
+                                  handleFieldChange(cert.id, 'issuerTypeFreeText', text);
+                                  handleFieldChange(cert.id, 'issuingAuthority', text);
+                                  if (text) {
+                                    handleFieldChange(cert.id, 'issuerTypeId', null);
+                                    handleFieldChange(cert.id, 'issuerTypeName', null);
+                                    handleFieldChange(cert.id, 'issuerAliasAutoMatched', '');
+                                  }
+                                }}
                               />
+                              
+                              {/* Issuer Alias Match Feedback */}
+                              {expandedCertId === cert.id && 
+                               cert.issuerTypeFreeText?.trim() && 
+                               !cert.issuerTypeId && 
+                               issuerAliasMatch && 
+                               issuerAliasMatch.issuer_type_name && (
+                                <div className="flex items-center gap-2 mt-1 p-2 rounded bg-primary/5 border border-primary/20">
+                                  <span className="text-xs text-muted-foreground">
+                                    Matched: <span className="font-medium text-foreground">{issuerAliasMatch.issuer_type_name}</span>
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto p-0 text-xs text-primary"
+                                    onClick={() => {
+                                      handleFieldChange(cert.id, 'issuerTypeId', issuerAliasMatch.issuer_type_id);
+                                      handleFieldChange(cert.id, 'issuerTypeName', issuerAliasMatch.issuer_type_name);
+                                      handleFieldChange(cert.id, 'issuerTypeFreeText', '');
+                                      handleFieldChange(cert.id, 'issuingAuthority', issuerAliasMatch.issuer_type_name || '');
+                                      handleFieldChange(cert.id, 'issuerAliasAutoMatched', 'true');
+                                    }}
+                                  >
+                                    Use this issuer
+                                  </Button>
+                                </div>
+                              )}
                             </div>
 
                             {/* Certificate Type Selector */}
@@ -704,6 +788,25 @@ export function AddCertificateDialog({
                                   className="text-xs text-muted-foreground cursor-pointer"
                                 >
                                   Remember this name for next time
+                                </Label>
+                              </div>
+                            )}
+
+                            {/* Remember Issuer Alias Checkbox */}
+                            {isAdminOrManager && cert.issuerTypeId && !cert.issuerAliasAutoMatched && (
+                              <div className="sm:col-span-2 flex items-center space-x-2">
+                                <Checkbox
+                                  id={`remember-issuer-${cert.id}`}
+                                  checked={cert.rememberIssuerAlias || false}
+                                  onCheckedChange={(checked) => {
+                                    handleFieldChange(cert.id, 'rememberIssuerAlias', checked ? 'true' : '');
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`remember-issuer-${cert.id}`}
+                                  className="text-xs text-muted-foreground cursor-pointer"
+                                >
+                                  Remember this issuer for next time
                                 </Label>
                               </div>
                             )}
