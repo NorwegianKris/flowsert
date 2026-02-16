@@ -13,7 +13,7 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe } from 'lucide-react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -887,6 +887,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                       <Collapsible defaultOpen={false}>
                         <CollapsibleTrigger className="flex items-center justify-between w-full py-1.5 px-2 rounded hover:bg-muted group">
                           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" />
                             Job Role
                             {roleFilters.length > 0 && (
                               <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] ml-1">{roleFilters.length}</Badge>
@@ -917,6 +918,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                       <Collapsible defaultOpen={false}>
                         <CollapsibleTrigger className="flex items-center justify-between w-full py-1.5 px-2 rounded hover:bg-muted group">
                           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            <Globe className="h-3 w-3" />
                             Location
                             {locationFilters.length > 0 && (
                               <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] ml-1">{locationFilters.length}</Badge>
