@@ -1,5 +1,16 @@
-import { parseISO, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { ComplianceStatus } from './types';
+
+/** Parse a YYYY-MM-DD string as a local date (not UTC) */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function toLocalDate(date: Date | string): Date {
+  if (typeof date === 'string') return parseLocalDate(date);
+  return date;
+}
 
 export function dateToX(
   date: Date | string,
@@ -7,9 +18,9 @@ export function dateToX(
   projectEnd: Date | string,
   totalWidth: number
 ): number {
-  const d = typeof date === 'string' ? parseISO(date) : date;
-  const start = typeof projectStart === 'string' ? parseISO(projectStart) : projectStart;
-  const end = typeof projectEnd === 'string' ? parseISO(projectEnd) : projectEnd;
+  const d = toLocalDate(date);
+  const start = toLocalDate(projectStart);
+  const end = toLocalDate(projectEnd);
 
   const totalDays = differenceInDays(end, start) || 1;
   const dayOffset = differenceInDays(d, start);
@@ -21,11 +32,11 @@ export function getComplianceStatus(
   projectStart: string,
   projectEnd: string
 ): ComplianceStatus {
-  if (!expiryDate) return 'valid'; // No expiry = always valid
+  if (!expiryDate) return 'valid';
 
-  const expiry = parseISO(expiryDate);
-  const start = parseISO(projectStart);
-  const end = parseISO(projectEnd);
+  const expiry = parseLocalDate(expiryDate);
+  const start = parseLocalDate(projectStart);
+  const end = parseLocalDate(projectEnd);
 
   if (expiry < start) return 'expired';
   if (expiry <= end) return 'warning';
