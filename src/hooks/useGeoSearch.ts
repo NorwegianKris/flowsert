@@ -25,6 +25,19 @@ function formatResult(props: PhotonFeature['properties']): string {
   return `${city}, ${country}`;
 }
 
+// Module-level cache for geo results (persists across re-renders)
+const geoCache = new Map<string, string[]>();
+const MAX_CACHE_SIZE = 50;
+
+function cacheSet(key: string, value: string[]) {
+  if (geoCache.size >= MAX_CACHE_SIZE) {
+    // Remove oldest entry
+    const firstKey = geoCache.keys().next().value;
+    if (firstKey) geoCache.delete(firstKey);
+  }
+  geoCache.set(key, value);
+}
+
 export function useGeoSearch(query: string, enabled = true) {
   const [results, setResults] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +45,6 @@ export function useGeoSearch(query: string, enabled = true) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    // Clear previous timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     const trimmed = query.trim();
@@ -42,17 +54,23 @@ export function useGeoSearch(query: string, enabled = true) {
       return;
     }
 
+    // Check cache first — instant results, no loading spinner
+    const cacheKey = trimmed.toLowerCase();
+    if (geoCache.has(cacheKey)) {
+      setResults(geoCache.get(cacheKey)!);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
-    // Debounce 150ms
+    // Debounce 80ms
     timeoutRef.current = setTimeout(async () => {
-      // Cancel previous request
       if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
       try {
-        // Bias toward Norway/Europe
         const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&limit=6&lang=en&lat=60.47&lon=8.47`;
         const response = await fetch(url, { signal: controller.signal });
         
@@ -61,12 +79,12 @@ export function useGeoSearch(query: string, enabled = true) {
         const data = await response.json();
         const features: PhotonFeature[] = data.features || [];
 
-        // Format and deduplicate
         const formatted = features
           .map(f => formatResult(f.properties))
           .filter(Boolean);
 
         const unique = [...new Set(formatted)].slice(0, 5);
+        cacheSet(cacheKey, unique);
         setResults(unique);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
@@ -78,7 +96,7 @@ export function useGeoSearch(query: string, enabled = true) {
           setLoading(false);
         }
       }
-    }, 150);
+    }, 80);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
