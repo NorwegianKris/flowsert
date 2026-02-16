@@ -75,7 +75,7 @@ export function DataAcknowledgementsManager({
       <Card className="border-border/50">
         <CollapsibleTrigger asChild>
           <CardHeader className="py-4 cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardTitle className="text-base font-semibold flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />
                 Privacy & Data
