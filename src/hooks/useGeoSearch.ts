@@ -62,9 +62,25 @@ export function useGeoSearch(query: string, enabled = true) {
       return;
     }
 
+    // Prefix cache matching: show cached results from a shorter query as interim
+    for (const [cachedKey, cachedResults] of geoCache) {
+      if (cacheKey.startsWith(cachedKey) && cachedResults.length > 0) {
+        // Filter cached results to match the longer query
+        const filtered = cachedResults.filter(r =>
+          r.toLowerCase().includes(cacheKey)
+        );
+        if (filtered.length > 0) {
+          setResults(filtered);
+        } else {
+          setResults(cachedResults);
+        }
+        break;
+      }
+    }
+
     setLoading(true);
 
-    // Debounce 80ms
+    // Debounce 30ms
     timeoutRef.current = setTimeout(async () => {
       if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
