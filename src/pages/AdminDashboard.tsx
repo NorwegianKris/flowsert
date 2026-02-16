@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
@@ -32,6 +32,7 @@ import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 import { useUnreadDirectMessages } from '@/hooks/useUnreadDirectMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Personnel } from '@/types';
+import { LinkProfileDialog } from '@/components/LinkProfileDialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, LogOut, Plus, Users, LayoutDashboard, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, MessageCircle } from 'lucide-react';
@@ -66,6 +67,8 @@ export default function AdminDashboard() {
   const [notificationsLogOpen, setNotificationsLogOpen] = useState(false);
   const [externalSharingOpen, setExternalSharingOpen] = useState(false);
   const [personnelChatOpen, setPersonnelChatOpen] = useState(false);
+  const [linkProfileOpen, setLinkProfileOpen] = useState(false);
+  const [addPersonnelPrefill, setAddPersonnelPrefill] = useState<{ name: string; email: string } | null>(null);
   
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
@@ -89,11 +92,25 @@ export default function AdminDashboard() {
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
   const { business, refetch: refetchBusiness } = useBusinessInfo();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, user } = useAuth();
   const { unreadCounts, totalUnread, refetchCounts } = useUnreadDirectMessages();
   const { categories: certCategories } = useCertificateCategories();
   
   const loading = personnelLoading || projectsLoading;
+
+  // Find the admin's own personnel record
+  const myProfile = useMemo(() =>
+    personnel.find(p => p.userId === user?.id),
+    [personnel, user?.id]
+  );
+
+  const handleMyProfileClick = useCallback(() => {
+    if (myProfile) {
+      setSelectedPersonnel(myProfile);
+    } else {
+      setLinkProfileOpen(true);
+    }
+  }, [myProfile]);
 
   // Defer fetching admin user IDs until after initial render
   const [deferredReady, setDeferredReady] = useState(false);
@@ -279,7 +296,7 @@ export default function AdminDashboard() {
     
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader />
+        <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <PersonnelDetail
             personnel={currentPersonnel}
@@ -296,7 +313,7 @@ export default function AdminDashboard() {
   if (selectedProject) {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader />
+        <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
         <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
            <ProjectDetail
             project={selectedProject}
@@ -321,7 +338,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <DashboardHeader />
+      <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
       
       <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
@@ -674,6 +691,17 @@ export default function AdminDashboard() {
           onOpenChange={setPersonnelChatOpen}
           unreadCounts={unreadCounts}
           onMessagesRead={refetchCounts}
+        />
+
+        <LinkProfileDialog
+          open={linkProfileOpen}
+          onOpenChange={setLinkProfileOpen}
+          userId={user?.id || ''}
+          userEmail={profile?.email || ''}
+          userName={profile?.full_name || ''}
+          personnel={personnel}
+          onLinked={refetch}
+          onCreateNew={() => setAddPersonnelOpen(true)}
         />
     </div>
   );
