@@ -1,36 +1,28 @@
 
 
-## Add Project Image Upload to New Project Dialog
+## Make Filter Sections Collapsible (Closed by Default) in New Project Dialog
 
 ### What Changes
-Add a photo upload field to the "New Project" dialog, positioned between the AI Personnel Suggestions section and the Project Name field -- matching the same upload style already used in the Edit Project dialog.
+Inside the New Project dialog's filter popover (the one that opens when you click the "Filters" button), each filter section -- Availability, Job Role, Location, Certificates, and Department -- will be wrapped in a collapsible accordion that starts **closed** by default. You click a section header to expand it and see its options.
 
-### How It Works
-- A dashed upload area appears below the AI suggestions box
-- Click to select an image or drag-and-drop
-- Once uploaded, a thumbnail preview is shown with a remove button
-- The image is uploaded to the `project-documents` storage bucket using a temporary path (since the project ID doesn't exist yet)
-- After the project is created, the image URL is saved to the project's `image_url` field
+This eliminates the awkward scrolling that happens when all filter sections and their checkbox lists are visible at once.
 
-### User Experience
-1. Open "New Project" dialog
-2. (Optional) Use AI suggestions as before
-3. Click the image upload area or drag a photo
-4. See a thumbnail preview with option to remove/change
-5. Fill in remaining project details and submit
-6. The project is created with the image attached
+### How It Will Look
+- Click "Filters" button -- the popover opens showing 5 compact section headers (e.g., "Availability", "Job Role", "Location", "Certificates", "Department")
+- Click any header to expand it and see its filter options
+- Click again to collapse
+- Active filters on a section will show a count badge on the header so you know filters are applied even when collapsed
 
 ### Technical Details
 
 **File modified:** `src/components/AddProjectDialog.tsx`
 
-1. **Add state and ref** for image upload (`imageUrl`, `uploading`, `fileInputRef`) -- same pattern as `EditProjectDialog`
-2. **Add image upload handler** that uploads to `project-documents` storage bucket using a temporary UUID path, then stores the signed URL
-3. **Add image upload UI** between the AI Suggestions section (line ~372) and the Project Name field (line ~376), using the same visual style as `EditProjectDialog` (dashed border box with `ImagePlus` icon, thumbnail preview with remove button)
-4. **Include `imageUrl`** in the `newProject` object passed to `onProjectAdded`
-5. **Reset `imageUrl`** in the `resetForm` function
-
-**Imports to add:** `ImagePlus`, `X` from lucide-react, `useRef` from React, `supabase` client
-
-No database or schema changes needed -- the `image_url` column and storage bucket already exist.
+1. Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible` and `ChevronRight` from `lucide-react`
+2. Wrap each of the 5 filter sections (lines ~793-945) in a `Collapsible` component with `defaultOpen={false}`
+3. Replace the current `Label` headers with `CollapsibleTrigger` buttons styled as clickable rows with:
+   - The filter name and icon on the left
+   - A chevron icon on the right that rotates when expanded
+   - A small badge showing the count of active selections for that filter (if any)
+4. Wrap the filter content (checkboxes, calendar picker, toggle group) in `CollapsibleContent`
+5. No new state variables needed -- `Collapsible` manages its own open/closed state internally with `defaultOpen`
 
