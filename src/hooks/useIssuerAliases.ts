@@ -22,6 +22,54 @@ export interface CreateIssuerAliasInput {
   issuerTypeId: string;
 }
 
+/**
+ * Hook to look up an issuer alias by normalized title.
+ */
+export function useLookupIssuerAlias(rawIssuer: string | null) {
+  const { businessId } = useAuth();
+  const normalizedTitle = rawIssuer ? normalizeCertificateTitle(rawIssuer) : null;
+
+  return useQuery({
+    queryKey: ["issuer-alias-lookup", businessId, normalizedTitle],
+    queryFn: async () => {
+      if (!businessId || !normalizedTitle) return null;
+
+      const { data, error } = await supabase
+        .from("issuer_aliases")
+        .select(`
+          *,
+          issuer_types!issuer_aliases_issuer_type_id_fkey (
+            id,
+            name,
+            is_active
+          )
+        `)
+        .eq("business_id", businessId)
+        .eq("alias_normalized", normalizedTitle)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error looking up issuer alias:", error);
+        return null;
+      }
+
+      if (!data) return null;
+
+      // Don't return if the linked type is inactive
+      if (data.issuer_types && !data.issuer_types.is_active) {
+        return null;
+      }
+
+      return {
+        ...data,
+        issuer_type_name: data.issuer_types?.name || null,
+      } as IssuerAlias & { issuer_type_name: string | null };
+    },
+    enabled: !!businessId && !!normalizedTitle,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
 export function useIssuerAliases() {
   const { businessId } = useAuth();
 
@@ -91,6 +139,7 @@ export function useCreateIssuerAlias() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["issuer-aliases"] });
+      queryClient.invalidateQueries({ queryKey: ["issuer-alias-lookup"] });
     },
     onError: (error: any) => {
       if (error.code === "23505") {
@@ -98,6 +147,30 @@ export function useCreateIssuerAlias() {
       } else {
         toast.error("Failed to create alias");
       }
+    },
+  });
+}
+
+/**
+ * Hook to update issuer alias last_seen_at timestamp.
+ */
+export function useUpdateIssuerAliasLastSeen() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (aliasId: string) => {
+      const { error } = await supabase
+        .from("issuer_aliases")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", aliasId);
+
+      if (error) {
+        console.error("Error updating issuer alias last_seen_at:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["issuer-aliases"] });
     },
   });
 }
