@@ -1,38 +1,35 @@
 
-
-# Fix Content Scaling on Ultra-Wide Screens
+# Widen Dashboard Layout Across All Screen Sizes
 
 ## What This Does
-Adds 3 CSS media queries to automatically scale up the entire UI on ultra-wide monitors (like your 49" Samsung), so everything looks proportional without needing manual browser zoom.
+Increases the maximum content width of all dashboard pages so the content fills more of the screen, matching the proportions in your screenshot. Currently the `container` class caps content at 1400px -- this change raises it to 1800px for all screens.
 
-## Why It's Safe
-- Only 1 file changed, only CSS, no logic
-- Normal screens (under 2000px) are completely unaffected
-- Instantly reversible by removing 3 lines
+## What Changes
 
-## Change
+### 1. Tailwind Config (`tailwind.config.ts`)
+Update the container `2xl` screen from `1400px` to `1800px`. This single change affects every page using `container mx-auto`, giving more breathing room on wider screens while still keeping content from stretching edge-to-edge.
 
-### `src/index.css`
-Add at the end of the file:
+### 2. Header (`src/components/DashboardHeader.tsx`)
+The header also uses `container mx-auto` so it will automatically widen to match.
 
-```css
-@media (min-width: 2000px) {
-  html { font-size: 120%; }
-}
-@media (min-width: 2800px) {
-  html { font-size: 140%; }
-}
-@media (min-width: 3800px) {
-  html { font-size: 160%; }
+### 3. Worker Dashboard (`src/pages/WorkerDashboard.tsx`)
+Uses the same `container mx-auto` class -- will automatically pick up the wider max-width.
+
+## Why This Is Safe
+- One config value change affects all dashboard pages uniformly
+- On smaller screens (under 1800px), content still fills the available width as before
+- The ultrawide scaling media queries we just added will continue to work on top of this
+- No layout or component changes needed
+
+## Technical Detail
+
+In `tailwind.config.ts`, change:
+```
+container: {
+  center: true,
+  padding: '2rem',
+  screens: {
+    '2xl': '1800px'   // was 1400px
+  }
 }
 ```
-
-This progressively scales the base font size on wider screens. Since all Tailwind spacing and typography uses `rem` units, the entire UI scales proportionally.
-
-| Screen width | Scale | Example |
-|---|---|---|
-| Under 2000px | 100% (no change) | 14" laptop |
-| 2000-2800px | 120% | 27" 1440p |
-| 2800-3800px | 140% | 32" 4K |
-| 3800px+ | 160% | 49" ultrawide |
-
