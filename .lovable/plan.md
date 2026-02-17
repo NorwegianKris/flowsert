@@ -1,50 +1,41 @@
 
-# Fix: Make "Log In" Button Open the Sign-In Dialog
+# Fix: Freelancer Gets Redirected Back to Main Page After Login
 
 ## Problem
-The "Log In" button in the header navigates to `/auth`, but the login form lives inside a dialog that never opens. Previously, the `PublicHeader` had an `openAuthDialog` prop that triggered the dialog -- this was removed in the last change.
+After signing in, the freelancer is sent back to the auth page instead of their worker dashboard. This is a race condition in the authentication flow.
+
+## Root Cause
+When a user signs in:
+1. The auth context initially loaded with no user, so `loading` was set to `false`
+2. When `onAuthStateChange` fires after login, it sets `user` and starts fetching the role -- but does NOT set `loading` back to `true`
+3. The Auth page sees `user` is set and `loading` is `false`, so it navigates to `/`
+4. `RoleRedirect` also sees `loading=false` and `user` set, but `role` is still `null` (the fetch hasn't completed)
+5. Since `role` is null, it falls to the else branch and redirects back to `/auth`
+
+This creates an infinite-feeling loop where the user keeps landing on the auth page.
 
 ## Solution
-Re-add a lightweight callback prop to `PublicHeader` for opening the auth dialog, but only for sign-in (no sign-up).
 
-### Changes
+### `src/contexts/AuthContext.tsx`
+In the `onAuthStateChange` callback, set `loading = true` before calling `fetchUserData` for a new user. This ensures downstream components wait for the role to be fetched before making routing decisions.
 
-### 1. `src/components/PublicHeader.tsx`
-- Add an optional `onLogin` callback prop
-- When `onLogin` is provided, use it instead of navigating to `/auth`
-
-### 2. `src/pages/Auth.tsx`
-- Pass `onLogin` to `PublicHeader` that opens the auth dialog in "signin" mode
-- This restores the login functionality without re-introducing any signup button
-
-## Technical Details
-
-**PublicHeader.tsx:**
-```typescript
-interface PublicHeaderProps {
-  onLogin?: () => void;
+```
+// Before (broken):
+if (fetchedUserIdRef.current !== session.user.id) {
+  fetchUserData(session.user.id);
 }
 
-export function PublicHeader({ onLogin }: PublicHeaderProps) {
-  const navigate = useNavigate();
-
-  const handleLogin = () => {
-    if (onLogin) {
-      onLogin();
-    } else {
-      navigate('/auth');
-    }
-  };
-  // ... rest unchanged
+// After (fixed):
+if (fetchedUserIdRef.current !== session.user.id) {
+  setLoading(true);  // <-- Prevents premature redirect
+  fetchUserData(session.user.id);
 }
 ```
 
-**Auth.tsx:**
-```typescript
-<PublicHeader onLogin={() => openAuthDialog('signin')} />
-```
+This single-line change ensures `RoleRedirect` shows the loading spinner until the role is resolved, then correctly redirects to `/worker` for freelancers.
 
 ## What Does NOT Change
-- No "Sign Up" button is added anywhere
+- The initial session load flow is unaffected
+- Sign-out behavior is unaffected
 - The invitation-based registration flow is untouched
-- Other pages using `PublicHeader` without the prop still navigate to `/auth` as before
+- No UI changes needed
