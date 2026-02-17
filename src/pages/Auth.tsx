@@ -472,7 +472,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PublicHeader openAuthDialog={openAuthDialog} />
+      <PublicHeader />
 
       {/* Hero + Product Preview with Background */}
       <div className="relative overflow-hidden min-h-[calc(100vh-73px)] flex flex-col justify-center">
@@ -901,14 +901,13 @@ export default function Auth() {
                 Sign In
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                Don't have an account?{' '}
-                <button
-                  type="button"
+                Registration is by invitation only. Need access?{' '}
+                <a
+                  href="/contact"
                   className="text-primary hover:underline"
-                  onClick={() => setAuthMode('signup')}
                 >
-                  Sign up
-                </button>
+                  Contact us
+                </a>
               </p>
             </form>
           ) : (

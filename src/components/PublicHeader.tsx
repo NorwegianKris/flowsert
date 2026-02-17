@@ -1,31 +1,13 @@
 import { Button } from '@/components/ui/button';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Logo } from '@/components/Logo';
 import { NavLink } from '@/components/NavLink';
 
-interface PublicHeaderProps {
-  openAuthDialog?: (mode: 'signin' | 'signup') => void;
-}
-
-export function PublicHeader({ openAuthDialog }: PublicHeaderProps) {
+export function PublicHeader() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const isAuthPage = location.pathname === '/auth';
 
   const handleLogin = () => {
-    if (openAuthDialog) {
-      openAuthDialog('signin');
-    } else {
-      navigate('/auth');
-    }
-  };
-
-  const handleSignUp = () => {
-    if (openAuthDialog) {
-      openAuthDialog('signup');
-    } else {
-      navigate('/auth');
-    }
+    navigate('/auth');
   };
 
   return (
@@ -65,15 +47,9 @@ export function PublicHeader({ openAuthDialog }: PublicHeaderProps) {
             <Button variant="ghost" onClick={handleLogin}>
               Log In
             </Button>
-            {isAuthPage ? (
-              <Button onClick={() => navigate('/contact')}>
-                Get in Touch
-              </Button>
-            ) : (
-              <Button onClick={handleSignUp}>
-                Sign Up
-              </Button>
-            )}
+            <Button onClick={() => navigate('/contact')}>
+              Get in Touch
+            </Button>
           </div>
         </div>
       </div>
