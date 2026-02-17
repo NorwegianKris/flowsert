@@ -630,7 +630,17 @@ export default function AdminDashboard() {
                       <ShieldCheck className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Profile Activation Overview</span>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">
+                        {personnel.filter(p => p.activated).length} active &mdash;
+                        {personnel.filter(p => p.activated).length >= 76
+                          ? ' Tier 3'
+                          : personnel.filter(p => p.activated).length >= 26
+                            ? ' Tier 2'
+                            : ' Tier 1'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <ActivationOverview 
