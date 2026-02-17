@@ -1,41 +1,73 @@
 
-# Fix: Freelancer Gets Redirected Back to Main Page After Login
+
+# Fix: Token Refresh Storm Causing Freelancer Login Failure
 
 ## Problem
-After signing in, the freelancer is sent back to the auth page instead of their worker dashboard. This is a race condition in the authentication flow.
+Wayan Lalet cannot stay logged in -- the app enters a redirect loop between `/auth` and `/` that triggers 40+ token refresh requests per second, eventually hitting rate limits (HTTP 429).
 
 ## Root Cause
-When a user signs in:
-1. The auth context initially loaded with no user, so `loading` was set to `false`
-2. When `onAuthStateChange` fires after login, it sets `user` and starts fetching the role -- but does NOT set `loading` back to `true`
-3. The Auth page sees `user` is set and `loading` is `false`, so it navigates to `/`
-4. `RoleRedirect` also sees `loading=false` and `user` set, but `role` is still `null` (the fetch hasn't completed)
-5. Since `role` is null, it falls to the else branch and redirects back to `/auth`
+Two issues combine to create this loop:
 
-This creates an infinite-feeling loop where the user keeps landing on the auth page.
+1. **Unnecessary re-renders on token refresh**: `onAuthStateChange` fires for `TOKEN_REFRESHED` events. Each time, `setSession()` and `setUser()` are called even though the user hasn't changed, causing re-renders across the app.
+
+2. **Auth.tsx redirect triggers the cycle**: The useEffect on line 76 navigates to `/` whenever `user` is set. Each re-render from a token refresh re-evaluates this, and if RoleRedirect briefly sees stale state, it bounces back to `/auth`.
 
 ## Solution
 
-### `src/contexts/AuthContext.tsx`
-In the `onAuthStateChange` callback, set `loading = true` before calling `fetchUserData` for a new user. This ensures downstream components wait for the role to be fetched before making routing decisions.
+### 1. `src/contexts/AuthContext.tsx` -- Filter out redundant state updates
 
+In the `onAuthStateChange` callback, skip `setSession`/`setUser` calls when the user ID hasn't changed. This prevents unnecessary re-renders from `TOKEN_REFRESHED` events:
+
+```typescript
+const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  (event, session) => {
+    if (!isMountedRef.current) return;
+
+    // For token refresh events where user hasn't changed, just update
+    // the session reference without triggering re-renders
+    if (event === 'TOKEN_REFRESHED' && user?.id === session?.user?.id) {
+      setSession(session);
+      return;
+    }
+
+    setSession(session);
+    setUser(session?.user ?? null);
+
+    if (session?.user) {
+      if (fetchedUserIdRef.current !== session.user.id) {
+        setLoading(true);
+        fetchUserData(session.user.id);
+      }
+    } else {
+      fetchedUserIdRef.current = null;
+      setProfile(null);
+      setRole(null);
+      setLoading(false);
+    }
+  }
+);
 ```
-// Before (broken):
-if (fetchedUserIdRef.current !== session.user.id) {
-  fetchUserData(session.user.id);
-}
 
-// After (fixed):
-if (fetchedUserIdRef.current !== session.user.id) {
-  setLoading(true);  // <-- Prevents premature redirect
-  fetchUserData(session.user.id);
-}
+### 2. `src/pages/Auth.tsx` -- Prevent redirect while role is still loading
+
+The redirect on line 76 should also check that `loading` is truly complete (role resolved). Currently it checks `!loading && user`, but if loading finished before role was set (edge case), it redirects prematurely. This is already handled by our previous fix, but we should also guard against re-renders:
+
+```typescript
+useEffect(() => {
+  if (!loading && user && !isPasswordReset) {
+    navigate('/', { replace: true });
+  }
+}, [user, loading, navigate, isPasswordReset]);
 ```
 
-This single-line change ensures `RoleRedirect` shows the loading spinner until the role is resolved, then correctly redirects to `/worker` for freelancers.
+Adding `replace: true` prevents the back button from creating another loop.
 
 ## What Does NOT Change
-- The initial session load flow is unaffected
-- Sign-out behavior is unaffected
-- The invitation-based registration flow is untouched
-- No UI changes needed
+- Sign-in/sign-out logic is unaffected
+- Invitation-based registration flows are untouched
+- The worker dashboard and admin dashboard remain the same
+- RoleRedirect logic stays as-is
+
+## Expected Result
+After login, Wayan will see a brief loading spinner, then be redirected to `/worker` once her role resolves -- no more loops or rate limiting.
+
