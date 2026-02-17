@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // For token refresh events where user hasn't changed, just update
         // the session reference silently without triggering user re-renders
-        if (event === 'TOKEN_REFRESHED' && fetchedUserIdRef.current === session?.user?.id) {
+        if (event !== 'SIGNED_OUT' && fetchedUserIdRef.current === session?.user?.id) {
           setSession(session);
           return;
         }
