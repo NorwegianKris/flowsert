@@ -1,36 +1,21 @@
 
-## Add Location to Project Cards
 
-A small UI tweak to the project cards in the "Active & Upcoming Projects" section.
+## Remove Phone Number from Add Personnel Dialog
+
+A small UI cleanup to the "Add Personnel" form.
 
 ### What changes
 
-In the bottom line of each project card (where "Start: ..." and "End: ..." are shown), add the project location to the right on the same line.
-
-The location will use `project.projectLocationLabel` (the structured "City, Country" format) if available, falling back to `project.location` (free-text). If neither exists, nothing is shown.
-
-A small `MapPin` icon from lucide-react will precede the location text for visual clarity.
+Remove the phone number field from the Add Personnel dialog. Since workers complete their own profiles after accepting an invitation, collecting phone at this stage is unnecessary.
 
 ### Technical details
 
-**File:** `src/components/ProjectsTab.tsx`
+**File:** `src/components/AddPersonnelDialog.tsx`
 
-- Import `MapPin` from `lucide-react`
-- In the `ProjectCard` component, update the bottom `div` (lines 219-224) to add a location span after the date spans:
+1. Remove `phone` from the `formData` state initial value and reset
+2. Remove the phone input field from the form JSX
+3. Remove `formData.phone.trim()` from the validation check
+4. Change the insert call to use an empty string for `phone` (since the DB column is NOT NULL with no default)
 
-```tsx
-<div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
-  <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
-  {project.endDate && (
-    <span>End: {new Date(project.endDate).toLocaleDateString()}</span>
-  )}
-  {(project.projectLocationLabel || project.location) && (
-    <span className="flex items-center gap-1">
-      <MapPin className="h-3 w-3" />
-      {project.projectLocationLabel || project.location}
-    </span>
-  )}
-</div>
-```
+The database `personnel.phone` column is `text NOT NULL`, so we'll pass an empty string `''` as a placeholder. The worker will fill in their real phone number when completing their profile after signing up.
 
-No other files need changes -- the `Project` interface already has `location` and `projectLocationLabel` fields.
