@@ -60,7 +60,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [projectManager, setProjectManager] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
-  const [isPosted, setIsPosted] = useState(false);
+  const [isPosted, setIsPosted] = useState(true);
   const [projectCountry, setProjectCountry] = useState('');
   const [projectLocationLabel, setProjectLocationLabel] = useState('');
   const [visibilityMode, setVisibilityMode] = useState<'same_country' | 'all'>('same_country');
@@ -241,7 +241,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setGlobalMode('invite');
     setAiPrompt('');
     setIncludeFreelancers(false);
-    setIsPosted(false);
+    setIsPosted(true);
     setProjectCountry('');
     setProjectLocationLabel('');
     setVisibilityMode('same_country');
