@@ -177,6 +177,10 @@ export function ExpiryTimeline({
           color: getEventColor(daysUntil),
           certificateTypeId: cert.certificateTypeId ?? null,
           certificateCategoryId: certificateTypes.find(t => t.id === cert.certificateTypeId)?.category_id ?? null,
+          issuingAuthority: cert.issuingAuthority ?? null,
+          dateOfIssue: cert.dateOfIssue ?? null,
+          categoryName: cert.category ?? null,
+          placeOfIssue: cert.placeOfIssue ?? null,
         });
       });
     });
