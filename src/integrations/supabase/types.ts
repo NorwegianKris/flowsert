@@ -1358,19 +1358,21 @@ export type Database = {
           customer: string | null
           description: string
           end_date: string | null
+          exclude_countries: string[] | null
           id: string
           image_url: string | null
+          include_countries: string[] | null
           is_posted: boolean
           location: string | null
           name: string
+          project_country: string | null
+          project_location_label: string | null
           project_manager: string | null
           project_number: string | null
           start_date: string
           status: string
           updated_at: string
-          visibility_all: boolean
-          visibility_cities: Json | null
-          visibility_countries: string[] | null
+          visibility_mode: string
           work_category: string | null
         }
         Insert: {
@@ -1380,19 +1382,21 @@ export type Database = {
           customer?: string | null
           description: string
           end_date?: string | null
+          exclude_countries?: string[] | null
           id?: string
           image_url?: string | null
+          include_countries?: string[] | null
           is_posted?: boolean
           location?: string | null
           name: string
+          project_country?: string | null
+          project_location_label?: string | null
           project_manager?: string | null
           project_number?: string | null
           start_date: string
           status?: string
           updated_at?: string
-          visibility_all?: boolean
-          visibility_cities?: Json | null
-          visibility_countries?: string[] | null
+          visibility_mode?: string
           work_category?: string | null
         }
         Update: {
@@ -1402,19 +1406,21 @@ export type Database = {
           customer?: string | null
           description?: string
           end_date?: string | null
+          exclude_countries?: string[] | null
           id?: string
           image_url?: string | null
+          include_countries?: string[] | null
           is_posted?: boolean
           location?: string | null
           name?: string
+          project_country?: string | null
+          project_location_label?: string | null
           project_manager?: string | null
           project_number?: string | null
           start_date?: string
           status?: string
           updated_at?: string
-          visibility_all?: boolean
-          visibility_cities?: Json | null
-          visibility_countries?: string[] | null
+          visibility_mode?: string
           work_category?: string | null
         }
         Relationships: [

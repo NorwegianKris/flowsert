@@ -108,10 +108,12 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
                         <Calendar className="h-3 w-3" />
                         {format(parseISO(project.startDate), 'MMM d, yyyy')}
                       </span>
-                      {project.location && (
+                      {(project.projectLocationLabel || project.projectCountry || project.location) && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          {project.location}
+                          {project.projectLocationLabel || (project.projectCountry
+                            ? project.projectCountry.replace(/\b\w/g, c => c.toUpperCase())
+                            : project.location)}
                         </span>
                       )}
                     </div>

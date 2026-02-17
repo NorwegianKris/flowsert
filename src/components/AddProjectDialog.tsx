@@ -61,9 +61,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
   const [isPosted, setIsPosted] = useState(false);
-  const [visibilityAll, setVisibilityAll] = useState(true);
-  const [visibilityCountries, setVisibilityCountries] = useState<string[]>([]);
-  const [visibilityCities, setVisibilityCities] = useState<Record<string, string[]>>({});
+  const [projectCountry, setProjectCountry] = useState('');
+  const [projectLocationLabel, setProjectLocationLabel] = useState('');
+  const [visibilityMode, setVisibilityMode] = useState<'same_country' | 'all'>('same_country');
+  const [includeCountries, setIncludeCountries] = useState<string[]>([]);
+  const [excludeCountries, setExcludeCountries] = useState<string[]>([]);
   const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -143,6 +145,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isPosted && !projectCountry.trim()) {
+      toast.error('Please set a project location before posting');
+      return;
+    }
     
     setIsSubmitting(true);
 
@@ -168,9 +175,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       projectManager: projectManager.trim() || undefined,
       isPosted,
       imageUrl: imageUrl || undefined,
-      visibilityAll: isPosted ? visibilityAll : true,
-      visibilityCountries: isPosted && !visibilityAll ? visibilityCountries : undefined,
-      visibilityCities: isPosted && !visibilityAll ? visibilityCities : undefined,
+      projectCountry: projectCountry.toLowerCase().trim() || undefined,
+      projectLocationLabel: projectLocationLabel || undefined,
+      visibilityMode,
+      includeCountries: includeCountries.length > 0 ? includeCountries : undefined,
+      excludeCountries: excludeCountries.length > 0 ? excludeCountries : undefined,
     };
 
     const createdProject = await onProjectAdded(newProject);
@@ -233,9 +242,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAiPrompt('');
     setIncludeFreelancers(false);
     setIsPosted(false);
-    setVisibilityAll(true);
-    setVisibilityCountries([]);
-    setVisibilityCities({});
+    setProjectCountry('');
+    setProjectLocationLabel('');
+    setVisibilityMode('same_country');
+    setIncludeCountries([]);
+    setExcludeCountries([]);
     setShowFreelancersOnly(false);
     setImageUrl('');
     setSearchQuery('');
@@ -742,13 +753,19 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               </div>
               {isPosted && (
                 <ProjectVisibilityControls
-                  visibilityAll={visibilityAll}
-                  visibilityCountries={visibilityCountries}
-                  visibilityCities={visibilityCities}
+                  projectCountry={projectCountry}
+                  projectLocationLabel={projectLocationLabel}
+                  visibilityMode={visibilityMode}
+                  includeCountries={includeCountries}
+                  excludeCountries={excludeCountries}
+                  onProjectLocationChange={(country, label) => {
+                    setProjectCountry(country);
+                    setProjectLocationLabel(label);
+                  }}
                   onChange={(data) => {
-                    setVisibilityAll(data.visibilityAll);
-                    setVisibilityCountries(data.visibilityCountries);
-                    setVisibilityCities(data.visibilityCities);
+                    setVisibilityMode(data.visibilityMode);
+                    setIncludeCountries(data.includeCountries);
+                    setExcludeCountries(data.excludeCountries);
                   }}
                 />
               )}

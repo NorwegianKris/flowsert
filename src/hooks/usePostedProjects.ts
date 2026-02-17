@@ -13,6 +13,8 @@ export interface PostedProject {
   projectManager?: string;
   status: string;
   imageUrl?: string;
+  projectLocationLabel?: string;
+  projectCountry?: string;
 }
 
 export function usePostedProjects() {
@@ -70,6 +72,8 @@ export function usePostedProjects() {
             projectManager: p.project_manager || undefined,
             status: p.status,
             imageUrl: p.image_url || undefined,
+            projectLocationLabel: p.project_location_label || undefined,
+            projectCountry: p.project_country || undefined,
           });
         }
       }
