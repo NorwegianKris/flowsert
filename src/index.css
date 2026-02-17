@@ -177,6 +177,11 @@ All colors MUST be HSL.
   }
 }
 
+/* Scale down slightly for smaller laptop screens */
+@media (max-width: 1440px) {
+  html { font-size: 90%; }
+}
+
 /* Scale up for wide/ultrawide monitors */
 @media (min-width: 2000px) {
   html { font-size: 120%; }
