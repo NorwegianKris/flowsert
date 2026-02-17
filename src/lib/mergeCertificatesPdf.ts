@@ -1,11 +1,12 @@
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { format } from 'date-fns';
 import { Personnel, Certificate } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { getCertificateStatus } from '@/lib/certificateUtils';
 
-// Ensure pdf.js worker is configured
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export interface CertificateBundleOptions {
@@ -27,11 +28,16 @@ const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
 const MARGIN = 14;
 const CONTENT_WIDTH = A4_WIDTH - MARGIN * 2;
-const CONTENT_HEIGHT = A4_HEIGHT - MARGIN * 2 - 10; // leave space for footer
+const CONTENT_HEIGHT = A4_HEIGHT - MARGIN * 2 - 10;
+const CERT_HEADER_HEIGHT = 16;
 
-/**
- * Extract the storage path from a documentUrl (handles full URLs and relative paths)
- */
+const STATUS_SYMBOLS: Record<string, string> = {
+  valid: 'V',
+  expiring: 'E',
+  expired: 'X',
+};
+const NOT_HELD_SYMBOL = '–';
+
 function extractStoragePath(documentUrl: string): string {
   if (documentUrl.includes('certificate-documents/')) {
     const match = documentUrl.match(/certificate-documents\/(.+)/);
@@ -40,9 +46,6 @@ function extractStoragePath(documentUrl: string): string {
   return documentUrl;
 }
 
-/**
- * Detect file type from URL/path extension
- */
 function getFileType(url: string): 'pdf' | 'image' | 'unknown' {
   const ext = url.split('.').pop()?.toLowerCase().split('?')[0] || '';
   if (ext === 'pdf') return 'pdf';
@@ -50,9 +53,6 @@ function getFileType(url: string): 'pdf' | 'image' | 'unknown' {
   return 'unknown';
 }
 
-/**
- * Get image format for jsPDF from extension
- */
 function getImageFormat(url: string): 'JPEG' | 'PNG' {
   const ext = url.split('.').pop()?.toLowerCase().split('?')[0] || '';
   if (ext === 'png') return 'PNG';
@@ -60,32 +60,29 @@ function getImageFormat(url: string): 'JPEG' | 'PNG' {
 }
 
 /**
- * Add the cover page to the PDF
+ * Overview page: metadata + certificate table
  */
-function addCoverPage(
+function addOverviewPage(
   doc: jsPDF,
   person: Personnel,
+  allCertificates: Certificate[],
   companyName?: string,
-  projectName?: string,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 60;
 
-  // Title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('CERTIFICATE BUNDLE', pageWidth / 2, y, { align: 'center' });
   y += 8;
 
-  // Subtitle
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(128, 128, 128);
   doc.text('FlowSert Workforce Compliance', pageWidth / 2, y, { align: 'center' });
   y += 20;
 
-  // Metadata block (left-aligned, muted grey)
   doc.setFontSize(8);
   doc.setTextColor(128, 128, 128);
 
@@ -93,62 +90,99 @@ function addCoverPage(
     doc.text(`Company: ${companyName}`, MARGIN, y);
     y += 5;
   }
-  if (projectName) {
-    doc.text(`Project: ${projectName}`, MARGIN, y);
-    y += 5;
-  }
   doc.text(`Person: ${person.name}`, MARGIN, y);
   y += 5;
+  if (person.role && person.role !== 'N/A') {
+    doc.text(`Role: ${person.role}`, MARGIN, y);
+    y += 5;
+  }
   doc.text(`Generated: ${format(new Date(), 'd MMM yyyy · HH:mm')}`, MARGIN, y);
   y += 8;
 
-  // Thin divider line
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
   doc.line(MARGIN, y, pageWidth - MARGIN, y);
+  y += 4;
 
-  // Reset text color
+  // Certificate overview table
+  const sorted = [...allCertificates].sort((a, b) => a.name.localeCompare(b.name));
+
+  const tableHead = ['Certificate', 'Issuer', 'Issue Date', 'Expiry Date', 'Status'];
+  const tableBody = sorted.map(cert => {
+    const status = getCertificateStatus(cert.expiryDate);
+    return [
+      cert.name,
+      cert.issuingAuthority || '–',
+      cert.dateOfIssue ? format(new Date(cert.dateOfIssue), 'd MMM yyyy') : '–',
+      cert.expiryDate ? format(new Date(cert.expiryDate), 'd MMM yyyy') : 'No expiry',
+      STATUS_SYMBOLS[status] || NOT_HELD_SYMBOL,
+    ];
+  });
+
+  autoTable(doc, {
+    startY: y,
+    head: [tableHead],
+    body: tableBody,
+    theme: 'grid',
+    margin: { left: MARGIN, right: MARGIN },
+    headStyles: {
+      fillColor: [240, 240, 240],
+      textColor: [0, 0, 0],
+      fontSize: 7,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    bodyStyles: {
+      fontSize: 7,
+      textColor: [60, 60, 60],
+    },
+    columnStyles: {
+      0: { cellWidth: 50 },
+      4: { halign: 'center' as const, cellWidth: 16, fontStyle: 'bold' as const },
+    },
+    styles: {
+      cellPadding: 2,
+      lineWidth: 0.2,
+      lineColor: [200, 200, 200],
+    },
+  });
+
   doc.setTextColor(0, 0, 0);
 }
 
 /**
- * Add a separator page before each certificate document
+ * Compact header overlay on the first page of each certificate document.
+ * Returns the y-position where document content should start.
  */
-function addSeparatorPage(doc: jsPDF, cert: Certificate) {
-  doc.addPage();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 60;
-
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text(cert.name, pageWidth / 2, y, { align: 'center' });
-  y += 16;
+function addCertificateHeader(doc: jsPDF, cert: Certificate): number {
+  let y = MARGIN;
 
   doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(60, 60, 60);
+  doc.text(cert.name, MARGIN, y + 4);
+  y += 7;
+
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(128, 128, 128);
 
-  if (cert.issuingAuthority) {
-    doc.text(`Issuing authority: ${cert.issuingAuthority}`, MARGIN, y);
-    y += 6;
-  }
-  doc.text(`Issue date: ${cert.dateOfIssue ? format(new Date(cert.dateOfIssue), 'd MMM yyyy') : 'N/A'}`, MARGIN, y);
+  const parts: string[] = [];
+  if (cert.issuingAuthority) parts.push(`Issuer: ${cert.issuingAuthority}`);
+  parts.push(`Issued: ${cert.dateOfIssue ? format(new Date(cert.dateOfIssue), 'd MMM yyyy') : 'N/A'}`);
+  parts.push(`Expires: ${cert.expiryDate ? format(new Date(cert.expiryDate), 'd MMM yyyy') : 'No expiry'}`);
+
+  doc.text(parts.join('  |  '), MARGIN, y + 3);
   y += 6;
-  doc.text(`Expiry date: ${cert.expiryDate ? format(new Date(cert.expiryDate), 'd MMM yyyy') : 'Does not expire'}`, MARGIN, y);
-  y += 12;
 
-  // Thin divider
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
-  doc.line(MARGIN, y, pageWidth - MARGIN, y);
+  doc.line(MARGIN, y + 1, A4_WIDTH - MARGIN, y + 1);
 
   doc.setTextColor(0, 0, 0);
+  return y + 3; // content starts here
 }
 
-/**
- * Add footers to every page of the document
- */
 function addFooters(doc: jsPDF) {
   const pageCount = doc.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -163,16 +197,11 @@ function addFooters(doc: jsPDF) {
   }
 }
 
-/**
- * Generate a merged certificate bundle PDF for a single person.
- * Downloads all certificate documents from storage and merges them into one PDF.
- */
 export async function generateCertificateBundlePdf(
   options: CertificateBundleOptions,
 ): Promise<CertificateBundleResult> {
-  const { person, companyName, projectName, onProgress } = options;
+  const { person, companyName, onProgress } = options;
 
-  // Filter certificates with documents, sort alphabetically
   const certsWithDocs = person.certificates
     .filter(c => c.documentUrl)
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -189,8 +218,8 @@ export async function generateCertificateBundlePdf(
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  // Cover page
-  addCoverPage(doc, person, companyName, projectName);
+  // Overview page with table of ALL certificates
+  addOverviewPage(doc, person, person.certificates, companyName);
 
   let included = 0;
   let skipped = 0;
@@ -198,9 +227,6 @@ export async function generateCertificateBundlePdf(
   for (let i = 0; i < certsWithDocs.length; i++) {
     const cert = certsWithDocs[i];
     onProgress?.(i + 1, certsWithDocs.length, cert.name);
-
-    // Add separator page
-    addSeparatorPage(doc, cert);
 
     const storagePath = extractStoragePath(cert.documentUrl!);
     const fileType = getFileType(cert.documentUrl!);
@@ -210,7 +236,6 @@ export async function generateCertificateBundlePdf(
       continue;
     }
 
-    // Download document from storage
     const { data: blob, error } = await supabase.storage
       .from('certificate-documents')
       .download(storagePath);
@@ -223,13 +248,11 @@ export async function generateCertificateBundlePdf(
 
     try {
       if (fileType === 'pdf') {
-        // Render PDF pages using pdf.js
         const arrayBuffer = await blob.arrayBuffer();
         const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const numPages = pdfDoc.numPages;
 
         for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-          // Page count safety check
           if (doc.getNumberOfPages() > MAX_PAGES) {
             throw new Error(
               `Certificate bundle exceeded ${MAX_PAGES} pages. Export aborted to prevent excessive file size.`,
@@ -245,33 +268,32 @@ export async function generateCertificateBundlePdf(
 
           canvas.width = viewport.width;
           canvas.height = viewport.height;
-
           await page.render({ canvasContext: context, viewport }).promise;
-
           const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
           doc.addPage();
 
-          // Scale to fit within margins
+          const isFirstPage = pageNum === 1;
+          const contentTop = isFirstPage ? addCertificateHeader(doc, cert) : MARGIN;
+          const availableHeight = A4_HEIGHT - contentTop - MARGIN - 10;
+
           const ratio = Math.min(
-            CONTENT_WIDTH / (viewport.width * 0.264583), // px to mm at 96dpi
-            CONTENT_HEIGHT / (viewport.height * 0.264583),
+            CONTENT_WIDTH / (viewport.width * 0.264583),
+            availableHeight / (viewport.height * 0.264583),
           );
           const imgWidthMm = viewport.width * 0.264583 * ratio;
           const imgHeightMm = viewport.height * 0.264583 * ratio;
           const xOffset = MARGIN + (CONTENT_WIDTH - imgWidthMm) / 2;
-          const yOffset = MARGIN + (CONTENT_HEIGHT - imgHeightMm) / 2;
+          const yOffset = contentTop + (availableHeight - imgHeightMm) / 2;
 
           doc.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidthMm, imgHeightMm);
 
-          // Clean up canvas
           canvas.width = 0;
           canvas.height = 0;
         }
 
         included++;
       } else if (fileType === 'image') {
-        // Handle image files
         const imgFormat = getImageFormat(cert.documentUrl!);
         const arrayBuffer = await blob.arrayBuffer();
         const base64 = btoa(
@@ -279,7 +301,6 @@ export async function generateCertificateBundlePdf(
         );
         const dataUri = `data:image/${imgFormat.toLowerCase()};base64,${base64}`;
 
-        // Load image to get dimensions
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const image = new Image();
           image.onload = () => resolve(image);
@@ -289,9 +310,11 @@ export async function generateCertificateBundlePdf(
 
         doc.addPage();
 
-        // Scale to fit within margins while maintaining aspect ratio
+        const contentTop = addCertificateHeader(doc, cert);
+        const availableHeight = A4_HEIGHT - contentTop - MARGIN - 10;
+
         const imgAspect = img.width / img.height;
-        const pageAspect = CONTENT_WIDTH / CONTENT_HEIGHT;
+        const pageAspect = CONTENT_WIDTH / availableHeight;
 
         let imgWidthMm: number;
         let imgHeightMm: number;
@@ -300,19 +323,18 @@ export async function generateCertificateBundlePdf(
           imgWidthMm = CONTENT_WIDTH;
           imgHeightMm = CONTENT_WIDTH / imgAspect;
         } else {
-          imgHeightMm = CONTENT_HEIGHT;
-          imgWidthMm = CONTENT_HEIGHT * imgAspect;
+          imgHeightMm = availableHeight;
+          imgWidthMm = availableHeight * imgAspect;
         }
 
         const xOffset = MARGIN + (CONTENT_WIDTH - imgWidthMm) / 2;
-        const yOffset = MARGIN + (CONTENT_HEIGHT - imgHeightMm) / 2;
+        const yOffset = contentTop + (availableHeight - imgHeightMm) / 2;
 
         doc.addImage(dataUri, imgFormat, xOffset, yOffset, imgWidthMm, imgHeightMm);
 
         included++;
       }
     } catch (renderError) {
-      // Re-throw page limit errors
       if (renderError instanceof Error && renderError.message.includes('exceeded')) {
         throw renderError;
       }
@@ -321,7 +343,6 @@ export async function generateCertificateBundlePdf(
     }
   }
 
-  // Add footers to all pages
   addFooters(doc);
 
   return { doc, included, skipped };
