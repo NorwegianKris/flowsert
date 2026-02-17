@@ -325,7 +325,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
-        <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+        <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
           <PersonnelDetail
             personnel={currentPersonnel}
             onBack={handleBack}
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
-        <main className="container mx-auto px-4 py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+        <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
            <ProjectDetail
             project={selectedProject}
             personnel={personnel}
@@ -368,7 +368,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
       
-      <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+      <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
         {business && (
           <div className="flex items-center gap-4 mb-2">
