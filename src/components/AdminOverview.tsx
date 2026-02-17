@@ -5,8 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Mail, Loader2, UserPlus, Check, AlertTriangle, Link2 } from 'lucide-react';
+import { Shield, Mail, Loader2, UserPlus, Check, AlertTriangle, Link2, Trash2 } from 'lucide-react';
 import { InviteAdminDialog } from './InviteAdminDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 interface AdminUser {
@@ -24,6 +34,8 @@ export function AdminOverview() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { profile, isSuperadmin } = useAuth();
 
   const fetchAdmins = async () => {
@@ -148,6 +160,28 @@ export function AdminOverview() {
       toast.error('Failed to create personnel profile');
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: deleteTarget.id },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Admin user deleted successfully');
+      setDeleteTarget(null);
+      await fetchAdmins();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.message || 'Failed to delete user');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -302,6 +336,16 @@ export function AdminOverview() {
                       </Badge>
                     )}
                     {renderLinkStatus(admin)}
+                    {isSuperadmin && !isSuperadminUser && admin.id !== profile?.id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteTarget(admin)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -310,6 +354,28 @@ export function AdminOverview() {
         )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Admin User</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove <strong>{deleteTarget?.fullName || deleteTarget?.email}</strong> from authentication and unlink all associated records. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <InviteAdminDialog
         open={inviteDialogOpen}
