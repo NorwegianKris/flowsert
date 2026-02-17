@@ -401,7 +401,7 @@ export function ShareProjectDialog({
               <div className="flex items-center gap-3 flex-1">
                 <Users className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium text-sm">Export Personnel & Certificates</p>
+                  <p className="font-medium text-sm">Export Personnel & Certificates Matrix</p>
                   <p className="text-xs text-muted-foreground">
                     {assignedPersonnel.length > 0 
                       ? `Detailed certificate overview for ${assignedPersonnel.length} assigned personnel`
