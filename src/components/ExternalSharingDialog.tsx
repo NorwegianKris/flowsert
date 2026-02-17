@@ -19,15 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
-import { FileDown, Mail, FileText, Users, Search, X, GripVertical } from 'lucide-react';
+import { FileDown, Mail, FileText, Users, Search, X, GripVertical, FileStack, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from '@/lib/certificateUtils';
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
+import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
 
 interface ExternalSharingDialogProps {
   open: boolean;
@@ -53,6 +55,8 @@ export function ExternalSharingDialog({
   const [showIndividualSelect, setShowIndividualSelect] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [listHeight, setListHeight] = useState(160);
+  const [isBundleGenerating, setIsBundleGenerating] = useState(false);
+  const [bundleProgress, setBundleProgress] = useState<{ current: number; total: number; label: string } | null>(null);
 
   const groupLabels: Record<RecipientGroup, string> = {
     employee: 'Employees',
@@ -294,7 +298,7 @@ export function ExternalSharingDialog({
     });
   };
 
-  const handleDownloadPdfs = () => {
+  const handleDownloadPdfs = async () => {
     if (selectedExports.length === 0) {
       toast.error('Please select at least one export option');
       return;
@@ -320,6 +324,11 @@ export function ExternalSharingDialog({
         const doc = generatePersonnelCertificatesPdf(selectedPeople);
         const fileName = `personnel_certificates_report.pdf`;
         doc.save(fileName);
+      }
+
+      if (selectedExports.includes('certificateBundle')) {
+        await handleBundleDownload();
+        return; // bundle handles its own toast
       }
 
       toast.success('PDF(s) downloaded successfully');
@@ -380,7 +389,40 @@ export function ExternalSharingDialog({
     if (selectedExports.length === 0) return false;
     if (selectedExports.includes('projectCard') && !selectedProjectId) return false;
     if (selectedExports.includes('personnelCertificates') && selectedPersonnelCount === 0) return false;
+    if (selectedExports.includes('certificateBundle') && selectedPersonnelCount !== 1) return false;
     return true;
+  };
+
+  const handleBundleDownload = async () => {
+    const selected = getSelectedPersonnel();
+    if (selected.length !== 1) return;
+    const person = selected[0];
+
+    const certsWithDocs = person.certificates.filter(c => c.documentUrl);
+    if (certsWithDocs.length === 0) {
+      toast.error('This person has no uploaded certificate documents.');
+      return;
+    }
+    if (certsWithDocs.length > 30) {
+      if (!confirm(`This person has ${certsWithDocs.length} certificates with documents. This may take a while. Continue?`)) return;
+    }
+
+    setIsBundleGenerating(true);
+    try {
+      const { doc, included, skipped } = await generateCertificateBundlePdf({
+        person,
+        companyName: businessName,
+        projectName: selectedProject?.name,
+        onProgress: (current, total, label) => setBundleProgress({ current, total, label }),
+      });
+      doc.save(`${person.name.replace(/[^a-z0-9]/gi, '_')}_certificate_bundle.pdf`);
+      toast.success(`Certificate bundle downloaded. Included ${included} certificate${included !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} missing documents` : ''}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate certificate bundle');
+    } finally {
+      setIsBundleGenerating(false);
+      setBundleProgress(null);
+    }
   };
 
   const handleClose = () => {
@@ -478,8 +520,52 @@ export function ExternalSharingDialog({
               </div>
             </div>
 
-            {/* Personnel Selection (when personnel certificates is selected) */}
-            {selectedExports.includes('personnelCertificates') && (
+            {/* Certificate Bundle Option */}
+            <div
+              className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
+                selectedExports.includes('certificateBundle')
+                  ? 'bg-primary/10 border-primary'
+                  : 'bg-muted/50 border-border hover:bg-muted'
+              }`}
+              onClick={() => toggleExport('certificateBundle')}
+            >
+              <Checkbox
+                id="certificateBundle"
+                checked={selectedExports.includes('certificateBundle')}
+                className="pointer-events-none"
+              />
+              <div className="flex items-center gap-3 flex-1">
+                <FileStack className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Generate Certificate Bundle</p>
+                  <p className="text-xs text-muted-foreground">
+                    Download all uploaded certificates for one person as a merged PDF
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Certificate bundle single-person warning */}
+            {selectedExports.includes('certificateBundle') && selectedPersonnelCount > 1 && (
+              <p className="ml-8 text-xs text-destructive">
+                Select one person to generate a certificate bundle.
+              </p>
+            )}
+
+            {/* Bundle generation progress */}
+            {isBundleGenerating && bundleProgress && (
+              <div className="ml-8 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Processing certificate {bundleProgress.current} of {bundleProgress.total}...</span>
+                </div>
+                <Progress value={(bundleProgress.current / bundleProgress.total) * 100} className="h-2" />
+                <p className="text-xs text-muted-foreground truncate">{bundleProgress.label}</p>
+              </div>
+            )}
+
+            {/* Personnel Selection (when personnel certificates or certificate bundle is selected) */}
+            {(selectedExports.includes('personnelCertificates') || selectedExports.includes('certificateBundle')) && (
               <div className="ml-8 space-y-3">
                 {/* Group Selection */}
                 <div className="space-y-2">
@@ -629,16 +715,20 @@ export function ExternalSharingDialog({
             <Button
               onClick={handleDownloadPdfs}
               className="flex-1 gap-2"
-              disabled={!canDownload()}
+              disabled={!canDownload() || isBundleGenerating}
             >
-              <FileDown className="h-4 w-4" />
-              Download PDF{selectedExports.length > 1 ? 's' : ''}
+              {isBundleGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
+              {isBundleGenerating ? 'Generating...' : `Download PDF${selectedExports.length > 1 ? 's' : ''}`}
             </Button>
             <Button
               variant="outline"
               onClick={handleEmailPdfs}
               className="flex-1 gap-2"
-              disabled={!canDownload()}
+              disabled={!canDownload() || isBundleGenerating}
             >
               <Mail className="h-4 w-4" />
               Send via Email
