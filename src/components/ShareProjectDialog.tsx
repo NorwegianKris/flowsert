@@ -323,14 +323,17 @@ export function ShareProjectDialog({
 
     setIsBundleGenerating(true);
     try {
-      const { doc, included, skipped } = await generateCertificateBundlePdf({
+      const { doc, included, skipped, renderFailures } = await generateCertificateBundlePdf({
         person,
         companyName: businessName,
         projectName: project.name,
         onProgress: (current, total, label) => setBundleProgress({ current, total, label }),
       });
       doc.save(`${person.name.replace(/[^a-z0-9]/gi, '_')}_certificate_bundle.pdf`);
-      toast.success(`Certificate bundle downloaded. Included ${included} certificate${included !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} missing documents` : ''}.`);
+      const parts = [`Included ${included} certificate${included !== 1 ? 's' : ''}`];
+      if (skipped > 0) parts.push(`skipped ${skipped} missing`);
+      if (renderFailures > 0) parts.push(`${renderFailures} render failure${renderFailures !== 1 ? 's' : ''}`);
+      toast.success(`Certificate bundle downloaded. ${parts.join(', ')}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to generate certificate bundle');
     } finally {
