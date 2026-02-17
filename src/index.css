@@ -177,13 +177,9 @@ All colors MUST be HSL.
   }
 }
 
-/* Scale up for wide/ultrawide monitors */
-@media (min-width: 2000px) {
-  html { font-size: 120%; }
-}
-@media (min-width: 2800px) {
-  html { font-size: 140%; }
-}
-@media (min-width: 3800px) {
-  html { font-size: 160%; }
+@layer components {
+  .canvas-padding {
+    padding-left: clamp(16px, 3vw, 56px);
+    padding-right: clamp(16px, 3vw, 56px);
+  }
 }

@@ -32,7 +32,7 @@ export default function WorkerDashboard() {
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+        <div className="w-full max-w-[1320px] mx-auto canvas-padding py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Logo and Profile Info */}
             <div className="flex items-center gap-4">
@@ -75,7 +75,7 @@ export default function WorkerDashboard() {
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+      <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {isInitialLoading ? (
           <div className="space-y-6">
             <Skeleton className="h-8 w-48" />
