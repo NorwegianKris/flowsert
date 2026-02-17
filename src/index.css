@@ -176,3 +176,14 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Scale up for wide/ultrawide monitors */
+@media (min-width: 2000px) {
+  html { font-size: 120%; }
+}
+@media (min-width: 2800px) {
+  html { font-size: 140%; }
+}
+@media (min-width: 3800px) {
+  html { font-size: 160%; }
+}
