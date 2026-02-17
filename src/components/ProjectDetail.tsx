@@ -66,6 +66,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
   const [isAddPhaseOpen, setIsAddPhaseOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { phases, addPhase } = useProjectPhases(project.id);
@@ -134,6 +135,17 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
     setIsCloseDialogOpen(false);
   };
 
+  const handleActivateProject = () => {
+    if (onUpdateProject) {
+      onUpdateProject({
+        ...project,
+        isPosted: false,
+      });
+      toast.success('Project activated — no longer posted');
+    }
+    setIsActivateDialogOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -147,6 +159,12 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         </Button>
 
         <div className="flex flex-wrap gap-2">
+          {project.isPosted && (
+            <Button size="sm" onClick={() => setIsActivateDialogOpen(true)} className="gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Activate Project
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)} className="gap-2">
             <Pencil className="h-4 w-4" />
             Edit Project
@@ -556,6 +574,23 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleCloseProject}>
               Close Project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Activate Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will convert the posted project into a regular active project. It will no longer be visible to workers as an open opportunity.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleActivateProject}>
+              Activate Project
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
