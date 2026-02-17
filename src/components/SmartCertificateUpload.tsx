@@ -14,6 +14,7 @@ const DELAY_BETWEEN_CALLS_MS = 500;
 
 export function SmartCertificateUpload({
   existingCategories,
+  existingIssuers,
   onExtractionComplete,
   onFileSelected,
   disabled = false,
@@ -43,6 +44,8 @@ export function SmartCertificateUpload({
           issuingAuthority: null,
           matchedCategory: null,
           matchedCategoryId: null,
+          matchedIssuer: null,
+          matchedIssuerId: null,
         },
         fieldsExtracted: 0,
         issues: [`File type "${file.type || 'unknown'}" cannot be scanned. Please enter details manually.`],
@@ -56,6 +59,7 @@ export function SmartCertificateUpload({
         imageBase64: base64,
         mimeType,
         existingCategories: existingCategories.map(c => c.name),
+        existingIssuers: existingIssuers?.map(i => i.name) || [],
       },
     });
 
@@ -70,14 +74,24 @@ export function SmartCertificateUpload({
       matchedCategoryId = matched?.id || null;
     }
 
+    // Find matched issuer ID if there's a match
+    let matchedIssuerId: string | null = null;
+    if (data.extractedData?.matchedIssuer && existingIssuers) {
+      const matched = existingIssuers.find(
+        i => i.name.toLowerCase() === data.extractedData.matchedIssuer.toLowerCase()
+      );
+      matchedIssuerId = matched?.id || null;
+    }
+
     return {
       ...data,
       extractedData: {
         ...data.extractedData,
         matchedCategoryId,
+        matchedIssuerId,
       },
     };
-  }, [existingCategories]);
+  }, [existingCategories, existingIssuers]);
 
   // Process the queue sequentially
   const processQueue = useCallback(async () => {

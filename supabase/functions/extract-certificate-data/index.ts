@@ -9,6 +9,7 @@ interface ExtractionRequest {
   imageBase64: string;
   mimeType: string;
   existingCategories: string[];
+  existingIssuers?: string[];
 }
 
 interface ExtractedData {
@@ -18,6 +19,7 @@ interface ExtractedData {
   placeOfIssue: string | null;
   issuingAuthority: string | null;
   matchedCategory: string | null;
+  matchedIssuer: string | null;
 }
 
 interface ExtractionResponse {
@@ -40,7 +42,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const { imageBase64, mimeType, existingCategories }: ExtractionRequest = await req.json();
+    const { imageBase64, mimeType, existingCategories, existingIssuers }: ExtractionRequest = await req.json();
 
     if (!imageBase64) {
       return new Response(
@@ -64,6 +66,10 @@ IMPORTANT RULES:
 ${existingCategories.length > 0 ? `
 Known certificate categories in this system: ${existingCategories.join(", ")}
 If the certificate matches one of these categories exactly or closely, include that category name in matchedCategory.
+` : ""}
+${existingIssuers && existingIssuers.length > 0 ? `
+Known issuing authorities in this system: ${existingIssuers.join(", ")}
+If the issuing authority matches one of these exactly or closely, include that name in matchedIssuer.
 ` : ""}`;
 
     const userPrompt = `Analyze this certificate image and extract all visible information.
@@ -133,6 +139,11 @@ Return the extracted data using the extract_certificate_data function.`;
                     description: "If certificate matches a known category, include the category name",
                     nullable: true,
                   },
+                  matchedIssuer: {
+                    type: "string",
+                    description: "If issuing authority matches a known issuer, include the issuer name",
+                    nullable: true,
+                  },
                   imageQuality: {
                     type: "string",
                     enum: ["good", "fair", "poor"],
@@ -189,6 +200,7 @@ Return the extracted data using the extract_certificate_data function.`;
       placeOfIssue: extractedRaw.placeOfIssue || null,
       issuingAuthority: extractedRaw.issuingAuthority || null,
       matchedCategory: extractedRaw.matchedCategory || null,
+      matchedIssuer: extractedRaw.matchedIssuer || null,
     };
 
     // Count extracted fields (excluding matchedCategory as it's optional)
@@ -266,6 +278,7 @@ Return the extracted data using the extract_certificate_data function.`;
           placeOfIssue: null,
           issuingAuthority: null,
           matchedCategory: null,
+          matchedIssuer: null,
         },
         fieldsExtracted: 0,
         issues: ["An error occurred during extraction"],
