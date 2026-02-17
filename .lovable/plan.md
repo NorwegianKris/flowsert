@@ -1,58 +1,28 @@
 
 
-# Add Collapsible Expiry List View Below Event Timeline
+# Safety Audit: No Viewport-Width Breakers Found
 
-## Summary
-Add a collapsible list view of expiring/expired certificates directly below the Event Timeline chart in the ExpiryTimeline component. This provides a scannable, detailed complement to the visual timeline -- showing person, certificate, expiry date, and status in a structured list grouped by urgency.
+## Search Results
 
-## Changes
+Searched all `.tsx`, `.ts`, and `.css` files under `src/` for: `w-screen`, `min-w-screen`, `max-w-none`, `w-[100vw]`, and `width: 100vw`.
 
-### 1. Update: `src/components/ExpiryTimeline.tsx`
+### Findings
 
-Below the `<TimelineChart />` component (after line 302), add a new collapsible section using the existing `Collapsible` component from Radix UI.
+| Pattern | Occurrences | Location | Verdict |
+|---------|------------|----------|---------|
+| `w-screen` | 0 | -- | Clean |
+| `min-w-screen` | 0 | -- | Clean |
+| `w-[100vw]` | 0 | -- | Clean |
+| `width: 100vw` | 0 | -- | Clean |
+| `max-w-none` | 4 | `ChatBot.tsx` (3x), `Logo.tsx` (1x) | Safe -- used on small `<img>` elements inside `overflow-hidden` containers for logo cropping, not on layout wrappers |
 
-**Structure:**
-- A collapsible trigger button labeled "Expiry Details" with a count badge and chevron icon
-- Default state: collapsed
-- When expanded, shows a list of all timeline events (filtered by the same type/category filters and zoom range) grouped by status lane (Overdue, Next 30 Days, 31-60, etc.)
+## Conclusion
 
-**List layout per group:**
-- Group header: colored status label with certificate count (e.g., "Overdue (4)")
-- Each row shows: Person name | Certificate name | Expiry date (formatted) | Days remaining badge
-- Rows are sorted by expiry date (soonest first)
-- Clicking a row navigates to the Personnel tab filtered to that person (reuses existing `navigate` logic)
+No layout-breaking viewport-width classes exist on any dashboard wrappers. The framed canvas plan can be implemented without needing to fix any existing breakout issues.
 
-**Filtering:**
-- Respects the same `selectedTypeId`, `selectedCategoryId`, `timelineStartDays`, and `timelineEndDays` filters already applied to `timelineEvents`
-- Only shows events within the current visible range
+The four `max-w-none` usages are a deliberate pattern: a logo image is absolutely positioned inside a fixed-size `overflow-hidden` container, and `max-w-none` prevents the browser from constraining the image width. These do not affect layout flow.
 
-**Visual style:**
-- Muted border, compact rows (py-2), small text (text-sm/text-xs)
-- Status-colored dot or badge per row matching existing lane colors
-- Scrollable if many items, but no fixed height -- renders inline
+## No Code Changes Needed
 
-### Technical Details
-
-**New imports in ExpiryTimeline.tsx:**
-- `Collapsible, CollapsibleContent, CollapsibleTrigger` from `@/components/ui/collapsible`
-- `ChevronsUpDown` or `ChevronDown` from `lucide-react`
-- `format` from `date-fns`
-- `Badge` from `@/components/ui/badge`
-
-**Grouping logic:**
-Uses the existing `getLaneConfigsForRange(timelineEndDays)` to determine which groups to show, then filters `timelineEvents` into buckets by their `status` field. Empty groups are hidden.
-
-**New state:**
-```ts
-const [listOpen, setListOpen] = useState(false);
-```
-
-**Event filtering for visible range:**
-Reuses `timelineEvents` (already filtered by type/category), additionally filtered to only include events where `daysUntilExpiry` falls within `[timelineStartDays, timelineEndDays]`.
-
-**Row click handler:**
-Navigates using the same pattern as `handleGroupClick` -- constructs URL params and navigates to `/admin?tab=personnel&...` with appropriate filters.
-
-### No other files change
-All data and filtering logic already exists in `timelineEvents`. This is purely a UI addition within the existing component.
+This was a verification step only. The approved framed canvas implementation (replacing `container mx-auto px-4` with `w-full max-w-[1320px] mx-auto canvas-padding`) remains the next action.
 
