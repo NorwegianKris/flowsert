@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useProjectApplications } from '@/hooks/useProjectApplications';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,6 +69,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { phases, addPhase } = useProjectPhases(project.id);
+  const { applications } = useProjectApplications(project.isPosted ? project.id : undefined);
 
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
@@ -212,6 +214,12 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="h-4 w-4 text-amber-500" />
                     <span>{duration} days</span>
+                  </div>
+                )}
+                {project.isPosted && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span>{applications.length} Applicant{applications.length !== 1 ? 's' : ''}</span>
                   </div>
                 )}
               </div>
