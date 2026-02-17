@@ -8,9 +8,17 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
-import { FileDown, Mail, FileText, Users } from 'lucide-react';
+import { FileDown, Mail, FileText, Users, FileStack, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -18,6 +26,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from '@/lib/certificateUtils';
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
+import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
 
 interface ShareProjectDialogProps {
   open: boolean;
@@ -35,6 +44,9 @@ export function ShareProjectDialog({
   businessName,
 }: ShareProjectDialogProps) {
   const [selectedExports, setSelectedExports] = useState<string[]>([]);
+  const [selectedBundlePersonId, setSelectedBundlePersonId] = useState<string>('');
+  const [isBundleGenerating, setIsBundleGenerating] = useState(false);
+  const [bundleProgress, setBundleProgress] = useState<{ current: number; total: number; label: string } | null>(null);
 
   const assignedPersonnel = project.assignedPersonnel
     .map((id) => personnel.find((p) => p.id === id))
@@ -220,14 +232,13 @@ export function ShareProjectDialog({
     });
   };
 
-  const handleOpenPdfs = () => {
+  const handleOpenPdfs = async () => {
     if (selectedExports.length === 0) {
       toast.error('Please select at least one export option');
       return;
     }
 
     try {
-      // Download PDFs - more reliable than window.open which can be blocked
       if (selectedExports.includes('projectCard')) {
         const doc = generateProjectCardPdf();
         const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_project_card.pdf`;
@@ -238,6 +249,11 @@ export function ShareProjectDialog({
         const doc = generatePersonnelCertificatesPdf();
         const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_personnel_certificates.pdf`;
         doc.save(fileName);
+      }
+
+      if (selectedExports.includes('certificateBundle')) {
+        await handleBundleDownload();
+        return;
       }
 
       toast.success('PDF(s) downloaded successfully');
@@ -286,7 +302,42 @@ export function ShareProjectDialog({
     }
   };
 
-  const hasSelection = selectedExports.length > 0;
+  const hasSelection = () => {
+    if (selectedExports.length === 0) return false;
+    if (selectedExports.includes('certificateBundle') && !selectedBundlePersonId) return false;
+    return true;
+  };
+
+  const handleBundleDownload = async () => {
+    const person = assignedPersonnel.find(p => p.id === selectedBundlePersonId);
+    if (!person) return;
+
+    const certsWithDocs = person.certificates.filter(c => c.documentUrl);
+    if (certsWithDocs.length === 0) {
+      toast.error('This person has no uploaded certificate documents.');
+      return;
+    }
+    if (certsWithDocs.length > 30) {
+      if (!confirm(`This person has ${certsWithDocs.length} certificates with documents. This may take a while. Continue?`)) return;
+    }
+
+    setIsBundleGenerating(true);
+    try {
+      const { doc, included, skipped } = await generateCertificateBundlePdf({
+        person,
+        companyName: businessName,
+        projectName: project.name,
+        onProgress: (current, total, label) => setBundleProgress({ current, total, label }),
+      });
+      doc.save(`${person.name.replace(/[^a-z0-9]/gi, '_')}_certificate_bundle.pdf`);
+      toast.success(`Certificate bundle downloaded. Included ${included} certificate${included !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} missing documents` : ''}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate certificate bundle');
+    } finally {
+      setIsBundleGenerating(false);
+      setBundleProgress(null);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -357,6 +408,66 @@ export function ShareProjectDialog({
                 </div>
               </div>
             </div>
+
+            {/* Certificate Bundle Option */}
+            <div 
+              className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
+                selectedExports.includes('certificateBundle') 
+                  ? 'bg-primary/10 border-primary' 
+                  : 'bg-muted/50 border-border hover:bg-muted'
+              } ${assignedPersonnel.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => assignedPersonnel.length > 0 && toggleExport('certificateBundle')}
+            >
+              <Checkbox 
+                id="certificateBundle"
+                checked={selectedExports.includes('certificateBundle')}
+                className="pointer-events-none"
+                disabled={assignedPersonnel.length === 0}
+              />
+              <div className="flex items-center gap-3 flex-1">
+                <FileStack className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Generate Certificate Bundle</p>
+                  <p className="text-xs text-muted-foreground">
+                    {assignedPersonnel.length > 0 
+                      ? 'Download all uploaded certificates for one person as a merged PDF'
+                      : 'No personnel assigned to this project'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Person selector for certificate bundle */}
+            {selectedExports.includes('certificateBundle') && assignedPersonnel.length > 0 && (
+              <div className="ml-8 space-y-2">
+                <Label className="text-sm">Select person:</Label>
+                <Select value={selectedBundlePersonId} onValueChange={setSelectedBundlePersonId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a person..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assignedPersonnel.filter(p => p.activated).map(person => (
+                      <SelectItem key={person.id} value={person.id}>
+                        {person.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Bundle generation progress */}
+            {isBundleGenerating && bundleProgress && (
+              <div className="ml-8 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Processing certificate {bundleProgress.current} of {bundleProgress.total}...</span>
+                </div>
+                <Progress value={(bundleProgress.current / bundleProgress.total) * 100} className="h-2" />
+                <p className="text-xs text-muted-foreground truncate">{bundleProgress.label}</p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -364,16 +475,20 @@ export function ShareProjectDialog({
             <Button 
               onClick={handleOpenPdfs} 
               className="flex-1 gap-2"
-              disabled={!hasSelection}
+              disabled={!hasSelection() || isBundleGenerating}
             >
-              <FileDown className="h-4 w-4" />
-              Download PDF{selectedExports.length > 1 ? 's' : ''}
+              {isBundleGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
+              {isBundleGenerating ? 'Generating...' : `Download PDF${selectedExports.length > 1 ? 's' : ''}`}
             </Button>
             <Button 
               variant="outline" 
               onClick={handleEmailPdfs} 
               className="flex-1 gap-2"
-              disabled={!hasSelection}
+              disabled={!hasSelection() || isBundleGenerating}
             >
               <Mail className="h-4 w-4" />
               Send via Email
