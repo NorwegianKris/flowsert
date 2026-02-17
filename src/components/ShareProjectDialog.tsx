@@ -217,8 +217,6 @@ export function ShareProjectDialog({
       personnel: assignedPersonnel,
       projectName: project.name,
       companyName: businessName,
-      location: project.location || undefined,
-      activePersonnelCount: assignedPersonnel.filter(p => p.activated).length,
     });
   };
 
