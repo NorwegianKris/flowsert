@@ -30,7 +30,6 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     role: '',
   });
 
@@ -42,7 +41,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', phone: '', role: '' });
+    setFormData({ name: '', email: '', role: '' });
     setSendInvitation(true);
     setInviteLink('');
     setCopied(false);
@@ -63,7 +62,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
       return;
     }
 
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.role.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.role.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -73,7 +72,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
       const { data: newPersonnel, error } = await supabase.from('personnel').insert({
         name: formData.name.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim(),
+        phone: '',
         role: formData.role.trim(),
         business_id: businessId,
       }).select('id').single();
@@ -203,16 +202,6 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="john@example.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone *</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+47 123 45 678"
                 required
               />
             </div>
