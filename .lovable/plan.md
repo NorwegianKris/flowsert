@@ -1,61 +1,66 @@
 
 
-# Fix: Clear Stale Tokens Before Login to Stop Token Refresh Storm
+# Internal Posted Projects -- Phase 1 (Two Additional Refinements)
 
-## Problem
-Wayan logs in successfully, briefly sees her dashboard, then gets bounced back to the login page. Auth logs show 40+ token refresh/revoke calls per second immediately after login.
+## Overview
 
-## Root Cause
-The broadened event guard prevents unnecessary React re-renders, but it does NOT stop the Supabase SDK's internal `autoRefreshToken` mechanism. Here is what happens:
+Two more refinements to the finalized plan before implementation begins.
 
-1. Wayan's browser has old/corrupted tokens cached in localStorage from previous sessions
-2. She logs in with her password (succeeds, returns fresh tokens)
-3. The SDK's auto-refresh detects the old cached tokens and tries to refresh them in parallel
-4. Each successful refresh **revokes** the previous token, which triggers more refreshes
-5. This creates an infinite HTTP-level storm that overwhelms the rate limit (429 errors)
-6. The app cannot complete any data fetches (profile, role) and the loading state never resolves, causing the redirect back to `/auth`
+---
 
-## Solution
+## Refinement 1: Normalize personnel backfill values
 
-### 1. `src/pages/Auth.tsx` -- Clear stale tokens before signing in
+The current backfill stores raw casing (e.g. "Norway", "Stavanger"). Since all visibility matching uses `LOWER(TRIM(...))`, this works -- but DISTINCT queries for the admin country/city selectors would show duplicates if some records have "Norway" and others "norway".
 
-Before calling `signIn`, do a local-only sign-out to wipe any corrupted cached tokens from localStorage:
+Updated backfill SQL:
 
-```typescript
-const handleSignIn = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
-
-  setIsLoading(true);
-
-  // Clear any stale/corrupted tokens before signing in
-  // This prevents the token refresh storm
-  await supabase.auth.signOut({ scope: 'local' });
-
-  const { error } = await signIn(email, password);
-  setIsLoading(false);
-  // ... rest stays the same
-};
+```text
+UPDATE personnel
+SET city = NULLIF(LOWER(TRIM(split_part(location, ',', 1))), ''),
+    country = NULLIF(LOWER(TRIM(split_part(location, ',', 2))), '')
+WHERE location IS NOT NULL
+  AND location NOT IN ('Not specified', 'Not Specified', '')
+  AND position(',' IN location) > 0;
 ```
 
-This single line (`signOut({ scope: 'local' })`) clears the browser's cached session without hitting the server, so when the fresh login completes, there are no old tokens left to trigger competing refreshes.
+This stores `country = 'norway'` and `city = 'stavanger'` instead of mixed case. The original `location` field ("Stavanger, Norway") remains untouched for display purposes.
 
-### 2. `src/contexts/AuthContext.tsx` -- Already fixed (no changes needed)
+The `GeoLocationInput` structured save must also normalize before writing:
 
-The broadened guard (`event !== 'SIGNED_OUT'`) remains in place as a safety net against any residual re-render issues.
+```text
+country: result.country.toLowerCase().trim()
+city: result.city.toLowerCase().trim()
+```
 
-## Technical Details
-- `signOut({ scope: 'local' })` only clears `localStorage` -- it does NOT revoke the server-side session
-- This is safe because the old tokens are already corrupted/revoked anyway
-- The fresh `signInWithPassword` call immediately creates a clean new session
-- No changes needed to the worker dashboard, role redirect, or any other component
+The admin visibility selectors will display prettified labels (title-cased) but store and match in normalized form. Since both personnel and visibility data are now consistently lowercase, DISTINCT queries produce clean, deduplicated lists without extra processing.
 
-## What Does NOT Change
-- Sign-up flows (invitation, freelancer) are unaffected
-- Password reset flow is unaffected
-- Admin login is unaffected (but also benefits from this safety measure)
-- All existing auth guards and RLS policies remain intact
+---
 
-## Expected Result
-Wayan opens flowsert.com, enters her credentials, presses Sign In. The stale tokens are cleared, a fresh session is created, and she is redirected to her worker dashboard without any storm or redirect loop.
+## Refinement 2: Add updated_at trigger on project_applications
+
+Reuse the existing `update_updated_at_column()` function (already defined in the database) by attaching it to the new table:
+
+```text
+CREATE TRIGGER update_project_applications_updated_at
+  BEFORE UPDATE ON project_applications
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+This ensures `updated_at` is always correct when status changes (accept/reject), without relying on application code to set it.
+
+---
+
+## No Other Changes
+
+Everything else from the previously approved plan remains identical:
+
+- Personnel table: add `country` and `city` columns (backfill now normalized)
+- Projects table: add `visibility_all`, `visibility_countries`, `visibility_cities` with NOT VALID CHECK constraint
+- `project_applications` table with RLS + updated_at trigger
+- Security definer function with NULLIF city guard and ARRAY pattern
+- GeoLocationInput structured data changes (saves normalized)
+- Admin UI: visibility controls + applications tab
+- Worker UI: split top segment + PostedProjects component
+- All file lists (new and modified) unchanged
 
