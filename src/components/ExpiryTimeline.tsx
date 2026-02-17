@@ -8,6 +8,7 @@ import { getDaysUntilExpiry } from '@/lib/certificateUtils';
 import { Clock, AlertTriangle, AlertCircle, CheckCircle, Users, Award, ChevronRight } from 'lucide-react';
 import { TimelineChart } from '@/components/timeline/TimelineChart';
 import { TimelineZoomControls } from '@/components/timeline/TimelineZoomControls';
+import { ExpiryDetailsList } from '@/components/timeline/ExpiryDetailsList';
 import { TimelineEvent, getEventStatus, getEventColor } from '@/components/timeline/types';
 import { useCertificateTypes } from '@/hooks/useCertificateTypes';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
@@ -299,6 +300,12 @@ export function ExpiryTimeline({
             personnelFilter={personnelFilter}
             timelineEndDays={timelineEndDays}
             timelineStartDays={timelineStartDays}
+          />
+          <ExpiryDetailsList
+            timelineEvents={timelineEvents}
+            timelineStartDays={timelineStartDays}
+            timelineEndDays={timelineEndDays}
+            personnelFilter={personnelFilter}
           />
         </div>
       </CardContent>
