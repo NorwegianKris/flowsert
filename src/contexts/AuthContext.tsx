@@ -115,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           // Only fetch if it's a different user
           if (fetchedUserIdRef.current !== session.user.id) {
+            setLoading(true);
             fetchUserData(session.user.id);
           }
         } else {
