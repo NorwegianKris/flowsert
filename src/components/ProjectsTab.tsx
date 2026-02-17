@@ -159,7 +159,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
 
   return (
     <Card 
-      className={`hover:shadow-md transition-shadow cursor-pointer ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
+      className={`hover:shadow-md transition-shadow cursor-pointer flex flex-col ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
       onClick={onClick}
     >
       <CardHeader className="pb-2">
@@ -187,7 +187,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col flex-1">
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>
         
         {assignedPersonnel.length > 0 && (
@@ -210,7 +210,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
           </div>
         )}
         
-        <div className="text-xs text-muted-foreground">
+        <div className="mt-auto text-xs text-muted-foreground">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           {project.endDate && (
             <span className="ml-3">End: {new Date(project.endDate).toLocaleDateString()}</span>
