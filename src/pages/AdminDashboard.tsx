@@ -71,6 +71,12 @@ export default function AdminDashboard() {
   const [personnelChatOpen, setPersonnelChatOpen] = useState(false);
   const [linkProfileOpen, setLinkProfileOpen] = useState(false);
   const [addPersonnelPrefill, setAddPersonnelPrefill] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    if (selectedProject || selectedPersonnel) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [selectedProject, selectedPersonnel]);
   
   // Filter states (arrays for multi-select)
   const [roleFilters, setRoleFilters] = useState<string[]>([]);
