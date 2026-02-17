@@ -291,8 +291,6 @@ export function ExternalSharingDialog({
       personnel: selectedPersonnel,
       projectName: selectedProject?.name,
       companyName: businessName,
-      location: selectedProject?.location || undefined,
-      activePersonnelCount: selectedPersonnel.filter(p => p.activated).length,
     });
   };
 
