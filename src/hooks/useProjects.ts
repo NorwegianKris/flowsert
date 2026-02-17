@@ -73,13 +73,17 @@ export function useProjects() {
     try {
       setLoading(true);
       
-      // Fetch projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch projects and calendar items in parallel (no waterfall)
+      const [projectsResult, calendarResult] = await Promise.all([
+        supabase.from('projects').select('*').order('created_at', { ascending: false }),
+        supabase.from('project_calendar_items').select('*')
+      ]);
 
-      if (projectsError) throw projectsError;
+      if (projectsResult.error) throw projectsResult.error;
+      if (calendarResult.error) throw calendarResult.error;
+
+      const projectsData = projectsResult.data;
+      const calendarItemsData = calendarResult.data;
 
       if (!projectsData || projectsData.length === 0) {
         setProjects([]);
@@ -87,14 +91,7 @@ export function useProjects() {
         return;
       }
 
-      // Fetch calendar items for all projects
-      const projectIds = projectsData.map((p: DbProject) => p.id);
-      const { data: calendarItemsData, error: calendarError } = await supabase
-        .from('project_calendar_items')
-        .select('*')
-        .in('project_id', projectIds);
-
-      if (calendarError) throw calendarError;
+      const projectIds = new Set(projectsData.map((p: DbProject) => p.id));
 
       // Map to frontend format
       const mappedProjects: Project[] = projectsData.map((p: DbProject) => ({
@@ -113,7 +110,7 @@ export function useProjects() {
         isPosted: p.is_posted,
         imageUrl: p.image_url || undefined,
         calendarItems: (calendarItemsData || [])
-          .filter((item: DbCalendarItem) => item.project_id === p.id)
+          .filter((item: DbCalendarItem) => projectIds.has(item.project_id) && item.project_id === p.id)
           .map((item: DbCalendarItem) => ({
             id: item.id,
             date: item.date,

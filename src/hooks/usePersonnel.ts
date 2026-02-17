@@ -65,26 +65,21 @@ export function usePersonnel() {
     }
 
     try {
-      // Fetch personnel (RLS will filter based on role)
-      const { data: personnelData, error: personnelError } = await supabase
-        .from('personnel')
-        .select('*');
+      // Fetch personnel and certificates in parallel (no waterfall)
+      const [personnelResult, certificatesResult] = await Promise.all([
+        supabase.from('personnel').select('*'),
+        supabase.from('certificates').select('*, certificate_categories(name), certificate_types(name)')
+      ]);
 
-      if (personnelError) throw personnelError;
+      if (personnelResult.error) throw personnelResult.error;
+      if (certificatesResult.error) throw certificatesResult.error;
 
-      // Fetch certificates for all accessible personnel
-      const personnelIds = ((personnelData || []) as any[]).map((p) => p.id);
-      
-      let certificatesData: DbCertificate[] = [];
-      if (personnelIds.length > 0) {
-        const { data, error: certError } = await supabase
-          .from('certificates')
-          .select('*, certificate_categories(name), certificate_types(name)')
-          .in('personnel_id', personnelIds);
-
-        if (certError) throw certError;
-        certificatesData = (data || []) as DbCertificate[];
-      }
+      const personnelData = personnelResult.data || [];
+      const personnelIds = new Set((personnelData as any[]).map((p) => p.id));
+      // Filter certificates to only those belonging to accessible personnel
+      const certificatesData = ((certificatesResult.data || []) as DbCertificate[]).filter(
+        (c) => personnelIds.has(c.personnel_id)
+      );
 
       // Map to Personnel type with certificates
       const mappedPersonnel: Personnel[] = ((personnelData || []) as any[]).map((p) => ({
