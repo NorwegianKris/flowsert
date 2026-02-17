@@ -114,15 +114,9 @@ export default function AdminDashboard() {
     }
   }, [myProfile]);
 
-  // Defer fetching admin user IDs until after initial render
-  const [deferredReady, setDeferredReady] = useState(false);
+  // Fetch admin user IDs immediately when business_id is available
   useEffect(() => {
-    const timer = setTimeout(() => setDeferredReady(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!deferredReady || !profile?.business_id) return;
+    if (!profile?.business_id) return;
 
     const fetchAdminUserIds = async () => {
       try {
@@ -152,7 +146,7 @@ export default function AdminDashboard() {
     };
 
     fetchAdminUserIds();
-  }, [deferredReady, profile?.business_id]);
+  }, [profile?.business_id]);
 
   // Get unique locations for filter dropdown
   const uniqueLocations = useMemo(() => {
