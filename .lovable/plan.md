@@ -1,21 +1,28 @@
 
 
-## Remove Phone Number from Add Personnel Dialog
+## Fix: Scroll to Top When Entering a Project
 
-A small UI cleanup to the "Add Personnel" form.
+### Problem
+When you click a project card, the page stays at whatever scroll position you were at (or jumps to newly rendered content at the bottom). This happens because the dashboard uses in-component state switching rather than URL-based routing, so the browser does not auto-scroll to top.
 
-### What changes
+### Solution
+Add a `window.scrollTo(0, 0)` call whenever a project is selected, so the page always starts at the top of the project detail view.
 
-Remove the phone number field from the Add Personnel dialog. Since workers complete their own profiles after accepting an invitation, collecting phone at this stage is unnecessary.
+### Technical Details
 
-### Technical details
+**File: `src/pages/AdminDashboard.tsx`**
 
-**File:** `src/components/AddPersonnelDialog.tsx`
+Wrap the `setSelectedProject` calls with a scroll-to-top side effect. Specifically:
 
-1. Remove `phone` from the `formData` state initial value and reset
-2. Remove the phone input field from the form JSX
-3. Remove `formData.phone.trim()` from the validation check
-4. Change the insert call to use an empty string for `phone` (since the DB column is NOT NULL with no default)
+1. Create a small helper or add a `useEffect` that watches `selectedProject` -- when it changes from `null` to a project, scroll the window to the top.
 
-The database `personnel.phone` column is `text NOT NULL`, so we'll pass an empty string `''` as a placeholder. The worker will fill in their real phone number when completing their profile after signing up.
+```typescript
+useEffect(() => {
+  if (selectedProject) {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }
+}, [selectedProject]);
+```
+
+This single change (roughly 3 lines) will fix the scroll issue for all project detail entries without affecting any other behavior. The same pattern will also be applied for `selectedPersonnel` to keep things consistent.
 
