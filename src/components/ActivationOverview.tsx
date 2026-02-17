@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -18,7 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Personnel } from '@/types';
-import { ShieldCheck, Users, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search } from 'lucide-react';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +35,7 @@ interface ActivationOverviewProps {
 
 export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPersonnelRemoved }: ActivationOverviewProps) {
   const [filter, setFilter] = useState<FilterMode>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Personnel | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -47,15 +49,23 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
   );
 
   const filteredPersonnel = useMemo(() => {
+    let list = personnel;
     switch (filter) {
       case 'active':
-        return personnel.filter((p) => p.activated);
+        list = list.filter((p) => p.activated);
+        break;
       case 'inactive':
-        return personnel.filter((p) => !p.activated);
-      default:
-        return personnel;
+        list = list.filter((p) => !p.activated);
+        break;
     }
-  }, [personnel, filter]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [personnel, filter, searchQuery]);
 
   const progressPercent = personnel.length > 0 ? (activeCount / personnel.length) * 100 : 0;
 
@@ -142,6 +152,17 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
               </TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
 
           {/* List */}
           {filteredPersonnel.length === 0 ? (
