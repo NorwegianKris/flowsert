@@ -3,11 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Logo } from '@/components/Logo';
 import { NavLink } from '@/components/NavLink';
 
-export function PublicHeader() {
+interface PublicHeaderProps {
+  onLogin?: () => void;
+}
+
+export function PublicHeader({ onLogin }: PublicHeaderProps) {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    navigate('/auth');
+    if (onLogin) {
+      onLogin();
+    } else {
+      navigate('/auth');
+    }
   };
 
   return (

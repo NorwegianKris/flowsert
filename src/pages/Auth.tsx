@@ -472,7 +472,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PublicHeader />
+      <PublicHeader onLogin={() => openAuthDialog('signin')} />
 
       {/* Hero + Product Preview with Background */}
       <div className="relative overflow-hidden min-h-[calc(100vh-73px)] flex flex-col justify-center">
