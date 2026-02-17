@@ -20,6 +20,7 @@ export interface CertificateBundleResult {
   doc: jsPDF;
   included: number;
   skipped: number;
+  renderFailures: number;
 }
 
 const MAX_CERTIFICATES = 30;
@@ -28,8 +29,6 @@ const A4_WIDTH = 210;
 const A4_HEIGHT = 297;
 const MARGIN = 14;
 const CONTENT_WIDTH = A4_WIDTH - MARGIN * 2;
-const CONTENT_HEIGHT = A4_HEIGHT - MARGIN * 2 - 10;
-const CERT_HEADER_HEIGHT = 16;
 
 const STATUS_SYMBOLS: Record<string, string> = {
   valid: 'V',
@@ -60,7 +59,8 @@ function getImageFormat(url: string): 'JPEG' | 'PNG' {
 }
 
 /**
- * Overview page: metadata + certificate table
+ * Overview page: metadata + certificate table + legend.
+ * Tighter layout to maximize table rows on page 1.
  */
 function addOverviewPage(
   doc: jsPDF,
@@ -69,40 +69,44 @@ function addOverviewPage(
   companyName?: string,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 60;
+  let y = MARGIN + 4;
 
-  doc.setFontSize(16);
+  // Title
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('CERTIFICATE BUNDLE', pageWidth / 2, y, { align: 'center' });
-  y += 8;
+  y += 5;
 
-  doc.setFontSize(9);
+  // Subtitle
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(128, 128, 128);
   doc.text('FlowSert Workforce Compliance', pageWidth / 2, y, { align: 'center' });
-  y += 20;
+  y += 8;
 
-  doc.setFontSize(8);
+  // Metadata block – compact
+  doc.setFontSize(7);
   doc.setTextColor(128, 128, 128);
 
   if (companyName) {
     doc.text(`Company: ${companyName}`, MARGIN, y);
-    y += 5;
+    y += 4;
   }
   doc.text(`Person: ${person.name}`, MARGIN, y);
-  y += 5;
+  y += 4;
   if (person.role && person.role !== 'N/A') {
     doc.text(`Role: ${person.role}`, MARGIN, y);
-    y += 5;
+    y += 4;
   }
   doc.text(`Generated: ${format(new Date(), 'd MMM yyyy · HH:mm')}`, MARGIN, y);
-  y += 8;
+  y += 5;
 
+  // Divider
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
   doc.line(MARGIN, y, pageWidth - MARGIN, y);
-  y += 4;
+  y += 3;
 
   // Certificate overview table
   const sorted = [...allCertificates].sort((a, b) => a.name.localeCompare(b.name));
@@ -141,11 +145,33 @@ function addOverviewPage(
       4: { halign: 'center' as const, cellWidth: 16, fontStyle: 'bold' as const },
     },
     styles: {
-      cellPadding: 2,
+      cellPadding: 1.5,
       lineWidth: 0.2,
       lineColor: [200, 200, 200],
     },
   });
+
+  // Legend below table
+  const finalY = (doc as any).lastAutoTable?.finalY ?? y + 20;
+  let legendY = finalY + 4;
+
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(140, 140, 140);
+  doc.text('Legend:', MARGIN, legendY);
+  legendY += 3.5;
+
+  doc.setFont('helvetica', 'normal');
+  const legendItems = [
+    'V – Valid',
+    'E – Expiring within 60 days',
+    'X – Expired',
+    '– – Not required / Not registered',
+  ];
+  for (const item of legendItems) {
+    doc.text(item, MARGIN, legendY);
+    legendY += 3;
+  }
 
   doc.setTextColor(0, 0, 0);
 }
@@ -180,7 +206,27 @@ function addCertificateHeader(doc: jsPDF, cert: Certificate): number {
   doc.line(MARGIN, y + 1, A4_WIDTH - MARGIN, y + 1);
 
   doc.setTextColor(0, 0, 0);
-  return y + 3; // content starts here
+  return y + 3;
+}
+
+/**
+ * Add a placeholder page when a PDF page fails to render.
+ */
+function addRenderFailurePage(doc: jsPDF, certName: string, pageNum: number) {
+  doc.addPage();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(160, 160, 160);
+  doc.text(
+    `Unable to render page ${pageNum} for ${certName}`,
+    pageWidth / 2,
+    pageHeight / 2,
+    { align: 'center' },
+  );
+  doc.setTextColor(0, 0, 0);
 }
 
 function addFooters(doc: jsPDF) {
@@ -223,6 +269,7 @@ export async function generateCertificateBundlePdf(
 
   let included = 0;
   let skipped = 0;
+  let renderFailures = 0;
 
   for (let i = 0; i < certsWithDocs.length; i++) {
     const cert = certsWithDocs[i];
@@ -259,37 +306,47 @@ export async function generateCertificateBundlePdf(
             );
           }
 
-          const page = await pdfDoc.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 1.5 });
+          try {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.5 });
 
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          if (!context) continue;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            if (!context) {
+              addRenderFailurePage(doc, cert.name, pageNum);
+              renderFailures++;
+              continue;
+            }
 
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: context, viewport }).promise;
-          const imgData = canvas.toDataURL('image/jpeg', 0.85);
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: context, viewport }).promise;
+            const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
-          doc.addPage();
+            doc.addPage();
 
-          const isFirstPage = pageNum === 1;
-          const contentTop = isFirstPage ? addCertificateHeader(doc, cert) : MARGIN;
-          const availableHeight = A4_HEIGHT - contentTop - MARGIN - 10;
+            const isFirstPage = pageNum === 1;
+            const contentTop = isFirstPage ? addCertificateHeader(doc, cert) : MARGIN;
+            const availableHeight = A4_HEIGHT - contentTop - MARGIN - 10;
 
-          const ratio = Math.min(
-            CONTENT_WIDTH / (viewport.width * 0.264583),
-            availableHeight / (viewport.height * 0.264583),
-          );
-          const imgWidthMm = viewport.width * 0.264583 * ratio;
-          const imgHeightMm = viewport.height * 0.264583 * ratio;
-          const xOffset = MARGIN + (CONTENT_WIDTH - imgWidthMm) / 2;
-          const yOffset = contentTop + (availableHeight - imgHeightMm) / 2;
+            const ratio = Math.min(
+              CONTENT_WIDTH / (viewport.width * 0.264583),
+              availableHeight / (viewport.height * 0.264583),
+            );
+            const imgWidthMm = viewport.width * 0.264583 * ratio;
+            const imgHeightMm = viewport.height * 0.264583 * ratio;
+            const xOffset = MARGIN + (CONTENT_WIDTH - imgWidthMm) / 2;
+            const yOffset = contentTop + (availableHeight - imgHeightMm) / 2;
 
-          doc.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidthMm, imgHeightMm);
+            doc.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidthMm, imgHeightMm);
 
-          canvas.width = 0;
-          canvas.height = 0;
+            canvas.width = 0;
+            canvas.height = 0;
+          } catch (pageRenderError) {
+            console.warn(`Failed to render page ${pageNum} of ${cert.name}`, pageRenderError);
+            addRenderFailurePage(doc, cert.name, pageNum);
+            renderFailures++;
+          }
         }
 
         included++;
@@ -345,5 +402,5 @@ export async function generateCertificateBundlePdf(
 
   addFooters(doc);
 
-  return { doc, included, skipped };
+  return { doc, included, skipped, renderFailures };
 }
