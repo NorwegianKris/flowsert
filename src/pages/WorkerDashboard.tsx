@@ -3,6 +3,7 @@ import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { useWorkerPersonnel } from '@/hooks/usePersonnel';
 import { PersonnelDetail } from '@/components/PersonnelDetail';
 import { WorkerInvitations } from '@/components/WorkerInvitations';
+import { PostedProjects } from '@/components/PostedProjects';
 import { ChatBot } from '@/components/ChatBot';
 import { ReportFeedbackDialog } from '@/components/ReportFeedbackDialog';
 import { WelcomeDialog } from '@/components/WelcomeDialog';
@@ -104,8 +105,15 @@ export default function WorkerDashboard() {
               <ProfileCompletionIndicator personnel={personnel} />
             )}
             
-            {/* Show pending invitations at the top - not for freelancers */}
-            {personnel.category !== 'freelancer' && <WorkerInvitations personnelId={personnel.id} />}
+            {/* Show pending invitations and posted projects */}
+            {personnel.category !== 'freelancer' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <WorkerInvitations personnelId={personnel.id} />
+                <PostedProjects personnelId={personnel.id} businessId={personnel.businessId || ''} />
+              </div>
+            ) : (
+              <PostedProjects personnelId={personnel.id} businessId={personnel.businessId || ''} />
+            )}
             
             <PersonnelDetail
               personnel={personnel}

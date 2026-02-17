@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 
+export interface GeoStructuredResult {
+  label: string;
+  city: string;
+  country: string;
+}
+
 interface GeoResult {
   label: string;
   city: string;
@@ -17,21 +23,20 @@ interface PhotonFeature {
   };
 }
 
-function formatResult(props: PhotonFeature['properties']): string {
+function formatResult(props: PhotonFeature['properties']): GeoStructuredResult | null {
   const city = props.city || props.name || props.county || props.state || '';
   const country = props.country || '';
-  if (!city) return '';
-  if (!country) return city;
-  return `${city}, ${country}`;
+  if (!city) return null;
+  const label = country ? `${city}, ${country}` : city;
+  return { label, city, country };
 }
 
 // Module-level cache for geo results (persists across re-renders)
-const geoCache = new Map<string, string[]>();
+const geoCache = new Map<string, GeoStructuredResult[]>();
 const MAX_CACHE_SIZE = 50;
 
-function cacheSet(key: string, value: string[]) {
+function cacheSet(key: string, value: GeoStructuredResult[]) {
   if (geoCache.size >= MAX_CACHE_SIZE) {
-    // Remove oldest entry
     const firstKey = geoCache.keys().next().value;
     if (firstKey) geoCache.delete(firstKey);
   }
@@ -39,40 +44,42 @@ function cacheSet(key: string, value: string[]) {
 }
 
 export function useGeoSearch(query: string, enabled = true) {
-  const [results, setResults] = useState<string[]>([]);
+  const [structuredResults, setStructuredResults] = useState<GeoStructuredResult[]>([]);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Backward-compatible string[] results
+  const results = structuredResults.map(r => r.label);
 
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     const trimmed = query.trim();
     if (!enabled || trimmed.length < 2) {
-      setResults([]);
+      setStructuredResults([]);
       setLoading(false);
       return;
     }
 
-    // Check cache first — instant results, no loading spinner
+    // Check cache first
     const cacheKey = trimmed.toLowerCase();
     if (geoCache.has(cacheKey)) {
-      setResults(geoCache.get(cacheKey)!);
+      setStructuredResults(geoCache.get(cacheKey)!);
       setLoading(false);
       return;
     }
 
-    // Prefix cache matching: show cached results from a shorter query as interim
+    // Prefix cache matching
     for (const [cachedKey, cachedResults] of geoCache) {
       if (cacheKey.startsWith(cachedKey) && cachedResults.length > 0) {
-        // Filter cached results to match the longer query
         const filtered = cachedResults.filter(r =>
-          r.toLowerCase().includes(cacheKey)
+          r.label.toLowerCase().includes(cacheKey)
         );
         if (filtered.length > 0) {
-          setResults(filtered);
+          setStructuredResults(filtered);
         } else {
-          setResults(cachedResults);
+          setStructuredResults(cachedResults);
         }
         break;
       }
@@ -80,7 +87,6 @@ export function useGeoSearch(query: string, enabled = true) {
 
     setLoading(true);
 
-    // Debounce 30ms
     timeoutRef.current = setTimeout(async () => {
       if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
@@ -97,15 +103,25 @@ export function useGeoSearch(query: string, enabled = true) {
 
         const formatted = features
           .map(f => formatResult(f.properties))
-          .filter(Boolean);
+          .filter((r): r is GeoStructuredResult => r !== null);
 
-        const unique = [...new Set(formatted)].slice(0, 5);
+        // Deduplicate by label
+        const seen = new Set<string>();
+        const unique: GeoStructuredResult[] = [];
+        for (const r of formatted) {
+          if (!seen.has(r.label)) {
+            seen.add(r.label);
+            unique.push(r);
+          }
+          if (unique.length >= 5) break;
+        }
+
         cacheSet(cacheKey, unique);
-        setResults(unique);
+        setStructuredResults(unique);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           console.error('Geo search error:', err);
-          setResults([]);
+          setStructuredResults([]);
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -119,5 +135,5 @@ export function useGeoSearch(query: string, enabled = true) {
     };
   }, [query, enabled]);
 
-  return { results, loading };
+  return { results, structuredResults, loading };
 }

@@ -26,6 +26,9 @@ export interface Project {
   projectManager?: string;
   isPosted?: boolean;
   imageUrl?: string;
+  visibilityAll?: boolean;
+  visibilityCountries?: string[];
+  visibilityCities?: Record<string, string[]>;
 }
 
 interface DbProject {
@@ -46,6 +49,9 @@ interface DbProject {
   project_manager: string | null;
   is_posted: boolean;
   image_url: string | null;
+  visibility_all: boolean;
+  visibility_countries: string[] | null;
+  visibility_cities: Record<string, string[]> | null;
 }
 
 interface DbCalendarItem {
@@ -109,6 +115,9 @@ export function useProjects() {
         projectManager: p.project_manager || undefined,
         isPosted: p.is_posted,
         imageUrl: p.image_url || undefined,
+        visibilityAll: p.visibility_all,
+        visibilityCountries: p.visibility_countries || undefined,
+        visibilityCities: p.visibility_cities || undefined,
         calendarItems: (calendarItemsData || [])
           .filter((item: DbCalendarItem) => projectIds.has(item.project_id) && item.project_id === p.id)
           .map((item: DbCalendarItem) => ({
@@ -156,6 +165,9 @@ export function useProjects() {
           project_manager: project.projectManager || null,
           is_posted: project.isPosted || false,
           image_url: project.imageUrl || null,
+          visibility_all: project.visibilityAll ?? true,
+          visibility_countries: project.visibilityCountries || null,
+          visibility_cities: project.visibilityCities || null,
         })
         .select()
         .single();
@@ -177,6 +189,9 @@ export function useProjects() {
         projectManager: data.project_manager || undefined,
         isPosted: data.is_posted,
         imageUrl: data.image_url || undefined,
+        visibilityAll: data.visibility_all,
+        visibilityCountries: data.visibility_countries || undefined,
+        visibilityCities: data.visibility_cities as Record<string, string[]> || undefined,
         calendarItems: [],
       };
 
@@ -208,6 +223,9 @@ export function useProjects() {
           project_manager: project.projectManager || null,
           is_posted: project.isPosted || false,
           image_url: project.imageUrl || null,
+          visibility_all: project.visibilityAll ?? true,
+          visibility_countries: project.visibilityCountries || null,
+          visibility_cities: project.visibilityCities || null,
         })
         .eq('id', project.id);
 

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe } from 'lucide-react';
+import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -60,6 +61,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
   const [isPosted, setIsPosted] = useState(false);
+  const [visibilityAll, setVisibilityAll] = useState(true);
+  const [visibilityCountries, setVisibilityCountries] = useState<string[]>([]);
+  const [visibilityCities, setVisibilityCities] = useState<Record<string, string[]>>({});
   const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -164,6 +168,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       projectManager: projectManager.trim() || undefined,
       isPosted,
       imageUrl: imageUrl || undefined,
+      visibilityAll: isPosted ? visibilityAll : true,
+      visibilityCountries: isPosted && !visibilityAll ? visibilityCountries : undefined,
+      visibilityCities: isPosted && !visibilityAll ? visibilityCities : undefined,
     };
 
     const createdProject = await onProjectAdded(newProject);
@@ -226,6 +233,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAiPrompt('');
     setIncludeFreelancers(false);
     setIsPosted(false);
+    setVisibilityAll(true);
+    setVisibilityCountries([]);
+    setVisibilityCities({});
     setShowFreelancersOnly(false);
     setImageUrl('');
     setSearchQuery('');
@@ -730,6 +740,18 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   Posted projects notify workers within the system about available opportunities
                 </p>
               </div>
+              {isPosted && (
+                <ProjectVisibilityControls
+                  visibilityAll={visibilityAll}
+                  visibilityCountries={visibilityCountries}
+                  visibilityCities={visibilityCities}
+                  onChange={(data) => {
+                    setVisibilityAll(data.visibilityAll);
+                    setVisibilityCountries(data.visibilityCountries);
+                    setVisibilityCities(data.visibilityCities);
+                  }}
+                />
+              )}
             </div>
           </div>
 

@@ -12,6 +12,7 @@ import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
 import { ProjectDocuments } from '@/components/ProjectDocuments';
 import { ProjectChat } from '@/components/ProjectChat';
+import { ProjectApplicationsList } from '@/components/ProjectApplicationsList';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { useProjectPhases } from '@/hooks/useProjectPhases';
@@ -29,6 +30,7 @@ import {
   Pencil,
   Flag,
   FolderOpen,
+  Inbox,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import {
@@ -287,7 +289,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
           <Card className="border-border/50 h-full">
             <Tabs defaultValue="personnel" className="h-full flex flex-col">
               <CardHeader className="pb-0">
-                <TabsList className="w-full grid grid-cols-3">
+              <TabsList className={`w-full grid ${project.isPosted ? 'grid-cols-4' : 'grid-cols-3'}`}>
                   <TabsTrigger value="personnel" className="gap-1.5 text-xs sm:text-sm">
                     <Users className="h-4 w-4 text-violet-500" />
                     <span className="hidden sm:inline">Personnel</span>
@@ -300,6 +302,12 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                     <FolderOpen className="h-4 w-4 text-amber-500" />
                     <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
+                  {project.isPosted && (
+                    <TabsTrigger value="applications" className="gap-1.5 text-xs sm:text-sm">
+                      <Inbox className="h-4 w-4 text-emerald-500" />
+                      <span className="hidden sm:inline">Applications</span>
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </CardHeader>
               <CardContent className="flex-1 overflow-auto pt-4">
@@ -404,6 +412,13 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                 <TabsContent value="documents" className="mt-0 h-full">
                   <ProjectDocuments projectId={project.id} />
                 </TabsContent>
+
+                {/* Applications Tab */}
+                {project.isPosted && (
+                  <TabsContent value="applications" className="mt-0 h-full">
+                    <ProjectApplicationsList projectId={project.id} />
+                  </TabsContent>
+                )}
               </CardContent>
             </Tabs>
           </Card>

@@ -113,6 +113,8 @@ export function usePersonnel() {
         profileCode: p.profile_code || undefined,
         certificateExpiryNotifications: p.certificate_expiry_notifications || false,
         createdAt: p.created_at || undefined,
+        country: p.country || undefined,
+        city: p.city || undefined,
         certificates: certificatesData
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
@@ -219,6 +221,8 @@ export function useWorkerPersonnel() {
         profileCode: p.profile_code || undefined,
         certificateExpiryNotifications: p.certificate_expiry_notifications || false,
         createdAt: p.created_at || undefined,
+        country: p.country || undefined,
+        city: p.city || undefined,
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.certificate_types?.name || c.name,

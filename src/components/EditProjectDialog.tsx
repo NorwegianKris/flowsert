@@ -1,29 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
+import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 
 interface EditProjectDialogProps {
   open: boolean;
@@ -33,13 +24,7 @@ interface EditProjectDialogProps {
   onSave: (project: Project) => void;
 }
 
-export function EditProjectDialog({
-  open,
-  onOpenChange,
-  project,
-  personnel,
-  onSave,
-}: EditProjectDialogProps) {
+export function EditProjectDialog({ open, onOpenChange, project, personnel, onSave }: EditProjectDialogProps) {
   const [name, setName] = useState(project.name);
   const [description, setDescription] = useState(project.description);
   const [status, setStatus] = useState<'active' | 'completed' | 'pending'>(project.status);
@@ -52,6 +37,10 @@ export function EditProjectDialog({
   const [location, setLocation] = useState(project.location || '');
   const [projectManager, setProjectManager] = useState(project.projectManager || '');
   const [imageUrl, setImageUrl] = useState(project.imageUrl || '');
+  const [isPosted, setIsPosted] = useState(project.isPosted || false);
+  const [visibilityAll, setVisibilityAll] = useState(project.visibilityAll ?? true);
+  const [visibilityCountries, setVisibilityCountries] = useState<string[]>(project.visibilityCountries || []);
+  const [visibilityCities, setVisibilityCities] = useState<Record<string, string[]>>(project.visibilityCities || {});
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,6 +58,10 @@ export function EditProjectDialog({
       setLocation(project.location || '');
       setProjectManager(project.projectManager || '');
       setImageUrl(project.imageUrl || '');
+      setIsPosted(project.isPosted || false);
+      setVisibilityAll(project.visibilityAll ?? true);
+      setVisibilityCountries(project.visibilityCountries || []);
+      setVisibilityCities(project.visibilityCities || {});
     }
   }, [open, project]);
 
@@ -147,6 +140,10 @@ export function EditProjectDialog({
       location: location.trim() || undefined,
       projectManager: projectManager.trim() || undefined,
       imageUrl: imageUrl || undefined,
+      isPosted,
+      visibilityAll: isPosted ? visibilityAll : true,
+      visibilityCountries: isPosted && !visibilityAll ? visibilityCountries : undefined,
+      visibilityCities: isPosted && !visibilityAll ? visibilityCities : undefined,
     });
     onOpenChange(false);
     toast.success('Project updated successfully');
@@ -343,24 +340,40 @@ export function EditProjectDialog({
                         handlePersonnelToggle(person.id, checked as boolean)
                       }
                     />
-                    <label
-                      htmlFor={`person-${person.id}`}
-                      className="flex-1 cursor-pointer text-sm"
-                    >
+                    <label htmlFor={`person-${person.id}`} className="flex-1 cursor-pointer text-sm">
                       <span className="font-medium">{person.name}</span>
                       <span className="text-muted-foreground ml-2">({person.role})</span>
                     </label>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-2">
-                  No personnel available
-                </p>
+                <p className="text-sm text-muted-foreground text-center py-2">No personnel available</p>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {assignedPersonnel.length} personnel selected
-            </p>
+            <p className="text-xs text-muted-foreground">{assignedPersonnel.length} personnel selected</p>
+          </div>
+
+          {/* Posted Project Toggle + Visibility */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <Switch id="editPostProject" checked={isPosted} onCheckedChange={setIsPosted} />
+                <Label htmlFor="editPostProject" className="text-sm cursor-pointer font-medium">Post project?</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">Make visible to workers as an opportunity</p>
+            </div>
+            {isPosted && (
+              <ProjectVisibilityControls
+                visibilityAll={visibilityAll}
+                visibilityCountries={visibilityCountries}
+                visibilityCities={visibilityCities}
+                onChange={(data) => {
+                  setVisibilityAll(data.visibilityAll);
+                  setVisibilityCountries(data.visibilityCountries);
+                  setVisibilityCities(data.visibilityCities);
+                }}
+              />
+            )}
           </div>
         </div>
 
