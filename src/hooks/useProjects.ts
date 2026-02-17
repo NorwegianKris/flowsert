@@ -68,6 +68,86 @@ interface DbCalendarItem {
   updated_at: string;
 }
 
+async function notifyWorkersAboutPostedProject(
+  projectId: string,
+  projectName: string,
+  businessId: string,
+  projectCountry: string | undefined,
+  visibilityMode: string,
+  includeCountries: string[] | undefined,
+  excludeCountries: string[] | undefined,
+) {
+  try {
+    // Fetch all activated personnel (workers) in the business
+    const { data: allPersonnel, error: personnelError } = await supabase
+      .from('personnel')
+      .select('id, country, user_id')
+      .eq('business_id', businessId)
+      .not('user_id', 'is', null);
+
+    if (personnelError || !allPersonnel) {
+      console.error('Failed to fetch personnel for notification:', personnelError);
+      return;
+    }
+
+    const normalize = (s: string | null | undefined) => (s || '').toLowerCase().trim();
+    const normalizedExclude = (excludeCountries || []).map(c => normalize(c));
+    const normalizedInclude = (includeCountries || []).map(c => normalize(c));
+    const normalizedProjectCountry = normalize(projectCountry);
+
+    // Filter personnel matching visibility rules (mirrors can_worker_see_posted_project)
+    const eligiblePersonnel = allPersonnel.filter(p => {
+      const workerCountry = normalize(p.country);
+      // Exclude check
+      if (workerCountry && normalizedExclude.includes(workerCountry)) return false;
+      // Visibility mode
+      if (visibilityMode === 'all') return true;
+      // same_country mode
+      if (workerCountry === normalizedProjectCountry) return true;
+      if (workerCountry && normalizedInclude.includes(workerCountry)) return true;
+      return false;
+    });
+
+    if (eligiblePersonnel.length === 0) return;
+
+    // Create notification
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: notification, error: notifError } = await supabase
+      .from('notifications')
+      .insert({
+        business_id: businessId,
+        subject: `New project opportunity: ${projectName}`,
+        message: `A new project "${projectName}" has been posted. Check your Posted Projects to learn more and apply.`,
+        created_by: user?.id || null,
+      })
+      .select('id')
+      .single();
+
+    if (notifError || !notification) {
+      console.error('Failed to create notification:', notifError);
+      return;
+    }
+
+    // Insert recipients
+    const recipients = eligiblePersonnel.map(p => ({
+      notification_id: notification.id,
+      personnel_id: p.id,
+    }));
+
+    const { error: recipientError } = await supabase
+      .from('notification_recipients')
+      .insert(recipients);
+
+    if (recipientError) {
+      console.error('Failed to insert notification recipients:', recipientError);
+    } else {
+      console.log(`Notified ${recipients.length} workers about posted project "${projectName}"`);
+    }
+  } catch (err) {
+    console.error('Error sending posted project notifications:', err);
+  }
+}
+
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,6 +289,16 @@ export function useProjects() {
 
       setProjects((prev) => [newProject, ...prev]);
       toast.success('Project created successfully');
+
+      // Send notifications if project is posted
+      if (newProject.isPosted && profile.business_id) {
+        notifyWorkersAboutPostedProject(
+          newProject.id, newProject.name, profile.business_id,
+          newProject.projectCountry, newProject.visibilityMode || 'same_country',
+          newProject.includeCountries, newProject.excludeCountries,
+        );
+      }
+
       return newProject;
     } catch (error) {
       console.error('Error adding project:', error);
@@ -217,7 +307,7 @@ export function useProjects() {
     }
   };
 
-  const updateProject = async (project: Project): Promise<boolean> => {
+  const updateProject = async (project: Project, previouslyPosted?: boolean): Promise<boolean> => {
     const dedup = (arr: string[]) => [...new Set(arr.map(x => x.toLowerCase().trim()).filter(Boolean))];
     try {
       const { error } = await supabase
@@ -249,6 +339,16 @@ export function useProjects() {
       setProjects((prev) =>
         prev.map((p) => (p.id === project.id ? project : p))
       );
+
+      // Send notifications if project was just posted (not previously posted)
+      if (project.isPosted && !previouslyPosted && profile?.business_id) {
+        notifyWorkersAboutPostedProject(
+          project.id, project.name, profile.business_id,
+          project.projectCountry, project.visibilityMode || 'same_country',
+          project.includeCountries, project.excludeCountries,
+        );
+      }
+
       return true;
     } catch (error) {
       console.error('Error updating project:', error);
