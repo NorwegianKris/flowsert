@@ -211,12 +211,12 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
         )}
         
         {isPosted && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-auto">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
             <Users className="h-3.5 w-3.5 text-primary" />
             <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
           </div>
         )}
-        <div className={`text-xs text-muted-foreground ${isPosted ? 'mt-2' : 'mt-auto'}`}>
+        <div className="mt-auto text-xs text-muted-foreground">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           {project.endDate && (
             <span className="ml-3">End: {new Date(project.endDate).toLocaleDateString()}</span>
