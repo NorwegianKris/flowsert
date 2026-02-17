@@ -1,50 +1,61 @@
 
 
-# Fix: Broaden Auth Event Guard + Clear Wayan's Session
+# Fix: Clear Stale Tokens Before Login to Stop Token Refresh Storm
 
 ## Problem
-The freelancer's page "keeps loading forever." Two issues are at play:
+Wayan logs in successfully, briefly sees her dashboard, then gets bounced back to the login page. Auth logs show 40+ token refresh/revoke calls per second immediately after login.
 
-1. **Stale browser state**: Wayan's browser has corrupted/revoked tokens cached from previous login attempts, causing a cascade of token refresh calls the moment she opens the site.
+## Root Cause
+The broadened event guard prevents unnecessary React re-renders, but it does NOT stop the Supabase SDK's internal `autoRefreshToken` mechanism. Here is what happens:
 
-2. **Narrow event guard**: The current fix only filters `TOKEN_REFRESHED` events, but `SIGNED_IN` events also fire repeatedly during the token storm. Each one calls `setUser()`, causing unnecessary re-renders that feed the redirect loop.
+1. Wayan's browser has old/corrupted tokens cached in localStorage from previous sessions
+2. She logs in with her password (succeeds, returns fresh tokens)
+3. The SDK's auto-refresh detects the old cached tokens and tries to refresh them in parallel
+4. Each successful refresh **revokes** the previous token, which triggers more refreshes
+5. This creates an infinite HTTP-level storm that overwhelms the rate limit (429 errors)
+6. The app cannot complete any data fetches (profile, role) and the loading state never resolves, causing the redirect back to `/auth`
 
 ## Solution
 
-### 1. `src/contexts/AuthContext.tsx` -- Guard ALL events for the same user
+### 1. `src/pages/Auth.tsx` -- Clear stale tokens before signing in
 
-Change the guard from only `TOKEN_REFRESHED` to any event where the user ID hasn't changed (except `SIGNED_OUT`). This eliminates all unnecessary re-renders during a storm:
+Before calling `signIn`, do a local-only sign-out to wipe any corrupted cached tokens from localStorage:
 
 ```typescript
-// Before (too narrow):
-if (event === 'TOKEN_REFRESHED' && fetchedUserIdRef.current === session?.user?.id) {
-  setSession(session);
-  return;
-}
+const handleSignIn = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-// After (covers all events):
-if (event !== 'SIGNED_OUT' && fetchedUserIdRef.current === session?.user?.id) {
-  setSession(session);
-  return;
-}
+  setIsLoading(true);
+
+  // Clear any stale/corrupted tokens before signing in
+  // This prevents the token refresh storm
+  await supabase.auth.signOut({ scope: 'local' });
+
+  const { error } = await signIn(email, password);
+  setIsLoading(false);
+  // ... rest stays the same
+};
 ```
 
-This means once a user's profile and role have been fetched, no auth event can trigger a `setUser()` re-render unless the actual user changes or signs out.
+This single line (`signOut({ scope: 'local' })`) clears the browser's cached session without hitting the server, so when the fresh login completes, there are no old tokens left to trigger competing refreshes.
 
-### 2. Tell Wayan to clear her browser data
+### 2. `src/contexts/AuthContext.tsx` -- Already fixed (no changes needed)
 
-After publishing, ask Wayan to:
-- Clear cookies and site data for flowsert.com (or use an incognito/private window)
-- Then log in again
+The broadened guard (`event !== 'SIGNED_OUT'`) remains in place as a safety net against any residual re-render issues.
 
-This removes the corrupted tokens that are fueling the current storm.
+## Technical Details
+- `signOut({ scope: 'local' })` only clears `localStorage` -- it does NOT revoke the server-side session
+- This is safe because the old tokens are already corrupted/revoked anyway
+- The fresh `signInWithPassword` call immediately creates a clean new session
+- No changes needed to the worker dashboard, role redirect, or any other component
 
 ## What Does NOT Change
-- Sign-in / sign-out logic is unaffected
-- Initial session loading is unaffected
-- Role fetching and redirect logic stay the same
-- Invitation-based registration flows are untouched
+- Sign-up flows (invitation, freelancer) are unaffected
+- Password reset flow is unaffected
+- Admin login is unaffected (but also benefits from this safety measure)
+- All existing auth guards and RLS policies remain intact
 
 ## Expected Result
-After clearing browser data, Wayan logs in once, gets a clean session, and is redirected to her worker dashboard. The broadened guard prevents any future token storms from causing re-render cascades.
+Wayan opens flowsert.com, enters her credentials, presses Sign In. The stale tokens are cleared, a fresh session is created, and she is redirected to her worker dashboard without any storm or redirect loop.
 
