@@ -105,10 +105,10 @@ export function ExpiryDetailsList({
                     onClick={() => handleRowClick(event)}
                     className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-background/50 transition-colors text-sm"
                   >
-                    <span className="font-medium text-foreground truncate min-w-0 flex-1">
+                    <span className="font-medium text-foreground truncate w-[35%] flex-shrink-0">
                       {event.personnelName}
                     </span>
-                    <span className="text-muted-foreground truncate min-w-0 flex-1">
+                    <span className="text-muted-foreground truncate w-[30%] flex-shrink-0">
                       {event.certificateName}
                     </span>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
