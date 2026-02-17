@@ -51,7 +51,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
     <div className="space-y-6">
       {/* Posted Projects Toggle */}
       {postedProjectsCount > 0 && (
-        <div className="flex items-center gap-6 py-3 px-4 bg-primary/5 rounded-lg border border-primary/20">
+        <div className="flex items-center gap-6 py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Megaphone className="h-4 w-4" />
             <span className="text-sm font-medium">Posted Projects:</span>
@@ -159,7 +159,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
 
   return (
     <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer"
+      className={`hover:shadow-md transition-shadow cursor-pointer ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
       onClick={onClick}
     >
       <CardHeader className="pb-2">
@@ -174,7 +174,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             )}
             <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
             {isPosted && (
-              <Badge variant="secondary" className="shrink-0">
+              <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0">
                 Posted
               </Badge>
             )}
