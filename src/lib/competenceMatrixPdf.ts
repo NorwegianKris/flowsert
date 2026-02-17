@@ -69,14 +69,16 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
 
     const leftCol = margin;
 
+    const rightCol = pageWidth - margin;
+
     if (companyName) {
       doc.text(`Company: ${companyName}`, leftCol, y);
     }
-    doc.text(`Project: ${projectName || 'Personnel Overview'}`, leftCol + 80, y);
+    doc.text(`Project: ${projectName || 'Personnel Overview'}`, rightCol, y, { align: 'right' });
     y += 4.5;
 
     doc.text(`Personnel in export: ${sortedPersonnel.length}`, leftCol, y);
-    doc.text(`Generated: ${generatedDate}`, leftCol + 80, y);
+    doc.text(`Generated: ${generatedDate}`, rightCol, y, { align: 'right' });
     y += 4;
 
     // Thin horizontal divider
