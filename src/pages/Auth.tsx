@@ -226,6 +226,11 @@ export default function Auth() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+
+    // Clear any stale/corrupted tokens before signing in
+    // This prevents the token refresh storm caused by old cached sessions
+    await supabase.auth.signOut({ scope: 'local' });
+
     const { error } = await signIn(email, password);
     setIsLoading(false);
 
