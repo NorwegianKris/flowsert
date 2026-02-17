@@ -74,7 +74,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user && !isPasswordReset) {
-      navigate('/');
+      navigate('/', { replace: true });
     }
   }, [user, loading, navigate, isPasswordReset]);
 
