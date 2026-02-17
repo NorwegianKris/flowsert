@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
@@ -216,10 +216,16 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
           </div>
         )}
-        <div className="mt-auto text-xs text-muted-foreground">
+        <div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           {project.endDate && (
-            <span className="ml-3">End: {new Date(project.endDate).toLocaleDateString()}</span>
+            <span>End: {new Date(project.endDate).toLocaleDateString()}</span>
+          )}
+          {(project.projectLocationLabel || project.location) && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {project.projectLocationLabel || project.location}
+            </span>
           )}
         </div>
       </CardContent>
