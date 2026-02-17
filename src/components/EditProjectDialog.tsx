@@ -38,9 +38,11 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
   const [projectManager, setProjectManager] = useState(project.projectManager || '');
   const [imageUrl, setImageUrl] = useState(project.imageUrl || '');
   const [isPosted, setIsPosted] = useState(project.isPosted || false);
-  const [visibilityAll, setVisibilityAll] = useState(project.visibilityAll ?? true);
-  const [visibilityCountries, setVisibilityCountries] = useState<string[]>(project.visibilityCountries || []);
-  const [visibilityCities, setVisibilityCities] = useState<Record<string, string[]>>(project.visibilityCities || {});
+  const [projectCountry, setProjectCountry] = useState(project.projectCountry || '');
+  const [projectLocationLabel, setProjectLocationLabel] = useState(project.projectLocationLabel || '');
+  const [visibilityMode, setVisibilityMode] = useState<'same_country' | 'all'>(project.visibilityMode || 'same_country');
+  const [includeCountries, setIncludeCountries] = useState<string[]>(project.includeCountries || []);
+  const [excludeCountries, setExcludeCountries] = useState<string[]>(project.excludeCountries || []);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,9 +61,11 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
       setProjectManager(project.projectManager || '');
       setImageUrl(project.imageUrl || '');
       setIsPosted(project.isPosted || false);
-      setVisibilityAll(project.visibilityAll ?? true);
-      setVisibilityCountries(project.visibilityCountries || []);
-      setVisibilityCities(project.visibilityCities || {});
+      setProjectCountry(project.projectCountry || '');
+      setProjectLocationLabel(project.projectLocationLabel || '');
+      setVisibilityMode(project.visibilityMode || 'same_country');
+      setIncludeCountries(project.includeCountries || []);
+      setExcludeCountries(project.excludeCountries || []);
     }
   }, [open, project]);
 
@@ -125,6 +129,10 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
       toast.error('Start date is required');
       return;
     }
+    if (isPosted && !projectCountry.trim()) {
+      toast.error('Please set a project location before posting');
+      return;
+    }
 
     onSave({
       ...project,
@@ -141,9 +149,11 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
       projectManager: projectManager.trim() || undefined,
       imageUrl: imageUrl || undefined,
       isPosted,
-      visibilityAll: isPosted ? visibilityAll : true,
-      visibilityCountries: isPosted && !visibilityAll ? visibilityCountries : undefined,
-      visibilityCities: isPosted && !visibilityAll ? visibilityCities : undefined,
+      projectCountry: projectCountry.toLowerCase().trim() || undefined,
+      projectLocationLabel: projectLocationLabel || undefined,
+      visibilityMode,
+      includeCountries: includeCountries.length > 0 ? includeCountries : undefined,
+      excludeCountries: excludeCountries.length > 0 ? excludeCountries : undefined,
     });
     onOpenChange(false);
     toast.success('Project updated successfully');
@@ -364,13 +374,19 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
             </div>
             {isPosted && (
               <ProjectVisibilityControls
-                visibilityAll={visibilityAll}
-                visibilityCountries={visibilityCountries}
-                visibilityCities={visibilityCities}
+                projectCountry={projectCountry}
+                projectLocationLabel={projectLocationLabel}
+                visibilityMode={visibilityMode}
+                includeCountries={includeCountries}
+                excludeCountries={excludeCountries}
+                onProjectLocationChange={(country, label) => {
+                  setProjectCountry(country);
+                  setProjectLocationLabel(label);
+                }}
                 onChange={(data) => {
-                  setVisibilityAll(data.visibilityAll);
-                  setVisibilityCountries(data.visibilityCountries);
-                  setVisibilityCities(data.visibilityCities);
+                  setVisibilityMode(data.visibilityMode);
+                  setIncludeCountries(data.includeCountries);
+                  setExcludeCountries(data.excludeCountries);
                 }}
               />
             )}

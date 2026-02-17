@@ -26,9 +26,11 @@ export interface Project {
   projectManager?: string;
   isPosted?: boolean;
   imageUrl?: string;
-  visibilityAll?: boolean;
-  visibilityCountries?: string[];
-  visibilityCities?: Record<string, string[]>;
+  projectCountry?: string;
+  projectLocationLabel?: string;
+  visibilityMode?: 'same_country' | 'all';
+  includeCountries?: string[];
+  excludeCountries?: string[];
 }
 
 interface DbProject {
@@ -49,9 +51,11 @@ interface DbProject {
   project_manager: string | null;
   is_posted: boolean;
   image_url: string | null;
-  visibility_all: boolean;
-  visibility_countries: string[] | null;
-  visibility_cities: Record<string, string[]> | null;
+  project_country: string | null;
+  project_location_label: string | null;
+  visibility_mode: string;
+  include_countries: string[] | null;
+  exclude_countries: string[] | null;
 }
 
 interface DbCalendarItem {
@@ -115,9 +119,11 @@ export function useProjects() {
         projectManager: p.project_manager || undefined,
         isPosted: p.is_posted,
         imageUrl: p.image_url || undefined,
-        visibilityAll: p.visibility_all,
-        visibilityCountries: p.visibility_countries || undefined,
-        visibilityCities: p.visibility_cities || undefined,
+        projectCountry: p.project_country || undefined,
+        projectLocationLabel: p.project_location_label || undefined,
+        visibilityMode: (p.visibility_mode as 'same_country' | 'all') || 'same_country',
+        includeCountries: p.include_countries || undefined,
+        excludeCountries: p.exclude_countries || undefined,
         calendarItems: (calendarItemsData || [])
           .filter((item: DbCalendarItem) => projectIds.has(item.project_id) && item.project_id === p.id)
           .map((item: DbCalendarItem) => ({
@@ -147,6 +153,8 @@ export function useProjects() {
       return null;
     }
 
+    const dedup = (arr: string[]) => [...new Set(arr.map(x => x.toLowerCase().trim()).filter(Boolean))];
+
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -165,9 +173,11 @@ export function useProjects() {
           project_manager: project.projectManager || null,
           is_posted: project.isPosted || false,
           image_url: project.imageUrl || null,
-          visibility_all: project.visibilityAll ?? true,
-          visibility_countries: project.visibilityCountries || null,
-          visibility_cities: project.visibilityCities || null,
+          project_country: project.projectCountry?.toLowerCase().trim() || null,
+          project_location_label: project.projectLocationLabel || null,
+          visibility_mode: project.visibilityMode || 'same_country',
+          include_countries: project.includeCountries ? dedup(project.includeCountries) : null,
+          exclude_countries: project.excludeCountries ? dedup(project.excludeCountries) : null,
         })
         .select()
         .single();
@@ -189,9 +199,11 @@ export function useProjects() {
         projectManager: data.project_manager || undefined,
         isPosted: data.is_posted,
         imageUrl: data.image_url || undefined,
-        visibilityAll: data.visibility_all,
-        visibilityCountries: data.visibility_countries || undefined,
-        visibilityCities: data.visibility_cities as Record<string, string[]> || undefined,
+        projectCountry: data.project_country || undefined,
+        projectLocationLabel: data.project_location_label || undefined,
+        visibilityMode: (data.visibility_mode as 'same_country' | 'all') || 'same_country',
+        includeCountries: data.include_countries || undefined,
+        excludeCountries: data.exclude_countries || undefined,
         calendarItems: [],
       };
 
@@ -206,6 +218,7 @@ export function useProjects() {
   };
 
   const updateProject = async (project: Project): Promise<boolean> => {
+    const dedup = (arr: string[]) => [...new Set(arr.map(x => x.toLowerCase().trim()).filter(Boolean))];
     try {
       const { error } = await supabase
         .from('projects')
@@ -223,9 +236,11 @@ export function useProjects() {
           project_manager: project.projectManager || null,
           is_posted: project.isPosted || false,
           image_url: project.imageUrl || null,
-          visibility_all: project.visibilityAll ?? true,
-          visibility_countries: project.visibilityCountries || null,
-          visibility_cities: project.visibilityCities || null,
+          project_country: project.projectCountry?.toLowerCase().trim() || null,
+          project_location_label: project.projectLocationLabel || null,
+          visibility_mode: project.visibilityMode || 'same_country',
+          include_countries: project.includeCountries ? dedup(project.includeCountries) : null,
+          exclude_countries: project.excludeCountries ? dedup(project.excludeCountries) : null,
         })
         .eq('id', project.id);
 
