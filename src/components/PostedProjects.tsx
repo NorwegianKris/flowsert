@@ -158,7 +158,21 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
             <div className="space-y-4">
               <div className="rounded-lg bg-muted/50 p-3">
                 <h4 className="font-medium text-sm">{selectedProject.name}</h4>
-                <p className="text-xs text-muted-foreground mt-1">{selectedProject.description}</p>
+                <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{selectedProject.description}</p>
+                <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {format(parseISO(selectedProject.startDate), 'MMM d, yyyy')}
+                  </span>
+                  {(selectedProject.projectLocationLabel || selectedProject.projectCountry || selectedProject.location) && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {selectedProject.projectLocationLabel || (selectedProject.projectCountry
+                        ? selectedProject.projectCountry.replace(/\b\w/g, c => c.toUpperCase())
+                        : selectedProject.location)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="application-message">Why would you like to join this project?</Label>
