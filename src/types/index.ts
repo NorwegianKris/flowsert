@@ -52,5 +52,7 @@ export interface Personnel {
   profileCode?: string; // Unique 6-character registration code
   certificateExpiryNotifications?: boolean; // When true, user receives email notifications for expiring certificates
   createdAt?: string; // Registration timestamp
+  country?: string; // Normalized lowercase country for visibility matching
+  city?: string; // Normalized lowercase city for visibility matching
   certificates: Certificate[];
 }

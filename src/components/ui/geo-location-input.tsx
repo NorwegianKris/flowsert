@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useGeoSearch } from '@/hooks/useGeoSearch';
+import { useGeoSearch, GeoStructuredResult } from '@/hooks/useGeoSearch';
 import { Check, Loader2, MapPin } from 'lucide-react';
 
 interface GeoLocationInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
@@ -10,6 +10,7 @@ interface GeoLocationInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
   onChange: (value: string) => void;
   existingLocations?: string[];
   onBlur?: () => void;
+  onStructuredSelect?: (data: GeoStructuredResult) => void;
 }
 
 export function GeoLocationInput({
@@ -17,6 +18,7 @@ export function GeoLocationInput({
   onChange,
   existingLocations = [],
   onBlur,
+  onStructuredSelect,
   className,
   placeholder = 'Search for a city...',
   ...props
@@ -26,7 +28,7 @@ export function GeoLocationInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { results: geoResults, loading: geoLoading } = useGeoSearch(value, isOpen);
+  const { results: geoResults, structuredResults, loading: geoLoading } = useGeoSearch(value, isOpen);
 
   // Merge: DB matches shown instantly, geo results merged when available
   const suggestions = React.useMemo(() => {
@@ -78,6 +80,13 @@ export function GeoLocationInput({
 
   const handleSelect = (label: string) => {
     onChange(label);
+    // Find the structured result for this label
+    if (onStructuredSelect) {
+      const structured = structuredResults.find(r => r.label === label);
+      if (structured) {
+        onStructuredSelect(structured);
+      }
+    }
     setIsOpen(false);
     setHighlightedIndex(-1);
     inputRef.current?.focus();

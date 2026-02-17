@@ -59,6 +59,8 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     nextOfKinRelation: '',
     nextOfKinPhone: '',
     bio: '',
+    country: '',
+    city: '',
   });
 
   useEffect(() => {
@@ -83,6 +85,8 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         nextOfKinRelation: personnel.nextOfKinRelation || '',
         nextOfKinPhone: personnel.nextOfKinPhone || '',
         bio: personnel.bio || '',
+        country: personnel.country || '',
+        city: personnel.city || '',
       });
       setAvatarUrl(personnel.avatarUrl || null);
     }
@@ -178,6 +182,8 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           next_of_kin_relation: formData.nextOfKinRelation.trim() || null,
           next_of_kin_phone: formData.nextOfKinPhone.trim() || null,
           bio: formData.bio.trim() || null,
+          country: formData.country || null,
+          city: formData.city || null,
         })
         .eq('id', personnel.id);
 
@@ -304,6 +310,13 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 existingLocations={locations}
                 value={formData.location}
                 onChange={(value) => setFormData({ ...formData, location: value })}
+                onStructuredSelect={(data) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    country: data.country.toLowerCase().trim(),
+                    city: data.city.toLowerCase().trim(),
+                  }));
+                }}
                 placeholder="Search for a city..."
               />
             </div>

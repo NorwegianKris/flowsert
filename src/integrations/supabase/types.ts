@@ -810,6 +810,8 @@ export type Database = {
           business_id: string | null
           category: string | null
           certificate_expiry_notifications: boolean
+          city: string | null
+          country: string | null
           created_at: string
           department: string | null
           email: string
@@ -842,6 +844,8 @@ export type Database = {
           business_id?: string | null
           category?: string | null
           certificate_expiry_notifications?: boolean
+          city?: string | null
+          country?: string | null
           created_at?: string
           department?: string | null
           email: string
@@ -874,6 +878,8 @@ export type Database = {
           business_id?: string | null
           category?: string | null
           certificate_expiry_notifications?: boolean
+          city?: string | null
+          country?: string | null
           created_at?: string
           department?: string | null
           email?: string
@@ -1025,6 +1031,67 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_applications: {
+        Row: {
+          accepted_at: string | null
+          business_id: string
+          created_at: string
+          id: string
+          initial_message: string
+          personnel_id: string
+          project_id: string
+          rejected_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          initial_message: string
+          personnel_id: string
+          project_id: string
+          rejected_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          initial_message?: string
+          personnel_id?: string
+          project_id?: string
+          rejected_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_applications_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_applications_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_applications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1301,6 +1368,9 @@ export type Database = {
           start_date: string
           status: string
           updated_at: string
+          visibility_all: boolean
+          visibility_cities: Json | null
+          visibility_countries: string[] | null
           work_category: string | null
         }
         Insert: {
@@ -1320,6 +1390,9 @@ export type Database = {
           start_date: string
           status?: string
           updated_at?: string
+          visibility_all?: boolean
+          visibility_cities?: Json | null
+          visibility_countries?: string[] | null
           work_category?: string | null
         }
         Update: {
@@ -1339,6 +1412,9 @@ export type Database = {
           start_date?: string
           status?: string
           updated_at?: string
+          visibility_all?: boolean
+          visibility_cities?: Json | null
+          visibility_countries?: string[] | null
           work_category?: string | null
         }
         Relationships: [
@@ -1427,6 +1503,10 @@ export type Database = {
         Returns: boolean
       }
       can_worker_access_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_worker_see_posted_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
