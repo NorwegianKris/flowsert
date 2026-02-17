@@ -1,21 +1,57 @@
 
 
-## Fix Inconsistent Font Sizes in Settings Menu Titles
+# Auto-Match Extracted Issuers to Canonical Issuer Types
 
-### Problem
-The collapsible section titles ("Standardize Locations", "Privacy & Data", "Freelancer Registration Link", "Profile Activation Overview") use `text-sm`, while the "Admin Users" card title uses `text-lg font-semibold`. This creates a visual mismatch.
+## What This Does
+When a certificate is scanned using AI, the system will now also try to match the recognized issuing authority against your list of canonical issuers. If a match is found, the issuer field will be pre-filled automatically, saving time and improving data consistency.
 
-### Fix
-Update the three collapsible trigger `<span>` elements in `src/pages/AdminDashboard.tsx` to use `text-lg` instead of `text-sm`, matching the Admin Users card title style.
+## Why It's Safe
+- Mirrors the existing category matching pattern that already works
+- If no match is found, the field simply stays as free text (current behavior)
+- Users can always override the auto-selected issuer
+- No database changes needed
 
-### Technical Details
+## Changes (4 files)
 
-**File: `src/pages/AdminDashboard.tsx`**
+### 1. Types Update (`src/types/certificateExtraction.ts`)
+- Add `matchedIssuer: string | null` and `matchedIssuerId: string | null` to `ExtractedCertificateData`
 
-Three changes, all identical -- change `font-semibold text-sm` to `font-semibold text-lg` on lines 631, 654, and 676:
+### 2. Upload Props (`src/components/certificate-upload/types.ts`)
+- Add optional `existingIssuers` prop (array of `{ id, name }`) to `SmartCertificateUploadProps`
 
-- Line 631: `<span className="font-semibold text-lg">Profile Activation Overview</span>`
-- Line 654: `<span className="font-semibold text-lg">Standardize Locations</span>`
-- Line 676: `<span className="font-semibold text-lg">Freelancer Registration Link</span>`
+### 3. Upload Component (`src/components/SmartCertificateUpload.tsx`)
+- Accept `existingIssuers` prop
+- Pass issuer names to the edge function alongside categories
+- After extraction, resolve the matched issuer name to an ID (same logic as category matching)
 
-This aligns all settings section titles to the same `text-lg font-semibold` style used by the Admin Users card.
+### 4. Edge Function (`supabase/functions/extract-certificate-data/index.ts`)
+- Accept optional `existingIssuers` array in the request body
+- Add issuer list to the AI system prompt (same pattern as categories)
+- Add `matchedIssuer` field to the AI tool schema
+- Include the matched issuer in the response
+
+### 5. Certificate Dialog (`src/components/AddCertificateDialog.tsx`)
+- Fetch issuer types using the existing `useIssuerTypes` hook
+- Pass them to `SmartCertificateUpload` as `existingIssuers`
+- In `handleExtractionComplete`, auto-set `issuerTypeId` and `issuerTypeName` when a match is returned
+- Mark `issuerAliasAutoMatched: true` for visual indication
+
+## Technical Details
+
+### Edge function prompt addition
+```
+Known issuing authorities in this system: DNV, Falck Safety Services, Red Cross, ...
+If the issuing authority matches one of these exactly or closely, include that name in matchedIssuer.
+```
+
+### Data flow
+1. Fetch issuer types from `issuer_types` table (existing `useIssuerTypes` hook)
+2. Pass names array to edge function
+3. AI returns `matchedIssuer` string if confident
+4. Frontend resolves string to ID, pre-selects in `IssuerTypeSelector`
+5. User can override if needed
+
+### Graceful fallback
+- If `existingIssuers` is not passed or empty, the prompt section is simply omitted (no change in behavior)
+- If AI doesn't find a match, `matchedIssuer` returns null (current behavior preserved)
+- No error paths are introduced
