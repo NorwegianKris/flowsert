@@ -1,7 +1,7 @@
 import { Certificate, CertificateStatus, Personnel } from '@/types';
 import { differenceInDays, parseISO } from 'date-fns';
 
-const EXPIRY_WARNING_DAYS = 60; // Days before expiry to show warning
+export const EXPIRY_WARNING_DAYS = 60; // Days before expiry to show warning
 
 export function getCertificateStatus(expiryDate: string | null): CertificateStatus {
   if (!expiryDate) return 'valid'; // Certificates without expiry are always valid
