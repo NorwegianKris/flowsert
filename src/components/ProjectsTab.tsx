@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
@@ -146,6 +147,16 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
 
   const isPosted = project.isPosted;
 
+  const [applicantCount, setApplicantCount] = useState(0);
+  useEffect(() => {
+    if (!isPosted) return;
+    supabase
+      .from('project_applications')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', project.id)
+      .then(({ count }) => setApplicantCount(count ?? 0));
+  }, [isPosted, project.id]);
+
   return (
     <Card 
       className={`hover:shadow-md transition-shadow cursor-pointer ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
@@ -203,6 +214,12 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             <span className="ml-3">End: {new Date(project.endDate).toLocaleDateString()}</span>
           )}
         </div>
+        {isPosted && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
