@@ -287,7 +287,10 @@ export default function AdminDashboard() {
   };
 
   const handleUpdateProject = async (updatedProject: Project) => {
-    const success = await updateProject(updatedProject);
+    // Check if project was previously posted to avoid duplicate notifications
+    const previousProject = projects.find(p => p.id === updatedProject.id);
+    const wasPosted = previousProject?.isPosted || false;
+    const success = await updateProject(updatedProject, wasPosted);
     if (success) {
       setSelectedProject(updatedProject);
     }
