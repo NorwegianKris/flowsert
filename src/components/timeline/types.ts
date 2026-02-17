@@ -12,6 +12,11 @@ export interface TimelineEvent {
   // Filter properties
   certificateTypeId: string | null;
   certificateCategoryId: string | null;
+  // Extended detail fields
+  issuingAuthority?: string | null;
+  dateOfIssue?: string | null;
+  categoryName?: string | null;
+  placeOfIssue?: string | null;
 }
 
 export interface LaneConfig {

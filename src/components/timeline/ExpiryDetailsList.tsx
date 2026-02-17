@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { ChevronDown, List } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { ChevronDown, List, Building2, Calendar, MapPin, Tag } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/StatusBadge';
 import { TimelineEvent, LaneConfig, getLaneConfigsForRange } from './types';
+import { getCertificateStatus, formatExpiryText } from '@/lib/certificateUtils';
 import { cn } from '@/lib/utils';
 
 interface ExpiryDetailsListProps {
@@ -99,31 +101,72 @@ export function ExpiryDetailsList({
               </div>
 
               <div className="divide-y divide-border/40">
-                {events.map((event) => (
-                  <button
-                    key={event.id}
-                    onClick={() => handleRowClick(event)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-background/50 transition-colors text-sm"
-                  >
-                    <span className="font-medium text-foreground truncate w-[35%] flex-shrink-0">
-                      {event.personnelName}
-                    </span>
-                    <span className="text-muted-foreground truncate w-[30%] flex-shrink-0">
-                      {event.certificateName}
-                    </span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {format(event.expiryDate, 'dd.MM.yyyy')}
-                    </span>
-                    <span
-                      className={cn(
-                        'text-xs font-medium px-1.5 py-0.5 rounded border whitespace-nowrap',
-                        getDaysBadgeStyle(event.daysUntilExpiry)
-                      )}
+                {events.map((event) => {
+                  const expiryStr = format(event.expiryDate, 'yyyy-MM-dd');
+                  const certStatus = getCertificateStatus(expiryStr);
+
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => handleRowClick(event)}
+                      className="w-full flex flex-col gap-1 px-3 py-2.5 text-left hover:bg-background/50 transition-colors"
                     >
-                      {formatDays(event.daysUntilExpiry)}
-                    </span>
-                  </button>
-                ))}
+                      {/* Primary row: Person, Certificate, Status badge, Days badge */}
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="font-medium text-foreground truncate w-[30%] flex-shrink-0">
+                          {event.personnelName}
+                        </span>
+                        <span className="text-foreground truncate w-[25%] flex-shrink-0">
+                          {event.certificateName}
+                        </span>
+                        <StatusBadge status={certStatus} showLabel size="sm" />
+                        <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
+                          {formatExpiryText(event.daysUntilExpiry)}
+                        </span>
+                        <span
+                          className={cn(
+                            'text-xs font-medium px-1.5 py-0.5 rounded border whitespace-nowrap',
+                            getDaysBadgeStyle(event.daysUntilExpiry)
+                          )}
+                        >
+                          {formatDays(event.daysUntilExpiry)}
+                        </span>
+                      </div>
+
+                      {/* Secondary row: Issuer, Category, Issue Date, Expiry Date, Place */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground pl-0">
+                        {event.issuingAuthority && (
+                          <span className="flex items-center gap-1 truncate">
+                            <Building2 className="h-3 w-3 flex-shrink-0" />
+                            {event.issuingAuthority}
+                          </span>
+                        )}
+                        {event.categoryName && (
+                          <span className="flex items-center gap-1">
+                            <Tag className="h-3 w-3 flex-shrink-0" />
+                            {event.categoryName}
+                          </span>
+                        )}
+                        {event.dateOfIssue && (
+                          <span className="flex items-center gap-1 whitespace-nowrap">
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                            Issued {format(parseISO(event.dateOfIssue), 'dd MMM yyyy')}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          Expires {format(event.expiryDate, 'dd MMM yyyy')}
+                        </span>
+                        {event.placeOfIssue && (
+                          <span className="flex items-center gap-1 truncate">
+                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                            {event.placeOfIssue}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           );
