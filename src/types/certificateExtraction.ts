@@ -10,6 +10,8 @@ export interface ExtractedCertificateData {
   issuingAuthority: string | null;
   matchedCategory: string | null;  // Matched category name if found
   matchedCategoryId: string | null; // Matched category ID if found
+  matchedIssuer: string | null;     // Matched issuer name if found
+  matchedIssuerId: string | null;   // Matched issuer ID if found
 }
 
 export interface ExtractionResult {

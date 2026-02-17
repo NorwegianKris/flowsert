@@ -30,6 +30,7 @@ import { IssuerTypeSelector } from './IssuerTypeSelector';
 import { AmbiguityWarningDialog } from './AmbiguityWarningDialog';
 import { useLookupAlias, useCreateAlias, useUpdateAliasLastSeen } from '@/hooks/useCertificateAliases';
 import { useLookupIssuerAlias, useCreateIssuerAlias } from '@/hooks/useIssuerAliases';
+import { useIssuerTypes } from '@/hooks/useIssuerTypes';
 import { normalizeCertificateTitle, isAmbiguousTitle } from '@/lib/certificateNormalization';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -110,6 +111,9 @@ export function AddCertificateDialog({
   // Alias mutation hooks
   const createAlias = useCreateAlias();
   const createIssuerAlias = useCreateIssuerAlias();
+  
+  // Fetch issuer types for auto-matching
+  const { data: issuerTypes } = useIssuerTypes();
   
   // Compute normalized free text for the currently expanded certificate
   const freeTextNormalized = useMemo(() => {
@@ -197,6 +201,14 @@ export function AddCertificateDialog({
       } : undefined,
       certificateTypeFreeText: '', // For free text certificate type
     };
+
+    // Auto-set issuer if matched
+    if (extractedData.matchedIssuerId && extractedData.matchedIssuer) {
+      newCert.issuerTypeId = extractedData.matchedIssuerId;
+      newCert.issuerTypeName = extractedData.matchedIssuer;
+      newCert.issuingAuthority = extractedData.matchedIssuer;
+      newCert.issuerAliasAutoMatched = true;
+    }
 
     setCertificates(prev => [...prev, newCert]);
     
@@ -442,6 +454,7 @@ export function AddCertificateDialog({
             <div className="space-y-3">
               <SmartCertificateUpload
                 existingCategories={categories}
+                existingIssuers={issuerTypes?.map(t => ({ id: t.id, name: t.name })) || []}
                 onExtractionComplete={handleExtractionComplete}
                 disabled={loadingCategories}
               />

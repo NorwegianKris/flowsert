@@ -10,6 +10,7 @@ export interface QueuedFile {
 
 export interface SmartCertificateUploadProps {
   existingCategories: { id: string; name: string }[];
+  existingIssuers?: { id: string; name: string }[];
   onExtractionComplete: (result: ExtractionResult, file: File) => void;
   onFileSelected?: (file: File) => void;
   disabled?: boolean;
