@@ -25,7 +25,7 @@ const statusConfig = {
 
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
   const [previousOpen, setPreviousOpen] = useState(false);
-  const [includePosted, setIncludePosted] = useState(false);
+  const [includePosted, setIncludePosted] = useState(true);
   
   // Filter projects based on posted toggle
   const filteredProjects = includePosted 
