@@ -1,20 +1,50 @@
 
-# Remove Generic Sign Up Access
+# Fix: Make "Log In" Button Open the Sign-In Dialog
 
-## Summary
-Remove all generic "Sign Up" entry points since registration is invitation-only. Freelancers register through dedicated invitation links.
+## Problem
+The "Log In" button in the header navigates to `/auth`, but the login form lives inside a dialog that never opens. Previously, the `PublicHeader` had an `openAuthDialog` prop that triggered the dialog -- this was removed in the last change.
 
-## Changes
+## Solution
+Re-add a lightweight callback prop to `PublicHeader` for opening the auth dialog, but only for sign-in (no sign-up).
 
-### 1. Auth page (`src/pages/Auth.tsx`)
-- **Lines 903-912**: Replace the "Don't have an account? Sign up" link with a static message: "Registration is by invitation only. Need access? [Contact us](/contact)."
+### Changes
 
-### 2. Public header (`src/components/PublicHeader.tsx`)
-- **Lines 68-76**: Remove the conditional that shows "Sign Up" on non-auth pages. Always show "Get in Touch" linking to `/contact`, regardless of current page.
-- Remove the `handleSignUp` function (lines 26-32) and the `openAuthDialog` prop since it's no longer needed for signup.
+### 1. `src/components/PublicHeader.tsx`
+- Add an optional `onLogin` callback prop
+- When `onLogin` is provided, use it instead of navigating to `/auth`
+
+### 2. `src/pages/Auth.tsx`
+- Pass `onLogin` to `PublicHeader` that opens the auth dialog in "signin" mode
+- This restores the login functionality without re-introducing any signup button
+
+## Technical Details
+
+**PublicHeader.tsx:**
+```typescript
+interface PublicHeaderProps {
+  onLogin?: () => void;
+}
+
+export function PublicHeader({ onLogin }: PublicHeaderProps) {
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    if (onLogin) {
+      onLogin();
+    } else {
+      navigate('/auth');
+    }
+  };
+  // ... rest unchanged
+}
+```
+
+**Auth.tsx:**
+```typescript
+<PublicHeader onLogin={() => openAuthDialog('signin')} />
+```
 
 ## What Does NOT Change
-- Token-based freelancer/job seeker registration flows continue to work
-- Admin invitation flows are unaffected
-- The sign-in form remains fully functional
-- The signup form code itself stays (it's used by invitation links with tokens)
+- No "Sign Up" button is added anywhere
+- The invitation-based registration flow is untouched
+- Other pages using `PublicHeader` without the prop still navigate to `/auth` as before
