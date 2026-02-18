@@ -1,49 +1,117 @@
-## Security Baseline v1
 
-**Established:** 2026-02-18
 
-### Architecture
+## Step 9 -- Business-Scoped Audit Logs (Corrected)
 
-- **RLS-first**: All 25 tables have RLS enabled with 127+ policies
-- **Tenant isolation**: Enforced via `business_id` through `get_user_business_id(auth.uid())`
-- **Role-based access**: `has_role()` SECURITY DEFINER function checks `user_roles` table
-- **Personnel access**: `can_access_personnel()` scopes admin to business, worker to own record
+### What changed from the previous plan
 
-### Data Protection
+The `FOR ALL TO authenticated` baseline policy has been **removed entirely**. It would have allowed authenticated clients to INSERT, UPDATE, and DELETE audit rows -- defeating the append-only, server-written design. Only two SELECT policies will exist.
 
-- **project_messages**: Immutable (no UPDATE/DELETE policies). Worker SELECT via `can_worker_access_project()` (invitation/assignment). Admin SELECT via business_id.
-- **feedback**: Worker sees only own (`user_id = auth.uid()`). Admin sees business-scoped. INSERT enforces `user_id = auth.uid()`. No UPDATE.
-- **direct_messages**: Worker sees only own personnel threads (`personnel.user_id = auth.uid()`). Admin sees business-scoped. DB rate limit: 30 msgs/min/user via `enforce_rate_limit()` trigger.
+### Step 9.1 -- Migration: Create `audit_logs` with SELECT-only RLS
 
-### Rate Limiting
+```sql
+-- 1) Append-only audit log table
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id uuid NOT NULL,
+  actor_user_id uuid,
+  actor_role text,
+  action_type text NOT NULL,
+  entity_type text,
+  entity_id uuid,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-- **Direct messages**: DB-level trigger `trg_limit_direct_messages` → `enforce_rate_limit('direct_messages:<uid>', 30, 60)`
-- **AI edge functions**: JWT validation + RPC `enforce_rate_limit('ai_*:<userId>', 10, 60)` on `certificate-chat`, `suggest-project-personnel`, `extract-certificate-data`. Returns 429.
-- **rate_limits table**: RLS enabled, no policies (intentional — only accessed by SECURITY DEFINER functions)
+-- 2) Prevent empty action types
+ALTER TABLE public.audit_logs
+  ADD CONSTRAINT audit_logs_action_type_not_empty
+  CHECK (length(trim(action_type)) > 0);
 
-### Authentication & Authorization
+-- 3) Performance indexes
+CREATE INDEX IF NOT EXISTS audit_logs_business_id_created_at_idx
+  ON public.audit_logs (business_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS audit_logs_actor_user_id_created_at_idx
+  ON public.audit_logs (actor_user_id, created_at DESC);
 
-- **delete-user edge function**: Dual superadmin protection (admin role + email match), self-deletion block, auth-level + profile-level superadmin guard
-- **Leaked password protection**: Recommended enabled, min length 10
-- **Signup**: Invitation-only (`handle_new_user` trigger rejects signups without valid token)
+-- 4) Enable RLS
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
-### Hotfixes Applied
+-- 5) NO baseline FOR ALL policy (intentional)
 
-- `REVOKE EXECUTE ON FUNCTION enforce_rate_limit(text,int,int) FROM anon` — anon had inherited execute via separate grant
-- `REVOKE EXECUTE ON FUNCTION trg_limit_direct_messages() FROM anon` — good hygiene, least-privilege
-- `REVOKE EXECUTE ON FUNCTION trg_limit_direct_messages() FROM public` — public pseudo-role also had execute
+-- 6) Admin reads own business only
+CREATE POLICY "Admins can read audit logs for their business"
+  ON public.audit_logs FOR SELECT TO authenticated
+  USING (
+    has_role(auth.uid(), 'admin')
+    AND business_id = get_user_business_id(auth.uid())
+  );
 
-### Runtime Isolation Tests (2026-02-18)
+-- 7) Superadmin reads all
+CREATE POLICY "Superadmins can read all audit logs"
+  ON public.audit_logs FOR SELECT TO authenticated
+  USING (is_superadmin(auth.uid()));
+```
 
-- **DM isolation**: 4 real DM rows for personnel `a344a14e` (Pichet Poonsawat). Worker SELECT policy enforces `personnel.user_id = auth.uid()`. Worker Zoran (`user_id 0f2756a6`) cannot access — ownership check fails.
-- **Feedback isolation**: 7 rows across 4 user_ids. Worker SELECT enforces `user_id = auth.uid()`. Cross-user access blocked.
-- **Project chat**: 1 real message in project `2749b0a6` with empty `assigned_personnel`. Worker SELECT enforces `can_worker_access_project()`. Unassigned workers blocked.
+**Result:** No INSERT/UPDATE/DELETE policies exist. Only the service role (used by edge functions) can write. Authenticated clients get SELECT-only, scoped by business or superadmin.
 
-### Known Intentional Warnings
+---
 
-- `rate_limits` table: RLS enabled, no policies — accessed only by SECURITY DEFINER function `enforce_rate_limit()`. No direct client access possible.
+### Step 9.2 -- Add audit logging to `delete-user` edge function
 
-### ACL Verification (2026-02-18)
+The `serviceClient` (service role) writes audit rows. Logging happens at two points:
 
-- `enforce_rate_limit`: `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` — no anon, no public ✅
-- `trg_limit_direct_messages`: `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` — no anon, no public ✅
+**On successful deletion (after auth user removed):**
+- `action_type`: `user.delete`
+- `entity_type`: `user`
+- `entity_id`: target user ID
+- `metadata`: `{ target_email, result: "success" }`
+
+**On authorization denial (before returning 403):**
+- `action_type`: `user.delete.denied`
+- `entity_type`: `user`
+- `entity_id`: target user ID (if known)
+- `metadata`: `{ reason: "not_superadmin" | "role_missing" | "self_delete_attempt" | "target_is_superadmin" }`
+
+Denial logging happens at each 403/400 exit point. No sensitive payloads (request bodies, tokens) are logged.
+
+The `business_id` for the log entry comes from the caller's profile (`get_user_business_id` equivalent via serviceClient query on profiles).
+
+---
+
+### Step 9.3 -- Verification
+
+After migration and edge function deploy:
+
+1. **Worker cannot read:** `SELECT count(*) FROM audit_logs` returns 0 rows
+2. **Admin reads own business only:** `SELECT * FROM audit_logs LIMIT 10` returns only rows matching their business_id
+3. **Client INSERT denied:** `INSERT INTO audit_logs (business_id, action_type) VALUES (...)` fails (no INSERT policy)
+4. **Service role writes work:** Trigger delete-user (or manually insert via admin query tool) to confirm a row appears with correct business_id and action_type
+
+---
+
+### Step 9.4 -- Update plan.md
+
+Append to Security Baseline:
+- `audit_logs`: append-only, RLS enabled, SELECT-only policies
+- No INSERT/UPDATE/DELETE policies (service role writes only)
+- Admin scoped by `business_id = get_user_business_id()`
+- Superadmin reads all via `is_superadmin()`
+- `action_type` constraint prevents empty values
+
+---
+
+### Files Changed
+
+- New migration SQL (table + indexes + constraint + RLS + 2 SELECT policies)
+- `supabase/functions/delete-user/index.ts` -- audit log writes on success and denial
+- `.lovable/plan.md` -- audit_logs section appended
+
+### Rollback
+
+```sql
+DROP TABLE IF EXISTS public.audit_logs CASCADE;
+```
+
+### Risk
+
+Minimal. Purely additive. No existing functionality affected. The only write path is service role from edge functions.
