@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight, ChevronDown, Mail, FileSpreadsheet, RefreshCw, PhoneOff, ShieldAlert } from 'lucide-react';
+import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
@@ -605,54 +605,42 @@ export default function Auth() {
             <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-12 text-center">Common Industry Challenges</h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="flex items-start gap-4 p-4">
-                <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-                  <Mail className="h-6 w-6 text-primary" />
-                </div>
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">📧</div>
                 <div>
                   <h4 className="font-semibold text-foreground">Scattered certificate storage</h4>
                   <p className="text-sm text-muted-foreground mt-1">Personnel certificates stored across emails and shared folders, making them hard to locate when needed.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-                  <FileSpreadsheet className="h-6 w-6 text-primary" />
-                </div>
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">📊</div>
                 <div>
                   <h4 className="font-semibold text-foreground">Manual Excel tracking</h4>
                   <p className="text-sm text-muted-foreground mt-1">Expiry dates tracked manually in Excel, leading to outdated records and missed renewals.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-                  <Clock className="h-6 w-6 text-primary" />
-                </div>
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">⏰</div>
                 <div>
                   <h4 className="font-semibold text-foreground">Mobilization delays</h4>
                   <p className="text-sm text-muted-foreground mt-1">Last-minute mobilization issues due to missing or expired documentation, causing costly project delays.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-                  <RefreshCw className="h-6 w-6 text-primary" />
-                </div>
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">🔄</div>
                 <div>
                   <h4 className="font-semibold text-foreground">Repetitive admin follow-up</h4>
                   <p className="text-sm text-muted-foreground mt-1">Administrative follow-up before every project start, consuming valuable time and resources.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-                  <PhoneOff className="h-6 w-6 text-primary" />
-                </div>
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">📞</div>
                 <div>
                   <h4 className="font-semibold text-foreground">Fragmented recruitment</h4>
                   <p className="text-sm text-muted-foreground mt-1">Inefficient freelancer recruitment through scattered emails and cold calls, with no structured overview.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="p-3 bg-primary/10 rounded-lg shrink-0">
-                  <ShieldAlert className="h-6 w-6 text-primary" />
-                </div>
+                <div className="p-3 bg-primary/10 rounded-lg shrink-0 text-2xl">🛡️</div>
                 <div>
                   <h4 className="font-semibold text-foreground">Unstructured compliance sharing</h4>
                   <p className="text-sm text-muted-foreground mt-1">Unstructured compliance sharing to clients and auditors, risking non-compliance and reputational damage.</p>
