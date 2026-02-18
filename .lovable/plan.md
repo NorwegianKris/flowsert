@@ -1,23 +1,25 @@
 
 
-## Step 4 -- Add Performance Index for Project Chat
+## Step 5 -- Enable Leaked Password Protection
 
-### What This Does
+### What Changes
 
-Adds a composite index on `project_messages(project_id, created_at DESC)` to ensure efficient index scans for chat queries instead of sequential table scans.
+Enable the built-in breached password detection in the authentication settings. This prevents new signups and password changes from using known compromised passwords.
 
-### Migration SQL
+### Implementation
 
-```sql
-CREATE INDEX IF NOT EXISTS project_messages_project_id_created_at_idx
-  ON public.project_messages (project_id, created_at DESC);
-```
+Use the authentication configuration tool to:
+- Enable **Leaked Password Protection** (HIBP check)
+- Set minimum password length to **10 characters**
 
-### Technical Details
+### What It Does NOT Do
 
-- Single database migration, no code changes
-- Non-destructive, zero functional risk
-- PostgreSQL can traverse the DESC index in reverse for ASC ordering (used by `ProjectChat.tsx`)
-- `IF NOT EXISTS` makes it safe to re-run
-- Skipping the optional `sender_id` index as no current queries filter by sender
+- Does not invalidate existing passwords
+- Does not log out any users
+- Does not require database migrations or code changes
+- Only applies to new signups and future password changes
+
+### Risk
+
+Zero. Purely additive security hardening with no impact on current users.
 
