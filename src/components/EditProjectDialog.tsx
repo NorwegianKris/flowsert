@@ -4,6 +4,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -271,10 +272,10 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
-              <Input
+              <GeoLocationInput
                 id="location"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={setLocation}
                 placeholder="e.g., North Sea Platform A"
               />
             </div>

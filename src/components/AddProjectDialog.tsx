@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -667,10 +668,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                       <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
                     )}
                   </Label>
-                  <Input
+                  <GeoLocationInput
                     id="location"
                     value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                    onChange={setLocation}
                     placeholder="e.g., North Sea Platform A"
                   />
                 </div>
