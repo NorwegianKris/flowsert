@@ -547,7 +547,7 @@ export default function Auth() {
           <div className="grid grid-cols-2 gap-2 mt-5 text-lg tracking-widest uppercase font-rajdhani text-muted-foreground sm:hidden">
             <span className="text-center">Offshore</span>
             <span className="text-center">Subsea</span>
-            <span className="text-center">Industrial Services</span>
+            <span className="text-center">Industry</span>
             <span className="text-center">Construction</span>
           </div>
           {/* Desktop: horizontal row with separators */}
@@ -556,7 +556,7 @@ export default function Auth() {
             <Separator orientation="vertical" className="h-4" />
             <span>Subsea</span>
             <Separator orientation="vertical" className="h-4" />
-            <span>Industrial Services</span>
+            <span>Industry</span>
             <Separator orientation="vertical" className="h-4" />
             <span>Construction</span>
           </div>
