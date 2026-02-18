@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DataProcessingAcknowledgementDialog } from '@/components/DataProcessingAcknowledgementDialog';
 import { useDataAcknowledgement } from '@/hooks/useDataAcknowledgement';
 import { useBusinessInfo } from '@/hooks/useBusinessInfo';
+import { MyCompanies } from '@/components/MyCompanies';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -105,15 +106,14 @@ export default function WorkerDashboard() {
               <ProfileCompletionIndicator personnel={personnel} />
             )}
             
-            {/* Show pending invitations and posted projects */}
-            {personnel.category !== 'freelancer' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Show companies, invitations, and posted projects */}
+            <div className={`grid grid-cols-1 ${personnel.category !== 'freelancer' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-6`}>
+              <MyCompanies />
+              {personnel.category !== 'freelancer' && (
                 <WorkerInvitations personnelId={personnel.id} />
-                <PostedProjects personnelId={personnel.id} businessId={personnel.businessId || ''} />
-              </div>
-            ) : (
+              )}
               <PostedProjects personnelId={personnel.id} businessId={personnel.businessId || ''} />
-            )}
+            </div>
             
             <PersonnelDetail
               personnel={personnel}

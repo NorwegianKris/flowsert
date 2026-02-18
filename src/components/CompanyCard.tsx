@@ -42,10 +42,12 @@ interface BusinessDocument {
 interface CompanyCardProps {
   isAdmin?: boolean;
   onClose?: () => void;
+  businessId?: string;
 }
 
-export function CompanyCard({ isAdmin = false, onClose }: CompanyCardProps) {
-  const { businessId } = useAuth();
+export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdProp }: CompanyCardProps) {
+  const { businessId: authBusinessId } = useAuth();
+  const businessId = businessIdProp || authBusinessId;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
