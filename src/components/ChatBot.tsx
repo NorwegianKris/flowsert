@@ -255,7 +255,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
           onClick={() => setIsOpen(true)}
           className="h-16 px-6 rounded-full shadow-xl gap-3 text-lg font-bold animate-pulse hover:animate-none"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-9 w-9" />
           <span>Chat</span>
         </Button>
         {badgeCount > 0 && (
