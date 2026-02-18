@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface WorkerBusiness {
-  id: string;
-  name: string;
-  logo_url: string | null;
+export interface WorkerBusiness {
+  businessId: string;
+  businessName: string;
+  businessLogoUrl: string | null;
+  personnelId: string;
+  personnelName: string;
 }
 
 export function useWorkerBusinesses() {
@@ -25,23 +27,23 @@ export function useWorkerBusinesses() {
         // Get all personnel records for this user
         const { data: personnelData, error: personnelError } = await supabase
           .from('personnel')
-          .select('business_id')
+          .select('id, name, business_id')
           .eq('user_id', user.id);
 
         if (personnelError) throw personnelError;
 
         // Extract unique business IDs
-        const businessIds = [...new Set(
-          (personnelData || [])
-            .map(p => p.business_id)
-            .filter((id): id is string => id !== null)
-        )];
+        const personnelWithBusiness = (personnelData || []).filter(
+          (p): p is typeof p & { business_id: string } => p.business_id !== null
+        );
 
-        if (businessIds.length === 0) {
+        if (personnelWithBusiness.length === 0) {
           setBusinesses([]);
           setLoading(false);
           return;
         }
+
+        const businessIds = [...new Set(personnelWithBusiness.map(p => p.business_id))];
 
         // Fetch business details - RLS enforces access
         const { data: businessData, error: businessError } = await supabase
@@ -51,7 +53,26 @@ export function useWorkerBusinesses() {
 
         if (businessError) throw businessError;
 
-        setBusinesses(businessData || []);
+        const businessMap = new Map(
+          (businessData || []).map(b => [b.id, b])
+        );
+
+        // Map personnel to WorkerBusiness entries
+        const result: WorkerBusiness[] = personnelWithBusiness
+          .map(p => {
+            const biz = businessMap.get(p.business_id);
+            if (!biz) return null;
+            return {
+              businessId: biz.id,
+              businessName: biz.name,
+              businessLogoUrl: biz.logo_url,
+              personnelId: p.id,
+              personnelName: p.name,
+            };
+          })
+          .filter((x): x is WorkerBusiness => x !== null);
+
+        setBusinesses(result);
       } catch (error) {
         console.error('Error fetching worker businesses:', error);
       } finally {
