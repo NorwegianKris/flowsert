@@ -6,6 +6,35 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Helper: write an audit log row (fire-and-forget, never throws)
+async function writeAuditLog(
+  serviceClient: ReturnType<typeof createClient>,
+  entry: {
+    business_id: string;
+    actor_user_id: string;
+    actor_role: string;
+    action_type: string;
+    entity_type: string;
+    entity_id?: string;
+    metadata: Record<string, unknown>;
+  }
+) {
+  try {
+    const { error } = await serviceClient.from("audit_logs").insert({
+      business_id: entry.business_id,
+      actor_user_id: entry.actor_user_id,
+      actor_role: entry.actor_role,
+      action_type: entry.action_type,
+      entity_type: entry.entity_type,
+      entity_id: entry.entity_id ?? null,
+      metadata: entry.metadata,
+    });
+    if (error) console.error("Audit log write failed:", error);
+  } catch (e) {
+    console.error("Audit log write exception:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -59,16 +88,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // --- Service-role client for all privileged operations ---
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // --- Get caller's business_id for audit logging ---
+    const { data: callerProfileData } = await serviceClient
+      .from("profiles")
+      .select("email, business_id")
+      .eq("id", callerId)
+      .maybeSingle();
+
+    const callerBusinessId = callerProfileData?.business_id;
+
     // --- Step 4: Self-deletion block ---
     if (callerId === targetId) {
+      if (callerBusinessId) {
+        await writeAuditLog(serviceClient, {
+          business_id: callerBusinessId,
+          actor_user_id: callerId,
+          actor_role: "admin",
+          action_type: "user.delete.denied",
+          entity_type: "user",
+          entity_id: targetId,
+          metadata: { reason: "self_delete_attempt" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: "You cannot delete your own account" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // --- Service-role client for all privileged operations ---
-    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
     // --- Step 5: Caller role check (first authz gate) ---
     const { data: callerRole, error: roleError } = await serviceClient
@@ -78,6 +127,17 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (roleError || !callerRole || callerRole.role !== "admin") {
+      if (callerBusinessId) {
+        await writeAuditLog(serviceClient, {
+          business_id: callerBusinessId,
+          actor_user_id: callerId,
+          actor_role: callerRole?.role ?? "unknown",
+          action_type: "user.delete.denied",
+          entity_type: "user",
+          entity_id: targetId,
+          metadata: { reason: "role_missing" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: "Forbidden: admin role required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -85,13 +145,18 @@ Deno.serve(async (req) => {
     }
 
     // --- Step 6: Caller email check (second authz gate) ---
-    const { data: callerProfile, error: callerProfileError } = await serviceClient
-      .from("profiles")
-      .select("email")
-      .eq("id", callerId)
-      .maybeSingle();
-
-    if (callerProfileError || !callerProfile || callerProfile.email.toLowerCase().trim() !== SUPER) {
+    if (!callerProfileData || callerProfileData.email.toLowerCase().trim() !== SUPER) {
+      if (callerBusinessId) {
+        await writeAuditLog(serviceClient, {
+          business_id: callerBusinessId,
+          actor_user_id: callerId,
+          actor_role: "admin",
+          action_type: "user.delete.denied",
+          entity_type: "user",
+          entity_id: targetId,
+          metadata: { reason: "not_superadmin" },
+        });
+      }
       return new Response(
         JSON.stringify({ error: "Forbidden: superadmin privileges required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -109,6 +174,15 @@ Deno.serve(async (req) => {
 
     // --- Step 8: Auth-level superadmin protection ---
     if (authUser.user.email && authUser.user.email.toLowerCase().trim() === SUPER) {
+      await writeAuditLog(serviceClient, {
+        business_id: callerBusinessId!,
+        actor_user_id: callerId,
+        actor_role: "superadmin",
+        action_type: "user.delete.denied",
+        entity_type: "user",
+        entity_id: targetId,
+        metadata: { reason: "target_is_superadmin" },
+      });
       return new Response(
         JSON.stringify({ error: "Cannot delete a superadmin account" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -118,16 +192,29 @@ Deno.serve(async (req) => {
     // --- Step 9: Profile-level superadmin protection (secondary) ---
     const { data: targetProfile } = await serviceClient
       .from("profiles")
-      .select("email")
+      .select("email, business_id")
       .eq("id", targetId)
       .maybeSingle();
 
     if (targetProfile && targetProfile.email.toLowerCase().trim() === SUPER) {
+      await writeAuditLog(serviceClient, {
+        business_id: callerBusinessId!,
+        actor_user_id: callerId,
+        actor_role: "superadmin",
+        action_type: "user.delete.denied",
+        entity_type: "user",
+        entity_id: targetId,
+        metadata: { reason: "target_is_superadmin" },
+      });
       return new Response(
         JSON.stringify({ error: "Cannot delete a superadmin account" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Use target's business_id for the audit log (more accurate for cross-business deletions)
+    const auditBusinessId = targetProfile?.business_id ?? callerBusinessId!;
+    const targetEmail = authUser.user.email ?? targetProfile?.email ?? "unknown";
 
     // --- Deletion sequence ---
 
@@ -167,7 +254,6 @@ Deno.serve(async (req) => {
 
     if (profileDeleteError) {
       console.error("Failed to delete profile:", profileDeleteError);
-      // Continue - not critical if profile was already missing
     }
 
     // Step 13: Delete auth user
@@ -182,6 +268,17 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // --- Audit log: successful deletion ---
+    await writeAuditLog(serviceClient, {
+      business_id: auditBusinessId,
+      actor_user_id: callerId,
+      actor_role: "superadmin",
+      action_type: "user.delete",
+      entity_type: "user",
+      entity_id: targetId,
+      metadata: { target_email: targetEmail, result: "success" },
+    });
 
     return new Response(
       JSON.stringify({ success: true, message: "User deleted successfully" }),
