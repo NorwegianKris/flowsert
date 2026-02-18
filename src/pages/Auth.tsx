@@ -543,7 +543,15 @@ export default function Auth() {
               />
             </div>
           </div>
-          <div className="flex items-center justify-center gap-3 mt-5 text-lg tracking-widest uppercase font-rajdhani text-muted-foreground">
+          {/* Mobile: 2x2 grid */}
+          <div className="grid grid-cols-2 gap-2 mt-5 text-lg tracking-widest uppercase font-rajdhani text-muted-foreground sm:hidden">
+            <span className="text-center">Offshore</span>
+            <span className="text-center">Subsea</span>
+            <span className="text-center">Industrial Services</span>
+            <span className="text-center">Construction</span>
+          </div>
+          {/* Desktop: horizontal row with separators */}
+          <div className="hidden sm:flex items-center justify-center gap-3 mt-5 text-lg tracking-widest uppercase font-rajdhani text-muted-foreground">
             <span>Offshore</span>
             <Separator orientation="vertical" className="h-4" />
             <span>Subsea</span>
