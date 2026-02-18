@@ -1,36 +1,21 @@
 
+## Make Previous Projects Section Collapsible
 
-## Add OpenStreetMap Autocomplete to Project Location Fields
+### Change
 
-### What Changes
+**`src/components/AssignedProjects.tsx`**
 
-Replace the plain `<Input>` for the "Location" field in both **Add Project** and **Edit Project** dialogs with the existing `<GeoLocationInput>` component -- the same OpenStreetMap-powered autocomplete used for personnel profiles.
+Wrap the "Previous Projects" section (lines 172-204) in a `Collapsible` component, matching the pattern already used in `ProjectsTab.tsx` for the admin dashboard.
 
-### Changes
+1. Add imports:
+   - `Collapsible, CollapsibleTrigger, CollapsibleContent` from `@/components/ui/collapsible`
+   - `ChevronDown` icon from `lucide-react`
 
-**1. `src/components/AddProjectDialog.tsx`**
-- Add import: `import { GeoLocationInput } from '@/components/ui/geo-location-input';`
-- Replace the `<Input>` at lines 670-675 with:
-  ```tsx
-  <GeoLocationInput
-    id="location"
-    value={location}
-    onChange={setLocation}
-    placeholder="e.g., North Sea Platform A"
-  />
-  ```
+2. Replace the static `<h4>` heading with a `CollapsibleTrigger` containing the title, badge count, and a chevron icon that rotates when open.
 
-**2. `src/components/EditProjectDialog.tsx`**
-- Add import: `import { GeoLocationInput } from '@/components/ui/geo-location-input';`
-- Replace the `<Input>` at lines 274-279 with:
-  ```tsx
-  <GeoLocationInput
-    id="location"
-    value={location}
-    onChange={setLocation}
-    placeholder="e.g., North Sea Platform A"
-  />
-  ```
+3. Wrap the project list in `CollapsibleContent` so it collapses/expands on click.
+
+4. The section starts collapsed by default so the profile stays compact.
 
 ### Result
-Both project dialogs will show city/location suggestions from OpenStreetMap as the user types, matching the personnel profile experience. Users can still type free-text if they prefer (e.g., "North Sea Platform A") since the input remains editable.
+The "Previous Projects" heading becomes clickable with a chevron indicator. Clicking it toggles visibility of the project list, keeping the profile tidy when there are many past projects.
