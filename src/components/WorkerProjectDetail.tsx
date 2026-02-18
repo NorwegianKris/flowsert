@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ProjectCalendar } from '@/components/ProjectCalendar';
 import { CompanyCard } from '@/components/CompanyCard';
 import { ProjectChat } from '@/components/ProjectChat';
+import { useAuth } from '@/contexts/AuthContext';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import {
@@ -40,8 +41,17 @@ const statusConfig = {
 };
 
 export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjectDetailProps) {
+  const { user } = useAuth();
   const [companyCardOpen, setCompanyCardOpen] = useState(false);
   const config = statusConfig[project.status];
+
+  // Check if the current worker is assigned (not just invited)
+  const isWorkerAssigned = useMemo(() => {
+    if (!user) return false;
+    const myPersonnel = personnel.find(p => p.userId === user.id);
+    if (!myPersonnel) return false;
+    return project.assignedPersonnel.includes(myPersonnel.id);
+  }, [user, personnel, project.assignedPersonnel]);
   const StatusIcon = config.icon;
   
   const assignedPersonnel = project.assignedPersonnel
@@ -172,7 +182,7 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
           />
           
           {/* Project Chat */}
-          <ProjectChat projectId={project.id} projectName={project.name} />
+          <ProjectChat projectId={project.id} projectName={project.name} isAssigned={isWorkerAssigned} />
 
           {/* Calendar Items List */}
           {project.calendarItems && project.calendarItems.length > 0 && (
