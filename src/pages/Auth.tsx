@@ -543,7 +543,7 @@ export default function Auth() {
               />
             </div>
           </div>
-          <div className="flex items-center justify-center gap-3 mt-5 text-sm tracking-widest uppercase font-rajdhani text-muted-foreground">
+          <div className="flex items-center justify-center gap-3 mt-5 text-lg tracking-widest uppercase font-rajdhani text-muted-foreground">
             <span>Offshore</span>
             <Separator orientation="vertical" className="h-4" />
             <span>Subsea</span>
