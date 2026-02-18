@@ -1,36 +1,32 @@
 
 
-## Fix: Certificate Count Discrepancy in AI Chatbot
+## Add "Industry Challenges" Section
 
-### Root Cause
+Create a new section on the Auth (landing) page that presents the six pain-point bullet points in the same visual style as the existing "Platform Features" section -- a 2-column grid with icon boxes, bold titles, and descriptive text.
 
-The discrepancy is NOT a data bug. The database has exactly 405 certificates, zero orphans, all correctly linked to personnel in one business. The UI components (`ComplianceSnapshot`, `PersonnelCard`) all count from the same data source and are consistent.
+### Bullet Points and Suggested Icons
 
-The issue is in the **AI chatbot edge function** (`certificate-chat/index.ts`). The `SUMMARY STATISTICS` section (line 272-277) includes "Certificates Expiring Soon" and "Expired Certificates" but does NOT include a **Total Certificates** count. The AI has to compute this itself by reading the detailed `PERSONNEL OVERVIEW` section. When the AI's text response is long (79 personnel with certificates), it can get truncated by output token limits, causing a manual count from the truncated output to fall short.
+| Bullet Point | Title | Icon |
+|---|---|---|
+| Personnel certificates stored across emails and shared folders | Scattered certificate storage | Mail |
+| Expiry dates tracked manually in Excel | Manual Excel tracking | FileSpreadsheet |
+| Last-minute mobilization issues due to missing or expired documentation | Mobilization delays | Clock |
+| Administrative follow-up before every project start | Repetitive admin follow-up | RefreshCw |
+| Inefficient freelancer recruitment through scattered emails and cold calls | Fragmented recruitment | PhoneOff |
+| Unstructured compliance sharing to clients and auditors | Unstructured compliance sharing | ShieldAlert |
 
-### Fix (single file change)
+### Visual Style
 
-**File:** `supabase/functions/certificate-chat/index.ts` (lines 272-277)
+- Same layout as "Platform Features": 2-column grid, each item with an icon in a rounded `bg-primary/10` box, bold title, and muted description text
+- Uses Lucide icons instead of emojis (matching the rest of the app's icon usage)
+- Section title: **"Common Industry Challenges"** (or similar) in the same `font-rajdhani` heading style
+- Placed **above** the "Platform Features" section to set up the problem-then-solution narrative flow
 
-Add a "Total Certificates" line to the `SUMMARY STATISTICS` section so the AI never needs to compute it from the detailed list:
+### Technical Details
 
-```text
-=== SUMMARY STATISTICS ===
-Total Personnel: ${allPersonnel.length}
-Total Certificates: ${allPersonnel.reduce((acc, p) => acc + p.certificates.length, 0)}
-Total Projects: ${allProjects.length} (${activeProjects.length} active, ...)
-Certificates Expiring Soon: ...
-Expired Certificates: ...
-```
+- **File modified:** `src/pages/Auth.tsx`
+- Add a new `<section>` block before the existing Features section (around line 593)
+- Import 6 additional Lucide icons: `Mail`, `FileSpreadsheet`, `Clock`, `RefreshCw`, `PhoneOff`, `ShieldAlert`
+- Same background pattern overlay as the Features section for visual consistency
+- No new components or files needed -- just a new section in the existing page
 
-This is a one-line addition. The AI will read the pre-computed total directly instead of attempting to sum from a potentially truncated personnel list.
-
-### Verification
-
-After deploying, ask the chatbot "How many total certificates do we have?" and confirm it answers 405 (matching the database).
-
-### No other changes needed
-
-- The UI dashboard (`ComplianceSnapshot`) correctly shows the total by iterating `personnel.certificates` from the `usePersonnel` hook
-- The `usePersonnel` hook fetches certificates in parallel (not nested) and is under the 1000-row default limit (405 certificates, 151 personnel)
-- No orphaned certificates exist in the database
