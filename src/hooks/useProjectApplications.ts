@@ -158,6 +158,24 @@ export function useProjectApplications(projectId?: string) {
     }
   }, []);
 
+  const cancelApplication = async (applicationId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('project_applications')
+        .delete()
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      toast.success('Application cancelled');
+      return true;
+    } catch (error) {
+      console.error('Error cancelling application:', error);
+      toast.error('Failed to cancel application');
+      return false;
+    }
+  };
+
   return {
     applications,
     loading,
@@ -165,5 +183,6 @@ export function useProjectApplications(projectId?: string) {
     submitApplication,
     updateApplicationStatus,
     getMyApplications,
+    cancelApplication,
   };
 }

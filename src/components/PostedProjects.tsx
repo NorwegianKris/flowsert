@@ -18,11 +18,12 @@ interface PostedProjectsProps {
 
 export function PostedProjects({ personnelId, businessId }: PostedProjectsProps) {
   const { projects, loading } = usePostedProjects();
-  const { submitApplication, getMyApplications } = useProjectApplications();
+  const { submitApplication, getMyApplications, cancelApplication } = useProjectApplications();
   const [myApplications, setMyApplications] = useState<ProjectApplication[]>([]);
   const [selectedProject, setSelectedProject] = useState<PostedProject | null>(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (personnelId) {
@@ -46,6 +47,21 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
     }
     setSubmitting(false);
   };
+
+  const handleCancel = async () => {
+    const application = selectedProject ? getApplicationStatus(selectedProject.id) : null;
+    if (!application) return;
+    setCancelling(true);
+    const success = await cancelApplication(application.id);
+    if (success) {
+      const updated = await getMyApplications(personnelId);
+      setMyApplications(updated);
+      setSelectedProject(null);
+    }
+    setCancelling(false);
+  };
+
+  const selectedApplication = selectedProject ? getApplicationStatus(selectedProject.id) : null;
 
   if (loading) {
     return (
@@ -97,7 +113,7 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
               <div
                 key={project.id}
                 className="p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => !application && setSelectedProject(project)}
+                onClick={() => setSelectedProject(project)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -145,13 +161,12 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
         </CardContent>
       </Card>
 
-      {/* Application Dialog */}
       <Dialog open={!!selectedProject} onOpenChange={(open) => { if (!open) { setSelectedProject(null); setMessage(''); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5 text-violet-500" />
-              Request to Join
+              {selectedApplication ? 'Project Details' : 'Request to Join'}
             </DialogTitle>
           </DialogHeader>
           {selectedProject && (
@@ -174,26 +189,64 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
                   )}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="application-message">Why would you like to join this project?</Label>
-                <Textarea
-                  id="application-message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Describe your interest, relevant experience, and availability..."
-                  rows={4}
-                />
-              </div>
+
+              {/* No application: show apply form */}
+              {!selectedApplication && (
+                <div className="space-y-2">
+                  <Label htmlFor="application-message">Why would you like to join this project?</Label>
+                  <Textarea
+                    id="application-message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Describe your interest, relevant experience, and availability..."
+                    rows={4}
+                  />
+                </div>
+              )}
+
+              {/* Pending: show cancel option */}
+              {selectedApplication?.status === 'pending' && (
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Application Pending</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Your application is awaiting review. You can cancel it if you've changed your mind.
+                  </p>
+                </div>
+              )}
+
+              {/* Accepted/Rejected: read-only status */}
+              {selectedApplication && selectedApplication.status !== 'pending' && (
+                <div className="flex items-center gap-2">
+                  {selectedApplication.status === 'accepted' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                  {selectedApplication.status === 'rejected' && <XCircle className="h-4 w-4 text-destructive" />}
+                  <Badge
+                    variant={selectedApplication.status === 'accepted' ? 'default' : 'destructive'}
+                  >
+                    {selectedApplication.status.charAt(0).toUpperCase() + selectedApplication.status.slice(1)}
+                  </Badge>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSelectedProject(null); setMessage(''); }}>
-              Cancel
+              {selectedApplication && selectedApplication.status !== 'pending' ? 'Close' : 'Cancel'}
             </Button>
-            <Button onClick={handleSubmit} disabled={!message.trim() || submitting}>
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Submit Application
-            </Button>
+            {!selectedApplication && (
+              <Button onClick={handleSubmit} disabled={!message.trim() || submitting}>
+                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Submit Application
+              </Button>
+            )}
+            {selectedApplication?.status === 'pending' && (
+              <Button variant="destructive" onClick={handleCancel} disabled={cancelling}>
+                {cancelling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Cancel Application
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
