@@ -31,6 +31,32 @@ interface ExtractionResponse {
   issues: string[];
 }
 
+// Fire-and-forget error event logger (never throws)
+async function writeErrorEvent(
+  serviceClient: ReturnType<typeof createClient>,
+  entry: {
+    business_id?: string;
+    actor_user_id?: string;
+    source: string;
+    event_type: string;
+    severity: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  try {
+    await serviceClient.from("error_events").insert({
+      business_id: entry.business_id ?? null,
+      actor_user_id: entry.actor_user_id ?? null,
+      source: entry.source,
+      event_type: entry.event_type,
+      severity: entry.severity,
+      message: entry.message,
+      metadata: entry.metadata ?? {},
+    });
+  } catch (_) { /* fire-and-forget */ }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -71,6 +97,13 @@ serve(async (req) => {
       p_window_seconds: 60
     });
     if (rlError) {
+      await writeErrorEvent(serviceClient, {
+        actor_user_id: userId as string,
+        source: 'edge',
+        event_type: 'extract.rate_limit',
+        severity: 'warn',
+        message: 'Extract rate limit exceeded',
+      });
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -206,12 +239,28 @@ Return the extracted data using the extract_certificate_data function.`;
 
     if (!response.ok) {
       if (response.status === 429) {
+        await writeErrorEvent(serviceClient, {
+          actor_user_id: userId as string,
+          source: 'edge',
+          event_type: 'extract.ai_gateway_error',
+          severity: 'error',
+          message: 'AI gateway rate limit (429)',
+          metadata: { status: 429 },
+        });
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
+        await writeErrorEvent(serviceClient, {
+          actor_user_id: userId as string,
+          source: 'edge',
+          event_type: 'extract.ai_gateway_error',
+          severity: 'error',
+          message: 'AI gateway credits exhausted (402)',
+          metadata: { status: 402 },
+        });
         return new Response(
           JSON.stringify({ error: "AI usage limit reached. Please contact support." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -219,6 +268,14 @@ Return the extracted data using the extract_certificate_data function.`;
       }
       const errorText = await response.text();
       console.error("AI Gateway error:", response.status, errorText);
+      await writeErrorEvent(serviceClient, {
+        actor_user_id: userId as string,
+        source: 'edge',
+        event_type: 'extract.ai_gateway_error',
+        severity: 'error',
+        message: `AI gateway error (${response.status})`,
+        metadata: { status: response.status },
+      });
       throw new Error(`AI Gateway error: ${response.status}`);
     }
 
@@ -227,6 +284,13 @@ Return the extracted data using the extract_certificate_data function.`;
     // Parse the tool call response
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall || toolCall.function.name !== "extract_certificate_data") {
+      await writeErrorEvent(serviceClient, {
+        actor_user_id: userId as string,
+        source: 'edge',
+        event_type: 'extract.parse_error',
+        severity: 'error',
+        message: 'Invalid AI response format - missing or wrong tool call',
+      });
       throw new Error("Invalid AI response format");
     }
 
