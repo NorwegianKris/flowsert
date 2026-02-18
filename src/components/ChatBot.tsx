@@ -252,7 +252,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 px-6 rounded-full shadow-xl z-50 gap-3 text-lg font-bold animate-pulse hover:animate-none relative"
+        className="fixed bottom-6 left-6 h-16 px-6 rounded-full shadow-xl z-50 gap-3 text-lg font-bold animate-pulse hover:animate-none relative"
       >
         <MessageCircle className="h-6 w-6" />
         <span>Chat</span>
@@ -600,7 +600,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
   };
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
+    <Card className="fixed bottom-6 left-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
       {renderHeader()}
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         {renderContent()}
