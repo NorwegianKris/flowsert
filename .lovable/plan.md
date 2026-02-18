@@ -1,36 +1,23 @@
 
 
-## Step 3 -- Remove Accidental UPDATE/DELETE on project_messages
+## Step 4 -- Add Performance Index for Project Chat
 
-### Problem
+### What This Does
 
-The `project_messages` table has a `FOR ALL` baseline policy (`"Require authentication for project_messages"`) with `USING (auth.uid() IS NOT NULL)`. This inadvertently grants UPDATE and DELETE to any authenticated user, violating the immutability rule.
-
-### Solution
-
-Drop the `FOR ALL` policy. The existing explicit SELECT and INSERT policies already enforce authentication internally, so no replacement is needed.
+Adds a composite index on `project_messages(project_id, created_at DESC)` to ensure efficient index scans for chat queries instead of sequential table scans.
 
 ### Migration SQL
 
 ```sql
-DROP POLICY IF EXISTS "Require authentication for project_messages"
-  ON public.project_messages;
+CREATE INDEX IF NOT EXISTS project_messages_project_id_created_at_idx
+  ON public.project_messages (project_id, created_at DESC);
 ```
-
-### What remains
-
-| Operation | Policy | Who |
-|-----------|--------|-----|
-| SELECT | "Admins can view project messages" | Admins (business_id match) |
-| SELECT | "Workers can view project messages" | Workers (invited or assigned) |
-| INSERT | "Admins can send project messages" | Admins (sender_id = self, business match) |
-| INSERT | "Assigned workers can send project messages" | Workers (sender_id = self, assigned only) |
-| UPDATE | (none) | Denied for everyone |
-| DELETE | (none) | Denied for everyone |
 
 ### Technical Details
 
 - Single database migration, no code changes
-- Zero risk: authentication checks are embedded in each remaining policy
-- This is a DB-only hardening change
+- Non-destructive, zero functional risk
+- PostgreSQL can traverse the DESC index in reverse for ASC ordering (used by `ProjectChat.tsx`)
+- `IF NOT EXISTS` makes it safe to re-run
+- Skipping the optional `sender_id` index as no current queries filter by sender
 
