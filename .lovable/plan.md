@@ -1,54 +1,40 @@
 
 
-## Step 10 -- Monitoring, Backups, and Restore Verification
+## Step 11 -- Release Gate and Regression Checklist
 
-### Status: ✅ Implemented
+**What:** Append a complete Step 11 section to `.lovable/plan.md`. No code, no migrations, no edge function changes.
 
-### error_events table
+### Content to append (eight subsections)
 
-- Append-only, RLS enabled, SELECT-only policies (no INSERT/UPDATE/DELETE -- service role writes only)
-- Constraints: `severity IN ('info','warn','error')`, `source IN ('edge','client','db')`, `event_type` non-empty
-- Indexes: `(business_id, created_at DESC)` and `(created_at DESC)`
-- Admin sees own business only; superadmin sees all including NULL business_id rows
-- **NULL business_id events are visible only to superadmin** (admins cannot match NULL via `get_user_business_id()`)
-- Linter "no INSERT/UPDATE/DELETE policy" warnings are intentional
+**1. Preflight Checks** -- Four items with inline SQL:
+- Environment confirmation note
+- Database health quick check (`to_regclass` for `personnel`, `direct_messages`, `project_messages`, `audit_logs`, `error_events`)
+- RLS policy audit: no `FOR ALL` on sensitive tables
+- Anon execute grant check for `enforce_rate_limit` and `trg_limit_direct_messages`
 
-### Edge function error events
+**2. Deployment Rules** -- Four non-negotiable rules (atomic migrations with `IF NOT EXISTS`, add-before-remove policies, allowlisted revokes, fire-and-forget logging)
 
-| Function | event_type | severity | Location |
-|---|---|---|---|
-| certificate-chat | `chat.rate_limit` | warn | Rate limit block |
-| certificate-chat | `chat.ai_gateway_error` | error | Gateway response handling |
-| extract-certificate-data | `extract.rate_limit` | warn | Rate limit block |
-| extract-certificate-data | `extract.ai_gateway_error` | error | Gateway response handling |
-| extract-certificate-data | `extract.parse_error` | error | Response parse block |
-| suggest-project-personnel | `suggest.rate_limit` | warn | Rate limit block |
-| suggest-project-personnel | `suggest.ai_gateway_error` | error | Gateway response handling |
-| delete-user | `delete_user.personnel_unlink_fail` | error | Personnel unlink step |
-| delete-user | `delete_user.roles_delete_fail` | error | Roles deletion step |
-| delete-user | `delete_user.auth_delete_fail` | error | Auth user deletion step |
+**3. Post-Deploy Regression Mini-Suite** -- Six groups: Auth/onboarding, Worker isolation, Admin scoping, Messaging, AI endpoints, Audit + error logging
 
-**Never logged:** request bodies, tokens, base64 images, prompts, document content.
+**4. Stop-Ship Criteria** -- Six conditions triggering immediate rollback, plus the 15-minute rule:
+> "If any stop-ship condition is detected post-deploy and cannot be resolved within 15 minutes, initiate rollback immediately."
 
-All logging is fire-and-forget via `writeErrorEvent()` wrapped in try/catch. Failures to log never affect the main request flow.
+**5. Go/No-Go Gate** -- Hard statement plus authorization line:
+> "Release is approved only if all mini-suite items pass and no stop-ship criteria are triggered. Otherwise rollback immediately and open a fix task."
+>
+> Release approval requires explicit sign-off by: the deployer, one admin-level tester, and (if production) superadmin.
 
-### Retention cleanup (deferred)
+**6. Known Intentional Warnings** -- `rate_limits` (no RLS), `audit_logs` / `error_events` (no INSERT/UPDATE/DELETE policies)
 
-To be automated via scheduled function later:
+**7. Rollback Protocol** -- Code revert + emergency SQL examples (drop trigger, re-create policy, re-grant execute)
 
-```sql
-DELETE FROM public.error_events WHERE created_at < now() - interval '30 days';
-DELETE FROM public.audit_logs WHERE created_at < now() - interval '90 days';
-```
+**8. Release Run Log Template** -- Copy/paste block with fields for date, environment, commit, migration head, testers, all mini-suite results, notes, and rollback decision
 
-### Backup and restore
+### Files changed
 
-Backup method and retention to be verified in Lovable Cloud admin. Record retention period and last successful backup date here once confirmed.
+`.lovable/plan.md` only (append after Step 10)
 
-### Rollback
+### After appending
 
-```sql
-DROP TABLE IF EXISTS public.error_events CASCADE;
-```
+Run the preflight SQL queries once to record a baseline in the Release Run Log.
 
-Remove `writeErrorEvent` calls from edge functions.
