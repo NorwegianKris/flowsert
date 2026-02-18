@@ -15,6 +15,8 @@ export interface PostedProject {
   imageUrl?: string;
   projectLocationLabel?: string;
   projectCountry?: string;
+  businessName?: string;
+  businessLogoUrl?: string;
 }
 
 export function usePostedProjects() {
@@ -42,6 +44,12 @@ export function usePostedProjects() {
         setLoading(false);
         return;
       }
+
+      const { data: businessData } = await supabase
+        .from('businesses')
+        .select('name, logo_url')
+        .eq('id', personnelData.business_id)
+        .maybeSingle();
 
       const { data, error } = await supabase
         .from('projects')
@@ -74,6 +82,8 @@ export function usePostedProjects() {
             imageUrl: p.image_url || undefined,
             projectLocationLabel: p.project_location_label || undefined,
             projectCountry: p.project_country || undefined,
+            businessName: businessData?.name || undefined,
+            businessLogoUrl: businessData?.logo_url || undefined,
           });
         }
       }

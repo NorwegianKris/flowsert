@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Briefcase, Calendar, MapPin, Clock, Send, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePostedProjects, PostedProject } from '@/hooks/usePostedProjects';
 import { useProjectApplications, ProjectApplication } from '@/hooks/useProjectApplications';
 import { format, parseISO } from 'date-fns';
@@ -172,20 +173,35 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
           {selectedProject && (
             <div className="space-y-4">
               <div className="rounded-lg bg-muted/50 p-3">
-                <h4 className="font-medium text-sm">{selectedProject.name}</h4>
-                <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{selectedProject.description}</p>
-                <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {format(parseISO(selectedProject.startDate), 'MMM d, yyyy')}
-                  </span>
-                  {(selectedProject.projectLocationLabel || selectedProject.projectCountry || selectedProject.location) && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {selectedProject.projectLocationLabel || (selectedProject.projectCountry
-                        ? selectedProject.projectCountry.replace(/\b\w/g, c => c.toUpperCase())
-                        : selectedProject.location)}
-                    </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm">{selectedProject.name}</h4>
+                    <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{selectedProject.description}</p>
+                    <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {format(parseISO(selectedProject.startDate), 'MMM d, yyyy')}
+                      </span>
+                      {(selectedProject.projectLocationLabel || selectedProject.projectCountry || selectedProject.location) && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {selectedProject.projectLocationLabel || (selectedProject.projectCountry
+                            ? selectedProject.projectCountry.replace(/\b\w/g, c => c.toUpperCase())
+                            : selectedProject.location)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {(selectedProject.businessLogoUrl || selectedProject.businessName) && (
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={selectedProject.businessLogoUrl} />
+                        <AvatarFallback>{selectedProject.businessName?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-muted-foreground text-center max-w-[80px] truncate">
+                        {selectedProject.businessName}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -233,7 +249,7 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSelectedProject(null); setMessage(''); }}>
-              {selectedApplication && selectedApplication.status !== 'pending' ? 'Close' : 'Cancel'}
+              Close
             </Button>
             {!selectedApplication && (
               <Button onClick={handleSubmit} disabled={!message.trim() || submitting}>
