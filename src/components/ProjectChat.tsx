@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,10 +25,13 @@ interface ProjectMessage {
 interface ProjectChatProps {
   projectId: string;
   projectName: string;
+  /** When false, the input area is hidden and a notice is shown instead. Defaults to true. */
+  isAssigned?: boolean;
 }
 
-export function ProjectChat({ projectId, projectName }: ProjectChatProps) {
+export function ProjectChat({ projectId, projectName, isAssigned = true }: ProjectChatProps) {
   const { user, profile, isAdmin } = useAuth();
+  const canSend = isAdmin || isAssigned;
   const [messages, setMessages] = useState<ProjectMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -186,30 +191,39 @@ export function ProjectChat({ projectId, projectName }: ProjectChatProps) {
           </div>
         </ScrollArea>
 
-        <div className="pt-3 border-t border-border mt-2 shrink-0">
-          <div className="flex gap-2">
-            <Textarea
-              placeholder="Type a message to the team..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="resize-none text-sm min-h-[60px]"
-              disabled={isSending}
-            />
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={!newMessage.trim() || isSending}
-              className="shrink-0 self-end"
-            >
-              {isSending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+        {canSend ? (
+          <div className="pt-3 border-t border-border mt-2 shrink-0">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Type a message to the team..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="resize-none text-sm min-h-[60px]"
+                disabled={isSending}
+              />
+              <Button
+                size="icon"
+                onClick={handleSend}
+                disabled={!newMessage.trim() || isSending}
+                className="shrink-0 self-end"
+              >
+                {isSending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <Alert className="mt-2 shrink-0">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              You can view messages but cannot send until you accept the project invitation.
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );
