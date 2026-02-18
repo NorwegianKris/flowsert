@@ -250,18 +250,20 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
   // --- Floating button (closed state) ---
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 h-16 px-6 rounded-full shadow-xl z-50 gap-3 text-lg font-bold animate-pulse hover:animate-none relative"
-      >
-        <MessageCircle className="h-6 w-6" />
-        <span>Chat</span>
+      <div className="fixed bottom-6 right-6 z-50 relative">
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="h-16 px-6 rounded-full shadow-xl gap-3 text-lg font-bold animate-pulse hover:animate-none"
+        >
+          <MessageCircle className="h-6 w-6" />
+          <span>Chat</span>
+        </Button>
         {badgeCount > 0 && (
           <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-xs min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full font-medium">
             {badgeCount > 99 ? '99+' : badgeCount}
           </span>
         )}
-      </Button>
+      </div>
     );
   }
 
@@ -600,7 +602,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
   };
 
   return (
-    <Card className="fixed bottom-6 left-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
+    <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
       {renderHeader()}
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         {renderContent()}
