@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Separator } from '@/components/ui/separator';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -541,6 +542,15 @@ export default function Auth() {
                 className="w-full h-auto rounded-lg"
               />
             </div>
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-5 text-sm tracking-widest uppercase font-rajdhani text-muted-foreground">
+            <span>Offshore</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>Subsea</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>Industrial Services</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>Construction</span>
           </div>
         </div>
         </section>
