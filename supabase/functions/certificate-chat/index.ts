@@ -317,6 +317,21 @@ serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
+    // Rate limit check (10 AI chat requests per 60 seconds)
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+    const { error: rlError } = await serviceClient.rpc('enforce_rate_limit', {
+      p_key: `ai_chat:${userId}`,
+      p_limit: 10,
+      p_window_seconds: 60
+    });
+    if (rlError) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait a moment before sending another message." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get user's role from server-side (never trust client)
     const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
