@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { Briefcase, Calendar, Loader2, ChevronRight } from 'lucide-react';
+import { Briefcase, Calendar, Loader2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 
@@ -170,38 +171,43 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
             )}
 
             {previousProjects.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Previous Projects ({previousProjects.length})
-                </h4>
-                <div className="space-y-2">
-                  {previousProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => handleProjectClick(project)}
-                      className="p-3 rounded-lg border border-border/50 bg-muted/30 cursor-pointer group hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                            {project.name}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 text-sky-500" />
-                            <span>{formatDateRange(project.startDate, project.endDate)}</span>
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 w-full group">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Previous Projects ({previousProjects.length})
+                  </h4>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2 mt-2">
+                    {previousProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => handleProjectClick(project)}
+                        className="p-3 rounded-lg border border-border/50 bg-muted/30 cursor-pointer group hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                              {project.name}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <Calendar className="h-3 w-3 text-sky-500" />
+                              <span>{formatDateRange(project.startDate, project.endDate)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs capitalize shrink-0">
+                              {project.status}
+                            </Badge>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs capitalize shrink-0">
-                            {project.status}
-                          </Badge>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
           </>
         )}
