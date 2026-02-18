@@ -63,7 +63,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
 
   return (
     <>
-      <Card className="border-border/50 border-primary/30 bg-primary/5">
+      <Card className="border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Mail className="h-5 w-5 text-orange-500" />
