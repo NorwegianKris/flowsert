@@ -1433,6 +1433,24 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1515,6 +1533,10 @@ export type Database = {
       can_worker_see_posted_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      enforce_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number }
+        Returns: undefined
       }
       get_freelancer_invitation_by_token: {
         Args: { lookup_token: string }

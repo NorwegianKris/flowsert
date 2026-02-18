@@ -146,7 +146,11 @@ export function useDirectMessages(
 
     if (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      if (error.message?.toLowerCase().includes('rate limit')) {
+        toast.error("You're sending messages too fast. Please wait a moment.");
+      } else {
+        toast.error('Failed to send message');
+      }
     } else {
       setNewMessage('');
 
