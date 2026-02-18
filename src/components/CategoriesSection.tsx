@@ -298,7 +298,7 @@ function CertificateCategoriesInner() {
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          {categories.length} category{categories.length !== 1 ? 'ies' : 'y'} defined
+          {categories.length} {categories.length !== 1 ? 'categories' : 'category'} defined
         </p>
       </div>
 
@@ -451,7 +451,7 @@ function DocumentCategoriesInner() {
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          {categories.length} category{categories.length !== 1 ? 'ies' : 'y'} defined
+          {categories.length} {categories.length !== 1 ? 'categories' : 'category'} defined
         </p>
       </div>
 

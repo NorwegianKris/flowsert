@@ -195,7 +195,7 @@ export function DocumentCategoriesManager() {
           )}
 
           <p className="text-xs text-muted-foreground">
-            {categories.length} category{categories.length !== 1 ? 'ies' : 'y'} defined
+            {categories.length} {categories.length !== 1 ? 'categories' : 'category'} defined
           </p>
         </CardContent>
       </Card>
