@@ -272,6 +272,7 @@ ${entries.slice(0, 10).map(a => `    - ${formatDate(a.date)}: ${a.status.toUpper
   const summarySection = `
 === SUMMARY STATISTICS ===
 Total Personnel: ${allPersonnel.length}
+Total Certificates: ${allPersonnel.reduce((acc, p) => acc + p.certificates.length, 0)}
 Total Projects: ${allProjects.length} (${activeProjects.length} active, ${pendingProjects.length} pending, ${completedProjects.length} completed)
 Certificates Expiring Soon: ${allPersonnel.reduce((acc, p) => acc + p.certificates.filter(c => getCertificateStatus(c.expiry_date) === 'expiring').length, 0)}
 Expired Certificates: ${allPersonnel.reduce((acc, p) => acc + p.certificates.filter(c => getCertificateStatus(c.expiry_date) === 'expired').length, 0)}`;
