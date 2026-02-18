@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useWorkerBusinesses } from '@/hooks/useWorkerBusinesses';
+import { useWorkerBusinesses, WorkerBusiness } from '@/hooks/useWorkerBusinesses';
 import { CompanyCard } from '@/components/CompanyCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,8 +41,8 @@ export function MyCompanies() {
   const visibleBusinesses = businesses.slice(0, MAX_VISIBLE);
   const overflowCount = businesses.length - MAX_VISIBLE;
 
-  const renderMiniCard = (biz: typeof businesses[0]) => {
-    const initials = biz.name
+  const renderMiniCard = (biz: WorkerBusiness) => {
+    const initials = biz.businessName
       .split(' ')
       .map(n => n[0])
       .join('')
@@ -51,20 +51,20 @@ export function MyCompanies() {
 
     return (
       <button
-        key={biz.id}
-        onClick={() => setSelectedBusinessId(biz.id)}
+        key={biz.businessId}
+        onClick={() => setSelectedBusinessId(biz.businessId)}
         className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-accent/50 transition-colors text-left"
       >
         <Avatar className="h-9 w-9 border border-border">
-          {biz.logo_url ? (
-            <AvatarImage src={biz.logo_url} alt={biz.name} />
+          {biz.businessLogoUrl ? (
+            <AvatarImage src={biz.businessLogoUrl} alt={biz.businessName} />
           ) : (
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
               {initials || <Building2 className="h-4 w-4" />}
             </AvatarFallback>
           )}
         </Avatar>
-        <span className="text-sm font-medium truncate">{biz.name}</span>
+        <span className="text-sm font-medium truncate">{biz.businessName}</span>
       </button>
     );
   };
