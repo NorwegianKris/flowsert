@@ -1,21 +1,36 @@
 
 
-## Add Database Constraints to project_messages
+## Step 3 -- Remove Accidental UPDATE/DELETE on project_messages
 
-Three CHECK constraints will be added to the `project_messages` table to prevent invalid data from entering through any code path:
+### Problem
 
-### Constraints
+The `project_messages` table has a `FOR ALL` baseline policy (`"Require authentication for project_messages"`) with `USING (auth.uid() IS NOT NULL)`. This inadvertently grants UPDATE and DELETE to any authenticated user, violating the immutability rule.
 
-| Constraint | Rule | Purpose |
-|---|---|---|
-| `project_messages_sender_role_check` | `sender_role IN ('admin', 'worker')` | Prevents garbage or spoofed role values |
-| `project_messages_content_not_empty` | `length(trim(content)) > 0` | Blocks empty/whitespace-only messages |
-| `project_messages_sender_name_not_empty` | `length(trim(sender_name)) > 0` | Blocks empty sender names since the column is stored denormalized |
+### Solution
+
+Drop the `FOR ALL` policy. The existing explicit SELECT and INSERT policies already enforce authentication internally, so no replacement is needed.
+
+### Migration SQL
+
+```sql
+DROP POLICY IF EXISTS "Require authentication for project_messages"
+  ON public.project_messages;
+```
+
+### What remains
+
+| Operation | Policy | Who |
+|-----------|--------|-----|
+| SELECT | "Admins can view project messages" | Admins (business_id match) |
+| SELECT | "Workers can view project messages" | Workers (invited or assigned) |
+| INSERT | "Admins can send project messages" | Admins (sender_id = self, business match) |
+| INSERT | "Assigned workers can send project messages" | Workers (sender_id = self, assigned only) |
+| UPDATE | (none) | Denied for everyone |
+| DELETE | (none) | Denied for everyone |
 
 ### Technical Details
 
-- Single database migration adding all three constraints
-- No code changes needed -- these are backend-only guards
-- Existing data should already comply (messages require content and sender info in the UI)
-- These are immutable CHECK constraints (no time-based logic), so they are safe to use directly
+- Single database migration, no code changes
+- Zero risk: authentication checks are embedded in each remaining policy
+- This is a DB-only hardening change
 
