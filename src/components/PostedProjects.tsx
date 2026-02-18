@@ -79,7 +79,7 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
 
   if (projects.length === 0) {
     return (
-      <Card>
+      <Card className="border-[#C4B5FD]/50 bg-[#C4B5FD]/10">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-violet-500" />
@@ -98,7 +98,7 @@ export function PostedProjects({ personnelId, businessId }: PostedProjectsProps)
 
   return (
     <>
-      <Card>
+      <Card className="border-[#C4B5FD]/50 bg-[#C4B5FD]/10">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-violet-500" />
