@@ -552,6 +552,42 @@ export type Database = {
           },
         ]
       }
+      error_events: {
+        Row: {
+          actor_user_id: string | null
+          business_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json
+          severity: string
+          source: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          severity?: string
+          source: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          severity?: string
+          source?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           business_id: string

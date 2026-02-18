@@ -35,6 +35,32 @@ async function writeAuditLog(
   }
 }
 
+// Fire-and-forget error event logger (never throws)
+async function writeErrorEvent(
+  serviceClient: ReturnType<typeof createClient>,
+  entry: {
+    business_id?: string;
+    actor_user_id?: string;
+    source: string;
+    event_type: string;
+    severity: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  try {
+    await serviceClient.from("error_events").insert({
+      business_id: entry.business_id ?? null,
+      actor_user_id: entry.actor_user_id ?? null,
+      source: entry.source,
+      event_type: entry.event_type,
+      severity: entry.severity,
+      message: entry.message,
+      metadata: entry.metadata ?? {},
+    });
+  } catch (_) { /* fire-and-forget */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -226,6 +252,15 @@ Deno.serve(async (req) => {
 
     if (personnelError) {
       console.error("Failed to unlink personnel:", personnelError);
+      await writeErrorEvent(serviceClient, {
+        business_id: auditBusinessId,
+        actor_user_id: callerId,
+        source: 'edge',
+        event_type: 'delete_user.personnel_unlink_fail',
+        severity: 'error',
+        message: 'Failed to unlink personnel records',
+        metadata: { target_user_id: targetId },
+      });
       return new Response(
         JSON.stringify({ error: "Failed to unlink personnel records" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -240,6 +275,15 @@ Deno.serve(async (req) => {
 
     if (rolesDeleteError) {
       console.error("Failed to delete user_roles:", rolesDeleteError);
+      await writeErrorEvent(serviceClient, {
+        business_id: auditBusinessId,
+        actor_user_id: callerId,
+        source: 'edge',
+        event_type: 'delete_user.roles_delete_fail',
+        severity: 'error',
+        message: 'Failed to delete user roles',
+        metadata: { target_user_id: targetId },
+      });
       return new Response(
         JSON.stringify({ error: "Failed to delete user roles. Personnel already unlinked." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -260,6 +304,15 @@ Deno.serve(async (req) => {
     const { error: authDeleteError } = await serviceClient.auth.admin.deleteUser(targetId);
     if (authDeleteError) {
       console.error("Failed to delete auth user:", authDeleteError);
+      await writeErrorEvent(serviceClient, {
+        business_id: auditBusinessId,
+        actor_user_id: callerId,
+        source: 'edge',
+        event_type: 'delete_user.auth_delete_fail',
+        severity: 'error',
+        message: 'Auth user deletion failed after personnel unlink and roles delete',
+        metadata: { target_user_id: targetId },
+      });
       return new Response(
         JSON.stringify({
           error: "Auth user deletion failed. Personnel unlinked, roles and profile deleted. Manual cleanup may be needed.",

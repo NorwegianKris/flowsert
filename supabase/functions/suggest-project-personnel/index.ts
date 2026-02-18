@@ -46,6 +46,32 @@ interface SuggestionResponse {
   suggestedPersonnel: SuggestedPersonnel[];
 }
 
+// Fire-and-forget error event logger (never throws)
+async function writeErrorEvent(
+  serviceClient: ReturnType<typeof createClient>,
+  entry: {
+    business_id?: string;
+    actor_user_id?: string;
+    source: string;
+    event_type: string;
+    severity: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  try {
+    await serviceClient.from("error_events").insert({
+      business_id: entry.business_id ?? null,
+      actor_user_id: entry.actor_user_id ?? null,
+      source: entry.source,
+      event_type: entry.event_type,
+      severity: entry.severity,
+      message: entry.message,
+      metadata: entry.metadata ?? {},
+    });
+  } catch (_) { /* fire-and-forget */ }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -85,6 +111,13 @@ serve(async (req) => {
       p_window_seconds: 60
     });
     if (rlError) {
+      await writeErrorEvent(serviceClient, {
+        actor_user_id: userId as string,
+        source: 'edge',
+        event_type: 'suggest.rate_limit',
+        severity: 'warn',
+        message: 'Suggest rate limit exceeded',
+      });
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -278,12 +311,28 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
 
     if (!response.ok) {
       if (response.status === 429) {
+        await writeErrorEvent(serviceClient, {
+          actor_user_id: userId as string,
+          source: 'edge',
+          event_type: 'suggest.ai_gateway_error',
+          severity: 'error',
+          message: 'AI gateway rate limit (429)',
+          metadata: { status: 429 },
+        });
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
+        await writeErrorEvent(serviceClient, {
+          actor_user_id: userId as string,
+          source: 'edge',
+          event_type: 'suggest.ai_gateway_error',
+          severity: 'error',
+          message: 'AI gateway credits exhausted (402)',
+          metadata: { status: 402 },
+        });
         return new Response(
           JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -291,6 +340,14 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      await writeErrorEvent(serviceClient, {
+        actor_user_id: userId as string,
+        source: 'edge',
+        event_type: 'suggest.ai_gateway_error',
+        severity: 'error',
+        message: `AI gateway error (${response.status})`,
+        metadata: { status: response.status },
+      });
       throw new Error("AI gateway error");
     }
 
