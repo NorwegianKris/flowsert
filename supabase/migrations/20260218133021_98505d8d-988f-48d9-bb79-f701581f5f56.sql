@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.trg_limit_direct_messages() FROM public;
