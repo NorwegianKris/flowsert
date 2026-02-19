@@ -97,6 +97,7 @@ export default function AdminDashboard() {
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
+  const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
   const [workerGroupFilters, setWorkerGroupFilters] = useState<string[]>([]);
   const [includeUngrouped, setIncludeUngrouped] = useState(false);
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
@@ -586,9 +587,11 @@ export default function AdminDashboard() {
               onPersonnelFilterChange={setComplianceFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
-              onCustomFilterChange={(ids, roles) => {
+              customWorkerGroupIds={customFilterWorkerGroupIds}
+              onCustomFilterChange={(ids, roles, workerGroupIds) => {
                 setCustomFilterPersonnelIds(ids);
                 setCustomFilterRoles(roles);
+                setCustomFilterWorkerGroupIds(workerGroupIds);
               }}
             />
             <ExpiryTimeline 
@@ -596,6 +599,7 @@ export default function AdminDashboard() {
               personnelFilter={complianceFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
+              customWorkerGroupIds={customFilterWorkerGroupIds}
             />
             <RecentRegistrations 
               personnel={personnel}
