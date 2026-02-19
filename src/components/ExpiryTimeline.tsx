@@ -12,13 +12,7 @@ import { ExpiryDetailsList } from '@/components/timeline/ExpiryDetailsList';
 import { TimelineEvent, getEventStatus, getEventColor } from '@/components/timeline/types';
 import { useCertificateTypes } from '@/hooks/useCertificateTypes';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
-
-interface ExpiryTimelineProps {
-  personnel: Personnel[];
-  personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
-  customPersonnelIds?: string[];
-  customRoles?: string[];
-}
+import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
 
 interface ExpiryGroup {
   id: string;
@@ -33,21 +27,42 @@ interface ExpiryGroup {
   filterParams: { minDays?: number; maxDays?: number; overdue?: boolean };
 }
 
+interface ExpiryTimelineProps {
+  personnel: Personnel[];
+  personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
+  customPersonnelIds?: string[];
+  customRoles?: string[];
+  customWorkerGroupIds?: string[];
+}
+
 export function ExpiryTimeline({ 
   personnel, 
   personnelFilter,
   customPersonnelIds = [],
   customRoles = [],
+  customWorkerGroupIds = [],
 }: ExpiryTimelineProps) {
   const navigate = useNavigate();
   const [timelineEndDays, setTimelineEndDays] = useState(90);
   const [timelineStartDays, setTimelineStartDays] = useState(-30);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const { data: personnelWorkerGroups = [] } = usePersonnelWorkerGroups();
   
   // Fetch certificate types and categories
   const { data: certificateTypes = [] } = useCertificateTypes();
   const { categories: certificateCategories } = useCertificateCategories();
+
+  // Resolve worker group membership to personnel IDs
+  const workerGroupPersonnelIds = useMemo(() => {
+    if (customWorkerGroupIds.length === 0) return new Set<string>();
+    const groupSet = new Set(customWorkerGroupIds);
+    return new Set(
+      personnelWorkerGroups
+        .filter(pwg => groupSet.has(pwg.worker_group_id))
+        .map(pwg => pwg.personnel_id)
+    );
+  }, [customWorkerGroupIds, personnelWorkerGroups]);
 
   // Filter personnel based on the selected filter
   const filteredPersonnel = useMemo(() => {
@@ -56,11 +71,13 @@ export function ExpiryTimeline({
     if (personnelFilter === 'freelancers') return personnel.filter(p => p.category === 'freelancer');
     if (personnelFilter === 'custom') {
       return personnel.filter(p => 
-        customPersonnelIds.includes(p.id) || customRoles.includes(p.role)
+        customPersonnelIds.includes(p.id) || 
+        customRoles.includes(p.role) ||
+        workerGroupPersonnelIds.has(p.id)
       );
     }
     return personnel;
-  }, [personnel, personnelFilter, customPersonnelIds, customRoles]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles, workerGroupPersonnelIds]);
 
   // Calculate expiry groups
   const expiryGroups = useMemo((): ExpiryGroup[] => {

@@ -6,6 +6,7 @@ import { getCertificateStatus } from '@/lib/certificateUtils';
 import { Award, XCircle, CheckCircle, Users, SlidersHorizontal } from 'lucide-react';
 import { CustomPersonnelFilterDialog } from './CustomPersonnelFilterDialog';
 import { Badge } from '@/components/ui/badge';
+import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
 
 interface ComplianceSnapshotProps {
   personnel: Personnel[];
@@ -13,7 +14,8 @@ interface ComplianceSnapshotProps {
   onPersonnelFilterChange: (filter: 'all' | 'employees' | 'freelancers' | 'custom') => void;
   customPersonnelIds?: string[];
   customRoles?: string[];
-  onCustomFilterChange?: (personnelIds: string[], roles: string[]) => void;
+  customWorkerGroupIds?: string[];
+  onCustomFilterChange?: (personnelIds: string[], roles: string[], workerGroupIds: string[]) => void;
 }
 
 export function ComplianceSnapshot({ 
@@ -22,9 +24,22 @@ export function ComplianceSnapshot({
   onPersonnelFilterChange,
   customPersonnelIds = [],
   customRoles = [],
+  customWorkerGroupIds = [],
   onCustomFilterChange,
 }: ComplianceSnapshotProps) {
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const { data: personnelWorkerGroups = [] } = usePersonnelWorkerGroups();
+
+  // Resolve worker group membership to personnel IDs
+  const workerGroupPersonnelIds = useMemo(() => {
+    if (customWorkerGroupIds.length === 0) return new Set<string>();
+    const groupSet = new Set(customWorkerGroupIds);
+    return new Set(
+      personnelWorkerGroups
+        .filter(pwg => groupSet.has(pwg.worker_group_id))
+        .map(pwg => pwg.personnel_id)
+    );
+  }, [customWorkerGroupIds, personnelWorkerGroups]);
 
   // Filter personnel based on the selected filter
   const filteredPersonnel = useMemo(() => {
@@ -33,11 +48,13 @@ export function ComplianceSnapshot({
     if (personnelFilter === 'freelancers') return personnel.filter(p => p.category === 'freelancer');
     if (personnelFilter === 'custom') {
       return personnel.filter(p => 
-        customPersonnelIds.includes(p.id) || customRoles.includes(p.role)
+        customPersonnelIds.includes(p.id) || 
+        customRoles.includes(p.role) ||
+        workerGroupPersonnelIds.has(p.id)
       );
     }
     return personnel;
-  }, [personnel, personnelFilter, customPersonnelIds, customRoles]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles, workerGroupPersonnelIds]);
 
   // Calculate certificate metrics
   const metrics = useMemo(() => {
@@ -94,14 +111,14 @@ export function ComplianceSnapshot({
     }
   };
 
-  const handleApplyCustomFilter = (personnelIds: string[], roles: string[]) => {
-    onCustomFilterChange?.(personnelIds, roles);
-    if (personnelIds.length === 0 && roles.length === 0) {
+  const handleApplyCustomFilter = (personnelIds: string[], roles: string[], workerGroupIds: string[]) => {
+    onCustomFilterChange?.(personnelIds, roles, workerGroupIds);
+    if (personnelIds.length === 0 && roles.length === 0 && workerGroupIds.length === 0) {
       onPersonnelFilterChange('employees');
     }
   };
 
-  const customSelectionCount = customPersonnelIds.length + customRoles.length;
+  const customSelectionCount = customPersonnelIds.length + customRoles.length + customWorkerGroupIds.length;
 
   return (
     <>
@@ -191,6 +208,7 @@ export function ComplianceSnapshot({
         personnel={personnel}
         selectedPersonnelIds={customPersonnelIds}
         selectedRoles={customRoles}
+        selectedWorkerGroupIds={customWorkerGroupIds}
         onApply={handleApplyCustomFilter}
       />
     </>

@@ -3,12 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, Briefcase } from 'lucide-react';
+import { Search, Users, Briefcase, FolderOpen } from 'lucide-react';
 import { Personnel } from '@/types';
+import { useWorkerGroups, useWorkerGroupMemberCounts } from '@/hooks/useWorkerGroups';
 
 interface CustomPersonnelFilterDialogProps {
   open: boolean;
@@ -16,7 +16,8 @@ interface CustomPersonnelFilterDialogProps {
   personnel: Personnel[];
   selectedPersonnelIds: string[];
   selectedRoles: string[];
-  onApply: (personnelIds: string[], roles: string[]) => void;
+  selectedWorkerGroupIds: string[];
+  onApply: (personnelIds: string[], roles: string[], workerGroupIds: string[]) => void;
 }
 
 export function CustomPersonnelFilterDialog({
@@ -25,12 +26,23 @@ export function CustomPersonnelFilterDialog({
   personnel,
   selectedPersonnelIds,
   selectedRoles,
+  selectedWorkerGroupIds,
   onApply,
 }: CustomPersonnelFilterDialogProps) {
   const [localPersonnelIds, setLocalPersonnelIds] = useState<string[]>(selectedPersonnelIds);
   const [localRoles, setLocalRoles] = useState<string[]>(selectedRoles);
+  const [localWorkerGroupIds, setLocalWorkerGroupIds] = useState<string[]>(selectedWorkerGroupIds);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'individuals' | 'roles'>('individuals');
+  const [activeTab, setActiveTab] = useState<'individuals' | 'roles' | 'groups'>('individuals');
+
+  const { data: workerGroups = [] } = useWorkerGroups();
+  const { data: memberCounts = [] } = useWorkerGroupMemberCounts();
+
+  const memberCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    memberCounts.forEach(mc => map.set(mc.worker_group_id, mc.count));
+    return map;
+  }, [memberCounts]);
 
   // Get unique roles from personnel
   const uniqueRoles = useMemo(() => {
@@ -65,23 +77,33 @@ export function CustomPersonnelFilterDialog({
     );
   };
 
+  const handleGroupToggle = (groupId: string) => {
+    setLocalWorkerGroupIds(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
   const handleApply = () => {
-    onApply(localPersonnelIds, localRoles);
+    onApply(localPersonnelIds, localRoles, localWorkerGroupIds);
     onOpenChange(false);
   };
 
   const handleClear = () => {
     setLocalPersonnelIds([]);
     setLocalRoles([]);
+    setLocalWorkerGroupIds([]);
   };
 
-  const totalSelected = localPersonnelIds.length + localRoles.length;
+  const totalSelected = localPersonnelIds.length + localRoles.length + localWorkerGroupIds.length;
 
   // Reset local state when dialog opens
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
       setLocalPersonnelIds(selectedPersonnelIds);
       setLocalRoles(selectedRoles);
+      setLocalWorkerGroupIds(selectedWorkerGroupIds);
       setSearchQuery('');
     }
     onOpenChange(newOpen);
@@ -101,8 +123,8 @@ export function CustomPersonnelFilterDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'individuals' | 'roles')}>
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'individuals' | 'roles' | 'groups')}>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="individuals" className="gap-2">
               <Users className="h-4 w-4" />
               Individuals
@@ -118,6 +140,15 @@ export function CustomPersonnelFilterDialog({
               {localRoles.length > 0 && (
                 <Badge variant="outline" className="ml-1 h-5 px-1.5">
                   {localRoles.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Groups
+              {localWorkerGroupIds.length > 0 && (
+                <Badge variant="outline" className="ml-1 h-5 px-1.5">
+                  {localWorkerGroupIds.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -192,6 +223,39 @@ export function CustomPersonnelFilterDialog({
                 {uniqueRoles.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">
                     No roles found
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="groups" className="mt-4">
+            <ScrollArea className="h-[320px] pr-4">
+              <div className="space-y-2">
+                {workerGroups.map((group) => {
+                  const count = memberCountMap.get(group.id) || 0;
+                  return (
+                    <div
+                      key={group.id}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleGroupToggle(group.id)}
+                    >
+                      <Checkbox
+                        checked={localWorkerGroupIds.includes(group.id)}
+                        onCheckedChange={() => handleGroupToggle(group.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{group.name}</p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {count} {count === 1 ? 'member' : 'members'}
+                      </Badge>
+                    </div>
+                  );
+                })}
+                {workerGroups.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No worker groups defined
                   </p>
                 )}
               </div>
