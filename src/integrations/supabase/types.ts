@@ -1072,6 +1072,39 @@ export type Database = {
           },
         ]
       }
+      personnel_worker_groups: {
+        Row: {
+          created_at: string
+          personnel_id: string
+          worker_group_id: string
+        }
+        Insert: {
+          created_at?: string
+          personnel_id: string
+          worker_group_id: string
+        }
+        Update: {
+          created_at?: string
+          personnel_id?: string
+          worker_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnel_worker_groups_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personnel_worker_groups_worker_group_id_fkey"
+            columns: ["worker_group_id"]
+            isOneToOne: false
+            referencedRelation: "worker_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           business_id: string | null
@@ -1566,6 +1599,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "worker_categories_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worker_groups: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_groups_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
