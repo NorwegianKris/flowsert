@@ -1,34 +1,15 @@
 
 
-## Fix: Project page scrolls to bottom on entry
+## Make Industry Tags 1.5x Larger
 
-### Root Cause
+A simple styling update to the "Offshore | Subsea | Industry | Construction" text on the front page.
 
-The `ProjectChat` component (line 88) calls `messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })` whenever messages load. This fires right after navigating to a project, and because `scrollIntoView` operates on the entire page (not just the chat container), it scrolls the whole page down to the chat section at the bottom.
+### Change
 
-The existing `window.scrollTo({ top: 0 })` in `AdminDashboard.tsx` (line 79) fires first, but then the chat's `scrollIntoView` fires slightly later (after messages load), overriding it.
+In `src/pages/Auth.tsx`, increase the font size from `text-lg` (18px) to `text-[1.7rem]` (~27px, which is 1.5x larger) in both the mobile grid and desktop row variants:
 
-### Fix
+- **Line 547** (mobile 2x2 grid): Change `text-lg` to `text-[1.7rem]`
+- **Line 554** (desktop horizontal row): Change `text-lg` to `text-[1.7rem]`
 
-Change the `scrollIntoView` in `ProjectChat.tsx` to only scroll within its own container, not the whole page. This is done by using `block: 'nearest'` combined with ensuring the chat messages area has its own scroll container (overflow-y), or by directly setting `scrollTop` on the chat container element instead of using `scrollIntoView`.
+No other files or logic changes needed.
 
-**File: `src/components/ProjectChat.tsx` (line 88)**
-
-Replace:
-```typescript
-messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-```
-
-With:
-```typescript
-const container = messagesEndRef.current?.parentElement;
-if (container) {
-  container.scrollTop = container.scrollHeight;
-}
-```
-
-This scrolls the chat's own scroll container to the bottom without affecting the page scroll position. The chat area already has a fixed-height scroll container, so this will work correctly.
-
-### No other changes needed
-
-The `window.scrollTo` in `AdminDashboard.tsx` (line 79) will now work as intended since nothing will override it.
