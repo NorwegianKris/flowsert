@@ -85,7 +85,10 @@ export function ProjectChat({ projectId, projectName, isAssigned = true }: Proje
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesEndRef.current?.parentElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async () => {
