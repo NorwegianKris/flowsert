@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
 import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
+import { WorkerGroupsManager } from '@/components/WorkerGroupsManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
 import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
@@ -21,11 +22,11 @@ export function CategoriesSection() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="roles" className="w-full">
+        <Tabs defaultValue="workers" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="roles" className="flex items-center gap-2">
+            <TabsTrigger value="workers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Roles
+              Workers
             </TabsTrigger>
             <TabsTrigger value="departments" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
@@ -41,13 +42,37 @@ export function CategoriesSection() {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="roles">
-            <div className="space-y-2 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Define job role categories for personnel. These will appear as options when adding new workers.
-              </p>
-            </div>
-            <WorkerCategoriesManager />
+          <TabsContent value="workers">
+            <Tabs defaultValue="roles" className="w-full">
+              <div className="flex items-center gap-4 mb-4">
+                <TabsList>
+                  <TabsTrigger value="roles">Roles</TabsTrigger>
+                  <TabsTrigger value="worker-groups">Worker Groups</TabsTrigger>
+                </TabsList>
+                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <span>💡</span>
+                  Roles define job categories; Worker Groups organize personnel into custom teams.
+                </span>
+              </div>
+              
+              <TabsContent value="roles">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Define job role categories for personnel. These will appear as options when adding new workers.
+                  </p>
+                </div>
+                <WorkerCategoriesManager />
+              </TabsContent>
+              
+              <TabsContent value="worker-groups">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Organize personnel into custom groups for filtering and team management.
+                  </p>
+                </div>
+                <WorkerGroupsManager />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           
           <TabsContent value="departments">

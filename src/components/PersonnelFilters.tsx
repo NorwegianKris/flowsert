@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Briefcase, Globe } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Briefcase, Globe, Users } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
@@ -13,6 +13,11 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export type PersonnelSortOption = 'recent' | 'alphabetical';
 export type CertificateFilterMode = 'types' | 'categories' | 'issuers';
+
+interface WorkerGroupForFilter {
+  id: string;
+  name: string;
+}
 
 interface PersonnelFiltersProps {
   roleFilters: string[];
@@ -34,6 +39,12 @@ interface PersonnelFiltersProps {
   certificateFilterMode?: CertificateFilterMode;
   onCertificateFilterModeChange?: (mode: CertificateFilterMode) => void;
   resultCount?: number;
+  // Worker Groups filter props
+  workerGroups?: WorkerGroupForFilter[];
+  workerGroupFilters?: string[];
+  onWorkerGroupFiltersChange?: (values: string[]) => void;
+  includeUngrouped?: boolean;
+  onIncludeUngroupedChange?: (value: boolean) => void;
 }
 
 export function PersonnelFilters({
@@ -56,6 +67,11 @@ export function PersonnelFilters({
   certificateFilterMode = 'types',
   onCertificateFilterModeChange,
   resultCount,
+  workerGroups,
+  workerGroupFilters = [],
+  onWorkerGroupFiltersChange,
+  includeUngrouped = false,
+  onIncludeUngroupedChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
@@ -66,6 +82,7 @@ export function PersonnelFilters({
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [workerGroupOpen, setWorkerGroupOpen] = useState(false);
 
   // Determine which list to show based on mode
   const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificateFilterMode === 'issuers' ? certificateIssuers : certificates;
@@ -80,7 +97,9 @@ export function PersonnelFilters({
     locationFilters.length > 0 || 
     certificateFilters.length > 0 ||
     departmentFilters.length > 0 ||
-    availabilityDateRange?.from !== undefined;
+    availabilityDateRange?.from !== undefined ||
+    workerGroupFilters.length > 0 ||
+    includeUngrouped;
 
   const clearAllFilters = () => {
     onRoleFiltersChange([]);
@@ -88,6 +107,8 @@ export function PersonnelFilters({
     onCertificateFiltersChange([]);
     onDepartmentFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
+    onWorkerGroupFiltersChange?.([]);
+    onIncludeUngroupedChange?.(false);
   };
 
   const toggleFilter = (
@@ -400,7 +421,72 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Sort Option */}
+      {/* Worker Groups Filter */}
+      {workerGroups !== undefined && onWorkerGroupFiltersChange && (
+        <Popover open={workerGroupOpen} onOpenChange={setWorkerGroupOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+              <Users className="mr-2 h-4 w-4" />
+              <span className="truncate">
+                {workerGroupFilters.length === 0 && !includeUngrouped
+                  ? 'Worker groups'
+                  : workerGroupFilters.length === 1 && !includeUngrouped
+                  ? workerGroups.find(g => g.id === workerGroupFilters[0])?.name || 'Worker groups'
+                  : `${workerGroupFilters.length + (includeUngrouped ? 1 : 0)} active`}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
+            <div className="space-y-1">
+              {workerGroups.length > 0 ? (
+                workerGroups.map((group) => (
+                  <label
+                    key={group.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={workerGroupFilters.includes(group.id)}
+                      onCheckedChange={() =>
+                        toggleFilter(group.id, workerGroupFilters, onWorkerGroupFiltersChange)
+                      }
+                    />
+                    <span className="text-sm">{group.name}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground px-2 py-1">No groups yet</p>
+              )}
+            </div>
+            {onIncludeUngroupedChange && (
+              <>
+                <div className="border-t my-2" />
+                <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                  <Checkbox
+                    checked={includeUngrouped}
+                    onCheckedChange={(checked) => onIncludeUngroupedChange(!!checked)}
+                  />
+                  <span className="text-sm">Include ungrouped</span>
+                </label>
+              </>
+            )}
+            {(workerGroupFilters.length > 0 || includeUngrouped) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => {
+                  onWorkerGroupFiltersChange([]);
+                  onIncludeUngroupedChange?.(false);
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+      )}
+
       <Popover open={sortOpen} onOpenChange={setSortOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-9 justify-between min-w-[140px]">
@@ -505,6 +591,34 @@ export function PersonnelFilters({
               </button>
             </Badge>
           ))}
+          {workerGroups && onWorkerGroupFiltersChange && workerGroupFilters.map((gid) => {
+            const group = workerGroups.find(g => g.id === gid);
+            if (!group) return null;
+            return (
+              <Badge key={gid} variant="secondary" className="text-xs">
+                <Users className="h-3 w-3 mr-1" />
+                {group.name}
+                <button
+                  className="ml-1 hover:text-destructive"
+                  onClick={() => toggleFilter(gid, workerGroupFilters, onWorkerGroupFiltersChange)}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            );
+          })}
+          {includeUngrouped && (
+            <Badge variant="secondary" className="text-xs">
+              <Users className="h-3 w-3 mr-1" />
+              Ungrouped
+              <button
+                className="ml-1 hover:text-destructive"
+                onClick={() => onIncludeUngroupedChange?.(false)}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
         </div>
       )}
 
