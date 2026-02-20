@@ -114,7 +114,7 @@ export default function About() {
       <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold font-rajdhani text-foreground mb-4">Ready to Get Started?</h2>
-          <p className="text-muted-foreground mb-6">Join thousands of businesses managing their certifications with FlowSert.</p>
+          <p className="text-muted-foreground mb-6">Join industrial businesses managing their certifications with FlowSert.</p>
           <Button onClick={() => navigate('/auth')} size="lg">
             Get Started
           </Button>
