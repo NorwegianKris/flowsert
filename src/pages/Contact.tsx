@@ -7,6 +7,7 @@ import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { PublicHeader } from '@/components/PublicHeader';
+import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,9 +48,17 @@ export default function Contact() {
     <div className="min-h-screen bg-background">
       <PublicHeader />
 
-      {/* Hero Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
+      {/* Hero Section - document pattern */}
+      <section className="py-16 md:py-24 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold font-rajdhani text-foreground mb-6">
               Contact Us
@@ -61,8 +70,8 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="py-8 pb-24">
+      {/* Contact Section - lavender */}
+      <section className="py-8 pb-24 bg-primary/5">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-3 gap-12">
