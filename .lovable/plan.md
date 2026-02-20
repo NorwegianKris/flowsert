@@ -1,26 +1,12 @@
 
+# Widen Certificates Filter Popover
 
-# Remove "Include Ungrouped" Option from Workers Filter
+## Problem
+The Certificates filter popover is set to `w-[280px]`, which is too narrow for the three-item toggle bar (Types, Categories, Issuers) with icons. The toggle extends beyond the frame.
 
-## What Changes
-Remove the "Include ungrouped" checkbox from the Groups view inside the Workers filter popover, along with its associated badge chip and all related props/state.
+## Fix
+**File: `src/components/PersonnelFilters.tsx`** (single change)
 
-## Technical Details
+- Line 349: Change the `PopoverContent` width from `w-[280px]` to `w-[320px]`
 
-**File: `src/components/PersonnelFilters.tsx`**
-- Remove `includeUngrouped` and `onIncludeUngroupedChange` from the props interface
-- Remove the "Include ungrouped" checkbox block (the separator + checkbox around lines 267-276)
-- Remove `includeUngrouped` from the `hasActiveFilters` check
-- Remove `onIncludeUngroupedChange?.(false)` from `clearAllFilters`
-- Remove `includeUngrouped` from the Clear button visibility condition in the Groups view (line 283) -- only check `workerGroupFilters.length > 0`
-- Remove `onIncludeUngroupedChange?.(false)` from the Clear button's onClick
-- Remove the "Ungrouped" badge chip in the active filters area (lines 618-627)
-
-**File: `src/pages/AdminDashboard.tsx`**
-- Remove the `includeUngrouped` state (`useState(false)`)
-- Remove `includeUngrouped` from the `usePersonnelGroupFilter` call (pass `false` directly or update the hook)
-- Remove `includeUngrouped` and `onIncludeUngroupedChange` props from the `PersonnelFilters` component usage
-- Remove `includeUngrouped` from the empty-state condition string (line 573)
-
-No changes to filter logic or other props -- the worker group filter continues to work with selected groups only.
-
+This gives the three toggle items enough room to display their icons and labels without overflow, while keeping the popover compact.
