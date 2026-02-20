@@ -514,7 +514,7 @@ export default function AdminDashboard() {
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
-              onIncludeFreelancersChange={setIncludeFreelancers}
+              includeFreelancers={includeFreelancers}
               onFilterByAI={setAiFilteredPersonnelIds}
             />
             

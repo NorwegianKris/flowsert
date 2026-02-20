@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Personnel } from '@/types';
@@ -20,7 +18,7 @@ interface AIPersonnelSuggestionsProps {
   }) => void;
   onHighlightPersonnel: (personnelIds: string[]) => void;
   onClearHighlight: () => void;
-  onIncludeFreelancersChange?: (value: boolean) => void;
+  includeFreelancers: boolean;
   onFilterByAI?: (personnelIds: string[] | null) => void;
 }
 
@@ -29,12 +27,11 @@ export function AIPersonnelSuggestions({
   onApplyFilters,
   onHighlightPersonnel,
   onClearHighlight,
-  onIncludeFreelancersChange,
+  includeFreelancers,
   onFilterByAI,
 }: AIPersonnelSuggestionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
-  const [includeFreelancers, setIncludeFreelancers] = useState(false);
   const [documentCounts, setDocumentCounts] = useState<Map<string, number>>(new Map());
   const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions } = useSuggestPersonnel();
 
@@ -76,15 +73,7 @@ export function AIPersonnelSuggestions({
         onFilterByAI(matchedIds);
       }
       
-      // Check if any suggested personnel are freelancers and sync the main toggle
-      const hasFreelancers = result.suggestedPersonnel.some(s => {
-        const person = personnel.find(p => p.id === s.id);
-        return person?.category === 'freelancer';
-      });
       
-      if (hasFreelancers && includeFreelancers && onIncludeFreelancersChange) {
-        onIncludeFreelancersChange(true);
-      }
       
       toast.success(`Found ${result.suggestedPersonnel.length} matching personnel`);
     } else if (result?.suggestedPersonnel?.length === 0) {
@@ -155,20 +144,10 @@ export function AIPersonnelSuggestions({
             rows={3}
             className="resize-y min-h-[80px]"
           />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="aiIncludeFreelancers"
-                checked={includeFreelancers}
-                onCheckedChange={setIncludeFreelancers}
-              />
-              <Label htmlFor="aiIncludeFreelancers" className="text-sm cursor-pointer">
-                Include freelancers
-              </Label>
-            </div>
+          <div className="flex justify-end">
             <Button
               type="button"
-              variant="secondary"
+              variant="default"
               size="sm"
               onClick={handleGetSuggestions}
               disabled={aiLoading || !aiPrompt.trim()}
