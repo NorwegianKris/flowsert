@@ -43,8 +43,6 @@ interface PersonnelFiltersProps {
   workerGroups?: WorkerGroupForFilter[];
   workerGroupFilters?: string[];
   onWorkerGroupFiltersChange?: (values: string[]) => void;
-  includeUngrouped?: boolean;
-  onIncludeUngroupedChange?: (value: boolean) => void;
 }
 
 export function PersonnelFilters({
@@ -70,8 +68,6 @@ export function PersonnelFilters({
   workerGroups,
   workerGroupFilters = [],
   onWorkerGroupFiltersChange,
-  includeUngrouped = false,
-  onIncludeUngroupedChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
@@ -97,8 +93,7 @@ export function PersonnelFilters({
     certificateFilters.length > 0 ||
     departmentFilters.length > 0 ||
     availabilityDateRange?.from !== undefined ||
-    workerGroupFilters.length > 0 ||
-    includeUngrouped;
+    workerGroupFilters.length > 0;
 
   const clearAllFilters = () => {
     onRoleFiltersChange([]);
@@ -107,7 +102,6 @@ export function PersonnelFilters({
     onDepartmentFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
     onWorkerGroupFiltersChange?.([]);
-    onIncludeUngroupedChange?.(false);
   };
 
   const toggleFilter = (
@@ -264,23 +258,11 @@ export function PersonnelFilters({
                 ) : (
                   <p className="text-sm text-muted-foreground px-2 py-1">No groups yet</p>
                 )}
-                {onIncludeUngroupedChange && (
-                  <>
-                    <div className="border-t my-2" />
-                    <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
-                      <Checkbox
-                        checked={includeUngrouped}
-                        onCheckedChange={(checked) => onIncludeUngroupedChange(!!checked)}
-                      />
-                      <span className="text-sm">Include ungrouped</span>
-                    </label>
-                  </>
-                )}
               </div>
             )}
           </div>
           {/* Clear button for active view */}
-          {(workersFilterView === 'roles' ? roleFilters.length > 0 : (workerGroupFilters.length > 0 || includeUngrouped)) && (
+          {(workersFilterView === 'roles' ? roleFilters.length > 0 : workerGroupFilters.length > 0) && (
             <div className="p-2 border-t">
               <Button
                 variant="ghost"
@@ -291,7 +273,6 @@ export function PersonnelFilters({
                     onRoleFiltersChange([]);
                   } else {
                     onWorkerGroupFiltersChange?.([]);
-                    onIncludeUngroupedChange?.(false);
                   }
                 }}
               >
@@ -615,18 +596,6 @@ export function PersonnelFilters({
               </Badge>
             );
           })}
-          {includeUngrouped && (
-            <Badge variant="secondary" className="text-xs">
-              <Users className="h-3 w-3 mr-1" />
-              Ungrouped
-              <button
-                className="ml-1 hover:text-destructive"
-                onClick={() => onIncludeUngroupedChange?.(false)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
         </div>
       )}
 

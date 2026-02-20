@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
   const [workerGroupFilters, setWorkerGroupFilters] = useState<string[]>([]);
-  const [includeUngrouped, setIncludeUngrouped] = useState(false);
+  
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
   const { data: workerGroups = [] } = useWorkerGroups();
   
   const allPersonnelIds = useMemo(() => personnel.map(p => p.id), [personnel]);
-  const { personnelIdFilter: groupFilter } = usePersonnelGroupFilter(workerGroupFilters, includeUngrouped, allPersonnelIds);
+  const { personnelIdFilter: groupFilter } = usePersonnelGroupFilter(workerGroupFilters, false, allPersonnelIds);
   
   const loading = personnelLoading || projectsLoading;
 
@@ -541,8 +541,6 @@ export default function AdminDashboard() {
               workerGroups={workerGroups}
               workerGroupFilters={workerGroupFilters}
               onWorkerGroupFiltersChange={setWorkerGroupFilters}
-              includeUngrouped={includeUngrouped}
-              onIncludeUngroupedChange={setIncludeUngrouped}
             />
             
             {loading ? (
@@ -570,7 +568,7 @@ export default function AdminDashboard() {
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">👤</div>
                     <p className="text-muted-foreground">
-                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from || workerGroupFilters.length > 0 || includeUngrouped
+                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from || workerGroupFilters.length > 0
                         ? 'No personnel found matching your filters'
                         : 'No personnel yet. Add your first team member to get started.'}
                     </p>
