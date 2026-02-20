@@ -75,14 +75,13 @@ export function PersonnelFilters({
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
-  const [roleOpen, setRoleOpen] = useState(false);
+  const [workersOpen, setWorkersOpen] = useState(false);
+  const [workersFilterView, setWorkersFilterView] = useState<'roles' | 'groups'>('roles');
   const [locationOpen, setLocationOpen] = useState(false);
-  
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const [workerGroupOpen, setWorkerGroupOpen] = useState(false);
 
   // Determine which list to show based on mode
   const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificateFilterMode === 'issuers' ? certificateIssuers : certificates;
@@ -181,50 +180,124 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Job Role Filter */}
-      <Popover open={roleOpen} onOpenChange={setRoleOpen}>
+      {/* Workers Filter (Roles + Groups) */}
+      <Popover open={workersOpen} onOpenChange={setWorkersOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-9 justify-between min-w-[160px]">
-            <Briefcase className="mr-2 h-4 w-4" />
+            <Users className="mr-2 h-4 w-4" />
             <span className="truncate">
-              {roleFilters.length === 0
-                ? 'Job Role'
-                : roleFilters.length === 1
-                ? roleFilters[0]
-                : `${roleFilters.length} roles`}
+              {(() => {
+                const count = roleFilters.length + workerGroupFilters.length;
+                return count === 0 ? 'Workers' : `${count} selected`;
+              })()}
             </span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-2 bg-popover border shadow-md z-50" align="start">
-          <div className="space-y-1">
-            {workerCategories.map((category) => (
-              <label
-                key={category.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+        <PopoverContent className="w-[260px] p-0 bg-popover border shadow-md z-50" align="start">
+          {/* Toggle between Roles and Groups */}
+          <div className="p-2 border-b">
+            <ToggleGroup
+              type="single"
+              value={workersFilterView}
+              onValueChange={(value) => {
+                if (value) setWorkersFilterView(value as 'roles' | 'groups');
+              }}
+              className="w-full"
+            >
+              <ToggleGroupItem
+                value="roles"
+                className="flex-1 gap-1.5 text-xs"
+                aria-label="Filter by roles"
               >
-                <Checkbox
-                  checked={roleFilters.includes(category.name)}
-                  onCheckedChange={() =>
-                    toggleFilter(category.name, roleFilters, onRoleFiltersChange)
-                  }
-                />
-                <span className="text-sm">{category.name}</span>
-              </label>
-            ))}
-            {workerCategories.length === 0 && (
-              <p className="text-sm text-muted-foreground px-2 py-1">No roles defined</p>
+                <Briefcase className="h-3.5 w-3.5" />
+                Roles
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="groups"
+                className="flex-1 gap-1.5 text-xs"
+                aria-label="Filter by groups"
+              >
+                <Users className="h-3.5 w-3.5" />
+                Groups
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <div className="p-2 max-h-[250px] overflow-y-auto">
+            {workersFilterView === 'roles' ? (
+              <div className="space-y-1">
+                {workerCategories.map((category) => (
+                  <label
+                    key={category.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={roleFilters.includes(category.name)}
+                      onCheckedChange={() =>
+                        toggleFilter(category.name, roleFilters, onRoleFiltersChange)
+                      }
+                    />
+                    <span className="text-sm">{category.name}</span>
+                  </label>
+                ))}
+                {workerCategories.length === 0 && (
+                  <p className="text-sm text-muted-foreground px-2 py-1">No roles defined</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {workerGroups && workerGroups.length > 0 ? (
+                  workerGroups.map((group) => (
+                    <label
+                      key={group.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={workerGroupFilters.includes(group.id)}
+                        onCheckedChange={() =>
+                          onWorkerGroupFiltersChange && toggleFilter(group.id, workerGroupFilters, onWorkerGroupFiltersChange)
+                        }
+                      />
+                      <span className="text-sm">{group.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground px-2 py-1">No groups yet</p>
+                )}
+                {onIncludeUngroupedChange && (
+                  <>
+                    <div className="border-t my-2" />
+                    <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                      <Checkbox
+                        checked={includeUngrouped}
+                        onCheckedChange={(checked) => onIncludeUngroupedChange(!!checked)}
+                      />
+                      <span className="text-sm">Include ungrouped</span>
+                    </label>
+                  </>
+                )}
+              </div>
             )}
           </div>
-          {roleFilters.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => onRoleFiltersChange([])}
-            >
-              Clear
-            </Button>
+          {/* Clear button for active view */}
+          {(workersFilterView === 'roles' ? roleFilters.length > 0 : (workerGroupFilters.length > 0 || includeUngrouped)) && (
+            <div className="p-2 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  if (workersFilterView === 'roles') {
+                    onRoleFiltersChange([]);
+                  } else {
+                    onWorkerGroupFiltersChange?.([]);
+                    onIncludeUngroupedChange?.(false);
+                  }
+                }}
+              >
+                Clear
+              </Button>
+            </div>
           )}
         </PopoverContent>
       </Popover>
@@ -421,71 +494,6 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Worker Groups Filter */}
-      {workerGroups !== undefined && onWorkerGroupFiltersChange && (
-        <Popover open={workerGroupOpen} onOpenChange={setWorkerGroupOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="h-9 justify-between min-w-[160px]">
-              <Users className="mr-2 h-4 w-4" />
-              <span className="truncate">
-                {workerGroupFilters.length === 0 && !includeUngrouped
-                  ? 'Worker groups'
-                  : workerGroupFilters.length === 1 && !includeUngrouped
-                  ? workerGroups.find(g => g.id === workerGroupFilters[0])?.name || 'Worker groups'
-                  : `${workerGroupFilters.length + (includeUngrouped ? 1 : 0)} active`}
-              </span>
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
-            <div className="space-y-1">
-              {workerGroups.length > 0 ? (
-                workerGroups.map((group) => (
-                  <label
-                    key={group.id}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={workerGroupFilters.includes(group.id)}
-                      onCheckedChange={() =>
-                        toggleFilter(group.id, workerGroupFilters, onWorkerGroupFiltersChange)
-                      }
-                    />
-                    <span className="text-sm">{group.name}</span>
-                  </label>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground px-2 py-1">No groups yet</p>
-              )}
-            </div>
-            {onIncludeUngroupedChange && (
-              <>
-                <div className="border-t my-2" />
-                <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
-                  <Checkbox
-                    checked={includeUngrouped}
-                    onCheckedChange={(checked) => onIncludeUngroupedChange(!!checked)}
-                  />
-                  <span className="text-sm">Include ungrouped</span>
-                </label>
-              </>
-            )}
-            {(workerGroupFilters.length > 0 || includeUngrouped) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full mt-2"
-                onClick={() => {
-                  onWorkerGroupFiltersChange([]);
-                  onIncludeUngroupedChange?.(false);
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </PopoverContent>
-        </Popover>
-      )}
 
       <Popover open={sortOpen} onOpenChange={setSortOpen}>
         <PopoverTrigger asChild>
