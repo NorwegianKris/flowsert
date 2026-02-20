@@ -1,25 +1,26 @@
 
 
-# Match Filter Toggle Bars to Settings Category Tab Styling
+# Remove "Include Ungrouped" Option from Workers Filter
 
 ## What Changes
-The toggle bars inside the Workers and Certificates filter popovers currently use the default muted/grey ToggleGroup styling. They will be updated to match the indigo/purple color scheme used by the TabsList in the Settings Categories section -- a purple background bar with white text, where the active item gets a white background with purple text.
+Remove the "Include ungrouped" checkbox from the Groups view inside the Workers filter popover, along with its associated badge chip and all related props/state.
 
 ## Technical Details
 
-**File: `src/components/PersonnelFilters.tsx`** (only file changed)
+**File: `src/components/PersonnelFilters.tsx`**
+- Remove `includeUngrouped` and `onIncludeUngroupedChange` from the props interface
+- Remove the "Include ungrouped" checkbox block (the separator + checkbox around lines 267-276)
+- Remove `includeUngrouped` from the `hasActiveFilters` check
+- Remove `onIncludeUngroupedChange?.(false)` from `clearAllFilters`
+- Remove `includeUngrouped` from the Clear button visibility condition in the Groups view (line 283) -- only check `workerGroupFilters.length > 0`
+- Remove `onIncludeUngroupedChange?.(false)` from the Clear button's onClick
+- Remove the "Ungrouped" badge chip in the active filters area (lines 618-627)
 
-Apply custom classes to both ToggleGroup bars to replicate the TabsList color scheme:
+**File: `src/pages/AdminDashboard.tsx`**
+- Remove the `includeUngrouped` state (`useState(false)`)
+- Remove `includeUngrouped` from the `usePersonnelGroupFilter` call (pass `false` directly or update the hook)
+- Remove `includeUngrouped` and `onIncludeUngroupedChange` props from the `PersonnelFilters` component usage
+- Remove `includeUngrouped` from the empty-state condition string (line 573)
 
-1. **Workers filter ToggleGroup** (around line 200): Add `bg-primary p-1 rounded-md` to the `ToggleGroup` className, and add `data-[state=on]:bg-primary-foreground data-[state=on]:text-primary text-primary-foreground` to each `ToggleGroupItem` className (replacing the default toggle active state).
-
-2. **Certificates filter ToggleGroup** (around line 372): Apply the same classes.
-
-This means:
-- The toggle bar background becomes indigo (`bg-primary`)
-- Inactive items show white text on indigo (`text-primary-foreground`)
-- The active/selected item shows indigo text on white background (`data-[state=on]:bg-primary-foreground data-[state=on]:text-primary`)
-- Matches the exact same visual pattern as the Categories section's `TabsList` / `TabsTrigger` in Settings
-
-No changes to props, logic, or other files.
+No changes to filter logic or other props -- the worker group filter continues to work with selected groups only.
 
