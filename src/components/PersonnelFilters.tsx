@@ -346,7 +346,7 @@ export function PersonnelFilters({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[280px] p-0 bg-popover border shadow-md z-50" align="start">
+        <PopoverContent className="w-[320px] p-0 bg-popover border shadow-md z-50" align="start">
           {/* Toggle between Categories and Types */}
           {onCertificateFilterModeChange && (certificateCategories.length > 0 || certificateIssuers.length > 0) && (
             <div className="p-2 border-b">
