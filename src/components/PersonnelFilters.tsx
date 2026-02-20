@@ -203,11 +203,11 @@ export function PersonnelFilters({
               onValueChange={(value) => {
                 if (value) setWorkersFilterView(value as 'roles' | 'groups');
               }}
-              className="w-full"
+              className="w-full bg-primary p-1 rounded-md"
             >
               <ToggleGroupItem
                 value="roles"
-                className="flex-1 gap-1.5 text-xs"
+                className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                 aria-label="Filter by roles"
               >
                 <Briefcase className="h-3.5 w-3.5" />
@@ -215,7 +215,7 @@ export function PersonnelFilters({
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="groups"
-                className="flex-1 gap-1.5 text-xs"
+                className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                 aria-label="Filter by groups"
               >
                 <Users className="h-3.5 w-3.5" />
@@ -379,11 +379,11 @@ export function PersonnelFilters({
                     onCertificateFilterModeChange(value as CertificateFilterMode);
                   }
                 }}
-                className="w-full"
+                className="w-full bg-primary p-1 rounded-md"
               >
                 <ToggleGroupItem
                   value="types"
-                  className="flex-1 gap-1.5 text-xs"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by types"
                 >
                   <Tag className="h-3.5 w-3.5" />
@@ -391,7 +391,7 @@ export function PersonnelFilters({
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="categories"
-                  className="flex-1 gap-1.5 text-xs"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by categories"
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
@@ -399,7 +399,7 @@ export function PersonnelFilters({
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="issuers"
-                  className="flex-1 gap-1.5 text-xs"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by issuers"
                 >
                   <Building2 className="h-3.5 w-3.5" />
