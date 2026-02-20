@@ -7,6 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 const faqs = [
   {
@@ -50,9 +51,17 @@ export default function FAQ() {
     <div className="min-h-screen bg-background">
       <PublicHeader />
 
-      {/* Hero Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
+      {/* Hero Section - document pattern */}
+      <section className="py-16 md:py-24 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold font-rajdhani text-foreground mb-6">
               Frequently Asked Questions
@@ -64,8 +73,8 @@ export default function FAQ() {
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-8 pb-24">
+      {/* FAQ Section - lavender */}
+      <section className="py-8 pb-24 bg-primary/5">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <Accordion type="single" collapsible className="space-y-4">
@@ -88,9 +97,17 @@ export default function FAQ() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-primary/5">
-        <div className="container mx-auto px-4 text-center">
+      {/* CTA Section - document pattern */}
+      <section className="py-16 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-2xl font-bold font-rajdhani text-foreground mb-4">Still have questions?</h2>
           <p className="text-muted-foreground mb-6">Our team is here to help you get started.</p>
           <div className="flex gap-4 justify-center">

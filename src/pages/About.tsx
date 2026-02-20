@@ -2,6 +2,7 @@ import { Shield, Users, Award, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/PublicHeader';
+import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 export default function About() {
   const navigate = useNavigate();
@@ -10,9 +11,17 @@ export default function About() {
     <div className="min-h-screen bg-background">
       <PublicHeader />
 
-      {/* Hero Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
+      {/* Hero Section - document pattern */}
+      <section className="py-16 md:py-24 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold font-rajdhani text-foreground mb-6">
               About FlowSert
@@ -25,8 +34,8 @@ export default function About() {
         </div>
       </section>
 
-      {/* Mission Section */}
-      <section className="py-16 bg-muted/30">
+      {/* Mission Section - lavender */}
+      <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -55,9 +64,17 @@ export default function About() {
         </div>
       </section>
 
-      {/* Values Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
+      {/* Values Section - document pattern */}
+      <section className="py-16 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage: `url(${heroBgPattern})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold font-rajdhani text-foreground mb-12 text-center">Our Values</h2>
             <div className="grid md:grid-cols-3 gap-8">
@@ -93,7 +110,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - lavender */}
       <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold font-rajdhani text-foreground mb-4">Ready to Get Started?</h2>
