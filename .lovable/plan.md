@@ -1,25 +1,35 @@
 
 
-# AI Personnel Search: Remove Duplicate Toggle and Style Button
+# Merge Job Role and Worker Groups into a Single "Workers" Filter
 
-## Changes
+## Overview
+Combine the "Job Role" and "Worker Groups" filter buttons into one unified "Workers" popover with an internal toggle to switch views -- following the same pattern as the existing Certificates filter (which toggles between Types, Categories, and Issuers).
 
-### 1. Remove the "Include freelancers" toggle from the AI search panel
-The freelancer inclusion toggle already exists in the main FreelancerFilters bar above the AI search. The duplicate toggle inside the AI search panel will be removed. Instead, the component will accept the current `includeFreelancers` value as a prop from the parent, so the AI search respects whatever the main toggle is set to.
+## How It Will Work
+- A single "Workers" button (Users icon) replaces both the "Job Role" and "Worker Groups" buttons
+- Inside the popover, a two-option toggle switches between **Roles** and **Groups** views
+- Switching views does NOT clear selections from the other view
+- The button label shows the combined count of role + group selections (ungrouped is NOT counted)
+- If "Include ungrouped" is active, a small "Ungrouped" badge chip appears in the active filter badges area (already exists today)
+- All props remain unchanged -- no changes to AdminDashboard or the component interface
 
-### 2. Style the "Find Personnel" button in brand purple
-Change the button from `variant="secondary"` (grey) to use the primary purple color (`bg-primary text-primary-foreground hover:bg-primary/90`), matching the brand color used in the main toggle bar.
+## Badge Count Logic
+- Count = `roleFilters.length + workerGroupFilters.length`
+- "Include ungrouped" is a mode flag, not counted in the badge number
+- It already renders its own separate "Ungrouped" badge chip in the active filters area
 
 ## Technical Details
 
-**File: `src/components/AIPersonnelSuggestions.tsx`**
-- Add `includeFreelancers` as a prop (boolean) instead of managing it internally
-- Remove the internal `includeFreelancers` state
-- Remove the Switch/Label for "Include freelancers" from the UI (lines 159-168)
-- Change the "Find Personnel" Button from `variant="secondary"` to `variant="default"` (which uses the primary purple)
-- Clean up unused imports (`Switch`, `Label`)
+**File: `src/components/PersonnelFilters.tsx`** (only file changed)
 
-**File: `src/pages/AdminDashboard.tsx`**
-- Pass `includeFreelancers={includeFreelancers}` as a prop to `AIPersonnelSuggestions`
-- Remove the `onIncludeFreelancersChange` prop (no longer needed)
+1. **Remove** the separate "Job Role" popover (lines 184-230) and the separate "Worker Groups" popover (lines 424-488)
+2. **Replace** `roleOpen` and `workerGroupOpen` state with a single `workersOpen` state
+3. **Add** local state: `workersFilterView` of type `'roles' | 'groups'`, defaulting to `'roles'`
+4. **Add** a new combined "Workers" popover in the same position, containing:
+   - A `ToggleGroup` (single mode) with two items: "Roles" (Briefcase icon) and "Groups" (Users icon) -- mirrors the certificate filter pattern
+   - When on "Roles": show the existing `workerCategories` checkbox list
+   - When on "Groups": show the existing `workerGroups` checkbox list + "Include ungrouped" toggle
+   - A "Clear" button at the bottom that clears only the active view's selections
+5. **Button label**: `Workers` when nothing selected, otherwise `{count} selected` where count = `roleFilters.length + workerGroupFilters.length`
+6. No changes to props, no changes to `hasActiveFilters`, `clearAllFilters`, or the active filter badges section -- they all continue to work as-is
 
