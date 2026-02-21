@@ -158,7 +158,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {selectedNotification ? (
@@ -238,7 +238,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg">
+                <ScrollArea className="flex-1 min-h-0 max-h-[30vh] border rounded-lg">
                   <div className="space-y-2 p-2">
                     {selectedNotification.recipients?.map((recipient) => (
                       <div
@@ -269,7 +269,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                       </div>
                     ))}
                   </div>
-                </div>
+                </ScrollArea>
               )}
             </div>
           </div>
@@ -280,7 +280,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
           </div>
         ) : (
           // List view
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 min-h-0 max-h-[55vh] -mx-6 px-6">
             <div className="space-y-3 pb-4">
               {notifications.map((notification) => (
                 <div

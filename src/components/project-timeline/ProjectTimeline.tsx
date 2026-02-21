@@ -9,6 +9,7 @@ import { Personnel } from '@/types';
 import { useProjectTimelineData, buildPersonnelTimelineData } from '@/hooks/useProjectTimelineData';
 import { TimelineHeader } from './TimelineHeader';
 import { MilestoneLane } from './MilestoneLane';
+import { EventsLane } from './EventsLane';
 import { PersonnelGroup } from './PersonnelGroup';
 import { PhaseLane } from './PhaseLane';
 import { LABEL_WIDTH, MIN_TIMELINE_WIDTH } from './types';
@@ -174,6 +175,14 @@ export function ProjectTimeline({
 
                 {/* Milestone lane */}
                 <MilestoneLane
+                  calendarItems={project.calendarItems || []}
+                  projectStart={project.startDate}
+                  projectEnd={project.endDate}
+                  totalWidth={totalWidth}
+                />
+
+                {/* Events lane */}
+                <EventsLane
                   calendarItems={project.calendarItems || []}
                   projectStart={project.startDate}
                   projectEnd={project.endDate}
