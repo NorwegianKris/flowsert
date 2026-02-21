@@ -1,66 +1,53 @@
 
 
-## Add Duration Count to Total Days Stats Card
+## Make "Posted" Badge Consistent Between Project Cards and Project Detail View
 
-**Risk: GREEN** -- purely UI layout change.
+**Risk: GREEN** -- purely UI styling change.
 
-### Change
+### Problem
 
-**File: `src/components/ProjectDetail.tsx`** (lines 276-288)
+When a project is posted, the project card in the dashboard correctly shows a purple "Posted" badge with a Megaphone icon. However, inside the project detail view, it ignores `isPosted` and always shows the status-based badge (e.g., "Active" in indigo), which is incorrect and confusing.
 
-Expand the Total Days card to match the personnel card style -- add a "Duration" column next to "Total Days" showing the same `duration` value with the label "Duration". The card will use `gap-6` and two centered columns after the icon.
+### Fix
 
-### Technical Detail
+**File: `src/components/ProjectDetail.tsx`** (lines 211-214)
 
-Replace lines 276-288:
+Update the badge rendering to check `project.isPosted` first. If the project is posted, show the same purple Megaphone "Posted" badge used on project cards. Otherwise, fall back to the normal status badge.
 
+Replace:
 ```tsx
-<Card className="border-border/50">
-  <CardContent className="p-4 flex items-center gap-6">
-    <div className="p-2 rounded-lg bg-sky-500/10">
-      <Calendar className="h-5 w-5 text-sky-500" />
-    </div>
-    <div className="text-center">
-      <p className="text-2xl font-bold text-foreground">
-        {duration || '—'}
-      </p>
-      <p className="text-xs text-muted-foreground">Total Days</p>
-    </div>
-    <div className="text-center">
-      <p className="text-2xl font-bold text-foreground">
-        {duration || '—'}
-      </p>
-      <p className="text-xs text-muted-foreground">Duration</p>
-    </div>
-  </CardContent>
-</Card>
+<Badge variant={config.variant} className="text-sm">
+  <StatusIcon className="h-3 w-3 mr-1" />
+  {config.label}
+</Badge>
 ```
 
-Wait -- "Total Days" and "Duration" would show the same number. Let me reconsider: the user likely wants the existing single-column card to gain a second column showing the duration (start-to-end day count) beside the current "Total Days" label. Since `duration` already IS the start-to-end count, perhaps the intent is to keep "Total Days" as-is and add a human-friendly duration string (e.g. weeks/months)?
-
-More likely: the user simply wants the card restyled to the same multi-column look as the personnel card, with the icon on the left and a single "Duration" metric. I'll rename "Total Days" to "Duration" and keep the same layout style (`gap-6`, centered text) for visual consistency with the personnel card.
-
+With:
 ```tsx
-<Card className="border-border/50">
-  <CardContent className="p-4 flex items-center gap-6">
-    <div className="p-2 rounded-lg bg-sky-500/10">
-      <Calendar className="h-5 w-5 text-sky-500" />
-    </div>
-    <div className="text-center">
-      <p className="text-2xl font-bold text-foreground">
-        {duration || '—'}
-      </p>
-      <p className="text-xs text-muted-foreground">Total Days</p>
-    </div>
-    <div className="text-center">
-      <p className="text-2xl font-bold text-foreground">
-        {duration ? `${Math.floor(duration / 7)}w ${duration % 7}d` : '—'}
-      </p>
-      <p className="text-xs text-muted-foreground">Duration</p>
-    </div>
-  </CardContent>
-</Card>
+{project.isPosted ? (
+  <Badge className="text-sm bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
+    <Megaphone className="h-3 w-3 mr-1" />
+    Posted
+  </Badge>
+) : (
+  <Badge variant={config.variant} className="text-sm">
+    <StatusIcon className="h-3 w-3 mr-1" />
+    {config.label}
+  </Badge>
+)}
 ```
 
-This adds a second column "Duration" showing the same total in weeks + days format (e.g. "26w 1d") for a more meaningful breakdown alongside "Total Days" (the raw number). Both use `text-2xl font-bold` and `text-xs` label, matching the personnel card style.
+Also update the icon fallback area (line 200-202) to use a purple theme when posted:
+
+```tsx
+<div className={`p-4 rounded-xl ${project.isPosted ? 'bg-[#C4B5FD]/10' : `${config.color}/10`}`}>
+  {project.isPosted ? (
+    <Megaphone className="h-12 w-12 text-[#C4B5FD]" />
+  ) : (
+    <StatusIcon className={`h-12 w-12 ...`} />
+  )}
+</div>
+```
+
+`Megaphone` is already imported in the file. Single file, two small changes.
 
