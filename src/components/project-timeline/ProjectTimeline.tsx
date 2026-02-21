@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useRef, useState, useEffect } from 'react';
-import { parseISO, isWithinInterval, differenceInDays } from 'date-fns';
+import { parseISO, isWithinInterval, subDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Project } from '@/hooks/useProjects';
 import { ProjectPhase } from '@/hooks/useProjectPhases';
@@ -12,7 +12,7 @@ import { MilestoneLane } from './MilestoneLane';
 import { EventsLane } from './EventsLane';
 import { PersonnelGroup } from './PersonnelGroup';
 import { PhaseLane } from './PhaseLane';
-import { LABEL_WIDTH, MIN_TIMELINE_WIDTH } from './types';
+import { LABEL_WIDTH } from './types';
 import { dateToX } from './utils';
 import { Clock, AlertTriangle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,7 @@ export function ProjectTimeline({
   }, []);
 
   // Timeline content width = container minus the label column, at least MIN_TIMELINE_WIDTH
-  const totalWidth = Math.max(MIN_TIMELINE_WIDTH, containerWidth - LABEL_WIDTH);
+  const totalWidth = Math.max(100, containerWidth - LABEL_WIDTH);
 
   const today = new Date();
   const hasEndDate = !!project.endDate;
@@ -87,6 +87,7 @@ export function ProjectTimeline({
   const end = hasEndDate ? parseISO(project.endDate!) : start;
   const showToday = hasEndDate && isWithinInterval(today, { start, end });
   const todayX = showToday ? dateToX(today, start, end, totalWidth) : null;
+  const endLineX = hasEndDate ? dateToX(subDays(end, 1), start, end, totalWidth) : null;
 
   const handleScrollToCertificates = useCallback(() => {
     const el = document.querySelector('[data-certificate-status]');
@@ -148,7 +149,7 @@ export function ProjectTimeline({
       <CardContent className="p-0">
         <TooltipProvider delayDuration={200}>
           <ScrollArea className="w-full" ref={containerRef}>
-            <div style={{ minWidth: totalWidth + LABEL_WIDTH }}>
+            <div>
               {/* Time axis header */}
               <div className="flex">
                 <div className="w-[160px] flex-shrink-0 border-r border-border/30 border-b border-border/50" />
@@ -168,10 +169,12 @@ export function ProjectTimeline({
                   />
                 )}
                 {/* End line */}
-                <div
-                  className="absolute top-0 bottom-0 w-px bg-destructive/40 z-20 pointer-events-none"
-                  style={{ left: LABEL_WIDTH + totalWidth - 2 }}
-                />
+                {endLineX !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-destructive/40 z-20 pointer-events-none"
+                    style={{ left: LABEL_WIDTH + endLineX }}
+                  />
+                )}
 
                 {/* Milestone lane */}
                 <MilestoneLane
@@ -220,7 +223,7 @@ export function ProjectTimeline({
                 )}
               </div>
             </div>
-            <ScrollBar orientation="horizontal" />
+            
           </ScrollArea>
         </TooltipProvider>
       </CardContent>

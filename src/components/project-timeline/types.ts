@@ -23,4 +23,4 @@ export interface PersonnelTimelineData {
 
 export const LANE_HEIGHT = 28;
 export const LABEL_WIDTH = 160;
-export const MIN_TIMELINE_WIDTH = 600;
+export const MIN_TIMELINE_WIDTH = 0;
