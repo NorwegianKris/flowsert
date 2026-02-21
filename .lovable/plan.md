@@ -1,50 +1,53 @@
 
 
-## Bug Fixes: 4 Items
+## Bug Fixes: 2 Items
 
-All changes are 🟢 UI-only (Q5) -- no schema, RLS, edge functions, or auth changes.
-
----
-
-### 1. "Clear Search" button for AI Personnel Search
-
-**File:** `src/components/AIPersonnelSuggestions.tsx`
-
-The "Clear" button currently only shows when there are results (`suggestedCount > 0`). It needs to also appear when a search has been performed but returned zero results, or when the AI filter is active.
-
-- Show the "Clear Search" button whenever `suggestions` is not null (i.e., a search has been performed) OR `aiPrompt` is not empty
-- Rename label to "Clear Search" for clarity
-- The existing `handleClear` already resets prompt, clears suggestions, clears highlight, and calls `onFilterByAI(null)` -- no logic changes needed
+All changes are UI-only (no schema, RLS, edge functions, or auth changes).
 
 ---
 
-### 2. "Get Started" button on About page navigates to Contact
-
-**File:** `src/pages/About.tsx` (line 118)
-
-Currently: `onClick={() => navigate('/auth')}` -- goes to login.
-Fix: Change to `onClick={() => navigate('/contact')}` to go to the Contact page.
-
----
-
-### 3. Separate Events lane in Project Timeline
-
-**Files:**
-- **NEW** `src/components/project-timeline/EventsLane.tsx` -- new component for non-milestone calendar items (events), styled with a distinct color (e.g., blue/primary tint), placed between Milestones and Phases
-- **MODIFY** `src/components/project-timeline/MilestoneLane.tsx` -- remove the rendering of events (the `!isMilestone` items); only render milestones. Update empty state text to "No milestones"
-- **MODIFY** `src/components/project-timeline/ProjectTimeline.tsx` -- import and render `EventsLane` between `MilestoneLane` and `PhaseLane`, passing the same `calendarItems`
-
-The EventsLane will filter for `!isMilestone` items and render them as small dots (same style currently used in MilestoneLane for events), with its own label "Events" and a distinct background tint.
-
----
-
-### 4. Scrollable Notifications Log
+### 1. Notifications Log Scroll Fix
 
 **File:** `src/components/NotificationsLog.tsx`
 
-The notifications list view (line 283) already uses `ScrollArea`, but the dialog's `max-h-[80vh] overflow-hidden` combined with flex layout may prevent proper scrolling.
+The dialog has `max-h-[80vh] overflow-hidden` but the content area doesn't properly constrain its height for scrolling. The `ScrollArea` with `max-h-[55vh]` should work, but the dialog's flex layout and `overflow-hidden` may be clipping it.
 
-Fix: Wrap the list view's `ScrollArea` in a container with explicit max height, and ensure the detail view's recipients list also scrolls properly by adding `ScrollArea` where the raw `overflow-y-auto` div is used (line 241).
+**Fix:**
+- Change the `DialogContent` from `overflow-hidden` to `overflow-y-auto` as a fallback
+- Ensure the list view `ScrollArea` has a proper height constraint that works within the flex layout
+- Add `overflow-hidden` to the flex-1 container in the detail view to ensure `ScrollArea` works for the recipients list
+
+---
+
+### 2. Personnel View Toggle Redesign
+
+**Files:**
+- `src/components/FreelancerFilters.tsx` -- rename and add "Include Employees" toggle
+- `src/pages/AdminDashboard.tsx` -- add `includeEmployees` state (default `true`), wire into filter logic
+- `src/components/AddProjectDialog.tsx` -- same changes for the project dialog's personnel list
+
+**Current behavior:**
+- Section labeled "Freelancers:" with two toggles: "Include freelancers" (off) and "Show freelancers only" (off)
+- Employees are always shown by default
+
+**New behavior:**
+- Section labeled "Personnel view" (with Users icon instead of Briefcase)
+- Three toggles in order:
+  1. **Include Employees** -- default ON. When OFF, employees are hidden from the list
+  2. **Include freelancers** -- default OFF (unchanged)
+  3. **Show freelancers only** -- default OFF (unchanged)
+- Interaction logic:
+  - "Show freelancers only" ON automatically enables "Include freelancers" and disables "Include Employees"
+  - "Include Employees" ON while "Show freelancers only" is ON will turn off "Show freelancers only"
+  - At least one of "Include Employees" or "Include freelancers" must be on (prevent empty state)
+
+**Filter logic change in AdminDashboard (and AddProjectDialog):**
+- Add: `if (!includeEmployees && p.category === 'employee') return false;`
+- This is added alongside the existing freelancer filter checks
+
+**Props change for FreelancerFilters:**
+- Add `includeEmployees: boolean` and `onIncludeEmployeesChange: (value: boolean) => void`
+- Component renamed conceptually but file kept as-is to minimize churn
 
 ---
 
@@ -52,10 +55,8 @@ Fix: Wrap the list view's `ScrollArea` in a container with explicit max height, 
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/AIPersonnelSuggestions.tsx` | MODIFY | Show "Clear Search" button when any search state is active |
-| `src/pages/About.tsx` | MODIFY | Change "Get Started" to navigate to `/contact` |
-| `src/components/project-timeline/EventsLane.tsx` | CREATE | New lane for non-milestone events |
-| `src/components/project-timeline/MilestoneLane.tsx` | MODIFY | Remove events rendering, milestones only |
-| `src/components/project-timeline/ProjectTimeline.tsx` | MODIFY | Add EventsLane between Milestones and Phases |
-| `src/components/NotificationsLog.tsx` | MODIFY | Fix scroll behavior in list and detail views |
+| `src/components/NotificationsLog.tsx` | MODIFY | Fix scroll by adjusting overflow strategy on DialogContent |
+| `src/components/FreelancerFilters.tsx` | MODIFY | Add "Include Employees" toggle, rename label to "Personnel view", reorder toggles |
+| `src/pages/AdminDashboard.tsx` | MODIFY | Add `includeEmployees` state, wire into filter logic and FreelancerFilters props |
+| `src/components/AddProjectDialog.tsx` | MODIFY | Same `includeEmployees` state and filter logic for project personnel list |
 
