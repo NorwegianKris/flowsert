@@ -56,8 +56,8 @@ interface ProjectDetailProps {
 }
 
 const statusConfig = {
-  active: { label: 'Active', variant: 'default' as const, icon: Clock, color: 'bg-primary' },
-  completed: { label: 'Completed', variant: 'secondary' as const, icon: CheckCircle, color: 'bg-muted-foreground' },
+  active: { label: 'Active', variant: 'active' as const, icon: Clock, color: 'bg-active' },
+  completed: { label: 'Completed', variant: 'completed' as const, icon: CheckCircle, color: 'bg-muted-foreground' },
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, color: 'bg-amber-500' },
 };
 
@@ -202,7 +202,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                 {project.isPosted ? (
                   <Megaphone className="h-12 w-12 text-[#C4B5FD]" />
                 ) : (
-                  <StatusIcon className={`h-12 w-12 ${config.color === 'bg-primary' ? 'text-primary' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
+                  <StatusIcon className={`h-12 w-12 ${config.color === 'bg-active' ? 'text-active' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
                 )}
               </div>
             )}
