@@ -8,6 +8,7 @@ export interface WorkerBusiness {
   businessLogoUrl: string | null;
   personnelId: string;
   personnelName: string;
+  activated: boolean;
 }
 
 export function useWorkerBusinesses() {
@@ -27,7 +28,7 @@ export function useWorkerBusinesses() {
         // Get all personnel records for this user
         const { data: personnelData, error: personnelError } = await supabase
           .from('personnel')
-          .select('id, name, business_id')
+          .select('id, name, business_id, activated')
           .eq('user_id', user.id);
 
         if (personnelError) throw personnelError;
@@ -68,6 +69,7 @@ export function useWorkerBusinesses() {
               businessLogoUrl: biz.logo_url,
               personnelId: p.id,
               personnelName: p.name,
+              activated: p.activated ?? false,
             };
           })
           .filter((x): x is WorkerBusiness => x !== null);

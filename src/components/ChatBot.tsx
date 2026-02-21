@@ -159,15 +159,15 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
           if (!error && data) setProjectList(data);
         } else {
           // Worker: find projects they're assigned to
-          const personnelIds = workerBusinesses.map(b => b.personnelId);
-          if (personnelIds.length === 0) { setProjectList([]); setProjectListLoading(false); return; }
+          const activatedPersonnelIds = workerBusinesses.filter(b => b.activated).map(b => b.personnelId);
+          if (activatedPersonnelIds.length === 0) { setProjectList([]); setProjectListLoading(false); return; }
           const { data, error } = await supabase
             .from('projects')
             .select('id, name, status, assigned_personnel')
             .order('created_at', { ascending: false });
           if (!error && data) {
             const workerProjects = data.filter(p =>
-              p.assigned_personnel?.some(pid => personnelIds.includes(pid))
+              p.assigned_personnel?.some(pid => activatedPersonnelIds.includes(pid))
             );
             setProjectList(workerProjects);
           }
@@ -218,8 +218,8 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     if (!selectedProjectId) return false;
     const proj = projectList.find(p => p.id === selectedProjectId);
     if (!proj) return false;
-    const personnelIds = workerBusinesses.map(b => b.personnelId);
-    return proj.assigned_personnel?.some(pid => personnelIds.includes(pid)) ?? false;
+    const activatedPersonnelIds = workerBusinesses.filter(b => b.activated).map(b => b.personnelId);
+    return proj.assigned_personnel?.some(pid => activatedPersonnelIds.includes(pid)) ?? false;
   })();
 
   // Navigate back to picker, resetting DM state
