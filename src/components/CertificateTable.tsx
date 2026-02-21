@@ -204,7 +204,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <span className="font-medium">{cert.name}</span>
                     </div>
                   </TableCell>
