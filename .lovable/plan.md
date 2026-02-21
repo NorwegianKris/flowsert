@@ -1,67 +1,48 @@
 
 
-## Standardize Document Preview: Embedded PdfViewer + Image Controls
+## Move "How It Works" to About Page + New Landing Page Segment
 
-**Risk: GREEN** -- UI-only changes, no backend/data/auth modifications.
-
----
-
-### What Changes
-
-Two files need updating to match the standard set by PersonnelDocuments:
+**Risk: GREEN** -- purely UI text and layout changes, no backend/data/auth modifications.
 
 ---
 
-### File 1: `src/components/ProjectCertificateStatus.tsx`
+### Overview
 
-This is the most broken component -- currently shows "For security reasons, PDF previews open in a new tab" instead of embedding the viewer.
-
-**Changes:**
-
-1. **Add imports**: `PdfViewer`, `supabase`, `downloadAsBlob`, and icons (`RotateCcw`, `RotateCw`, `ZoomIn`, `ZoomOut`, `Download`)
-
-2. **Add new state variables** (lines 42-44 area):
-   - `pdfData: ArrayBuffer | null` -- for PdfViewer
-   - `blobUrl: string | null` -- for image display via blob
-   - `imgRotation: number` (default 0)
-   - `imgZoom: number` (default 1)
-
-3. **Add reset effect**: Reset `imgRotation` and `imgZoom` to defaults when `selectedCertificate.id` changes
-
-4. **Replace the useEffect** (lines 47-56): Instead of just fetching a signed URL, download the file via `supabase.storage.from('certificate-documents').download(path)`:
-   - Create blob URL for images
-   - Get ArrayBuffer for PDFs to feed into PdfViewer
-   - Keep signed URL as fallback for download button
-   - Cleanup blob URLs on unmount/change
-
-5. **Add `handleDownloadDocument` helper**: Uses `downloadAsBlob` for direct download, falls back to signed URL
-
-6. **Replace the document preview section** (lines 289-329):
-   - **Images**: Add rotation + zoom control bar (RotateCcw, RotateCw, ZoomOut, percentage display, ZoomIn), render image inside scrollable container with `transform: rotate(Xdeg) scale(Y)` style
-   - **PDFs**: Replace the "For security reasons" message with embedded `<PdfViewer pdfData={pdfData} />` component (same as PersonnelDocuments)
-   - **Header button**: Change from "Open Full Size" to "Download" using the blob download helper
+Two changes:
+1. Move the "How It Works" 3-step section from the landing page (Auth.tsx) into the About page, placed between the "About FlowSert" hero and "Our Mission" sections.
+2. Replace the now-empty space on the landing page with a new "Workforce Compliance is Universal" segment styled identically to the Techno Dive user story section but mirrored (images on the right).
 
 ---
 
-### File 2: `src/components/CertificateTable.tsx`
+### File 1: `src/pages/About.tsx`
 
-Already has PdfViewer for PDFs but images are displayed as plain static `<img>` tags without controls.
+**Insert the "How It Works" section** between the hero (line 35) and the Mission section (line 37):
 
-**Changes:**
+- Copy the exact 3-step grid (Set Up Your Team, Upload Certificates, Stay Compliant) with the gradient icon boxes and numbered badges.
+- Add the required icon imports (`Users`, `FileCheck`) -- `Shield` is already imported.
+- Use `bg-primary/5` background to maintain the alternating pattern (hero has document pattern, then How It Works gets lavender, then Mission gets document pattern).
+- Adjust the Mission section background from `bg-primary/5` to document pattern, and the Values section from document pattern to `bg-primary/5`, to keep the alternating rhythm correct with the new section inserted.
 
-1. **Add imports** (line 26): Add `RotateCcw`, `RotateCw`, `ZoomIn`, `ZoomOut` icons
+New section order on About page:
+1. "About FlowSert" hero -- document pattern (unchanged)
+2. **"How It Works" -- lavender (NEW)**
+3. "Our Mission" -- document pattern (CHANGED from lavender)
+4. "Our Values" -- lavender (CHANGED from document pattern)
+5. "Ready to Get Started?" CTA -- document pattern (CHANGED from lavender)
 
-2. **Add state variables** (after line 44):
-   - `imgRotation: number` (default 0)
-   - `imgZoom: number` (default 1)
+---
 
-3. **Add reset effect**: Reset `imgRotation` and `imgZoom` when `selectedCertificate?.id` changes
+### File 2: `src/pages/Auth.tsx`
 
-4. **Replace the image preview** (lines 341-345): Replace the plain `<img>` with the same control bar + scrollable container pattern:
-   - Rotation buttons (left/right)
-   - Zoom controls (out, percentage, in)
-   - Image rendered with `transform: rotate() scale()` CSS
-   - Wrapped in scrollable container with border
+**Replace the "How It Works" section** (lines 567-609) with a new "Workforce Compliance is Universal" segment:
+
+- Uses the same layout structure as the Techno Dive section (lines 685-774) but **mirrored**: text on the LEFT, polaroid images on the RIGHT.
+- Same `bg-primary/5` lavender background.
+- Same polaroid image styling with the two Techno Dive photos, rotated and overlapping.
+- No "Read more" expand/collapse -- all text visible by default since it is concise.
+- Content:
+  - **Title**: "Workforce Compliance is Universal"
+  - **Body**: The user-provided text about sourcing the right people, structured compliance, and predictable mobilization.
 
 ---
 
