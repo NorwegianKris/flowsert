@@ -1,39 +1,59 @@
 
 
-## Minor UI Text and Styling Fixes
+## Three Minor Fixes
 
-**Risk: 🟢 GREEN** — Text and CSS-only changes. No backend, auth, or access control affected.
+**Risk: 🟢 GREEN** (Fix 1 and Fix 2) / **🟡 AMBER** (Fix 3 -- touches certificate input with OpenStreetMap API, anchor recommended before publish)
 
 ---
 
-### 1. Capitalize "Freelancers" in Personnel View toggles
+### Fix 1: Scroll to top when clicking an assigned project in personnel profile
 
-**File:** `src/components/FreelancerFilters.tsx`
+**Problem:** When a worker clicks a project in their `AssignedProjects` list, `PersonnelDetail` swaps its render to `WorkerProjectDetail`, but the scroll position stays wherever the user was.
 
-- Line 69: `Include freelancers` → `Include Freelancers`
-- Line 80: `Show freelancers only` → `Show Freelancers only`
+**Solution:** Add `window.scrollTo(0, 0)` in the `handleProjectClick` handler in `PersonnelDetail.tsx`.
 
-### 2. Purple icon for Personnel View
+**File:** `src/components/PersonnelDetail.tsx`
 
-**File:** `src/components/FreelancerFilters.tsx`
-
-- Line 47: Change `<Users className="h-4 w-4" />` to `<Users className="h-4 w-4 text-primary" />` to match the AI Personnel Search sparkle icon color.
-
-### 3. Update Smart Upload text
-
-**File:** `src/components/certificate-upload/UploadZone.tsx`
-
-Update lines 112-121 to:
-
+```typescript
+const handleProjectClick = (project: Project) => {
+  setSelectedProject(project);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 ```
-Smart Upload
 
-Upload your certificate(s) and we'll extract the details automatically
+---
 
-Select up to 10 files • PDF, JPEG, PNG, WebP • Drag & drop or click
+### Fix 2: Match Overview toggle (All/Employees/Freelancers/Custom) to the purple primary color
 
-💡 Make sure your upload(s) is a clear photo, scan, or document for best results.
+**Problem:** The `ToggleGroup` in `ComplianceSnapshot.tsx` uses default `data-[state=on]:bg-background` styling (white/gray), while the main `FreelancerFilters` bar uses the primary purple. The user wants them visually consistent.
+
+**Solution:** Update the active state styling on each `ToggleGroupItem` to use `data-[state=on]:bg-primary data-[state=on]:text-primary-foreground` so the selected toggle pill is purple.
+
+**File:** `src/components/ComplianceSnapshot.tsx` (lines 159-199)
+
+Change the className on each `ToggleGroupItem` from:
 ```
+data-[state=on]:bg-background data-[state=on]:shadow-sm
+```
+to:
+```
+data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm
+```
+
+This applies to all four items: All, Employees, Freelancers, Custom.
+
+---
+
+### Fix 3: Add OpenStreetMap location search to "Place of Issue" fields
+
+**Problem:** The "Place of Issue" field for certificates is a plain text input, while all other location fields use the `GeoLocationInput` component with Photon/OpenStreetMap suggestions.
+
+**Solution:** Replace the plain `<Input>` with `<GeoLocationInput>` in two files:
+
+1. **`src/components/AddCertificateDialog.tsx`** (line 642-646) -- the smart upload / add certificate form
+2. **`src/components/EditCertificateDialog.tsx`** (line 542-547) -- the edit certificate form
+
+Both will import `GeoLocationInput` and swap the `<Input>` for `<GeoLocationInput>` with appropriate `value`/`onChange` props and a placeholder like `"e.g., Norway"`.
 
 ---
 
@@ -41,6 +61,8 @@ Select up to 10 files • PDF, JPEG, PNG, WebP • Drag & drop or click
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/FreelancerFilters.tsx` | MODIFY | Capitalize "Freelancers", add `text-primary` to Users icon |
-| `src/components/certificate-upload/UploadZone.tsx` | MODIFY | Update Smart Upload description text |
+| `src/components/PersonnelDetail.tsx` | MODIFY | Add `window.scrollTo` on project click |
+| `src/components/ComplianceSnapshot.tsx` | MODIFY | Purple active state on toggle group items |
+| `src/components/AddCertificateDialog.tsx` | MODIFY | Replace Input with GeoLocationInput for Place of Issue |
+| `src/components/EditCertificateDialog.tsx` | MODIFY | Replace Input with GeoLocationInput for Place of Issue |
 
