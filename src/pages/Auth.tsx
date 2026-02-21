@@ -569,8 +569,8 @@ export default function Auth() {
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-start">
-              {/* Content - Left */}
-              <div className="order-1">
+              {/* Content - Right */}
+              <div className="order-2 md:order-2">
                 <h2 className="text-2xl md:text-3xl font-bold font-rajdhani text-foreground mb-6 leading-tight">
                   Workforce compliance is a universal need
                 </h2>
@@ -592,8 +592,8 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Polaroid Images - Right */}
-              <div className="order-2">
+              {/* Polaroid Images - Left */}
+              <div className="order-1 md:order-1">
                 <div className="relative h-[570px] flex justify-center">
                   {/* Back Polaroid */}
                   <div 
