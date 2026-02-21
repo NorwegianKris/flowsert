@@ -256,7 +256,11 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
               <p className="text-2xl font-bold text-foreground">
                 {assignedPersonnel.length}
               </p>
-              <p className="text-xs text-muted-foreground">Assigned Personnel</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <span>Assigned Personnel</span>
+                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
+                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
+              </p>
             </div>
           </CardContent>
         </Card>
