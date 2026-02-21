@@ -1,60 +1,39 @@
 
-
 ## Prompt Risk Assessment: 🟢 Anchor Optional
-All changes are purely UI text, layout, and styling. No database, auth, or access control changes.
+This is a UI data-fetching fix. No schema, RLS, or auth changes needed.
 
 ---
 
-## Overview
-Four minor UI updates: show Next of Kin for freelancers, update login text, add search bar in Edit Project personnel list, and align Post Project section styling.
+## Root Cause
+
+The `DataPrivacySection` component on the personnel profile calls `useDataAcknowledgement(personnelId, businessId)` **without** passing the business's required acknowledgement version. The hook defaults to version `'1.0'` (hardcoded fallback), but Kristian Utseth acknowledged version `'1.1'` (which is the current business requirement). So the query filters for version `'1.0'`, finds nothing, and displays "No".
+
+**Database confirms:**
+- Business requires version `1.1`
+- Kristian acknowledged version `1.1`
+- No version `1.0` acknowledgement exists for this user
 
 ---
 
-## Changes
+## Fix
 
-### 1. Show Next of Kin for freelancer profiles
-**Files:** `src/components/PersonnelDetail.tsx` (line ~517), `src/components/EditPersonnelDialog.tsx` (line ~457)
+**File:** `src/components/PersonnelDetail.tsx` (lines 636-673)
 
-Remove the `{personnel.category !== 'freelancer' && ...}` / `{!isFreelancer && ...}` condition wrapping the Next of Kin section so it displays for all personnel types including freelancers.
+Update the `DataPrivacySection` to fetch the **latest** acknowledgement for the personnel regardless of version. This is the correct behavior for an admin view -- it should show whether and when the user last acknowledged, plus which version.
 
-### 2. Update login popup text
-**File:** `src/pages/Auth.tsx` (lines 926-934)
+Instead of using `useDataAcknowledgement` (which is designed for version-gated blocking dialogs), query directly for the most recent acknowledgement record for the given personnel + business combination without version filtering.
 
-Replace:
-> "Registration is by invitation only. Need access? Contact us"
+Specifically:
+- Replace the `useDataAcknowledgement` call with a simple `useEffect` + `useState` that queries `data_processing_acknowledgements` filtered by `personnel_id` and `business_id`, ordered by `acknowledged_at DESC`, limit 1 -- without any version filter
+- This ensures the section always shows the latest acknowledgement regardless of version
 
-With:
-> "Registration is by invitation or company-provided link only."
-
-Remove the "Contact us" link since the new text is self-contained.
-
-### 3. Add search bar in Edit Project Assigned Personnel list
-**File:** `src/components/EditProjectDialog.tsx` (lines ~341-365)
-
-Add a search input above the personnel checkbox list that filters personnel by name or role. This requires:
-- A new `personnelSearch` state variable
-- An `Input` with placeholder "Search personnel..." placed between the Label and the list div
-- Filter the `personnel.map()` to only show entries matching the search term
-
-### 4. Lavender styling for Post Project section in Edit Project
-**File:** `src/components/EditProjectDialog.tsx` (line 369)
-
-Change the Post Project toggle container from:
-```
-bg-muted/30 rounded-lg border border-border
-```
-To match AddProjectDialog's styling:
-```
-bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50
-```
-
-This matches the lavender styling already used in `AddProjectDialog.tsx` (line 740).
+This keeps the `useDataAcknowledgement` hook unchanged (it's correctly used in `WorkerDashboard.tsx` where version-gating matters), and only fixes the admin-facing display.
 
 ---
 
 ## Technical Details
 
-- **PersonnelDetail.tsx**: Remove conditional on line 517 (`personnel.category !== 'freelancer'`), keep the Card content as-is.
-- **EditPersonnelDialog.tsx**: Remove conditional on line 457 (`!isFreelancer`), keep the Next of Kin form fields as-is.
-- **Auth.tsx**: Replace lines 926-934 with a simple `<p>` containing the new text, no link needed.
-- **EditProjectDialog.tsx**: Add `useState` for `personnelSearch`, add `Input` component (already imported), filter personnel list with `.filter(p => p.name.toLowerCase().includes(...) || p.role.toLowerCase().includes(...))`. Update the Post Project div classes on line 369.
+- The `DataPrivacySection` component is a local function inside `PersonnelDetail.tsx` (line 636)
+- Replace `useDataAcknowledgement` with inline state + effect that fetches without version filter
+- No other files need changes
+- The settings Privacy & Data list uses `useBusinessAcknowledgements` which also fetches without version filtering, which is why it correctly shows the acknowledgement
