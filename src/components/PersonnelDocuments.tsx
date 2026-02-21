@@ -55,6 +55,10 @@ import {
   Calendar,
   Loader2,
   Info,
+  RotateCcw,
+  RotateCw,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -105,6 +109,8 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [blobRevoke, setBlobRevoke] = useState<(() => void) | null>(null);
+  const [imgRotation, setImgRotation] = useState(0);
+  const [imgZoom, setImgZoom] = useState(1);
 
   useEffect(() => {
     fetchData();
@@ -120,6 +126,8 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
     setBlobUrl(null);
     setPdfData(null);
     setSignedUrl(null);
+    setImgRotation(0);
+    setImgZoom(1);
 
     if (!selectedDocument?.fileUrl || !canAccessDocuments) {
       return;
@@ -653,11 +661,31 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
                     ) : selectedDocument.fileType?.startsWith('image/') && (blobUrl || signedUrl) ? (
-                      <img
-                        src={blobUrl || signedUrl || ''}
-                        alt={selectedDocument.name}
-                        className="max-h-[400px] object-contain rounded"
-                      />
+                      <div className="w-full">
+                        <div className="flex items-center justify-center gap-1 mb-2 p-2 bg-muted/50 rounded-lg">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(r => (r - 90 + 360) % 360)} title="Rotate left">
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(r => (r + 90) % 360)} title="Rotate right">
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgZoom(z => Math.max(0.5, z - 0.2))} disabled={imgZoom <= 0.5}>
+                            <ZoomOut className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground px-2">{Math.round(imgZoom * 100)}%</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgZoom(z => Math.min(3, z + 0.2))} disabled={imgZoom >= 3}>
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="overflow-auto max-h-[400px] flex justify-center">
+                          <img
+                            src={blobUrl || signedUrl || ''}
+                            alt={selectedDocument.name}
+                            className="object-contain rounded"
+                            style={{ transform: `rotate(${imgRotation}deg) scale(${imgZoom})`, transition: 'transform 0.2s' }}
+                          />
+                        </div>
+                      </div>
                     ) : pdfData && selectedDocument.fileType === 'application/pdf' ? (
                       <div className="flex flex-col gap-4 w-full">
                         <PdfViewer pdfData={pdfData} />
