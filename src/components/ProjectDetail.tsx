@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectTimeline } from '@/components/project-timeline/ProjectTimeline';
-import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
+
 import { AddPhaseDialog } from '@/components/AddPhaseDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
@@ -29,8 +29,6 @@ import {
   Share2,
   XCircle,
   Pencil,
-  Flag,
-  
   Inbox,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -332,17 +330,13 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
           <Card className="border-border/50 h-full">
             <Tabs defaultValue="personnel" className="h-full flex flex-col">
               <CardHeader className="pb-0">
-              <TabsList className="w-full grid grid-cols-3">
+              <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="personnel" className="gap-1.5 text-xs sm:text-sm">
                     <Users className="h-4 w-4 text-violet-500" />
                     <span className="hidden sm:inline">Personnel</span>
                   </TabsTrigger>
-                  <TabsTrigger value="calendar" className="gap-1.5 text-xs sm:text-sm">
-                    <Calendar className="h-4 w-4 text-sky-500" />
-                    <span className="hidden sm:inline">Calendar</span>
-                  </TabsTrigger>
                   <TabsTrigger value="documents" className="gap-1.5 text-xs sm:text-sm">
-                    <FileText className="h-4 w-4 text-amber-500" />
+                    <FileText className="h-5 w-5 text-amber-500" />
                     <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
                 </TabsList>
@@ -384,62 +378,6 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                       <div className="text-4xl mb-3">👥</div>
                       <p className="text-muted-foreground text-sm">
                         No personnel assigned to this project
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Calendar Items Tab */}
-                <TabsContent value="calendar" className="mt-0 h-full">
-                  {project.calendarItems && project.calendarItems.length > 0 ? (
-                    <div className="space-y-2">
-                      {project.calendarItems
-                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                        .map((item) => (
-                          <div
-                            key={item.id}
-                            className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
-                              item.isMilestone 
-                                ? 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20' 
-                                : 'bg-muted/50 hover:bg-muted'
-                            }`}
-                          >
-                            {item.isMilestone ? (
-                              <Flag className="w-4 h-4 text-amber-500 mt-1 flex-shrink-0" />
-                            ) : (
-                              <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium text-foreground">
-                                  {format(parseISO(item.date), 'MMM d, yyyy')}
-                                </p>
-                                {item.isMilestone && (
-                                  <span className="text-xs font-medium text-amber-500 bg-amber-500/20 px-1.5 py-0.5 rounded">
-                                    Milestone
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {item.description}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveCalendarItem(item.id)}
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-3">📅</div>
-                      <p className="text-muted-foreground text-sm">
-                        No calendar items yet
                       </p>
                     </div>
                   )}
@@ -539,13 +477,6 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         }}
       />
 
-      <AddCalendarItemDialog
-        open={isAddItemOpen}
-        onOpenChange={setIsAddItemOpen}
-        onAdd={handleAddCalendarItem}
-        projectStartDate={project.startDate}
-        projectEndDate={project.endDate}
-      />
 
       <AddPhaseDialog
         open={isAddPhaseOpen}
