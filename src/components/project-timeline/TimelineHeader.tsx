@@ -91,15 +91,26 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
         ))}
       </div>
 
+      {/* Start line indicator in header */}
+      <div
+        className="absolute top-0 h-full w-px bg-destructive z-10"
+        style={{ left: 0 }}
+      >
+        <div className="absolute -top-0 left-1 flex flex-col whitespace-nowrap">
+          <span className="text-[9px] text-destructive font-medium">Start</span>
+          <span className="text-[8px] text-destructive/70">{format(start, 'MMM d')}</span>
+        </div>
+      </div>
+
       {/* Today line indicator in header */}
       {todayX !== null && (
         <div
-          className="absolute top-0 h-full w-px bg-destructive z-10"
+          className="absolute top-0 h-full w-px bg-primary z-10"
           style={{ left: todayX }}
         >
           <div className="absolute -top-0 left-1 flex flex-col whitespace-nowrap">
-            <span className="text-[9px] text-destructive font-medium">Today</span>
-            <span className="text-[8px] text-destructive/70">{format(today, 'MMM d')}</span>
+            <span className="text-[9px] text-primary font-medium">Today</span>
+            <span className="text-[8px] text-primary/70">{format(today, 'MMM d')}</span>
           </div>
         </div>
       )}

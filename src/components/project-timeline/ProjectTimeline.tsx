@@ -162,9 +162,14 @@ export function ProjectTimeline({
 
               {/* Today + End vertical lines across all lanes */}
               <div className="relative">
+                {/* Start line */}
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-destructive/40 z-20 pointer-events-none"
+                  style={{ left: LABEL_WIDTH }}
+                />
                 {todayX !== null && (
                   <div
-                    className="absolute top-0 bottom-0 w-px bg-destructive/40 z-20 pointer-events-none"
+                    className="absolute top-0 bottom-0 w-px bg-primary/40 z-20 pointer-events-none"
                     style={{ left: LABEL_WIDTH + todayX }}
                   />
                 )}
