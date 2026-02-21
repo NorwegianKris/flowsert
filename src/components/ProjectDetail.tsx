@@ -248,19 +248,27 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-4 flex items-center gap-6">
             <div className="p-2 rounded-lg bg-violet-500/10">
               <Users className="h-5 w-5 text-violet-500" />
             </div>
-            <div>
+            <div className="text-center">
               <p className="text-2xl font-bold text-foreground">
                 {assignedPersonnel.length}
               </p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <span>Assigned Personnel</span>
-                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
+              <p className="text-xs text-muted-foreground">Personnel</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">
+                {assignedPersonnel.filter(p => p.category !== 'freelancer').length}
               </p>
+              <p className="text-xs text-muted-foreground">Employees</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">
+                {assignedPersonnel.filter(p => p.category === 'freelancer').length}
+              </p>
+              <p className="text-xs text-muted-foreground">Freelancers</p>
             </div>
           </CardContent>
         </Card>
