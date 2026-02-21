@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format, parseISO, isWithinInterval, differenceInMonths, differenceInDays, addDays } from 'date-fns';
+import { format, parseISO, isWithinInterval, differenceInMonths, differenceInDays, addDays, subDays } from 'date-fns';
 import { dateToX } from './utils';
 
 interface TimelineHeaderProps {
@@ -55,10 +55,10 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
   }, [projectStart, projectEnd, totalWidth, totalDays]);
 
   const todayX = showToday ? dateToX(today, start, end, totalWidth) : null;
-  const endX = totalWidth; // End date is always at the far right
+  const endLineX = dateToX(subDays(end, 1), start, end, totalWidth);
 
   return (
-    <div className="relative border-b border-border/50" style={{ width: totalWidth }}>
+    <div className="relative border-b border-border/50 overflow-hidden" style={{ width: totalWidth }}>
       {/* Month row */}
       <div className="relative h-6">
         {monthMarkers.map((m, i) => (
@@ -107,7 +107,7 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
       {/* End line indicator in header */}
       <div
         className="absolute top-0 h-full w-px bg-destructive z-10"
-        style={{ left: endX - 2 }}
+        style={{ left: endLineX }}
       >
         <div className="absolute -top-0 right-1 flex flex-col items-end whitespace-nowrap">
           <span className="text-[9px] text-destructive font-medium">End</span>
