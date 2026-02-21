@@ -1,40 +1,29 @@
 
 
-## Align Availability Bar with Certificate Bars in Project Timeline
+## Fix Availability Bar Alignment with Compliance Bars
 
-**Risk: GREEN** -- purely UI styling change.
+**Risk: GREEN** -- purely UI styling fix, no database changes.
 
 ### Problem
 
-The availability bar in the personnel timeline section doesn't visually align with the compliance/certificate bars below it:
-1. The availability bar uses Tailwind insets (`top-1 bottom-1` = 4px) for vertical positioning, while compliance bars use explicit pixel values (`top: 2px`, `height: 16px`), causing inconsistent vertical alignment.
-2. Minor horizontal start differences due to how positions are calculated.
+The availability bar doesn't start at exactly the same horizontal position as the compliance bars below it. The compliance lane hardcodes `barStart = 0` (left edge), while the availability lane computes its start position using `dateToX(span.startDate, ...)`. Even though both should resolve to 0 for the project start date, rounding in the `dateToX` calculation can introduce subtle pixel offsets.
 
-### Changes
+### Fix
 
 **File: `src/components/project-timeline/AvailabilityLane.tsx`**
 
-Update the availability bar rendering to use the same explicit pixel-based positioning as the compliance lane:
-- Replace `top-1 bottom-1` with `top: 2px` and `height: 16px` (matching the compliance bar's first row positioning)
-- Ensure bars that start at project start date begin at `left: 0` consistently
-
-This single styling adjustment will make the availability bar height, vertical offset, and horizontal start match the certificate bars exactly.
-
-### Technical Detail
+Clamp the `x1` value so that any span starting at or before the project start date begins at exactly `left: 0`, matching the compliance bars. This is done by applying `Math.max(0, x1)` to prevent negative values and ensuring alignment:
 
 ```tsx
-// Current (misaligned)
-<div
-  className={`absolute top-1 bottom-1 rounded-sm ${statusColor(span.status)} ...`}
-  style={{ left: x1, width }}
-/>
+// Before
+const x1 = dateToX(span.startDate, projectStart, projectEnd, totalWidth);
 
-// Updated (aligned with compliance bars)
-<div
-  className={`absolute rounded-sm ${statusColor(span.status)} ...`}
-  style={{ left: x1, width, top: 2, height: 16 }}
-/>
+// After  
+const x1Raw = dateToX(span.startDate, projectStart, projectEnd, totalWidth);
+const x1 = Math.max(0, x1Raw);
 ```
 
-One small edit in one file.
+This ensures the availability bar always starts at position 0 (the project start line) when the span begins at the project start date -- identical to how compliance bars are positioned.
+
+### Single file change: `src/components/project-timeline/AvailabilityLane.tsx`
 
