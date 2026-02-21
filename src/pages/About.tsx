@@ -115,7 +115,7 @@ export default function About() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold font-rajdhani text-foreground mb-4">Ready to Get Started?</h2>
           <p className="text-muted-foreground mb-6">Join industrial businesses managing their certifications with FlowSert.</p>
-          <Button onClick={() => navigate('/auth')} size="lg">
+          <Button onClick={() => navigate('/contact')} size="lg">
             Get Started
           </Button>
         </div>

@@ -122,7 +122,7 @@ export function AIPersonnelSuggestions({
             )}
           </Button>
         </CollapsibleTrigger>
-        {suggestedCount > 0 && (
+        {(suggestions !== null || aiPrompt.trim() !== '') && (
           <Button
             variant="ghost"
             size="sm"
@@ -130,7 +130,7 @@ export function AIPersonnelSuggestions({
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4 mr-1" />
-            Clear
+            Clear Search
           </Button>
         )}
       </div>
