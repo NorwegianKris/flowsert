@@ -595,6 +595,10 @@ export default function Auth() {
               {/* Polaroid Images - Left */}
               <div className="order-1 md:order-1">
                 <div className="relative h-[380px] flex justify-center">
+                  {/* Before label */}
+                  <span className="absolute left-1/2 -translate-x-[85%] -top-6 text-sm font-semibold text-muted-foreground">
+                    Before
+                  </span>
                   {/* Back Polaroid */}
                   <div 
                     className="absolute left-1/2 -translate-x-[85%] top-0 w-72 md:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
@@ -609,6 +613,10 @@ export default function Auth() {
                     </div>
                   </div>
                   
+                  {/* After label */}
+                  <span className="absolute left-1/2 -translate-x-[30%] top-14 text-right w-72 md:w-[21rem] text-sm font-semibold text-muted-foreground">
+                    After
+                  </span>
                   {/* Front Polaroid */}
                   <div 
                     className="absolute left-1/2 -translate-x-[30%] top-20 w-72 md:w-[21rem] bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
