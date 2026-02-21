@@ -68,6 +68,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [includeCountries, setIncludeCountries] = useState<string[]>([]);
   const [excludeCountries, setExcludeCountries] = useState<string[]>([]);
   const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
+  const [includeEmployees, setIncludeEmployees] = useState(true);
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -249,6 +250,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setIncludeCountries([]);
     setExcludeCountries([]);
     setShowFreelancersOnly(false);
+    setIncludeEmployees(true);
     setImageUrl('');
     setSearchQuery('');
     setRoleFilters([]);
@@ -362,10 +364,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     // Freelancer filtering
     if (showFreelancersOnly) {
       filtered = filtered.filter(p => p.category === 'freelancer' && p.activated);
-    } else if (includeFreelancers) {
-      filtered = filtered.filter(p => p.category !== 'freelancer' || p.activated);
     } else {
-      filtered = filtered.filter(p => p.category !== 'freelancer');
+      // Exclude employees if not included
+      if (!includeEmployees) {
+        filtered = filtered.filter(p => p.category === 'freelancer');
+      }
+      if (includeFreelancers) {
+        filtered = filtered.filter(p => p.category !== 'freelancer' || p.activated);
+      } else {
+        filtered = filtered.filter(p => p.category !== 'freelancer');
+      }
     }
 
     // Search query (includes certificate names, matching dashboard)
@@ -835,6 +843,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
             </div>
 
             <FreelancerFilters
+              includeEmployees={includeEmployees}
+              onIncludeEmployeesChange={setIncludeEmployees}
               includeFreelancers={includeFreelancers}
               onIncludeFreelancersChange={setIncludeFreelancers}
               showFreelancersOnly={showFreelancersOnly}

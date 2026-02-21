@@ -87,6 +87,7 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
+  const [includeEmployees, setIncludeEmployees] = useState(true);
   const [includeFreelancers, setIncludeFreelancers] = useState(false);
   const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
@@ -228,11 +229,15 @@ export default function AdminDashboard() {
         return aiFilteredPersonnelIds.includes(p.id);
       }
       
-      // Freelancer filter logic - using category
+      // Employee filter
+      const isEmployee = p.category === 'employee' || !p.category || (p.category !== 'freelancer');
       const isFreelancer = p.category === 'freelancer';
       
       // If showing freelancers only, filter out non-freelancers
       if (showFreelancersOnly && !isFreelancer) return false;
+      
+      // Exclude employees if not included
+      if (!includeEmployees && !isFreelancer) return false;
       
       // If not including freelancers and not showing only, exclude freelancers
       if (!includeFreelancers && !showFreelancersOnly && isFreelancer) return false;
@@ -300,7 +305,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeEmployees, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
 
   // Ghost group pruning: remove stale group IDs from filters
   useEffect(() => {
@@ -512,6 +517,8 @@ export default function AdminDashboard() {
             
             <div className="mb-4">
               <FreelancerFilters
+                includeEmployees={includeEmployees}
+                onIncludeEmployeesChange={setIncludeEmployees}
                 includeFreelancers={includeFreelancers}
                 onIncludeFreelancersChange={setIncludeFreelancers}
                 showFreelancersOnly={showFreelancersOnly}
