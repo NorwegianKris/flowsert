@@ -20,20 +20,20 @@ export function FreelancerFilters({
   onShowFreelancersOnlyChange,
 }: FreelancerFiltersProps) {
   const handleIncludeEmployeesChange = (checked: boolean) => {
-    // Prevent empty state: at least one must be on
-    if (!checked && !includeFreelancers) return;
+    if (!checked && !includeFreelancers) {
+      onIncludeFreelancersChange(true);
+    }
     onIncludeEmployeesChange(checked);
-    // If enabling employees while "show freelancers only" is on, turn off show only
     if (checked && showFreelancersOnly) {
       onShowFreelancersOnlyChange(false);
     }
   };
 
   const handleIncludeFreelancersChange = (checked: boolean) => {
-    // Prevent empty state: at least one must be on
-    if (!checked && !includeEmployees) return;
+    if (!checked && !includeEmployees) {
+      onIncludeEmployeesChange(true);
+    }
     onIncludeFreelancersChange(checked);
-    // If disabling include, also disable show only
     if (!checked && showFreelancersOnly) {
       onShowFreelancersOnlyChange(false);
     }
