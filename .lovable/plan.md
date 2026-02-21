@@ -1,29 +1,27 @@
 
+## Fix: Inactive Toggle Items Should Be Purple with White Text
 
-## Fix: Overview Toggle Color to Match Main Toggle Bar
-
-**Risk: 🟢 GREEN** — CSS-only change, no backend or data affected.
+**Risk: 🟢 GREEN** — CSS-only change.
 
 ---
 
 ### Problem
 
-The Overview toggle (All / Employees / Freelancers / Custom) in `ComplianceSnapshot.tsx` currently has a solid purple background with white text when active (`bg-primary text-primary-foreground`). The user wants it to match the main categories toggle bar style: **white background with purple text**.
+Currently the inactive toggle items use the default muted styling (gray-ish), while the active one is white with purple text. The user wants the **inverse**: inactive items should have a **purple background with white text/icons**, and the active item stays white with purple text.
 
 ### Solution
 
 **File:** `src/components/ComplianceSnapshot.tsx`
 
-Change the active state on all four `ToggleGroupItem` elements from:
-```
-data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm
-```
-to:
-```
-data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm
-```
+1. Change the `ToggleGroup` container background from `bg-muted/50` to `bg-primary` (purple background for the bar itself, which shows through on inactive items).
 
-This applies to lines 159, 167, 174, and 181 (the All, Employees, Freelancers, and Custom toggle items).
+2. Add default (inactive) text color `text-white` to each `ToggleGroupItem` so inactive items have white lettering and icons against the purple background.
+
+The active state remains `data-[state=on]:bg-background data-[state=on]:text-primary` (white box, purple text).
+
+Updated classes:
+- Container: `bg-primary p-1 rounded-lg shrink-0`
+- Each item: `text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm`
 
 ---
 
@@ -31,5 +29,4 @@ This applies to lines 159, 167, 174, and 181 (the All, Employees, Freelancers, a
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/ComplianceSnapshot.tsx` | MODIFY | White background + purple text on active toggle items |
-
+| `src/components/ComplianceSnapshot.tsx` | MODIFY | Purple background on toggle container, white text on inactive items |
