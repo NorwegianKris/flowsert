@@ -44,7 +44,7 @@ export function FreelancerFilters({
   return (
     <div className="flex items-center gap-6 py-3 px-4 bg-muted/50 rounded-lg border border-border">
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Users className="h-4 w-4" />
+        <Users className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">Personnel view:</span>
       </div>
       
@@ -66,7 +66,7 @@ export function FreelancerFilters({
           onCheckedChange={handleIncludeFreelancersChange}
         />
         <Label htmlFor="include-freelancers" className="text-sm cursor-pointer">
-          Include freelancers
+          Include Freelancers
         </Label>
       </div>
       
@@ -77,7 +77,7 @@ export function FreelancerFilters({
           onCheckedChange={handleShowOnlyChange}
         />
         <Label htmlFor="show-freelancers-only" className="text-sm cursor-pointer">
-          Show freelancers only
+          Show Freelancers only
         </Label>
       </div>
     </div>
