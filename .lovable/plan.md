@@ -1,50 +1,29 @@
 
 
-## Move "How It Works" to About Page + New Landing Page Segment
+## Text Updates + Image Size Increase
 
-**Risk: GREEN** -- purely UI text and layout changes, no backend/data/auth modifications.
-
----
-
-### Overview
-
-Two changes:
-1. Move the "How It Works" 3-step section from the landing page (Auth.tsx) into the About page, placed between the "About FlowSert" hero and "Our Mission" sections.
-2. Replace the now-empty space on the landing page with a new "Workforce Compliance is Universal" segment styled identically to the Techno Dive user story section but mirrored (images on the right).
+**Risk: GREEN** -- purely UI text/layout changes.
 
 ---
 
-### File 1: `src/pages/About.tsx`
+### Changes in `src/pages/Auth.tsx`
 
-**Insert the "How It Works" section** between the hero (line 35) and the Mission section (line 37):
+**1. Rename the title** (line 575):
+- From: `"Workforce Compliance is Universal"`
+- To: `"Workforce compliance is a universal need"`
 
-- Copy the exact 3-step grid (Set Up Your Team, Upload Certificates, Stay Compliant) with the gradient icon boxes and numbered badges.
-- Add the required icon imports (`Users`, `FileCheck`) -- `Shield` is already imported.
-- Use `bg-primary/5` background to maintain the alternating pattern (hero has document pattern, then How It Works gets lavender, then Mission gets document pattern).
-- Adjust the Mission section background from `bg-primary/5` to document pattern, and the Values section from document pattern to `bg-primary/5`, to keep the alternating rhythm correct with the new section inserted.
+**2. Remove the closing line** (lines 592-594):
+- Delete the paragraph: `"Just structured compliance and predictable mobilization."`
 
-New section order on About page:
-1. "About FlowSert" hero -- document pattern (unchanged)
-2. **"How It Works" -- lavender (NEW)**
-3. "Our Mission" -- document pattern (CHANGED from lavender)
-4. "Our Values" -- lavender (CHANGED from document pattern)
-5. "Ready to Get Started?" CTA -- document pattern (CHANGED from lavender)
+**3. Increase polaroid image sizes in BOTH sections by 1.5x:**
 
----
+Currently both sections use `w-48 md:w-56` for polaroid cards and `h-[380px]` for the container.
 
-### File 2: `src/pages/Auth.tsx`
+- `w-48` (12rem / 192px) x 1.5 = `w-72` (18rem / 288px)
+- `md:w-56` (14rem / 224px) x 1.5 = `md:w-[21rem]` (336px)
+- Container height `h-[380px]` x 1.5 = `h-[570px]`
 
-**Replace the "How It Works" section** (lines 567-609) with a new "Workforce Compliance is Universal" segment:
-
-- Uses the same layout structure as the Techno Dive section (lines 685-774) but **mirrored**: text on the LEFT, polaroid images on the RIGHT.
-- Same `bg-primary/5` lavender background.
-- Same polaroid image styling with the two Techno Dive photos, rotated and overlapping.
-- No "Read more" expand/collapse -- all text visible by default since it is concise.
-- Content:
-  - **Title**: "Workforce Compliance is Universal"
-  - **Body**: The user-provided text about sourcing the right people, structured compliance, and predictable mobilization.
-
----
-
-### No files created or deleted. No backend changes.
+Apply to all four polaroid cards across both sections:
+- **Workforce Compliance section** (lines 600, 603, 617): Update container to `h-[570px]`, both cards to `w-72 md:w-[21rem]`
+- **Techno Dive section** (lines 716, 719, 733): Same size updates
 
