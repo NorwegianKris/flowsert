@@ -1,22 +1,35 @@
 
 
-## Redirect FAQ "Get Started" Button to Contact Page
+## Add Text Labels to Login and Update Timestamps
 
-**Risk: GREEN** -- purely UI text/navigation change.
+**Risk: GREEN** -- purely UI text/layout change.
 
-### Change
+### Problem
 
-**File: `src/pages/FAQ.tsx` (line 121)**
+Currently the "last login" and "last updated" lines only show an icon (Clock / RefreshCw) and a date, with no text label explaining what the date means. This makes it ambiguous -- especially when one says "Never logged in" but the other shows a recent date.
 
-Update the "Get Started" button's `onClick` handler to navigate to `/contact` instead of `/auth`, matching the same pattern already used on the About page.
+### Fix
 
+Add short text labels ("Last login:" and "Last update:") before the date values in both the mobile and desktop views within `PersonnelDetail.tsx`.
+
+**File: `src/components/PersonnelDetail.tsx`**
+
+Desktop view (lines 246-261) -- change from:
 ```
-// Before
-<Button onClick={() => navigate('/auth')}>Get Started</Button>
-
-// After
-<Button onClick={() => navigate('/contact')}>Get Started</Button>
+<Clock /> Feb 17, 2025 14:30
+<RefreshCw /> Feb 17, 2025 14:30
+```
+to:
+```
+<Clock /> Last login: Feb 17, 2025 14:30
+<RefreshCw /> Last update: Feb 17, 2025 14:30
 ```
 
-Single one-word change in one file.
+Mobile view (lines 205-220) -- same pattern with shorter date format:
+```
+<Clock /> Last login: Feb 17, 2025
+<RefreshCw /> Last update: Feb 17, 2025
+```
+
+Four text insertions in one file. No logic changes.
 
