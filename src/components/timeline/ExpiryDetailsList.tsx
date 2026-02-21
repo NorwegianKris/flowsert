@@ -28,7 +28,7 @@ export function ExpiryDetailsList({
   const visibleEvents = useMemo(
     () =>
       timelineEvents.filter(
-        (e) => e.daysUntilExpiry >= timelineStartDays && e.daysUntilExpiry <= timelineEndDays
+        (e) => (e.daysUntilExpiry < 0 || e.daysUntilExpiry >= timelineStartDays) && e.daysUntilExpiry <= timelineEndDays
       ),
     [timelineEvents, timelineStartDays, timelineEndDays]
   );
