@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -539,10 +540,10 @@ export function EditCertificateDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="place-of-issue">Place of Issue</Label>
-                <Input
+                <GeoLocationInput
                   id="place-of-issue"
                   value={placeOfIssue}
-                  onChange={(e) => setPlaceOfIssue(e.target.value)}
+                  onChange={(value) => setPlaceOfIssue(value)}
                   placeholder="e.g., Norway"
                 />
               </div>

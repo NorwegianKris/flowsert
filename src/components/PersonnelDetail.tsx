@@ -87,6 +87,7 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 
   const handleProjectClick = (project: Project) => {
     setSelectedProject(project);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const initials = personnel.name

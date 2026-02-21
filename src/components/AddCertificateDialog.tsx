@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -639,10 +640,10 @@ export function AddCertificateDialog({
                                 Place of Issue
                                 {renderFieldIndicator(cert.fieldConfidence?.placeOfIssue)}
                               </Label>
-                              <Input
+                              <GeoLocationInput
                                 placeholder="e.g., Norway"
                                 value={cert.placeOfIssue}
-                                onChange={(e) => handleFieldChange(cert.id, 'placeOfIssue', e.target.value)}
+                                onChange={(value) => handleFieldChange(cert.id, 'placeOfIssue', value)}
                               />
                             </div>
 
