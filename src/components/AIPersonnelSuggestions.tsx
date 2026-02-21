@@ -105,7 +105,7 @@ export function AIPersonnelSuggestions({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4">
-      <div className="flex items-center justify-between p-3 border rounded-lg bg-muted">
+      <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
         <CollapsibleTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -136,7 +136,7 @@ export function AIPersonnelSuggestions({
       </div>
       
       <CollapsibleContent className="mt-2">
-        <div className="p-4 border rounded-lg bg-muted space-y-3">
+        <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
           <Textarea
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
