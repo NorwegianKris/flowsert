@@ -1,32 +1,21 @@
 
 
-## Hide Start Label Behind Month/Year Text on Overlap
+## Update Personnel Labels on Project Cards
 
-**Risk: GREEN** -- purely CSS layering tweak.
+**Risk: GREEN** -- purely UI text change.
 
-### What's Happening
+### Changes
 
-The "Start" label and date sit at `z-10`, but the month row text (e.g., "Feb 2026") is transparent, so the Start text bleeds through visually as seen in the screenshot.
+**File: `src/components/ProjectsTab.tsx`** (lines 211-213)
 
-### Fix
-
-**File: `src/components/project-timeline/TimelineHeader.tsx`** -- two small class changes:
-
-1. **Month row container** (the `<div className="relative h-6">` wrapping month markers): add `z-20` so the entire month row sits above the Start indicator at `z-10`.
-
-2. **Month label `<span>`**: add `bg-background px-0.5` so each label has a solid opaque background that fully covers any Start text or line behind it.
-
-### Technical Detail
+Change the two label strings:
+- `emp` → `Employees`
+- `freelance` → `Freelance`
 
 ```
-Line 63 (month row div):
-- className="relative h-6"
-+ className="relative h-6 z-20"
-
-Line 71 (month label span):
-- className="text-[10px] text-muted-foreground ml-1 whitespace-nowrap select-none"
-+ className="text-[10px] text-muted-foreground ml-1 whitespace-nowrap select-none bg-background px-0.5"
+Line 211: "emp" → "Employees"
+Line 213: "freelance" → "Freelance"
 ```
 
-The month labels become opaque patches that naturally obscure the Start indicator whenever they overlap, exactly as shown in the reference image.
+Both words will start with a capital letter as requested.
 
