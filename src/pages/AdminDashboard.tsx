@@ -332,61 +332,71 @@ export default function AdminDashboard() {
 
   // No full-screen spinner - we render the shell immediately and show skeletons in content areas
 
+  // Determine branch content for personnel/project detail views
+  let branchContent: React.ReactNode = null;
+
   if (selectedPersonnel) {
-    // Find the latest version of selected personnel from the list
     const currentPersonnel = personnel.find(p => p.id === selectedPersonnel.id) || selectedPersonnel;
     
     const handleBack = () => {
       if (previousProject) {
-        // Go back to the project they came from
         const updatedProject = projects.find(p => p.id === previousProject.id) || previousProject;
         setSelectedPersonnel(null);
         setSelectedProject(updatedProject);
         setPreviousProject(null);
       } else {
-        // Go back to dashboard
         setSelectedPersonnel(null);
       }
     };
     
-    return (
-      <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-        <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
-        <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
-          <PersonnelDetail
-            personnel={currentPersonnel}
-            onBack={handleBack}
-            onRefresh={refetch}
-            backLabel={previousProject ? `Back to ${previousProject.name}` : undefined}
-          />
-        </main>
-        <ChatBot isAdmin />
-      </div>
+    branchContent = (
+      <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+        <PersonnelDetail
+          personnel={currentPersonnel}
+          onBack={handleBack}
+          onRefresh={refetch}
+          backLabel={previousProject ? `Back to ${previousProject.name}` : undefined}
+        />
+      </main>
+    );
+  } else if (selectedProject) {
+    branchContent = (
+      <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
+        <ProjectDetail
+          project={selectedProject}
+          personnel={personnel}
+          onBack={() => {
+            setSelectedProject(null);
+            setActiveTab('projects');
+          }}
+          onUpdateProject={handleUpdateProject}
+          onPersonnelClick={(person) => {
+            setPreviousProject(selectedProject);
+            setSelectedProject(null);
+            setSelectedPersonnel(person);
+          }}
+          businessName={business?.name}
+        />
+      </main>
     );
   }
 
-  if (selectedProject) {
+  if (branchContent) {
     return (
       <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
-        <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
-           <ProjectDetail
-            project={selectedProject}
-            personnel={personnel}
-            onBack={() => {
-              setSelectedProject(null);
-              setActiveTab('projects');
-            }}
-            onUpdateProject={handleUpdateProject}
-            onPersonnelClick={(person) => {
-              setPreviousProject(selectedProject);
-              setSelectedProject(null);
-              setSelectedPersonnel(person);
-            }}
-            businessName={business?.name}
-          />
-        </main>
+        {branchContent}
         <ChatBot isAdmin />
+        <LinkProfileDialog
+          open={linkProfileOpen}
+          onOpenChange={setLinkProfileOpen}
+          userId={user?.id || ''}
+          userEmail={profile?.email || ''}
+          userName={profile?.full_name || ''}
+          personnel={personnel}
+          onLinked={refetch}
+          onCreateNew={() => setAddPersonnelOpen(true)}
+        />
       </div>
     );
   }

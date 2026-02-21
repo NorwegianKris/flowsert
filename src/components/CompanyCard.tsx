@@ -347,14 +347,22 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               </a>
             </div>
           )}
-          {businessInfo?.website && (
-            <div className="flex items-center gap-2 text-sm">
-              <Globe className="h-4 w-4 text-muted-foreground" />
-              <a href={businessInfo.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                {businessInfo.website} <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          )}
+          {(() => {
+            const raw = (businessInfo?.website ?? "").trim();
+            const websiteUrl = raw === ""
+              ? ""
+              : /^https?:\/\//i.test(raw)
+                ? raw
+                : `https://${raw}`;
+            return websiteUrl ? (
+              <div className="flex items-center gap-2 text-sm">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                  {raw} <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            ) : null;
+          })()}
           {businessInfo?.org_number && (
             <div className="flex items-center gap-2 text-sm">
               <Hash className="h-4 w-4 text-muted-foreground" />
