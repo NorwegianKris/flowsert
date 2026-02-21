@@ -453,9 +453,8 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
             </div>
           )}
 
-          {/* Next of Kin Section - hidden for freelancers */}
-          {!isFreelancer && (
-            <div className="pt-4 border-t">
+          {/* Next of Kin Section */}
+          <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -487,7 +486,6 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 </div>
               </div>
             </div>
-          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
