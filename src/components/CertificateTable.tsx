@@ -23,7 +23,7 @@ import {
 } from '@/lib/certificateUtils';
 import { getCertificateDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock, Download } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock, Download, RotateCcw, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PdfViewer } from './PdfViewer';
@@ -42,6 +42,14 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
+  const [imgRotation, setImgRotation] = useState(0);
+  const [imgZoom, setImgZoom] = useState(1);
+
+  // Reset image controls when certificate changes
+  useEffect(() => {
+    setImgRotation(0);
+    setImgZoom(1);
+  }, [selectedCertificate?.id]);
   
   // Only load document URLs if profile is activated
   const canAccessDocuments = isProfileActivated;
@@ -339,11 +347,38 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
                     ) : displayUrl && isImageFile(selectedCertificate.documentUrl) ? (
-                      <img
-                        src={displayUrl}
-                        alt={`${selectedCertificate.name} document`}
-                        className="max-h-[400px] object-contain rounded"
-                      />
+                      <div className="w-full">
+                        {/* Image controls */}
+                        <div className="flex items-center justify-center gap-1 mb-3">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(prev => (prev - 90 + 360) % 360)} title="Rotate left">
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(prev => (prev + 90) % 360)} title="Rotate right">
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                          <div className="w-px h-5 bg-border mx-1" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgZoom(prev => Math.max(prev - 0.2, 0.5))} disabled={imgZoom <= 0.5}>
+                            <ZoomOut className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground px-2 min-w-[3rem] text-center">{Math.round(imgZoom * 100)}%</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgZoom(prev => Math.min(prev + 0.2, 3))} disabled={imgZoom >= 3}>
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="overflow-auto max-h-[450px] border rounded-lg bg-muted/10">
+                          <div className="flex justify-center p-4">
+                            <img
+                              src={displayUrl}
+                              alt={`${selectedCertificate.name} document`}
+                              className="object-contain rounded transition-transform"
+                              style={{
+                                transform: `rotate(${imgRotation}deg) scale(${imgZoom})`,
+                                maxHeight: imgRotation % 180 !== 0 ? '600px' : '400px',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     ) : pdfData && isPdfFile(selectedCertificate.documentUrl) ? (
                       <div className="flex flex-col gap-4 w-full">
                         {/* Embedded PDF viewer using canvas (bypasses ad blockers) */}

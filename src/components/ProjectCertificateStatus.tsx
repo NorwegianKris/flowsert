@@ -23,9 +23,11 @@ import {
   getDaysUntilExpiry,
   formatExpiryText,
 } from '@/lib/certificateUtils';
-import { getCertificateDocumentUrl } from '@/lib/storageUtils';
+import { getCertificateDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, ShieldAlert, User, Loader2 } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, Image, File, Tag, ShieldAlert, User, Loader2, RotateCcw, RotateCw, ZoomIn, ZoomOut, Download } from 'lucide-react';
+import { PdfViewer } from './PdfViewer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CertificateWithPersonnel extends Certificate {
   personnelId: string;
@@ -41,19 +43,86 @@ interface ProjectCertificateStatusProps {
 export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatusProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<CertificateWithPersonnel | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
+  const [imgRotation, setImgRotation] = useState(0);
+  const [imgZoom, setImgZoom] = useState(1);
 
-  // Load signed URL when certificate is selected
+  // Reset image controls when certificate changes
+  useEffect(() => {
+    setImgRotation(0);
+    setImgZoom(1);
+  }, [selectedCertificate?.id]);
+
+  // Load document data when certificate is selected
   useEffect(() => {
     if (selectedCertificate?.documentUrl) {
       setLoadingUrl(true);
+      setBlobUrl(null);
+      setPdfData(null);
+
+      // Load signed URL for fallback/download
       getCertificateDocumentUrl(selectedCertificate.documentUrl)
-        .then(url => setSignedUrl(url))
+        .then(url => setSignedUrl(url));
+
+      // Extract file path
+      const path = selectedCertificate.documentUrl.includes('certificate-documents/')
+        ? selectedCertificate.documentUrl.match(/certificate-documents\/(.+)/)?.[1] || selectedCertificate.documentUrl
+        : selectedCertificate.documentUrl;
+
+      // Download file directly via SDK (bypasses ad blockers)
+      supabase.storage
+        .from('certificate-documents')
+        .download(path)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error downloading file:', error);
+            return;
+          }
+          if (data) {
+            setBlobUrl(URL.createObjectURL(data));
+            if (isPdfFile(selectedCertificate.documentUrl || '')) {
+              data.arrayBuffer().then(buffer => setPdfData(buffer));
+            }
+          }
+        })
         .finally(() => setLoadingUrl(false));
     } else {
       setSignedUrl(null);
+      setBlobUrl(null);
+      setPdfData(null);
     }
+
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
   }, [selectedCertificate?.documentUrl]);
+
+  const handleDownloadDocument = async () => {
+    if (!selectedCertificate?.documentUrl) return;
+    const path = selectedCertificate.documentUrl.includes('certificate-documents/')
+      ? selectedCertificate.documentUrl.match(/certificate-documents\/(.+)/)?.[1] || selectedCertificate.documentUrl
+      : selectedCertificate.documentUrl;
+
+    const result = await downloadAsBlob('certificate-documents', path);
+    if (result) {
+      const link = document.createElement('a');
+      link.href = result.blobUrl;
+      link.download = path.split('/').pop() || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => result.revoke(), 60000);
+      return;
+    }
+    // Fallback
+    if (signedUrl) window.open(signedUrl, '_blank');
+  };
+
+  const displayUrl = blobUrl || signedUrl;
 
   // Collect all certificates from assigned personnel with personnel info
   const allCertificates: CertificateWithPersonnel[] = personnel.flatMap((person) =>
@@ -275,15 +344,15 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => signedUrl && window.open(signedUrl, '_blank')}
-                      disabled={!signedUrl || loadingUrl}
+                      onClick={handleDownloadDocument}
+                      disabled={(!displayUrl && !blobUrl) || loadingUrl}
                     >
                       {loadingUrl ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <Download className="h-4 w-4 mr-2" />
                       )}
-                      Open Full Size
+                      Download
                     </Button>
                   </div>
                   <div className="p-4 flex justify-center">
@@ -291,27 +360,47 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
-                    ) : signedUrl && isImageFile(selectedCertificate.documentUrl) ? (
-                      <img
-                        src={signedUrl}
-                        alt={`${selectedCertificate.name} document`}
-                        className="max-h-[400px] object-contain rounded"
-                      />
-                    ) : signedUrl && isPdfFile(selectedCertificate.documentUrl) ? (
-                      <div className="flex flex-col items-center gap-4 py-8 w-full">
+                    ) : displayUrl && isImageFile(selectedCertificate.documentUrl) ? (
+                      <div className="w-full">
+                        {/* Image controls */}
+                        <div className="flex items-center justify-center gap-1 mb-3">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(prev => (prev - 90 + 360) % 360)} title="Rotate left">
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(prev => (prev + 90) % 360)} title="Rotate right">
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                          <div className="w-px h-5 bg-border mx-1" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgZoom(prev => Math.max(prev - 0.2, 0.5))} disabled={imgZoom <= 0.5}>
+                            <ZoomOut className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground px-2 min-w-[3rem] text-center">{Math.round(imgZoom * 100)}%</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgZoom(prev => Math.min(prev + 0.2, 3))} disabled={imgZoom >= 3}>
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="overflow-auto max-h-[450px] border rounded-lg bg-muted/10">
+                          <div className="flex justify-center p-4">
+                            <img
+                              src={displayUrl}
+                              alt={`${selectedCertificate.name} document`}
+                              className="object-contain rounded transition-transform"
+                              style={{
+                                transform: `rotate(${imgRotation}deg) scale(${imgZoom})`,
+                                maxHeight: imgRotation % 180 !== 0 ? '600px' : '400px',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : pdfData && isPdfFile(selectedCertificate.documentUrl) ? (
+                      <div className="w-full">
+                        <PdfViewer pdfData={pdfData} />
+                      </div>
+                    ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
+                      <div className="flex flex-col items-center gap-4 py-8">
                         <File className="h-16 w-16 text-primary" />
-                        <p className="text-muted-foreground text-center">
-                          PDF document attached
-                        </p>
-                        <p className="text-xs text-muted-foreground text-center max-w-md">
-                          For security reasons, PDF previews open in a new tab.
-                        </p>
-                        <Button
-                          onClick={() => window.open(signedUrl, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View PDF Document
-                        </Button>
+                        <p className="text-muted-foreground">PDF loading...</p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
@@ -319,10 +408,10 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
-                          onClick={() => signedUrl && window.open(signedUrl, '_blank')}
-                          disabled={!signedUrl}
+                          onClick={handleDownloadDocument}
+                          disabled={!displayUrl && !blobUrl}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 mr-2" />
                           Download Document
                         </Button>
                       </div>
