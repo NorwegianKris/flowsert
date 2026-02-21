@@ -1,32 +1,40 @@
 
 
-## Restrict Worker Project Chat to Assigned + Activated Personnel
+## Align Availability Bar with Certificate Bars in Project Timeline
 
-**Risk: GREEN** -- purely frontend filtering change, no database or RLS modifications.
+**Risk: GREEN** -- purely UI styling change.
 
 ### Problem
 
-Currently, any worker who is assigned to a project can access the Project Chat in the Chat Hub, regardless of whether their personnel record is activated. Workers should only see and access project chats when they are both **assigned** to the project AND their personnel record has `activated = true`.
+The availability bar in the personnel timeline section doesn't visually align with the compliance/certificate bars below it:
+1. The availability bar uses Tailwind insets (`top-1 bottom-1` = 4px) for vertical positioning, while compliance bars use explicit pixel values (`top: 2px`, `height: 16px`), causing inconsistent vertical alignment.
+2. Minor horizontal start differences due to how positions are calculated.
 
 ### Changes
 
-**File 1: `src/hooks/useWorkerBusinesses.ts`**
+**File: `src/components/project-timeline/AvailabilityLane.tsx`**
 
-- Add `activated` to the `WorkerBusiness` interface
-- Include `activated` in the personnel query (`select('id, name, business_id, activated')`)
-- Map `activated` into the returned `WorkerBusiness` objects
+Update the availability bar rendering to use the same explicit pixel-based positioning as the compliance lane:
+- Replace `top-1 bottom-1` with `top: 2px` and `height: 16px` (matching the compliance bar's first row positioning)
+- Ensure bars that start at project start date begin at `left: 0` consistently
 
-**File 2: `src/components/ChatBot.tsx`**
+This single styling adjustment will make the availability bar height, vertical offset, and horizontal start match the certificate bars exactly.
 
-- Update the worker project fetch filter (around line 169) to also check that the matching personnelId belongs to an activated personnel record
-- Update the `isAssignedToProject` check (around line 216) to also verify the personnel is activated
-- This means only activated workers see projects in the list, and only activated workers can send messages
+### Technical Detail
 
-### How it works
+```tsx
+// Current (misaligned)
+<div
+  className={`absolute top-1 bottom-1 rounded-sm ${statusColor(span.status)} ...`}
+  style={{ left: x1, width }}
+/>
 
-When a worker opens Project Chat, the project list is filtered so that a project only appears if:
-1. The worker's personnelId is in the project's `assigned_personnel` array, AND
-2. That personnelId corresponds to a `WorkerBusiness` entry where `activated` is `true`
+// Updated (aligned with compliance bars)
+<div
+  className={`absolute rounded-sm ${statusColor(span.status)} ...`}
+  style={{ left: x1, width, top: 2, height: 16 }}
+/>
+```
 
-This ensures deactivated workers cannot access project group chats at all.
+One small edit in one file.
 
