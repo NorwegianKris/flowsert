@@ -206,16 +206,16 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                   <Clock className="h-3 w-3" />
                   <span className="text-xs">
                     {personnel.lastLoginAt 
-                      ? format(new Date(personnel.lastLoginAt), 'MMM d, yyyy')
-                      : 'Never logged in'}
+                      ? `Last login: ${format(new Date(personnel.lastLoginAt), 'MMM d, yyyy')}`
+                      : 'Last login: Never'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <RefreshCw className="h-3 w-3" />
                   <span className="text-xs">
                     {personnel.updatedAt 
-                      ? format(new Date(personnel.updatedAt), 'MMM d, yyyy')
-                      : 'Never updated'}
+                      ? `Last update: ${format(new Date(personnel.updatedAt), 'MMM d, yyyy')}`
+                      : 'Last update: Never'}
                   </span>
                 </div>
               </div>
@@ -247,16 +247,16 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                     <Clock className="h-3 w-3" />
                     <span className="text-xs">
                       {personnel.lastLoginAt 
-                        ? format(new Date(personnel.lastLoginAt), 'MMM d, yyyy HH:mm')
-                        : 'Never logged in'}
+                        ? `Last login: ${format(new Date(personnel.lastLoginAt), 'MMM d, yyyy HH:mm')}`
+                        : 'Last login: Never'}
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-1.5 text-muted-foreground">
                     <RefreshCw className="h-3 w-3" />
                     <span className="text-xs">
                       {personnel.updatedAt 
-                        ? format(new Date(personnel.updatedAt), 'MMM d, yyyy HH:mm')
-                        : 'Never updated'}
+                        ? `Last update: ${format(new Date(personnel.updatedAt), 'MMM d, yyyy HH:mm')}`
+                        : 'Last update: Never'}
                     </span>
                   </div>
                 </div>
