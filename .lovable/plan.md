@@ -1,54 +1,69 @@
 
 
-## Fix: AI Search Within Current Pool + Clear Search Button
+## Standardize Document Preview: Embedded PdfViewer + Image Controls
 
-**Risk: 🟢 GREEN** — UI logic only, no backend or data changes.
-
----
-
-### Current Behavior (Broken)
-
-When the AI filter is active, the filtering logic **skips all toggle checks** (lines 228-230 of AdminDashboard). This means AI results can include personnel outside the currently visible pool (e.g., freelancers when only employees are toggled on). Also, the only "Clear Search" button is hidden inside the collapsible AI panel.
-
-### Desired Behavior
-
-1. Admin sets toggles (Employees / Freelancers / etc.) to define the visible personnel pool.
-2. AI search runs **within** that pool — the toggles stay active and are not bypassed.
-3. AI results are **highlighted** (purple ring) but the pool itself stays toggle-filtered.
-4. A visible **"Clear Search"** button appears below the filters (outside the AI panel) when a search is active.
-5. Clicking "Clear Search" removes the highlights and AI filtering, reverting to the exact toggle-based view that was showing before.
+**Risk: GREEN** -- UI-only changes, no backend/data/auth modifications.
 
 ---
 
-### Changes
+### What Changes
 
-**File: `src/pages/AdminDashboard.tsx`**
-
-1. **Fix filtering logic** — Remove the early-return AI bypass (lines 227-230). Instead, let the normal toggle/filter logic run first, and then further narrow to AI-matched IDs at the end:
-   ```
-   // After all normal filters pass...
-   if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) {
-     return false;
-   }
-   return true;
-   ```
-
-2. **Add a "Clear AI Search" bar** — Render a banner between `PersonnelFilters` and the personnel grid whenever `aiFilteredPersonnelIds !== null`. It shows how many results matched and has a "Clear Search" button that:
-   - Sets `aiFilteredPersonnelIds` to `null`
-   - Sets `highlightedPersonnelIds` to `[]`
-   
-   No toggle state snapshot/restore is needed because the toggles are never changed by the AI search anymore.
-
-**File: `src/components/AIPersonnelSuggestions.tsx`**
-
-3. **No toggle state changes needed** — Since the AI filter now works alongside (not replacing) the toggles, the component just sets `aiFilteredPersonnelIds` and `highlightedPersonnelIds` as before. No `onBeforeSearch` callback required.
+Two files need updating to match the standard set by PersonnelDocuments:
 
 ---
 
-### Summary
+### File 1: `src/components/ProjectCertificateStatus.tsx`
 
-| File | Action | What Changes |
-|------|--------|-------------|
-| `src/pages/AdminDashboard.tsx` | MODIFY | Move AI filter to end of filter chain (no bypass); add visible Clear Search bar below filters |
-| `src/components/AIPersonnelSuggestions.tsx` | No change needed | Existing logic is correct once the bypass is removed |
+This is the most broken component -- currently shows "For security reasons, PDF previews open in a new tab" instead of embedding the viewer.
+
+**Changes:**
+
+1. **Add imports**: `PdfViewer`, `supabase`, `downloadAsBlob`, and icons (`RotateCcw`, `RotateCw`, `ZoomIn`, `ZoomOut`, `Download`)
+
+2. **Add new state variables** (lines 42-44 area):
+   - `pdfData: ArrayBuffer | null` -- for PdfViewer
+   - `blobUrl: string | null` -- for image display via blob
+   - `imgRotation: number` (default 0)
+   - `imgZoom: number` (default 1)
+
+3. **Add reset effect**: Reset `imgRotation` and `imgZoom` to defaults when `selectedCertificate.id` changes
+
+4. **Replace the useEffect** (lines 47-56): Instead of just fetching a signed URL, download the file via `supabase.storage.from('certificate-documents').download(path)`:
+   - Create blob URL for images
+   - Get ArrayBuffer for PDFs to feed into PdfViewer
+   - Keep signed URL as fallback for download button
+   - Cleanup blob URLs on unmount/change
+
+5. **Add `handleDownloadDocument` helper**: Uses `downloadAsBlob` for direct download, falls back to signed URL
+
+6. **Replace the document preview section** (lines 289-329):
+   - **Images**: Add rotation + zoom control bar (RotateCcw, RotateCw, ZoomOut, percentage display, ZoomIn), render image inside scrollable container with `transform: rotate(Xdeg) scale(Y)` style
+   - **PDFs**: Replace the "For security reasons" message with embedded `<PdfViewer pdfData={pdfData} />` component (same as PersonnelDocuments)
+   - **Header button**: Change from "Open Full Size" to "Download" using the blob download helper
+
+---
+
+### File 2: `src/components/CertificateTable.tsx`
+
+Already has PdfViewer for PDFs but images are displayed as plain static `<img>` tags without controls.
+
+**Changes:**
+
+1. **Add imports** (line 26): Add `RotateCcw`, `RotateCw`, `ZoomIn`, `ZoomOut` icons
+
+2. **Add state variables** (after line 44):
+   - `imgRotation: number` (default 0)
+   - `imgZoom: number` (default 1)
+
+3. **Add reset effect**: Reset `imgRotation` and `imgZoom` when `selectedCertificate?.id` changes
+
+4. **Replace the image preview** (lines 341-345): Replace the plain `<img>` with the same control bar + scrollable container pattern:
+   - Rotation buttons (left/right)
+   - Zoom controls (out, percentage, in)
+   - Image rendered with `transform: rotate() scale()` CSS
+   - Wrapped in scrollable container with border
+
+---
+
+### No files created or deleted. No backend changes.
 
