@@ -1,59 +1,111 @@
 
 
-## Prompt Risk Assessment: 🟢 Anchor Optional
-Both changes are purely UI-level -- badge labeling and tip text. No database, auth, or access control changes.
+## Patch: Email Delivery Reliability Hotfix (Final)
+
+🟡 Anchor Recommended. Two files changed, one config left unchanged.
 
 ---
 
-## Bug 1: Posted projects shown as "Active" in Request for Project dialog
+### Final tweaks incorporated
 
-**Root Cause:** In `RequestProjectDialog.tsx`, the `statusConfig` map (lines 21-25) only has entries for `active`, `completed`, and `pending`. Projects with `isPosted: true` still have a DB status of `active` or `pending`, so they display with the "Active" badge. The dialog does not check `isPosted` at all.
+1. **`verify_jwt` stays `true`** (default) -- no config.toml change needed. The function is only called from the app with a user session. JWT validation happens both at the gateway and in code (belt + suspenders).
 
-**Fix:** `src/components/RequestProjectDialog.tsx`
+2. **Deadline guard returns a single summary**, not per-recipient errors:
+   - Stop the loop
+   - Add one error: `{ code: "timeout_guard", message: "Stopped after 100s. Remaining: N" }`
+   - Response includes `skipped: N` field for clarity
 
-- Import `Megaphone` from `lucide-react`
-- When rendering each project's badge (line 105-136), check `project.isPosted`. If true, override the badge to show "Posted" with the purple Megaphone styling used in `ProjectsTab.tsx` (`bg-[#C4B5FD] text-[#4338CA]`)
-- The `Project` type from `useProjects` already includes the `isPosted` field
+3. **De-dupe normalizes fully**: `email.trim().toLowerCase()`, filters out null/empty/missing-@ before counting or sending.
 
-```tsx
-// In the map callback, before rendering the badge:
-const isPosted = project.isPosted;
+---
 
-// Badge rendering:
-{isPosted ? (
-  <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0 text-xs">
-    <Megaphone className="h-3 w-3 mr-1" />
-    Posted
-  </Badge>
-) : (
-  <Badge variant={config.variant} className="shrink-0 text-xs">
-    <StatusIcon className="h-3 w-3 mr-1" />
-    {config.label}
-  </Badge>
-)}
+### File 1: `supabase/functions/send-notification-email/index.ts` (REWRITE)
+
+**Input validation + de-dupe**
+- Normalize: `email.trim().toLowerCase()`
+- Filter out falsy values and strings without `@`
+- De-dupe into `uniqueRecipients` array
+- Hard cap: if `uniqueRecipients.length > 40`, return HTTP 400
+
+**Correlation ID**
+- `const sendId = crypto.randomUUID()` at start
+- All console.log lines: `[${sendId}] ...`
+- Included in response
+
+**Sequential sending with 500ms delay**
+- One email at a time, 500ms between each
+- 40 max = ~28s baseline
+
+**Single retry for 429/5xx**
+- 429: read `Retry-After` (fallback 2s), wait, retry once
+- 5xx: wait 1s, retry once
+- Other 4xx: permanent fail
+- Error codes: `rate_limited`, `server_error`, `rejected`, `client_error`, `unknown`
+
+**Deadline guard (100s)**
+- Check `Date.now() > deadline` before each send
+- If hit: stop loop, add single summary error `{ index: currentIndex, code: "timeout_guard", message: "Stopped after 100s. Remaining: N" }`
+- Response includes `skipped` count
+
+**PII safety**
+- Logs use `recipient ${index}` only
+- Catch blocks sanitize thrown errors before logging
+
+**Auth (unchanged pattern)**
+- Validates JWT + admin role in code (same as current)
+- `verify_jwt` stays `true` in config -- no config.toml change
+
+**Response shape:**
+```text
+{
+  send_id: "uuid",
+  attempted: 38,
+  sent: 36,
+  failed: 1,
+  skipped: 1,
+  errors: [
+    { index: 12, code: "rejected", message: "HTTP 422" },
+    { index: 25, code: "timeout_guard", message: "Stopped after 100s. Remaining: 1" }
+  ]
+}
 ```
 
----
-
-## Feature 2: Add tip text to certificate upload zone
-
-**Fix:** `src/components/certificate-upload/UploadZone.tsx`
-
-Add a tip line below the upload zone (in the full upload view, after the dashed box) with a lightbulb emoji:
-
-```tsx
-<p className="text-xs text-muted-foreground mt-2">
-  💡 Upload one certificate at a time. Make sure it is a clear photo, scan, or document for best results.
-</p>
-```
-
-This will be placed after the existing helper text inside the dashed upload zone area, below the "Select up to X files" line.
+**Email template:** identical to current, stays in same file.
 
 ---
 
-## Summary
+### File 2: `src/components/SendNotificationDialog.tsx` (MODIFY)
 
-| File | Change |
-|------|--------|
-| `src/components/RequestProjectDialog.tsx` | Check `isPosted` and show purple "Posted" badge with Megaphone icon instead of "Active" |
-| `src/components/certificate-upload/UploadZone.tsx` | Add lightbulb tip text about uploading one clear certificate at a time |
+**Client-side de-dupe**
+- Normalize emails with `trim().toLowerCase()`, filter out empty/null/no-@
+- De-dupe before counting and before calling the function
+
+**Auto-disable email above 40 unique recipients**
+- Compute `uniqueEmailCount` from de-duped list
+- When `sendEmail` is checked and count > 40:
+  - Auto-uncheck `sendEmail`
+  - Toast: "Email sending is limited to 40 recipients. In-app notification will still be sent."
+- Show inline amber warning when email recipients > 40
+- Send button stays enabled for in-app notification
+
+**Surface delivery results**
+- Capture response from `supabase.functions.invoke`
+- All sent: toast "Email sent to X recipients"
+- Some failed/skipped: warning toast "X of Y emails could not be delivered. Reference: {send_id}"
+- Function error: warning toast "Emails could not be sent. In-app notification was delivered."
+
+---
+
+### No config.toml change
+
+`verify_jwt` remains `true` (default). No entry needed.
+
+---
+
+### Files Changed
+
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/functions/send-notification-email/index.ts` | REWRITE | De-dupe + cap 40, send_id, deadline guard with summary, sequential 500ms, retry once, PII-safe |
+| `src/components/SendNotificationDialog.tsx` | MODIFY | Client-side de-dupe + normalize, auto-disable email > 40, surface results with send_id |
+
