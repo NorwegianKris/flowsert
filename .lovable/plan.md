@@ -1,55 +1,60 @@
 
 
 ## Prompt Risk Assessment: 🟢 Anchor Optional
-Purely UI styling change -- adding selection circles to list items.
+All changes are purely UI text, layout, and styling. No database, auth, or access control changes.
 
 ---
 
 ## Overview
-Add clickable radio-style selection circles to the Worker Groups right-side list, matching the pattern already used in the TypeMergingPane and IssuerMergingPane merged-types list.
+Four minor UI updates: show Next of Kin for freelancers, update login text, add search bar in Edit Project personnel list, and align Post Project section styling.
 
 ---
 
-## Change
+## Changes
 
-**File:** `src/components/WorkerGroupMergingPane.tsx` (lines ~267-278)
+### 1. Show Next of Kin for freelancer profiles
+**Files:** `src/components/PersonnelDetail.tsx` (line ~517), `src/components/EditPersonnelDialog.tsx` (line ~457)
 
-Update the group list items to include a radio-circle indicator before the group name, matching the TypeMergingPane pattern:
+Remove the `{personnel.category !== 'freelancer' && ...}` / `{!isFreelancer && ...}` condition wrapping the Next of Kin section so it displays for all personnel types including freelancers.
 
-- Wrap content in a `flex items-start gap-3` layout
-- Add a `w-4 h-4 rounded-full border-2` circle div that fills purple when selected
-- Show a Check icon inside the circle when selected
-- Update the ring style to `ring-2 ring-primary ring-inset` (matching TypeMergingPane)
-- Move the group name and member count badge inside the flex layout
+### 2. Update login popup text
+**File:** `src/pages/Auth.tsx` (lines 926-934)
 
-**Before:**
+Replace:
+> "Registration is by invitation only. Need access? Contact us"
+
+With:
+> "Registration is by invitation or company-provided link only."
+
+Remove the "Contact us" link since the new text is self-contained.
+
+### 3. Add search bar in Edit Project Assigned Personnel list
+**File:** `src/components/EditProjectDialog.tsx` (lines ~341-365)
+
+Add a search input above the personnel checkbox list that filters personnel by name or role. This requires:
+- A new `personnelSearch` state variable
+- An `Input` with placeholder "Search personnel..." placed between the Label and the list div
+- Filter the `personnel.map()` to only show entries matching the search term
+
+### 4. Lavender styling for Post Project section in Edit Project
+**File:** `src/components/EditProjectDialog.tsx` (line 369)
+
+Change the Post Project toggle container from:
 ```
-<div class="flex items-center justify-between">
-  <span>Offshore</span>
-  <Badge>2 members</Badge>
-</div>
+bg-muted/30 rounded-lg border border-border
+```
+To match AddProjectDialog's styling:
+```
+bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50
 ```
 
-**After:**
-```
-<div class="flex items-start gap-3">
-  <div class="w-4 h-4 rounded-full border-2 ...">  <!-- purple circle -->
-    {isSelected && <Check />}
-  </div>
-  <div class="flex-1 min-w-0">
-    <div class="flex items-center justify-between">
-      <span>Offshore</span>
-      <Badge>2 members</Badge>
-    </div>
-  </div>
-</div>
-```
+This matches the lavender styling already used in `AddProjectDialog.tsx` (line 740).
 
 ---
 
 ## Technical Details
 
-- The `Check` icon is already imported in `WorkerGroupMergingPane.tsx`
-- Selection circle classes: `w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center`, with `border-primary bg-primary` when selected and `border-muted-foreground/30` when not
-- Ring highlight on selected row changes from `ring-1 ring-primary/30` to `ring-2 ring-primary ring-inset` for consistency with TypeMergingPane
-
+- **PersonnelDetail.tsx**: Remove conditional on line 517 (`personnel.category !== 'freelancer'`), keep the Card content as-is.
+- **EditPersonnelDialog.tsx**: Remove conditional on line 457 (`!isFreelancer`), keep the Next of Kin form fields as-is.
+- **Auth.tsx**: Replace lines 926-934 with a simple `<p>` containing the new text, no link needed.
+- **EditProjectDialog.tsx**: Add `useState` for `personnelSearch`, add `Input` component (already imported), filter personnel list with `.filter(p => p.name.toLowerCase().includes(...) || p.role.toLowerCase().includes(...))`. Update the Post Project div classes on line 369.
