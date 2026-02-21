@@ -31,6 +31,7 @@ import {
   XCircle,
   Pencil,
   Inbox,
+  Megaphone,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import {
@@ -197,8 +198,12 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                 className="h-20 w-20 rounded-xl object-cover border border-border"
               />
             ) : (
-              <div className={`p-4 rounded-xl ${config.color}/10`}>
-                <StatusIcon className={`h-12 w-12 ${config.color === 'bg-primary' ? 'text-primary' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
+              <div className={`p-4 rounded-xl ${project.isPosted ? 'bg-[#C4B5FD]/10' : `${config.color}/10`}`}>
+                {project.isPosted ? (
+                  <Megaphone className="h-12 w-12 text-[#C4B5FD]" />
+                ) : (
+                  <StatusIcon className={`h-12 w-12 ${config.color === 'bg-primary' ? 'text-primary' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
+                )}
               </div>
             )}
 
@@ -208,10 +213,17 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                   <h1 className="text-2xl font-bold text-foreground">
                     {project.name}
                   </h1>
-                  <Badge variant={config.variant} className="text-sm">
-                    <StatusIcon className="h-3 w-3 mr-1" />
-                    {config.label}
-                  </Badge>
+                  {project.isPosted ? (
+                    <Badge className="text-sm bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
+                      <Megaphone className="h-3 w-3 mr-1" />
+                      Posted
+                    </Badge>
+                  ) : (
+                    <Badge variant={config.variant} className="text-sm">
+                      <StatusIcon className="h-3 w-3 mr-1" />
+                      {config.label}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-muted-foreground">{project.description}</p>
               </div>
