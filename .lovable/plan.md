@@ -1,26 +1,52 @@
 
 
-## Update Freelance Label to Freelancers on Project Detail Stats Card
+## Redesign Personnel Stats Card to Match Reference Layout
 
-**Risk: GREEN** -- purely UI text change.
+**Risk: GREEN** -- purely UI layout change.
 
-### Change
+### What Changes
 
-**File: `src/components/ProjectDetail.tsx`** (line 259)
+**File: `src/components/ProjectDetail.tsx`** (lines 250-266)
 
-Replace the static label with a flex row showing "Assigned Personnel", employee count, and freelancer count -- with "Freelance" changed to "Freelancers".
+Redesign the personnel stats card so it displays three side-by-side number/label columns after the icon, matching the reference screenshot:
 
-```tsx
-// Replace:
-<p className="text-xs text-muted-foreground">Assigned Personnel</p>
-
-// With:
-<p className="text-xs text-muted-foreground flex items-center gap-1.5">
-  <span>Assigned Personnel</span>
-  <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-  <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
-</p>
+```
+[icon]   3          7           146
+       Personnel  Employees  Freelancers
 ```
 
-Also update **`src/components/ProjectsTab.tsx`** (line 213) to match -- change "Freelance" to "Freelancers" on the project cards as well for consistency.
+Each column uses the same `text-2xl font-bold` for the number and `text-xs text-muted-foreground` for the label. "Assigned Personnel" is shortened to "Personnel".
 
+### Technical Detail
+
+Replace lines 250-266 with:
+
+```tsx
+<Card className="border-border/50">
+  <CardContent className="p-4 flex items-center gap-6">
+    <div className="p-2 rounded-lg bg-violet-500/10">
+      <Users className="h-5 w-5 text-violet-500" />
+    </div>
+    <div className="text-center">
+      <p className="text-2xl font-bold text-foreground">
+        {assignedPersonnel.length}
+      </p>
+      <p className="text-xs text-muted-foreground">Personnel</p>
+    </div>
+    <div className="text-center">
+      <p className="text-2xl font-bold text-foreground">
+        {assignedPersonnel.filter(p => p.category !== 'freelancer').length}
+      </p>
+      <p className="text-xs text-muted-foreground">Employees</p>
+    </div>
+    <div className="text-center">
+      <p className="text-2xl font-bold text-foreground">
+        {assignedPersonnel.filter(p => p.category === 'freelancer').length}
+      </p>
+      <p className="text-xs text-muted-foreground">Freelancers</p>
+    </div>
+  </CardContent>
+</Card>
+```
+
+Single file, single card redesign. The other two stats cards (Total Days, Project Status) remain unchanged.
