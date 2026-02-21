@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Project } from '@/hooks/useProjects';
 import { useProjectInvitations } from '@/hooks/useProjectInvitations';
-import { FolderOpen, Clock, CheckCircle, Send } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, Send, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RequestProjectDialogProps {
@@ -130,10 +130,17 @@ export function RequestProjectDialog({
                             Start: {new Date(project.startDate).toLocaleDateString()}
                           </p>
                         </div>
-                        <Badge variant={config.variant} className="shrink-0 text-xs">
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {config.label}
-                        </Badge>
+                        {project.isPosted ? (
+                          <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0 text-xs">
+                            <Megaphone className="h-3 w-3 mr-1" />
+                            Posted
+                          </Badge>
+                        ) : (
+                          <Badge variant={config.variant} className="shrink-0 text-xs">
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {config.label}
+                          </Badge>
+                        )}
                       </div>
                     </button>
                   );

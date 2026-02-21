@@ -116,6 +116,9 @@ export function UploadZone({
           <p className="text-xs text-muted-foreground mt-2">
             Select up to {maxFiles} files • PDF, JPEG, PNG, WebP • Drag & drop or click
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            💡 Upload one certificate at a time. Make sure it is a clear photo, scan, or document for best results.
+          </p>
         </div>
       </div>
     </>
