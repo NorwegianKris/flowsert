@@ -569,8 +569,8 @@ export default function Auth() {
       {/* Workforce Compliance Section */}
       <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-start">
+           <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-16 items-start">
               {/* Content - Right */}
               <div className="order-2 md:order-2">
                 <h2 className="text-2xl md:text-3xl font-bold font-rajdhani text-foreground mb-6 leading-tight">
@@ -716,8 +716,8 @@ export default function Auth() {
       {/* User Story Section */}
       <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-start">
+           <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-16 items-start">
               {/* Polaroid Images */}
               <div className="order-2 md:order-1">
                 <div className="relative h-[380px] flex justify-center">
