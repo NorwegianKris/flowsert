@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
 import beforeCompliance from '@/assets/before-compliance.png';
+import afterCompliance from '@/assets/after-compliance.png';
 import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import { PublicHeader } from '@/components/PublicHeader';
@@ -597,7 +598,7 @@ export default function Auth() {
               <div className="order-1 md:order-1">
                 <div className="relative h-[380px] flex justify-center">
                   {/* Before label */}
-                  <span className="absolute left-1/2 -translate-x-[85%] -top-6 text-sm font-semibold text-muted-foreground text-left w-72 md:w-[21rem]">
+                  <span className="absolute left-1/2 -translate-x-[85%] -top-8 text-lg font-bold text-muted-foreground text-left w-72 md:w-[21rem]">
                     Before
                   </span>
                   {/* Back Polaroid */}
@@ -615,7 +616,7 @@ export default function Auth() {
                   </div>
                   
                   {/* After label */}
-                  <span className="absolute left-1/2 -translate-x-[30%] top-14 text-right w-72 md:w-[21rem] text-sm font-semibold text-muted-foreground">
+                  <span className="absolute left-1/2 -translate-x-[30%] top-12 text-right w-72 md:w-[21rem] text-lg font-bold text-muted-foreground">
                     After
                   </span>
                   {/* Front Polaroid */}
@@ -625,8 +626,8 @@ export default function Auth() {
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
                       <img 
-                        src={technoDiveDiver} 
-                        alt="Professional diver with equipment" 
+                        src={afterCompliance} 
+                        alt="Admin using Flowsert dashboard on monitor"
                         className="w-full h-full object-cover"
                       />
                     </div>
