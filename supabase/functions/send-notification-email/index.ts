@@ -14,6 +14,12 @@ interface NotificationEmailRequest {
   notificationId?: string;
 }
 
+interface SendError {
+  index: number;
+  code: string;
+  message: string;
+}
+
 // FlowSert logo URL from storage
 const logoUrl = "https://frgsnallgwkufyzabeje.supabase.co/storage/v1/object/public/avatars/email-logo.jpg";
 
@@ -76,42 +82,125 @@ const getEmailTemplate = (subject: string, message: string, notificationId?: str
   `;
 };
 
+/**
+ * Map HTTP status to a conservative error code.
+ * If classification is uncertain, returns "unknown".
+ */
+function mapErrorCode(status: number | null): string {
+  if (status === null) return "unknown";
+  if (status === 429) return "rate_limited";
+  if (status === 422) return "rejected";
+  if (status >= 500) return "server_error";
+  if (status >= 400) return "client_error";
+  return "unknown";
+}
+
+/**
+ * Send a single email via Resend with one retry for 429/5xx.
+ * Returns { ok, code, message }.
+ * Never leaks PII in logs or return values.
+ */
+async function sendOneEmail(
+  email: string,
+  subject: string,
+  htmlBody: string,
+  apiKey: string,
+  index: number,
+  sendId: string,
+  deadline: number,
+): Promise<{ ok: boolean; code: string; message: string }> {
+  const attempt = async (): Promise<Response> => {
+    return await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: "FlowSert <noreply@flowsert.com>",
+        to: [email],
+        subject: `New notification: ${subject}`,
+        html: htmlBody,
+      }),
+    });
+  };
+
+  try {
+    let res = await attempt();
+
+    // Retry once for 429 or 5xx
+    if (!res.ok && (res.status === 429 || res.status >= 500)) {
+      const retryCode = res.status === 429 ? "429" : `${res.status}`;
+      console.log(`[${sendId}] recipient ${index} got ${retryCode}, will retry once`);
+
+      // Determine wait time
+      let waitMs = 1000;
+      if (res.status === 429) {
+        const retryAfter = res.headers.get("Retry-After");
+        waitMs = retryAfter ? Math.min(parseInt(retryAfter, 10) * 1000, 5000) || 2000 : 2000;
+      }
+
+      // Check deadline before retry
+      if (Date.now() + waitMs > deadline) {
+        console.log(`[${sendId}] recipient ${index} retry would exceed deadline, skipping`);
+        return { ok: false, code: mapErrorCode(res.status), message: `HTTP ${res.status} (no retry, deadline)` };
+      }
+
+      await new Promise((r) => setTimeout(r, waitMs));
+      res = await attempt();
+    }
+
+    if (res.ok) {
+      return { ok: true, code: "sent", message: "OK" };
+    }
+
+    const code = mapErrorCode(res.status);
+    console.log(`[${sendId}] recipient ${index} failed: HTTP ${res.status}`);
+    return { ok: false, code, message: `HTTP ${res.status}` };
+  } catch (_err) {
+    // Sanitize: never log the error object which may contain PII from request payload
+    console.log(`[${sendId}] recipient ${index} failed: network_error`);
+    return { ok: false, code: "unknown", message: "Network error" };
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const sendId = crypto.randomUUID();
+  console.log(`[${sendId}] send-notification-email invoked`);
+
   try {
-    // Verify authentication - only admins can send notifications
+    // --- Auth: validate JWT + admin role ---
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Missing authentication" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: authHeader } } },
     );
 
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    
+
     if (claimsError || !claimsData?.claims) {
-      console.error("Auth verification failed:", claimsError);
+      console.error(`[${sendId}] auth verification failed`);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Invalid token" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
     const userId = claimsData.claims.sub;
 
-    // Verify user has admin role
     const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
@@ -119,82 +208,133 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (roleError || roleData?.role !== "admin") {
-      console.error("Authorization failed: User is not an admin");
+      console.error(`[${sendId}] authorization failed: not admin`);
       return new Response(
         JSON.stringify({ error: "Forbidden: Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
+    // --- Validate secrets ---
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
+    // --- Parse and validate input ---
     const { emails, subject, message, notificationId }: NotificationEmailRequest = await req.json();
 
-    // Validate required fields
-    if (!emails || emails.length === 0 || !subject || !message) {
-      throw new Error("Missing required fields");
+    if (!subject || !message) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: subject and message" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
-    // Send emails in batches to avoid rate limits
-    const batchSize = 10;
-    const batches = [];
-    for (let i = 0; i < emails.length; i += batchSize) {
-      batches.push(emails.slice(i, i + batchSize));
+    if (!emails || !Array.isArray(emails)) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: emails (array)" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
-    let successful = 0;
+    // --- De-dupe: normalize, filter, unique ---
+    const seen = new Set<string>();
+    const uniqueRecipients: string[] = [];
+
+    for (const raw of emails) {
+      if (!raw || typeof raw !== "string") continue;
+      const normalized = raw.trim().toLowerCase();
+      if (!normalized || !normalized.includes("@")) continue;
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      uniqueRecipients.push(normalized);
+    }
+
+    if (uniqueRecipients.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No valid email recipients after filtering" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
+    // --- Hard cap: 40 unique recipients ---
+    if (uniqueRecipients.length > 40) {
+      return new Response(
+        JSON.stringify({
+          error: `Too many recipients (max 40 unique emails). Received: ${uniqueRecipients.length}`,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
+    console.log(`[${sendId}] sending to ${uniqueRecipients.length} unique recipients`);
+
+    // --- Sequential send with 500ms delay and 100s deadline ---
+    const deadline = Date.now() + 100_000;
+    const htmlBody = getEmailTemplate(subject, message, notificationId);
+    const errors: SendError[] = [];
+    let sent = 0;
     let failed = 0;
+    let skipped = 0;
 
-    for (const batch of batches) {
-      const promises = batch.map(async (email) => {
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: "FlowSert <noreply@flowsert.com>",
-            to: [email],
-            subject: `New notification: ${subject}`,
-            html: getEmailTemplate(subject, message, notificationId),
-          }),
+    for (let i = 0; i < uniqueRecipients.length; i++) {
+      // Deadline guard: single summary, then break
+      if (Date.now() > deadline) {
+        const remaining = uniqueRecipients.length - i;
+        skipped = remaining;
+        errors.push({
+          index: i,
+          code: "timeout_guard",
+          message: `Stopped after 100s. Remaining: ${remaining}`,
         });
-        if (!res.ok) {
-          throw new Error(`Failed to send to ${email}`);
-        }
-        return res;
-      });
+        console.log(`[${sendId}] deadline reached at index ${i}, skipping ${remaining} remaining`);
+        break;
+      }
 
-      const batchResults = await Promise.allSettled(promises);
-      successful += batchResults.filter(r => r.status === 'fulfilled').length;
-      failed += batchResults.filter(r => r.status === 'rejected').length;
+      const result = await sendOneEmail(
+        uniqueRecipients[i],
+        subject,
+        htmlBody,
+        RESEND_API_KEY,
+        i,
+        sendId,
+        deadline,
+      );
+
+      if (result.ok) {
+        sent++;
+      } else {
+        failed++;
+        errors.push({ index: i, code: result.code, message: result.message });
+      }
+
+      // 500ms delay between sends (skip after last)
+      if (i < uniqueRecipients.length - 1) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
     }
 
-    console.log(`Email notifications sent: ${successful} successful, ${failed} failed`);
+    console.log(`[${sendId}] done: attempted=${uniqueRecipients.length}, sent=${sent}, failed=${failed}, skipped=${skipped}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sent: successful, 
-        failed: failed 
+      JSON.stringify({
+        send_id: sendId,
+        attempted: uniqueRecipients.length,
+        sent,
+        failed,
+        skipped,
+        errors,
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (error: any) {
-    console.error("Error in send-notification-email function:", error);
+    // Sanitize error message to avoid PII leaks
+    const safeMessage = error?.message || "Unknown error";
+    console.error(`[${sendId}] fatal error: ${safeMessage}`);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ error: safeMessage, send_id: sendId }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   }
 };

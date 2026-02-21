@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Users, X, Search, GripVertical } from 'lucide-react';
+import { Loader2, Send, Users, X, Search, GripVertical, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,23 @@ interface SendNotificationDialogProps {
 
 type RecipientGroup = 'employee' | 'freelancer';
 
+const MAX_EMAIL_RECIPIENTS = 40;
+
+/** Normalize and de-dupe emails, filtering out invalid ones */
+function dedupeEmails(emails: (string | null | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of emails) {
+    if (!raw || typeof raw !== 'string') continue;
+    const normalized = raw.trim().toLowerCase();
+    if (!normalized || !normalized.includes('@')) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+  return result;
+}
+
 export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNotificationDialogProps) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -30,7 +47,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
   const [sending, setSending] = useState(false);
   const [showIndividualSelect, setShowIndividualSelect] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [listHeight, setListHeight] = useState(160); // Default height in pixels
+  const [listHeight, setListHeight] = useState(160);
   
   const { businessId, user } = useAuth();
   const { toast } = useToast();
@@ -65,7 +82,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
     
     const individualRecipients = personnel.filter(p => selectedIndividuals.includes(p.id));
     
-    // Combine and deduplicate
     const allRecipients = [...groupRecipients, ...individualRecipients];
     const unique = allRecipients.filter((p, index, self) => 
       index === self.findIndex(t => t.id === p.id)
@@ -76,7 +92,24 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
   const recipientCount = getRecipients().length;
 
-  // Filter personnel based on search query
+  // Compute unique email count from current recipients
+  const uniqueEmailCount = useMemo(() => {
+    const recipients = getRecipients();
+    return dedupeEmails(recipients.map(r => r.email)).length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroups, selectedIndividuals, personnel]);
+
+  // Auto-disable email when over cap
+  useEffect(() => {
+    if (sendEmail && uniqueEmailCount > MAX_EMAIL_RECIPIENTS) {
+      setSendEmail(false);
+      toast({
+        title: 'Email limit reached',
+        description: `Email sending is limited to ${MAX_EMAIL_RECIPIENTS} recipients. In-app notification will still be sent.`,
+      });
+    }
+  }, [uniqueEmailCount, sendEmail, toast]);
+
   const filteredPersonnel = useMemo(() => {
     if (!searchQuery.trim()) return personnel;
     const query = searchQuery.toLowerCase();
@@ -86,7 +119,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
     );
   }, [personnel, searchQuery]);
 
-  // Handle resize drag
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
     const startY = e.clientY;
@@ -157,23 +189,57 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
       // Send email notifications if enabled
       if (sendEmail) {
-        const emailRecipients = recipients.filter(r => r.email).map(r => r.email);
-        if (emailRecipients.length > 0) {
-          await supabase.functions.invoke('send-notification-email', {
+        const dedupedEmails = dedupeEmails(recipients.map(r => r.email));
+
+        if (dedupedEmails.length > 0) {
+          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-notification-email', {
             body: {
-              emails: emailRecipients,
+              emails: dedupedEmails,
               subject: subject.trim(),
               message: message.trim(),
               notificationId: notification.id,
             },
           });
-        }
-      }
 
-      toast({
-        title: 'Notification sent',
-        description: `Successfully sent to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}.`,
-      });
+          if (emailError) {
+            // In-app notification succeeded, email failed
+            toast({
+              title: 'Notification sent',
+              description: `In-app notification delivered to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}. Emails could not be sent.`,
+            });
+          } else if (emailResult) {
+            const { send_id, attempted, sent, failed, skipped, errors } = emailResult;
+            const problemCount = (failed || 0) + (skipped || 0);
+
+            if (problemCount === 0) {
+              toast({
+                title: 'Notification sent',
+                description: `Delivered to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}. Email sent to ${sent} recipient${sent !== 1 ? 's' : ''}.`,
+              });
+            } else {
+              toast({
+                title: 'Notification sent with email issues',
+                description: `In-app: ${recipients.length} delivered. Email: ${sent} of ${attempted} sent.${skipped ? ` ${skipped} skipped.` : ''} Reference: ${send_id}`,
+              });
+            }
+          } else {
+            toast({
+              title: 'Notification sent',
+              description: `Successfully sent to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}.`,
+            });
+          }
+        } else {
+          toast({
+            title: 'Notification sent',
+            description: `In-app notification delivered. No valid email addresses found.`,
+          });
+        }
+      } else {
+        toast({
+          title: 'Notification sent',
+          description: `Successfully sent to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}.`,
+        });
+      }
 
       // Reset form
       setSubject('');
@@ -200,6 +266,8 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
       onOpenChange(false);
     }
   };
+
+  const showEmailCapWarning = uniqueEmailCount > MAX_EMAIL_RECIPIENTS;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -252,7 +320,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
             <div className="space-y-2">
               <Label className="text-sm font-medium">Select individual personnel</Label>
               
-              {/* Search field */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -263,7 +330,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                 />
               </div>
               
-              {/* Resizable personnel list */}
               <div className="border rounded-md overflow-hidden">
                 <ScrollArea style={{ height: listHeight }} className="p-2">
                   <div className="space-y-1">
@@ -305,7 +371,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                   </div>
                 </ScrollArea>
                 
-                {/* Resize handle */}
                 <div
                   className="h-3 bg-muted/50 hover:bg-muted cursor-ns-resize flex items-center justify-center border-t"
                   onMouseDown={handleResizeStart}
@@ -390,15 +455,29 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
             </p>
           </div>
 
+          {/* Email Cap Warning */}
+          {showEmailCapWarning && (
+            <div className="flex items-start gap-2 p-3 border rounded-lg bg-destructive/10 border-destructive/20">
+              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <p className="text-sm text-destructive">
+                Email is limited to {MAX_EMAIL_RECIPIENTS} recipients at a time. For larger groups, send in-app only or split into smaller batches.
+              </p>
+            </div>
+          )}
+
           {/* Email Option */}
           <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
             <Checkbox
               id="sendEmail"
               checked={sendEmail}
               onCheckedChange={(checked) => setSendEmail(checked === true)}
+              disabled={showEmailCapWarning}
             />
             <Label htmlFor="sendEmail" className="text-sm cursor-pointer">
               Also send email notification to recipients
+              {showEmailCapWarning && (
+                <span className="text-xs text-muted-foreground ml-1">(exceeds {MAX_EMAIL_RECIPIENTS} limit)</span>
+              )}
             </Label>
           </div>
         </div>
