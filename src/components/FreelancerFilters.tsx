@@ -20,9 +20,6 @@ export function FreelancerFilters({
   onShowFreelancersOnlyChange,
 }: FreelancerFiltersProps) {
   const handleIncludeEmployeesChange = (checked: boolean) => {
-    if (!checked && !includeFreelancers) {
-      onIncludeFreelancersChange(true);
-    }
     onIncludeEmployeesChange(checked);
     if (checked && showFreelancersOnly) {
       onShowFreelancersOnlyChange(false);
@@ -30,9 +27,6 @@ export function FreelancerFilters({
   };
 
   const handleIncludeFreelancersChange = (checked: boolean) => {
-    if (!checked && !includeEmployees) {
-      onIncludeEmployeesChange(true);
-    }
     onIncludeFreelancersChange(checked);
     if (!checked && showFreelancersOnly) {
       onShowFreelancersOnlyChange(false);
@@ -42,7 +36,6 @@ export function FreelancerFilters({
   const handleShowOnlyChange = (checked: boolean) => {
     onShowFreelancersOnlyChange(checked);
     if (checked) {
-      // Automatically enable include freelancers and disable employees
       if (!includeFreelancers) onIncludeFreelancersChange(true);
       if (includeEmployees) onIncludeEmployeesChange(false);
     }
