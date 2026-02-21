@@ -30,7 +30,7 @@ import {
   XCircle,
   Pencil,
   Flag,
-  FolderOpen,
+  
   Inbox,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -342,7 +342,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                     <span className="hidden sm:inline">Calendar</span>
                   </TabsTrigger>
                   <TabsTrigger value="documents" className="gap-1.5 text-xs sm:text-sm">
-                    <FolderOpen className="h-4 w-4 text-amber-500" />
+                    <FileText className="h-4 w-4 text-amber-500" />
                     <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
                 </TabsList>
