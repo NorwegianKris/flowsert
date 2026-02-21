@@ -1,28 +1,19 @@
 
+## Increase Spacing Between Columns in Both Sections
 
-## Add "Before" and "After" Labels Above Polaroid Images
+**Risk: GREEN** -- purely CSS layout adjustment.
 
-**Risk: GREEN** -- purely UI text addition.
+### Problem
+
+Both the "Workforce compliance" and "Techno Dive" sections use `max-w-5xl` (64rem) containers with `gap-12` (3rem) between the two columns. The middle gap feels tight relative to the outer padding.
+
+### Solution
+
+In both sections, increase the container width from `max-w-5xl` to `max-w-6xl` and increase the column gap from `gap-12` to `gap-16`. This gives more breathing room between the image and text columns while also widening the layout so the side margins remain proportional to the center gap.
 
 ### File: `src/pages/Auth.tsx`
 
-Add text labels above each polaroid card in the "Workforce compliance is a universal need" section (lines 598-624):
+Two changes:
 
-1. **"Before" label** above the left/back polaroid (before line 599): Add a `<span>` positioned with `absolute` matching the polaroid's position (`left-1/2 -translate-x-[85%]`) but offset above it (e.g. `-top-6`), aligned to the left edge of the card. Text styled in `text-sm font-semibold text-muted-foreground`.
-
-2. **"After" label** above the right/front polaroid (before line 613): Add a `<span>` positioned with `absolute` matching the polaroid's position (`left-1/2 -translate-x-[30%]`) offset above its top (`top-14` to sit above the `top-20` card), with `text-right w-72 md:w-[21rem]` so the text aligns to the right edge of the card. Same text styling.
-
-### Technical Detail
-
-```tsx
-{/* Before label */}
-<span className="absolute left-1/2 -translate-x-[85%] -top-6 text-sm font-semibold text-muted-foreground">
-  Before
-</span>
-
-{/* After label */}
-<span className="absolute left-1/2 -translate-x-[30%] top-14 text-right w-72 md:w-[21rem] text-sm font-semibold text-muted-foreground">
-  After
-</span>
-```
-
+1. **Workforce Compliance section** (line 572-573): Change `max-w-5xl` to `max-w-6xl` and `gap-12` to `gap-16`
+2. **Techno Dive section** (line 719-720): Change `max-w-5xl` to `max-w-6xl` and `gap-12` to `gap-16`
