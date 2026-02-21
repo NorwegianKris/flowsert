@@ -564,44 +564,68 @@ export default function Auth() {
         </section>
       </div>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-primary/5">
+      {/* Workforce Compliance Section */}
+      <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold font-rajdhani text-foreground mb-4 text-center">How It Works</h2>
-            <p className="text-muted-foreground text-center mb-14 max-w-xl mx-auto">
-              Get your team up and running in minutes with our simple three-step process.
-            </p>
-            <div className="grid md:grid-cols-3 gap-12">
-              <div className="text-center group">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:opacity-90 transition-opacity" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
-                  <Users className="h-9 w-9 text-white" />
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>1</div>
+            <div className="grid md:grid-cols-2 gap-12 items-start">
+              {/* Content - Left */}
+              <div className="order-1">
+                <h2 className="text-2xl md:text-3xl font-bold font-rajdhani text-foreground mb-6 leading-tight">
+                  Workforce Compliance is Universal
+                </h2>
+                <div className="space-y-4 text-muted-foreground">
+                  <p>
+                    Sourcing the right people, in the right place, at the right time is a universal operational need.
+                  </p>
+                  <p>
+                    In project-based industries, that depends on knowing exactly who is certified, available, and compliant — at any moment.
+                  </p>
+                  <p>
+                    FlowSert gives you instant control over workforce credentials, AI-assisted structured search across personnel, and efficient project staffing — all in one system.
+                  </p>
+                  <p className="font-medium text-foreground">
+                    No scattered emails.<br />
+                    No Excel tracking.<br />
+                    No last-minute certificate surprises.
+                  </p>
+                  <p>
+                    Just structured compliance and predictable mobilization.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Set Up Your Team</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Create your business account and invite your personnel to join the platform.
-                </p>
               </div>
-              <div className="text-center group">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:opacity-90 transition-opacity" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
-                  <FileCheck className="h-9 w-9 text-white" />
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>2</div>
+
+              {/* Polaroid Images - Right */}
+              <div className="order-2">
+                <div className="relative h-[380px] flex justify-center">
+                  {/* Back Polaroid */}
+                  <div 
+                    className="absolute left-1/2 -translate-x-[85%] top-0 w-48 md:w-56 bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
+                    style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
+                  >
+                    <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
+                      <img 
+                        src={technoDiveWorker} 
+                        alt="Worker inspecting equipment" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Front Polaroid */}
+                  <div 
+                    className="absolute left-1/2 -translate-x-[30%] top-20 w-48 md:w-56 bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
+                    style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
+                  >
+                    <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
+                      <img 
+                        src={technoDiveDiver} 
+                        alt="Professional diver with equipment" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Upload Certificates</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Workers upload their certificates and documentation to their personal profiles.
-                </p>
-              </div>
-              <div className="text-center group">
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 relative group-hover:opacity-90 transition-opacity" style={{ background: 'linear-gradient(135deg, #C4B5FD 0%, #6366F1 50%, #4338CA 100%)' }}>
-                  <Shield className="h-9 w-9 text-white" />
-                  <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>3</div>
-                </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Stay Compliant</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Get full visibility into certification status and never miss a renewal.
-                </p>
               </div>
             </div>
           </div>
