@@ -39,7 +39,7 @@ import { Personnel } from '@/types';
 import { LinkProfileDialog } from '@/components/LinkProfileDialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, LogOut, Plus, Users, LayoutDashboard, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown } from 'lucide-react';
+import { Loader2, LogOut, Plus, Users, LayoutDashboard, FolderOpen, Settings, Shield, Building2, Bell, Search, ChevronDown, Send, List, FileDown, Sparkles, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -224,11 +224,6 @@ export default function AdminDashboard() {
 
   const filteredPersonnel = useMemo(() => {
     const filtered = personnel.filter((p) => {
-      // AI filter takes priority - if active, only show AI-matched personnel
-      if (aiFilteredPersonnelIds !== null) {
-        return aiFilteredPersonnelIds.includes(p.id);
-      }
-      
       // Employee filter
       const isEmployee = p.category === 'employee' || !p.category || (p.category !== 'freelancer');
       const isFreelancer = p.category === 'freelancer';
@@ -289,6 +284,11 @@ export default function AdminDashboard() {
       if (groupFilter !== null) {
         const groupSet = new Set(groupFilter);
         if (!groupSet.has(p.id)) return false;
+      }
+      
+      // AI filter - applied last, within the current toggle-filtered pool
+      if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) {
+        return false;
       }
       
       return true;
@@ -560,6 +560,25 @@ export default function AdminDashboard() {
               onWorkerGroupFiltersChange={setWorkerGroupFilters}
             />
             
+            {aiFilteredPersonnelIds !== null && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex items-center gap-2 text-sm text-primary">
+                  <Sparkles className="h-4 w-4" />
+                  <span>AI search active — showing {filteredPersonnel.length} results</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAiFilteredPersonnelIds(null);
+                    setHighlightedPersonnelIds([]);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear Search
+                </Button>
+              </div>
+            )}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
                 {Array.from({ length: 6 }).map((_, i) => (
