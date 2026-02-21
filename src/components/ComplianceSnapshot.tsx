@@ -159,7 +159,7 @@ export function ComplianceSnapshot({
               <ToggleGroupItem 
                 value="all" 
                 aria-label="All personnel"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+                className="data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
               >
                 <Users className="h-4 w-4 mr-1.5" />
                 All
@@ -167,21 +167,21 @@ export function ComplianceSnapshot({
               <ToggleGroupItem 
                 value="employees" 
                 aria-label="Employees only"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+                className="data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
               >
                 Employees
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="freelancers" 
                 aria-label="Freelancers only"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+                className="data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
               >
                 Freelancers
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="custom" 
                 aria-label="Custom filter"
-                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm px-3 py-1.5 text-sm gap-1.5"
+                className="data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm gap-1.5"
                 onClick={(e) => {
                   if (personnelFilter === 'custom') {
                     e.preventDefault();
