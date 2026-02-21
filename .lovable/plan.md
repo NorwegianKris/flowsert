@@ -1,54 +1,39 @@
 
 
-## Fix: Personnel Toggle Independence
+## Minor UI Text and Styling Fixes
 
-**Risk: 🟢 GREEN** — Pure UI logic, no backend changes.
+**Risk: 🟢 GREEN** — Text and CSS-only changes. No backend, auth, or access control affected.
 
 ---
 
-### Current Problem
-
-"Include Employees" auto-enables "Include Freelancers" when toggled off (and vice versa). The user wants simpler, more independent behavior.
-
-### New Behavior
-
-- **Include Employees**: default ON. Only affected by "Show freelancers only" (which turns it OFF). Otherwise fully independent — toggling "Include Freelancers" has no effect on it.
-- **Include Freelancers**: default OFF. Independent of "Include Employees". Turned off if "Show freelancers only" is turned off.
-- **Show freelancers only**: default OFF. Turning ON sets Employees=OFF and Freelancers=ON. Turning OFF just disables itself.
-
-This means both "Include Employees" and "Include Freelancers" can be OFF simultaneously (showing no personnel). That's acceptable — the user wants independence.
-
-### Change
+### 1. Capitalize "Freelancers" in Personnel View toggles
 
 **File:** `src/components/FreelancerFilters.tsx`
 
-Replace the three handlers with:
+- Line 69: `Include freelancers` → `Include Freelancers`
+- Line 80: `Show freelancers only` → `Show Freelancers only`
 
-```typescript
-const handleIncludeEmployeesChange = (checked: boolean) => {
-  onIncludeEmployeesChange(checked);
-  if (checked && showFreelancersOnly) {
-    onShowFreelancersOnlyChange(false);
-  }
-};
+### 2. Purple icon for Personnel View
 
-const handleIncludeFreelancersChange = (checked: boolean) => {
-  onIncludeFreelancersChange(checked);
-  if (!checked && showFreelancersOnly) {
-    onShowFreelancersOnlyChange(false);
-  }
-};
+**File:** `src/components/FreelancerFilters.tsx`
 
-const handleShowOnlyChange = (checked: boolean) => {
-  onShowFreelancersOnlyChange(checked);
-  if (checked) {
-    if (!includeFreelancers) onIncludeFreelancersChange(true);
-    if (includeEmployees) onIncludeEmployeesChange(false);
-  }
-};
+- Line 47: Change `<Users className="h-4 w-4" />` to `<Users className="h-4 w-4 text-primary" />` to match the AI Personnel Search sparkle icon color.
+
+### 3. Update Smart Upload text
+
+**File:** `src/components/certificate-upload/UploadZone.tsx`
+
+Update lines 112-121 to:
+
 ```
+Smart Upload
 
-No guard logic, no auto-enabling companions. Simple and direct.
+Upload your certificate(s) and we'll extract the details automatically
+
+Select up to 10 files • PDF, JPEG, PNG, WebP • Drag & drop or click
+
+💡 Make sure your upload(s) is a clear photo, scan, or document for best results.
+```
 
 ---
 
@@ -56,5 +41,6 @@ No guard logic, no auto-enabling companions. Simple and direct.
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/FreelancerFilters.tsx` | MODIFY | Simplify handlers to make toggles independent |
+| `src/components/FreelancerFilters.tsx` | MODIFY | Capitalize "Freelancers", add `text-primary` to Users icon |
+| `src/components/certificate-upload/UploadZone.tsx` | MODIFY | Update Smart Upload description text |
 
