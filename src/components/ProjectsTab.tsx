@@ -207,6 +207,11 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
                 +{assignedPersonnel.length - 4} more
               </span>
             )}
+            <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1.5">
+              <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} emp</span>
+              <span className="text-border">|</span>
+              <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} freelance</span>
+            </span>
           </div>
         )}
         
