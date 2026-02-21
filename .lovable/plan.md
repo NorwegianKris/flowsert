@@ -1,33 +1,22 @@
 
 
-## Fix Inconsistent Certificate Document Icons
+## Redirect FAQ "Get Started" Button to Contact Page
 
-**Risk: GREEN** -- purely UI styling fix
+**Risk: GREEN** -- purely UI text/navigation change.
 
-### Problem
+### Change
 
-The `FileText` icon next to certificate names shrinks inconsistently because it lacks the `flex-shrink-0` CSS class. In a flex container, when a certificate name is long (e.g., "Advanced Fire Fighting"), the browser compresses the icon to make room for the text. Shorter names (e.g., "Diving") leave enough space so the icon renders at full size. This causes the visual inconsistency you're seeing.
+**File: `src/pages/FAQ.tsx` (line 121)**
 
-### Fix
+Update the "Get Started" button's `onClick` handler to navigate to `/contact` instead of `/auth`, matching the same pattern already used on the About page.
 
-Add `flex-shrink-0` to the `FileText` icon in both certificate list components to prevent the icon from being compressed:
-
-**File 1: `src/components/ProjectCertificateStatus.tsx` (line 239)**
 ```
 // Before
-<FileText className="h-4 w-4 text-muted-foreground" />
+<Button onClick={() => navigate('/auth')}>Get Started</Button>
 
 // After
-<FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+<Button onClick={() => navigate('/contact')}>Get Started</Button>
 ```
 
-**File 2: `src/components/CertificateTable.tsx` (line 207)**
-```
-// Before
-<FileText className="h-4 w-4 text-muted-foreground" />
+Single one-word change in one file.
 
-// After
-<FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-```
-
-Two one-word additions across two files.
