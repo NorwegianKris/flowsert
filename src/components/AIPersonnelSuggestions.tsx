@@ -105,10 +105,10 @@ export function AIPersonnelSuggestions({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-4">
-      <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+      <div className="flex items-center justify-between p-3 border rounded-lg bg-primary text-white">
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
-            <Sparkles className="h-4 w-4 text-primary" />
+          <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent text-white hover:text-white">
+            <Sparkles className="h-4 w-4 text-white" />
             <span className="font-medium">AI Personnel Search</span>
             {suggestedCount > 0 && (
               <Badge variant="secondary" className="ml-2">
@@ -116,9 +116,9 @@ export function AIPersonnelSuggestions({
               </Badge>
             )}
             {isOpen ? (
-              <ChevronUp className="h-4 w-4 ml-2 text-muted-foreground" />
+              <ChevronUp className="h-4 w-4 ml-2 text-white/70" />
             ) : (
-              <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 ml-2 text-white/70" />
             )}
           </Button>
         </CollapsibleTrigger>
@@ -127,7 +127,7 @@ export function AIPersonnelSuggestions({
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-white/70 hover:text-white hover:bg-transparent"
           >
             <X className="h-4 w-4 mr-1" />
             Clear Search
