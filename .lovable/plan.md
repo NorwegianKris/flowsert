@@ -1,52 +1,66 @@
 
 
-## Redesign Personnel Stats Card to Match Reference Layout
+## Add Duration Count to Total Days Stats Card
 
 **Risk: GREEN** -- purely UI layout change.
 
-### What Changes
+### Change
 
-**File: `src/components/ProjectDetail.tsx`** (lines 250-266)
+**File: `src/components/ProjectDetail.tsx`** (lines 276-288)
 
-Redesign the personnel stats card so it displays three side-by-side number/label columns after the icon, matching the reference screenshot:
-
-```
-[icon]   3          7           146
-       Personnel  Employees  Freelancers
-```
-
-Each column uses the same `text-2xl font-bold` for the number and `text-xs text-muted-foreground` for the label. "Assigned Personnel" is shortened to "Personnel".
+Expand the Total Days card to match the personnel card style -- add a "Duration" column next to "Total Days" showing the same `duration` value with the label "Duration". The card will use `gap-6` and two centered columns after the icon.
 
 ### Technical Detail
 
-Replace lines 250-266 with:
+Replace lines 276-288:
 
 ```tsx
 <Card className="border-border/50">
   <CardContent className="p-4 flex items-center gap-6">
-    <div className="p-2 rounded-lg bg-violet-500/10">
-      <Users className="h-5 w-5 text-violet-500" />
+    <div className="p-2 rounded-lg bg-sky-500/10">
+      <Calendar className="h-5 w-5 text-sky-500" />
     </div>
     <div className="text-center">
       <p className="text-2xl font-bold text-foreground">
-        {assignedPersonnel.length}
+        {duration || '—'}
       </p>
-      <p className="text-xs text-muted-foreground">Personnel</p>
+      <p className="text-xs text-muted-foreground">Total Days</p>
     </div>
     <div className="text-center">
       <p className="text-2xl font-bold text-foreground">
-        {assignedPersonnel.filter(p => p.category !== 'freelancer').length}
+        {duration || '—'}
       </p>
-      <p className="text-xs text-muted-foreground">Employees</p>
-    </div>
-    <div className="text-center">
-      <p className="text-2xl font-bold text-foreground">
-        {assignedPersonnel.filter(p => p.category === 'freelancer').length}
-      </p>
-      <p className="text-xs text-muted-foreground">Freelancers</p>
+      <p className="text-xs text-muted-foreground">Duration</p>
     </div>
   </CardContent>
 </Card>
 ```
 
-Single file, single card redesign. The other two stats cards (Total Days, Project Status) remain unchanged.
+Wait -- "Total Days" and "Duration" would show the same number. Let me reconsider: the user likely wants the existing single-column card to gain a second column showing the duration (start-to-end day count) beside the current "Total Days" label. Since `duration` already IS the start-to-end count, perhaps the intent is to keep "Total Days" as-is and add a human-friendly duration string (e.g. weeks/months)?
+
+More likely: the user simply wants the card restyled to the same multi-column look as the personnel card, with the icon on the left and a single "Duration" metric. I'll rename "Total Days" to "Duration" and keep the same layout style (`gap-6`, centered text) for visual consistency with the personnel card.
+
+```tsx
+<Card className="border-border/50">
+  <CardContent className="p-4 flex items-center gap-6">
+    <div className="p-2 rounded-lg bg-sky-500/10">
+      <Calendar className="h-5 w-5 text-sky-500" />
+    </div>
+    <div className="text-center">
+      <p className="text-2xl font-bold text-foreground">
+        {duration || '—'}
+      </p>
+      <p className="text-xs text-muted-foreground">Total Days</p>
+    </div>
+    <div className="text-center">
+      <p className="text-2xl font-bold text-foreground">
+        {duration ? `${Math.floor(duration / 7)}w ${duration % 7}d` : '—'}
+      </p>
+      <p className="text-xs text-muted-foreground">Duration</p>
+    </div>
+  </CardContent>
+</Card>
+```
+
+This adds a second column "Duration" showing the same total in weeks + days format (e.g. "26w 1d") for a more meaningful breakdown alongside "Total Days" (the raw number). Both use `text-2xl font-bold` and `text-xs` label, matching the personnel card style.
+
