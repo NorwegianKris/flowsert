@@ -1,19 +1,25 @@
 
-## Increase Spacing Between Columns in Both Sections
 
-**Risk: GREEN** -- purely CSS layout adjustment.
+## Match Personnel View Toggle Color Scheme to Posted Projects Toggle
 
-### Problem
+**Risk: GREEN** -- purely UI styling change.
 
-Both the "Workforce compliance" and "Techno Dive" sections use `max-w-5xl` (64rem) containers with `gap-12` (3rem) between the two columns. The middle gap feels tight relative to the outer padding.
+### Current State
 
-### Solution
+- **Posted Projects toggle** (`ProjectsTab.tsx`): Uses lavender/purple styling -- `bg-[#C4B5FD]/10` background with `border-[#C4B5FD]/50` border
+- **Personnel view toggle** (`FreelancerFilters.tsx`): Uses neutral gray styling -- `bg-muted/50` background with `border-border` border
 
-In both sections, increase the container width from `max-w-5xl` to `max-w-6xl` and increase the column gap from `gap-12` to `gap-16`. This gives more breathing room between the image and text columns while also widening the layout so the side margins remain proportional to the center gap.
+### Change
 
-### File: `src/pages/Auth.tsx`
+**File: `src/components/FreelancerFilters.tsx`** (line 45)
 
-Two changes:
+Update the container's className from:
+```
+bg-muted/50 rounded-lg border border-border
+```
+to:
+```
+bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50
+```
 
-1. **Workforce Compliance section** (line 572-573): Change `max-w-5xl` to `max-w-6xl` and `gap-12` to `gap-16`
-2. **Techno Dive section** (line 719-720): Change `max-w-5xl` to `max-w-6xl` and `gap-12` to `gap-16`
+This single class change aligns the Personnel view toggle bar with the Posted Projects toggle's lavender color scheme.
