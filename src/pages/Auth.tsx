@@ -594,7 +594,7 @@ export default function Auth() {
 
               {/* Polaroid Images - Left */}
               <div className="order-1 md:order-1">
-                <div className="relative h-[570px] flex justify-center">
+                <div className="relative h-[380px] flex justify-center">
                   {/* Back Polaroid */}
                   <div 
                     className="absolute left-1/2 -translate-x-[85%] top-0 w-72 md:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
@@ -710,7 +710,7 @@ export default function Auth() {
             <div className="grid md:grid-cols-2 gap-12 items-start">
               {/* Polaroid Images */}
               <div className="order-2 md:order-1">
-                <div className="relative h-[570px] flex justify-center">
+                <div className="relative h-[380px] flex justify-center">
                   {/* Back Polaroid */}
                   <div 
                     className="absolute left-1/2 -translate-x-[85%] top-0 w-72 md:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
