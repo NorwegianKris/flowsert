@@ -1,61 +1,32 @@
 
-## Add "Project Chat" to the Chat Hub
 
-**Risk: GREEN** -- purely UI/frontend change, no database or RLS modifications needed. The existing `project_messages` table and RLS policies already handle access control.
+## Restrict Worker Project Chat to Assigned + Activated Personnel
 
-### Overview
+**Risk: GREEN** -- purely frontend filtering change, no database or RLS modifications.
 
-Add a third option "Project Chat" to the floating Chat Hub picker. Users can select a project they are associated with and chat within that project's group chat -- reusing the existing `project_messages` table and realtime subscription logic from `ProjectChat.tsx`.
+### Problem
 
-### How It Works
+Currently, any worker who is assigned to a project can access the Project Chat in the Chat Hub, regardless of whether their personnel record is activated. Workers should only see and access project chats when they are both **assigned** to the project AND their personnel record has `activated = true`.
 
-**For Admins:**
-- A new "Project Chat" button appears in the picker (between Personnel Chat and AI Assistant)
-- Clicking it shows a project selection list
-- Default view shows **active projects** with a dropdown/tabs to switch to completed/all projects
-- Selecting a project opens the group chat for that project
+### Changes
 
-**For Workers:**
-- The same "Project Chat" button appears in the picker
-- Shows only projects the worker is assigned to (or has been invited to)
-- Selecting a project opens the group chat
+**File 1: `src/hooks/useWorkerBusinesses.ts`**
 
-### Technical Details
+- Add `activated` to the `WorkerBusiness` interface
+- Include `activated` in the personnel query (`select('id, name, business_id, activated')`)
+- Map `activated` into the returned `WorkerBusiness` objects
 
-**File: `src/components/ChatBot.tsx`**
+**File 2: `src/components/ChatBot.tsx`**
 
-1. **Expand `ChatView` type** to include two new views:
-   ```
-   'project-select' | 'project-chat'
-   ```
+- Update the worker project fetch filter (around line 169) to also check that the matching personnelId belongs to an activated personnel record
+- Update the `isAssignedToProject` check (around line 216) to also verify the personnel is activated
+- This means only activated workers see projects in the list, and only activated workers can send messages
 
-2. **Add state** for selected project:
-   ```tsx
-   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-   const [selectedProjectName, setSelectedProjectName] = useState('');
-   const [projectFilter, setProjectFilter] = useState<'active' | 'completed' | 'all'>('active');
-   ```
+### How it works
 
-3. **Import and use project data:**
-   - For admins: use `useProjects()` hook (already fetches all business projects)
-   - For workers: fetch projects where the worker is assigned (query `projects` table filtered by `assigned_personnel` array containing worker's personnel ID, plus projects with pending invitations). Use a lightweight inline fetch since workers only need id/name/status.
+When a worker opens Project Chat, the project list is filtered so that a project only appears if:
+1. The worker's personnelId is in the project's `assigned_personnel` array, AND
+2. That personnelId corresponds to a `WorkerBusiness` entry where `activated` is `true`
 
-4. **Add picker button** -- new button with `FolderOpen` icon labeled "Project Chat" with subtitle "Chat with your project team"
+This ensures deactivated workers cannot access project group chats at all.
 
-5. **Add `renderProjectSelect()`** -- a list of projects filtered by status tab (active/completed/all for admins). Each project item shows name and status badge. Clicking navigates to `project-chat` view.
-
-6. **Add `renderProjectChat()`** -- reuse the same message fetching/sending/realtime pattern from `ProjectChat.tsx` but adapted for the chat hub's compact layout (no Card wrapper, same bubble styling as DM chat). Key logic:
-   - Fetch messages from `project_messages` where `project_id = selectedProjectId`
-   - Subscribe to realtime INSERT events
-   - Send messages with sender_id, sender_name, sender_role, content
-   - Workers who are only invited (not assigned) can read but not send (matches existing RLS)
-
-7. **Update header** to show project name when in `project-chat` view and "Project Chat" when in `project-select` view.
-
-8. **Update `goToPicker()`** to also reset project selection state.
-
-9. **Add `Briefcase` or `FolderOpen` to imports** from lucide-react.
-
-### Single file change: `src/components/ChatBot.tsx`
-
-No database changes needed -- the `project_messages` table, realtime subscription, and RLS policies are already in place and correctly scoped.
