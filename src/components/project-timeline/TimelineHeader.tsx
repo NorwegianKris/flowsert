@@ -60,7 +60,7 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
   return (
     <div className="relative border-b border-border/50 overflow-hidden" style={{ width: totalWidth }}>
       {/* Month row */}
-      <div className="relative h-6">
+      <div className="relative h-6 z-20">
         {monthMarkers.map((m, i) => (
           <div
             key={i}
@@ -68,7 +68,7 @@ export function TimelineHeader({ projectStart, projectEnd, totalWidth }: Timelin
             style={{ left: m.x }}
           >
             <div className="h-3 border-l border-border/50" />
-            <span className="text-[10px] text-muted-foreground ml-1 whitespace-nowrap select-none">
+            <span className="text-[10px] text-muted-foreground ml-1 whitespace-nowrap select-none bg-background px-0.5">
               {m.label}
             </span>
           </div>
