@@ -1,29 +1,35 @@
 
 
-## Fix Availability Bar Alignment with Compliance Bars
+## Fix Overdue Count Mismatch Between Summary Box and Expiry Details List
 
-**Risk: GREEN** -- purely UI styling fix, no database changes.
+**Risk: GREEN** -- purely UI logic change, no database or backend modifications.
 
-### Problem
+### Root Cause
 
-The availability bar doesn't start at exactly the same horizontal position as the compliance bars below it. The compliance lane hardcodes `barStart = 0` (left edge), while the availability lane computes its start position using `dateToX(span.startDate, ...)`. Even though both should resolve to 0 for the project start date, rounding in the `dateToX` calculation can introduce subtle pixel offsets.
+The Overdue summary box and the Expiry Details list use different filtering logic:
+
+- **Overdue box** (`ExpiryTimeline.tsx`, line 95): counts every certificate where `daysUntilExpiry < 0` -- no lower bound, so it includes certificates expired 30, 60, 200+ days ago.
+- **Expiry Details list** (`ExpiryDetailsList.tsx`, line 31): filters visible events to `daysUntilExpiry >= timelineStartDays` (default: -30 days). Certificates expired more than 30 days ago are excluded from the list.
+
+This means 7 of your 10 overdue certificates expired more than 30 days ago and don't appear in the details list.
 
 ### Fix
 
-**File: `src/components/project-timeline/AvailabilityLane.tsx`**
+**File: `src/components/timeline/ExpiryDetailsList.tsx`**
 
-Clamp the `x1` value so that any span starting at or before the project start date begins at exactly `left: 0`, matching the compliance bars. This is done by applying `Math.max(0, x1)` to prevent negative values and ensuring alignment:
+Change the filtering logic so that **overdue events are never clipped by the past-days slider**. Overdue certificates (negative `daysUntilExpiry`) should always be shown regardless of the `timelineStartDays` setting, since the summary box counts them all.
 
-```tsx
+```
 // Before
-const x1 = dateToX(span.startDate, projectStart, projectEnd, totalWidth);
+e.daysUntilExpiry >= timelineStartDays && e.daysUntilExpiry <= timelineEndDays
 
-// After  
-const x1Raw = dateToX(span.startDate, projectStart, projectEnd, totalWidth);
-const x1 = Math.max(0, x1Raw);
+// After
+(e.daysUntilExpiry < 0 || e.daysUntilExpiry >= timelineStartDays) && e.daysUntilExpiry <= timelineEndDays
 ```
 
-This ensures the availability bar always starts at position 0 (the project start line) when the span begins at the project start date -- identical to how compliance bars are positioned.
+This ensures every overdue certificate that appears in the summary box also appears in the details list, while future-range filtering continues to work normally.
 
-### Single file change: `src/components/project-timeline/AvailabilityLane.tsx`
+### Single file change
+
+`src/components/timeline/ExpiryDetailsList.tsx` -- one line edit in the `visibleEvents` filter.
 
