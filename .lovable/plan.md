@@ -1,25 +1,20 @@
 
 
-## Match Personnel View Toggle Color Scheme to Posted Projects Toggle
+## Style AI Personnel Search Bar with Purple Background and White Text
 
-**Risk: GREEN** -- purely UI styling change.
-
-### Current State
-
-- **Posted Projects toggle** (`ProjectsTab.tsx`): Uses lavender/purple styling -- `bg-[#C4B5FD]/10` background with `border-[#C4B5FD]/50` border
-- **Personnel view toggle** (`FreelancerFilters.tsx`): Uses neutral gray styling -- `bg-muted/50` background with `border-border` border
+**Risk: GREEN** -- purely UI color change on a single element.
 
 ### Change
 
-**File: `src/components/FreelancerFilters.tsx`** (line 45)
+**File: `src/components/AIPersonnelSuggestions.tsx`**
 
-Update the container's className from:
-```
-bg-muted/50 rounded-lg border border-border
-```
-to:
-```
-bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50
-```
+Only the slim header bar (line 108) is affected. The expanded content area with the textarea stays as-is.
 
-This single class change aligns the Personnel view toggle bar with the Posted Projects toggle's lavender color scheme.
+- **Line 108**: Change `bg-muted/30` to `bg-primary` (deep indigo #4338CA) and add `text-white`
+- **Line 110**: Update Button to remove ghost styling interference -- add `text-white hover:text-white`
+- **Line 111**: Change Sparkles icon from `text-primary` to `text-white`
+- **Lines 119-120**: Change chevron icons from `text-muted-foreground` to `text-white/70`
+- **Line 127**: Update Clear Search button to `text-white/70 hover:text-white`
+
+The textarea and results area below remain unchanged with their current light grey styling.
+
