@@ -1,43 +1,54 @@
 
 
-## Fix: Personnel View Toggle Responsiveness
+## Fix: Personnel Toggle Independence
 
-**Risk: 🟢 GREEN** — Pure UI logic change. No database, RLS, edge functions, authentication, or access control affected.
+**Risk: 🟢 GREEN** — Pure UI logic, no backend changes.
 
 ---
 
-### Problem
+### Current Problem
 
-The toggles appear "slow" or unresponsive because the empty-state guards silently swallow clicks. With the default state (Employees ON, Freelancers OFF), clicking "Include Employees" OFF does nothing -- the guard at line 24 (`if (!checked && !includeFreelancers) return;`) blocks the action with zero feedback.
+"Include Employees" auto-enables "Include Freelancers" when toggled off (and vice versa). The user wants simpler, more independent behavior.
 
-### Solution
+### New Behavior
 
-Replace the silent `return` guards with auto-enable logic. When a user disables one toggle while the other is already off, automatically enable the other toggle first, then process the change.
+- **Include Employees**: default ON. Only affected by "Show freelancers only" (which turns it OFF). Otherwise fully independent — toggling "Include Freelancers" has no effect on it.
+- **Include Freelancers**: default OFF. Independent of "Include Employees". Turned off if "Show freelancers only" is turned off.
+- **Show freelancers only**: default OFF. Turning ON sets Employees=OFF and Freelancers=ON. Turning OFF just disables itself.
+
+This means both "Include Employees" and "Include Freelancers" can be OFF simultaneously (showing no personnel). That's acceptable — the user wants independence.
+
+### Change
 
 **File:** `src/components/FreelancerFilters.tsx`
 
-**Change the two handler functions:**
+Replace the three handlers with:
 
 ```typescript
-// BEFORE (silent block)
 const handleIncludeEmployeesChange = (checked: boolean) => {
-  if (!checked && !includeFreelancers) return; // user sees nothing happen
-  ...
-};
-
-// AFTER (auto-enable companion)
-const handleIncludeEmployeesChange = (checked: boolean) => {
-  if (!checked && !includeFreelancers) {
-    onIncludeFreelancersChange(true); // auto-enable the other
-  }
   onIncludeEmployeesChange(checked);
   if (checked && showFreelancersOnly) {
     onShowFreelancersOnlyChange(false);
   }
 };
+
+const handleIncludeFreelancersChange = (checked: boolean) => {
+  onIncludeFreelancersChange(checked);
+  if (!checked && showFreelancersOnly) {
+    onShowFreelancersOnlyChange(false);
+  }
+};
+
+const handleShowOnlyChange = (checked: boolean) => {
+  onShowFreelancersOnlyChange(checked);
+  if (checked) {
+    if (!includeFreelancers) onIncludeFreelancersChange(true);
+    if (includeEmployees) onIncludeEmployeesChange(false);
+  }
+};
 ```
 
-Same pattern applied to `handleIncludeFreelancersChange`.
+No guard logic, no auto-enabling companions. Simple and direct.
 
 ---
 
@@ -45,5 +56,5 @@ Same pattern applied to `handleIncludeFreelancersChange`.
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/FreelancerFilters.tsx` | MODIFY | Replace silent guards with auto-enable companion toggle logic |
+| `src/components/FreelancerFilters.tsx` | MODIFY | Simplify handlers to make toggles independent |
 
