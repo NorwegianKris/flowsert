@@ -655,7 +655,9 @@ export function TypeMergingPane() {
         {/* Center: Action Area */}
         <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0">
           <div className="flex flex-col items-center gap-4 text-center">
-            <ArrowRight className="h-6 w-6 text-muted-foreground hidden lg:block" />
+            <Button size="icon" className="rounded-full hidden lg:flex" disabled>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
             
             <div className="text-xs text-muted-foreground max-w-[200px]">
               Select inputted types on the left, then group them into a merged type on the right.

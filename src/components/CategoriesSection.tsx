@@ -58,7 +58,7 @@ export function CategoriesSection() {
               <TabsContent value="roles">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Define job role categories for personnel. These will appear as options when adding new workers.
+                    Define job role categories for personnel. These will appear as options when new workers are added or registers.
                   </p>
                 </div>
                 <WorkerCategoriesManager />

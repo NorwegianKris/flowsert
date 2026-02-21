@@ -363,20 +363,20 @@ export function PersonnelFilters({
                 className="w-full bg-primary p-1 rounded-md"
               >
                 <ToggleGroupItem
-                  value="types"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
-                  aria-label="Filter by types"
-                >
-                  <Tag className="h-3.5 w-3.5" />
-                  Types
-                </ToggleGroupItem>
-                <ToggleGroupItem
                   value="categories"
                   className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by categories"
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
                   Categories
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="types"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                  aria-label="Filter by types"
+                >
+                  <Tag className="h-3.5 w-3.5" />
+                  Types
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="issuers"

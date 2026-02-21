@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, Search, ArrowRight, Users } from 'lucide-react';
+import { Loader2, Search, ArrowRight, Users, Check, Plus } from 'lucide-react';
 import { usePersonnel } from '@/hooks/usePersonnel';
 import { useWorkerGroups, useWorkerGroupMemberCounts } from '@/hooks/useWorkerGroups';
 import { usePersonnelWorkerGroups, useAssignPersonnelToGroup } from '@/hooks/usePersonnelWorkerGroups';
@@ -191,20 +191,54 @@ export function WorkerGroupMergingPane() {
           </ScrollArea>
         </div>
 
-        {/* Center: Arrow */}
-        <div className="flex items-center justify-center px-4">
-          <Button
-            size="icon"
-            disabled={!canAssign || assignMutation.isPending}
-            onClick={handleAssign}
-            className="rounded-full"
-          >
-            {assignMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
+        {/* Center: Action Area */}
+        <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <Button size="icon" className="rounded-full hidden lg:flex" disabled>
               <ArrowRight className="h-4 w-4" />
+            </Button>
+            
+            <div className="text-xs text-muted-foreground max-w-[200px]">
+              Select personnel on the left, then group them into a worker group on the right.
+            </div>
+
+            <div className="flex flex-col gap-2 w-full">
+              <Button
+                size="sm"
+                onClick={handleAssign}
+                disabled={!canAssign || assignMutation.isPending}
+                className="w-full"
+              >
+                {assignMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Group into Selected
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAssign}
+                disabled={!canAssign || assignMutation.isPending}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create & Group
+              </Button>
+            </div>
+
+            {selectedPersonnel.size > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedPersonnel(new Set())}
+                className="text-xs"
+              >
+                Clear selection
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
 
         {/* Right: Groups */}
