@@ -266,14 +266,21 @@ export function WorkerGroupMergingPane() {
                 return (
                   <div
                     key={g.id}
-                    className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}
+                    className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 ring-2 ring-primary ring-inset' : 'hover:bg-muted/50'}`}
                     onClick={() => setSelectedGroup(isSelected ? null : g.id)}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{g.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {count} {count === 1 ? 'member' : 'members'}
-                      </Badge>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{g.name}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {count} {count === 1 ? 'member' : 'members'}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
