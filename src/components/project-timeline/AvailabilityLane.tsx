@@ -63,7 +63,8 @@ export function AvailabilityLane({
         onClick={onClick}
       >
         {spans.map((span, i) => {
-          const x1 = dateToX(span.startDate, projectStart, projectEnd, totalWidth);
+          const x1Raw = dateToX(span.startDate, projectStart, projectEnd, totalWidth);
+          const x1 = Math.max(0, x1Raw);
           // Add 1 day to end date to make it inclusive
           const endDatePlusOne = new Date(span.endDate + 'T00:00:00');
           endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
