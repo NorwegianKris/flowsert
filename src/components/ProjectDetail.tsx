@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectTimeline } from '@/components/project-timeline/ProjectTimeline';
 
 import { AddPhaseDialog } from '@/components/AddPhaseDialog';
+import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
@@ -478,6 +479,13 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       />
 
 
+      <AddCalendarItemDialog
+        open={isAddItemOpen}
+        onOpenChange={setIsAddItemOpen}
+        onAdd={handleAddCalendarItem}
+        projectStartDate={project.startDate}
+        projectEndDate={project.endDate}
+      />
       <AddPhaseDialog
         open={isAddPhaseOpen}
         onOpenChange={setIsAddPhaseOpen}
