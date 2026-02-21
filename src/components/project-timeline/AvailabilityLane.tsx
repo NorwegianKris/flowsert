@@ -74,8 +74,8 @@ export function AvailabilityLane({
             <Tooltip key={i}>
               <TooltipTrigger asChild>
                 <div
-                  className={`absolute top-1 bottom-1 rounded-sm ${statusColor(span.status)} hover:opacity-80 transition-opacity`}
-                  style={{ left: x1, width }}
+                  className={`absolute rounded-sm ${statusColor(span.status)} hover:opacity-80 transition-opacity`}
+                  style={{ left: x1, width, top: 2, height: 16 }}
                 />
               </TooltipTrigger>
               <TooltipContent>
