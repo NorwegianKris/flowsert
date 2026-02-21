@@ -20,7 +20,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { ProfileCompletionBar } from '@/components/ProfileCompletionBar';
 import { CertificateExpiryNotificationDialog } from '@/components/CertificateExpiryNotificationDialog';
-import { useDataAcknowledgement } from '@/hooks/useDataAcknowledgement';
+import { supabase } from '@/integrations/supabase/client';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -634,7 +634,29 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
 }
 
 function DataPrivacySection({ personnelId, businessId }: { personnelId: string; businessId: string }) {
-  const { acknowledgement, loading } = useDataAcknowledgement(personnelId, businessId);
+  const [acknowledgement, setAcknowledgement] = useState<{ acknowledged_at: string; acknowledgement_version: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLatest = async () => {
+      try {
+        const { data } = await supabase
+          .from('data_processing_acknowledgements')
+          .select('acknowledged_at, acknowledgement_version')
+          .eq('personnel_id', personnelId)
+          .eq('business_id', businessId)
+          .order('acknowledged_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setAcknowledgement(data);
+      } catch (e) {
+        console.error('Error fetching acknowledgement:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLatest();
+  }, [personnelId, businessId]);
 
   if (loading) return null;
 
