@@ -5,7 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, X, Send, User, Loader2, ArrowLeft, Search, Sparkles, Building2 } from 'lucide-react';
+import { MessageCircle, X, Send, User, Loader2, ArrowLeft, Search, Sparkles, Building2, FolderOpen, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import flowsertLogo from '@/assets/flowsert-logo.png';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +31,9 @@ type ChatView =
   | 'admin-personnel-chat'
   | 'worker-admin-select'
   | 'worker-admin-chat'
-  | 'ai';
+  | 'ai'
+  | 'project-select'
+  | 'project-chat';
 
 interface ChatBotProps {
   isAdmin?: boolean;
@@ -51,6 +56,20 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
   const [selectedPersonnelId, setSelectedPersonnelId] = useState<string | null>(null);
   const [selectedChatName, setSelectedChatName] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Project chat state
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectName, setSelectedProjectName] = useState('');
+  const [projectFilter, setProjectFilter] = useState<'active' | 'completed' | 'all'>('active');
+  const [projectMessages, setProjectMessages] = useState<Array<{
+    id: string; project_id: string; sender_id: string; sender_name: string; sender_role: string; content: string; created_at: string;
+  }>>([]);
+  const [projectMsgInput, setProjectMsgInput] = useState('');
+  const [projectMsgLoading, setProjectMsgLoading] = useState(false);
+  const [projectMsgSending, setProjectMsgSending] = useState(false);
+  const [projectList, setProjectList] = useState<Array<{ id: string; name: string; status: string; assigned_personnel: string[] | null }>>([]);
+  const [projectListLoading, setProjectListLoading] = useState(false);
+  const projectScrollRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -126,12 +145,120 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     }
   }, [dm.messages, isDmViewOpen]);
 
+  // Fetch projects for selection
+  useEffect(() => {
+    if (view !== 'project-select') return;
+    const fetchProjects = async () => {
+      setProjectListLoading(true);
+      try {
+        if (isAdmin) {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('id, name, status, assigned_personnel')
+            .order('created_at', { ascending: false });
+          if (!error && data) setProjectList(data);
+        } else {
+          // Worker: find projects they're assigned to
+          const personnelIds = workerBusinesses.map(b => b.personnelId);
+          if (personnelIds.length === 0) { setProjectList([]); setProjectListLoading(false); return; }
+          const { data, error } = await supabase
+            .from('projects')
+            .select('id, name, status, assigned_personnel')
+            .order('created_at', { ascending: false });
+          if (!error && data) {
+            const workerProjects = data.filter(p =>
+              p.assigned_personnel?.some(pid => personnelIds.includes(pid))
+            );
+            setProjectList(workerProjects);
+          }
+        }
+      } catch (e) { console.error('Error fetching projects:', e); }
+      setProjectListLoading(false);
+    };
+    fetchProjects();
+  }, [view, isAdmin, workerBusinesses]);
+
+  // Fetch project messages + realtime
+  useEffect(() => {
+    if (view !== 'project-chat' || !selectedProjectId) return;
+    const fetchMessages = async () => {
+      setProjectMsgLoading(true);
+      const { data, error } = await supabase
+        .from('project_messages')
+        .select('*')
+        .eq('project_id', selectedProjectId)
+        .order('created_at', { ascending: true })
+        .limit(100);
+      if (!error && data) setProjectMessages(data as any);
+      setProjectMsgLoading(false);
+    };
+    fetchMessages();
+    const channel = supabase
+      .channel(`hub_project_messages_${selectedProjectId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'project_messages',
+        filter: `project_id=eq.${selectedProjectId}`
+      }, (payload) => {
+        setProjectMessages(prev => [...prev, payload.new as any]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [view, selectedProjectId]);
+
+  // Scroll project messages
+  useEffect(() => {
+    if (projectScrollRef.current && view === 'project-chat') {
+      projectScrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [projectMessages, view]);
+
+  // Check if current user is assigned to selected project
+  const isAssignedToProject = (() => {
+    if (isAdmin) return true;
+    if (!selectedProjectId) return false;
+    const proj = projectList.find(p => p.id === selectedProjectId);
+    if (!proj) return false;
+    const personnelIds = workerBusinesses.map(b => b.personnelId);
+    return proj.assigned_personnel?.some(pid => personnelIds.includes(pid)) ?? false;
+  })();
+
   // Navigate back to picker, resetting DM state
   const goToPicker = () => {
     setView('picker');
     setSelectedPersonnelId(null);
     setSelectedChatName('');
     setSearchQuery('');
+    setSelectedProjectId(null);
+    setSelectedProjectName('');
+    setProjectMessages([]);
+    setProjectMsgInput('');
+  };
+
+  const sendProjectMessage = async () => {
+    if (!projectMsgInput.trim() || !user || !selectedProjectId) return;
+    setProjectMsgSending(true);
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', user.id)
+      .single();
+    const senderName = profileData?.full_name || profileData?.email || user.email || 'Unknown';
+    const { error } = await supabase
+      .from('project_messages')
+      .insert({
+        project_id: selectedProjectId,
+        sender_id: user.id,
+        sender_name: senderName,
+        sender_role: isAdmin ? 'admin' : 'worker',
+        content: projectMsgInput.trim()
+      });
+    if (error) {
+      console.error('Error sending project message:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to send message' });
+    } else {
+      setProjectMsgInput('');
+    }
+    setProjectMsgSending(false);
   };
 
   // Total badge count for floating button
@@ -291,6 +418,8 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     else if (view === 'worker-admin-select') title = 'Select Company';
     else if (view === 'worker-admin-chat') title = selectedChatName;
     else if (view === 'ai') title = 'AI Assistant';
+    else if (view === 'project-select') title = 'Project Chat';
+    else if (view === 'project-chat') title = selectedProjectName;
 
     return (
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b border-border">
@@ -336,6 +465,19 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
             {badgeCount > 99 ? '99+' : badgeCount}
           </span>
         )}
+      </button>
+
+      <button
+        onClick={() => setView('project-select')}
+        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left"
+      >
+        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <FolderOpen className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="font-semibold text-sm">Project Chat</p>
+          <p className="text-xs text-muted-foreground">Chat with your project team</p>
+        </div>
       </button>
 
       <button
@@ -589,6 +731,152 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
     </div>
   );
 
+  // --- Project select view ---
+  const renderProjectSelect = () => {
+    const filtered = projectFilter === 'all'
+      ? projectList
+      : projectList.filter(p => p.status === projectFilter);
+
+    return (
+      <div className="flex-1 flex flex-col min-h-0">
+        {isAdmin && (
+          <div className="p-3 border-b border-border">
+            <Select value={projectFilter} onValueChange={(v) => setProjectFilter(v as any)}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active Projects</SelectItem>
+                <SelectItem value="completed">Completed Projects</SelectItem>
+                <SelectItem value="all">All Projects</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <ScrollArea className="flex-1">
+          <div className="p-2">
+            {projectListLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No projects found</p>
+              </div>
+            ) : (
+              filtered.map(project => (
+                <button
+                  key={project.id}
+                  onClick={() => {
+                    setSelectedProjectId(project.id);
+                    setSelectedProjectName(project.name);
+                    setView('project-chat');
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <FolderOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{project.name}</p>
+                    <Badge variant={project.status === 'active' ? 'active' : project.status === 'completed' ? 'completed' : 'outline'} className="text-[10px] mt-0.5">
+                      {project.status}
+                    </Badge>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+    );
+  };
+
+  // --- Project chat view ---
+  const renderProjectChat = () => (
+    <div className="flex-1 flex flex-col min-h-0">
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-3">
+          {projectMsgLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : projectMessages.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No messages yet</p>
+              <p className="text-xs mt-1">Start the conversation!</p>
+            </div>
+          ) : (
+            projectMessages.map(message => {
+              const isOwnMessage = message.sender_id === user?.id;
+              return (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'flex flex-col gap-1 max-w-[85%]',
+                    isOwnMessage ? 'ml-auto items-end' : 'mr-auto items-start'
+                  )}
+                >
+                  {!isOwnMessage && (
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {message.sender_name}
+                    </span>
+                  )}
+                  <div className={cn(
+                    'px-3 py-2 rounded-lg text-sm',
+                    isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                  )}>
+                    <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <span>{message.sender_role === 'admin' ? 'Admin' : 'Worker'}</span>
+                    <span>·</span>
+                    <span>{formatMessageDate(message.created_at)}</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={projectScrollRef} />
+        </div>
+      </ScrollArea>
+
+      {isAssignedToProject ? (
+        <div className="p-3 border-t border-border">
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Type a message to the team..."
+              value={projectMsgInput}
+              onChange={(e) => setProjectMsgInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendProjectMessage(); } }}
+              className="resize-none text-sm min-h-[60px]"
+              disabled={projectMsgSending}
+            />
+            <Button
+              size="icon"
+              onClick={sendProjectMessage}
+              disabled={!projectMsgInput.trim() || projectMsgSending}
+              className="shrink-0 self-end"
+            >
+              {projectMsgSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-3 border-t border-border">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              You can view messages but cannot send until you accept the project invitation.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+    </div>
+  );
+
   // --- Render content based on view ---
   const renderContent = () => {
     switch (view) {
@@ -598,6 +886,8 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
       case 'worker-admin-chat': return renderDmChat();
       case 'worker-admin-select': return renderWorkerCompanySelect();
       case 'ai': return renderAiChat();
+      case 'project-select': return renderProjectSelect();
+      case 'project-chat': return renderProjectChat();
     }
   };
 
