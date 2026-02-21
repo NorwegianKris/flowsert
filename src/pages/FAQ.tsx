@@ -114,7 +114,7 @@ export default function FAQ() {
             <Button variant="outline" onClick={() => navigate('/contact')}>
               Contact Us
             </Button>
-            <Button onClick={() => navigate('/auth')}>
+            <Button onClick={() => navigate('/contact')}>
               Get Started
             </Button>
           </div>
