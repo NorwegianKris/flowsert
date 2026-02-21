@@ -587,9 +587,9 @@ export default function Auth() {
                     FlowSert gives you instant control over workforce credentials, AI-assisted structured search across personnel, and efficient project staffing — all in one system.
                   </p>
                   <p className="font-medium text-foreground">
-                    No scattered emails.<br />
-                    No Excel tracking.<br />
-                    No last-minute certificate surprises.
+                     No scattered emails and cold calls.<br />
+                     No Excel tracking and unstructured files.<br />
+                     No last-minute certificate surprises.
                   </p>
                 </div>
               </div>
