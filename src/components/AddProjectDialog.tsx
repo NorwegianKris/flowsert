@@ -78,7 +78,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [locationFilters, setLocationFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
-  const [certificateFilterMode, setCertificateFilterMode] = useState<'types' | 'categories' | 'issuers'>('types');
+  const [certificateFilterMode, setCertificateFilterMode] = useState<'types' | 'categories' | 'issuers'>('categories');
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>();
 
   // Fetch filter options from DB (same as personnel pool)
@@ -506,7 +506,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               <div className="flex items-center justify-end">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="default"
                   size="sm"
                   onClick={handleGetSuggestions}
                   disabled={aiLoading || !aiPrompt.trim()}
