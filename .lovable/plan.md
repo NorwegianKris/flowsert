@@ -1,53 +1,53 @@
 
 
 ## Prompt Risk Assessment: 🟢 Anchor Optional
-Pure UI fixes -- event propagation and URL formatting. No database, auth, or access control changes.
+Both changes are purely UI-level -- badge labeling and tip text. No database, auth, or access control changes.
 
 ---
 
-## Bug 1: "My Profile" dialog doesn't open inside project/personnel views
+## Bug 1: Posted projects shown as "Active" in Request for Project dialog
 
-**Approach:** Refactor `AdminDashboard.tsx` to use the user's suggested pattern -- assign branch content to a variable, then render shared dialogs once outside all branches.
+**Root Cause:** In `RequestProjectDialog.tsx`, the `statusConfig` map (lines 21-25) only has entries for `active`, `completed`, and `pending`. Projects with `isPosted: true` still have a DB status of `active` or `pending`, so they display with the "Active" badge. The dialog does not check `isPosted` at all.
 
-**File:** `src/pages/AdminDashboard.tsx`
+**Fix:** `src/components/RequestProjectDialog.tsx`
 
-- Refactor the three `if/return` branches (personnel detail at line 335, project detail at line 368, main dashboard at line 394) into a single return using a `content` variable
-- Move `LinkProfileDialog` (and other shared dialogs like `ExternalSharingDialog`) outside the branch content so they always render
-- Pattern:
-  ```
-  let content = <main dashboard JSX>;
-  if (selectedPersonnel) content = <personnel detail JSX>;
-  else if (selectedProject) content = <project detail JSX>;
+- Import `Megaphone` from `lucide-react`
+- When rendering each project's badge (line 105-136), check `project.isPosted`. If true, override the badge to show "Posted" with the purple Megaphone styling used in `ProjectsTab.tsx` (`bg-[#C4B5FD] text-[#4338CA]`)
+- The `Project` type from `useProjects` already includes the `isPosted` field
 
-  return (
-    <>
-      {content}
-      <LinkProfileDialog ... />
-    </>
-  );
-  ```
-- This prevents this class of bug from recurring if more branches are added later
+```tsx
+// In the map callback, before rendering the badge:
+const isPosted = project.isPosted;
+
+// Badge rendering:
+{isPosted ? (
+  <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0 text-xs">
+    <Megaphone className="h-3 w-3 mr-1" />
+    Posted
+  </Badge>
+) : (
+  <Badge variant={config.variant} className="shrink-0 text-xs">
+    <StatusIcon className="h-3 w-3 mr-1" />
+    {config.label}
+  </Badge>
+)}
+```
 
 ---
 
-## Bug 2: Company website link navigates to wrong URL
+## Feature 2: Add tip text to certificate upload zone
 
-**Approach:** Add robust protocol normalization in `CompanyCard.tsx` with the user's suggested guarded version.
+**Fix:** `src/components/certificate-upload/UploadZone.tsx`
 
-**File:** `src/components/CompanyCard.tsx` (line 350-356)
+Add a tip line below the upload zone (in the full upload view, after the dashed box) with a lightbulb emoji:
 
-- Normalize the URL before use:
-  ```tsx
-  const raw = (businessInfo.website ?? "").trim();
-  const websiteUrl = raw === ""
-    ? ""
-    : /^https?:\/\//i.test(raw)
-      ? raw
-      : `https://${raw}`;
-  ```
-- Only render the link if `websiteUrl` is non-empty
-- Keep `businessInfo.website` as the display text (show what the user entered)
-- The existing `rel="noopener noreferrer"` is already present on line 353 -- no change needed there
+```tsx
+<p className="text-xs text-muted-foreground mt-2">
+  💡 Upload one certificate at a time. Make sure it is a clear photo, scan, or document for best results.
+</p>
+```
+
+This will be placed after the existing helper text inside the dashed upload zone area, below the "Select up to X files" line.
 
 ---
 
@@ -55,6 +55,5 @@ Pure UI fixes -- event propagation and URL formatting. No database, auth, or acc
 
 | File | Change |
 |------|--------|
-| `src/pages/AdminDashboard.tsx` | Refactor to single return with shared `LinkProfileDialog` outside branch content |
-| `src/components/CompanyCard.tsx` | Add protocol normalization for website URL |
-
+| `src/components/RequestProjectDialog.tsx` | Check `isPosted` and show purple "Posted" badge with Megaphone icon instead of "Active" |
+| `src/components/certificate-upload/UploadZone.tsx` | Add lightbulb tip text about uploading one clear certificate at a time |
