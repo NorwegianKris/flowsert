@@ -924,13 +924,7 @@ export default function Auth() {
                 Sign In
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                Registration is by invitation only. Need access?{' '}
-                <a
-                  href="/contact"
-                  className="text-primary hover:underline"
-                >
-                  Contact us
-                </a>
+                Registration is by invitation or company-provided link only.
               </p>
             </form>
           ) : (

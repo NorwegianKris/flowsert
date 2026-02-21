@@ -513,9 +513,8 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
             </CardContent>
           </Card>
 
-          {/* Next of Kin Section - hidden for freelancers */}
-          {personnel.category !== 'freelancer' && (
-            <Card className="border-border/50">
+          {/* Next of Kin Section */}
+          <Card className="border-border/50">
               <CardHeader className="flex flex-row items-center justify-between py-3">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Users className="h-4 w-4 text-pink-500" />
@@ -548,7 +547,6 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
                 </div>
               </CardContent>
             </Card>
-          )}
 
           {/* Data handling / Privacy Section */}
           <DataPrivacySection personnelId={personnel.id} businessId={personnel.businessId} />

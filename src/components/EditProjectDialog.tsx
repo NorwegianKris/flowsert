@@ -45,6 +45,7 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
   const [includeCountries, setIncludeCountries] = useState<string[]>(project.includeCountries || []);
   const [excludeCountries, setExcludeCountries] = useState<string[]>(project.excludeCountries || []);
   const [uploading, setUploading] = useState(false);
+  const [personnelSearch, setPersonnelSearch] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -340,9 +341,21 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
 
           <div className="space-y-2">
             <Label>Assigned Personnel</Label>
+            <Input
+              placeholder="Search personnel..."
+              value={personnelSearch}
+              onChange={(e) => setPersonnelSearch(e.target.value)}
+              className="mb-2"
+            />
             <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto space-y-2">
-              {personnel.length > 0 ? (
-                personnel.map((person) => (
+              {personnel.filter(p => 
+                p.name.toLowerCase().includes(personnelSearch.toLowerCase()) || 
+                p.role.toLowerCase().includes(personnelSearch.toLowerCase())
+              ).length > 0 ? (
+                personnel.filter(p => 
+                  p.name.toLowerCase().includes(personnelSearch.toLowerCase()) || 
+                  p.role.toLowerCase().includes(personnelSearch.toLowerCase())
+                ).map((person) => (
                   <div key={person.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/50">
                     <Checkbox
                       id={`person-${person.id}`}
@@ -366,7 +379,7 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
 
           {/* Posted Project Toggle + Visibility */}
           <div className="space-y-3">
-            <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-center gap-4 p-3 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
               <div className="flex items-center gap-2">
                 <Switch id="editPostProject" checked={isPosted} onCheckedChange={setIsPosted} />
                 <Label htmlFor="editPostProject" className="text-sm cursor-pointer font-medium">Post project?</Label>
