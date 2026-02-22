@@ -25,6 +25,7 @@ interface ProjectTimelineProps {
   onEditProject?: () => void;
   onAddItem?: () => void;
   onAddPhase?: () => void;
+  onHighlightCertificate?: (certificateId: string) => void;
 }
 
 export function ProjectTimeline({
@@ -35,6 +36,7 @@ export function ProjectTimeline({
   onEditProject,
   onAddItem,
   onAddPhase,
+  onHighlightCertificate,
 }: ProjectTimelineProps) {
   const assignedPersonnel = useMemo(
     () =>
@@ -89,12 +91,13 @@ export function ProjectTimeline({
   const todayX = showToday ? dateToX(today, start, end, totalWidth) : null;
   const endLineX = hasEndDate ? dateToX(subDays(end, 1), start, end, totalWidth) : null;
 
-  const handleScrollToCertificates = useCallback(() => {
+  const handleScrollToCertificates = useCallback((certificateId: string) => {
     const el = document.querySelector('[data-certificate-status]');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, []);
+    onHighlightCertificate?.(certificateId);
+  }, [onHighlightCertificate]);
 
   // If no end date, show message
   if (!project.endDate) {

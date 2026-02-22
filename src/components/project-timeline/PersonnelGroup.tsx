@@ -12,7 +12,7 @@ interface PersonnelGroupProps {
   totalWidth: number;
   defaultExpanded: boolean;
   onPersonnelClick?: () => void;
-  onScrollToCertificates?: () => void;
+  onScrollToCertificates?: (certificateId: string) => void;
 }
 
 export function PersonnelGroup({
