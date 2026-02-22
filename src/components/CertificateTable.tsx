@@ -179,16 +179,16 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
       <div className="rounded-lg border border-border/50 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="font-semibold">Certificate</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Category</TableHead>
-              <TableHead className="font-semibold">Type</TableHead>
-              <TableHead className="font-semibold">Issuing Authority</TableHead>
-              <TableHead className="font-semibold">Date of Issue</TableHead>
-              <TableHead className="font-semibold">Expiry Date</TableHead>
-              <TableHead className="font-semibold">Place of Issue</TableHead>
-              <TableHead className="font-semibold">Document</TableHead>
+            <TableRow className="bg-primary hover:bg-primary">
+              <TableHead className="font-semibold text-white">Certificate</TableHead>
+              <TableHead className="font-semibold text-white">Status</TableHead>
+              <TableHead className="font-semibold text-white">Category</TableHead>
+              <TableHead className="font-semibold text-white">Type</TableHead>
+              <TableHead className="font-semibold text-white">Issuing Authority</TableHead>
+              <TableHead className="font-semibold text-white">Date of Issue</TableHead>
+              <TableHead className="font-semibold text-white">Expiry Date</TableHead>
+              <TableHead className="font-semibold text-white">Place of Issue</TableHead>
+              <TableHead className="font-semibold text-white">Document</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
