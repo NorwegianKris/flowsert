@@ -1,24 +1,39 @@
 
 
-## Add Lavender Tint to Posted Project Header Card
+## Add Dashboard Background to Chat Picker View
 
 **Risk: GREEN** -- purely UI styling change.
 
 ### What Changes
 
-The header card in `ProjectDetail.tsx` (line 191) will get a lavender background tint when the project is posted, and remain white (default) for active/non-posted projects.
+The picker area in the Flowsert Chat (behind the three option buttons) gets the "raining documents" background pattern. The header bar ("Flowsert Chat") and the three buttons (Personnel/Admin Chat, Project Chat, AI Assistant) stay white.
 
 ### Technical Detail
 
-**File: `src/components/ProjectDetail.tsx`** (line 191)
+**File: `src/components/ChatBot.tsx`**
 
-```tsx
-// Before
-<Card className="border-border/50">
-
-// After
-<Card className={`border-border/50 ${project.isPosted ? 'border-[#C4B5FD]/50 bg-[#C4B5FD]/10' : ''}`}>
+1. **Add import** (near existing imports):
+```typescript
+import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 ```
 
-When a posted project is activated (`isPosted` becomes `false`), the card automatically reverts to the default white background. One line change in one file.
+2. **Apply background to picker container** (the `flex-1` div inside `renderPicker`):
+```tsx
+// Before
+<div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+
+// After
+<div
+  className="flex-1 flex flex-col items-center justify-center gap-4 p-6"
+  style={{
+    backgroundImage: `url(${dashboardBgPattern})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }}
+>
+```
+
+3. **Add `bg-card` to each of the three option buttons** so they remain white against the patterned background. Each button already has classes like `flex flex-col items-center gap-3 p-6 rounded-xl border ...` -- just append `bg-card` to each.
+
+One import addition and four small className/style tweaks in a single file.
 
