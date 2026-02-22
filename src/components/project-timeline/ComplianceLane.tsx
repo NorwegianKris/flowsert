@@ -13,7 +13,7 @@ interface ComplianceLaneProps {
   projectStart: string;
   projectEnd: string;
   totalWidth: number;
-  onScrollToCertificates?: () => void;
+  onScrollToCertificates?: (certificateId: string) => void;
 }
 
 export function ComplianceLane({
@@ -37,9 +37,8 @@ export function ComplianceLane({
 
       {/* Lane */}
       <div
-        className="relative flex-1 bg-emerald-500/[0.03] cursor-pointer"
+        className="relative flex-1 bg-emerald-500/[0.03]"
         style={{ minHeight: Math.max(LANE_HEIGHT, laneRows * (rowHeight + 2) + 4), width: totalWidth }}
-        onClick={onScrollToCertificates}
       >
         {bars.map((bar, i) => {
           // Each certificate bar spans the full project width, colored by status
@@ -62,7 +61,11 @@ export function ComplianceLane({
             <Tooltip key={bar.certificate.id || i}>
               <TooltipTrigger asChild>
                 <div
-                  className={`absolute rounded-sm ${complianceColor(bar.status)} hover:opacity-80 transition-opacity`}
+                  className={`absolute rounded-sm ${complianceColor(bar.status)} hover:opacity-80 transition-opacity cursor-pointer`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onScrollToCertificates?.(bar.certificate.id);
+                  }}
                   style={{
                     left: barStart,
                     width,

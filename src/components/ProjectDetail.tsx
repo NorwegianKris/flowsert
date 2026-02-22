@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useProjectApplications } from '@/hooks/useProjectApplications';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,6 +68,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [highlightedCertificateId, setHighlightedCertificateId] = useState<string | null>(null);
 
   const { phases, addPhase } = useProjectPhases(project.id);
   const { applications } = useProjectApplications(project.isPosted ? project.id : undefined);
@@ -340,6 +341,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         onEditProject={() => setIsEditOpen(true)}
         onAddItem={() => setIsAddItemOpen(true)}
         onAddPhase={() => setIsAddPhaseOpen(true)}
+        onHighlightCertificate={setHighlightedCertificateId}
       />
 
       {/* Main Content - Tabs with Side Panels */}
@@ -486,7 +488,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
 
       {/* Certificate Status Section */}
       <div data-certificate-status>
-        <ProjectCertificateStatus personnel={assignedPersonnel} />
+        <ProjectCertificateStatus personnel={assignedPersonnel} highlightedCertificateId={highlightedCertificateId} onClearHighlight={() => setHighlightedCertificateId(null)} />
       </div>
 
       {/* Dialogs */}

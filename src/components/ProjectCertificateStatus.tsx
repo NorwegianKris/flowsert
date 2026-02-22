@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Table,
   TableBody,
@@ -38,9 +38,11 @@ interface CertificateWithPersonnel extends Certificate {
 
 interface ProjectCertificateStatusProps {
   personnel: Personnel[];
+  highlightedCertificateId?: string | null;
+  onClearHighlight?: () => void;
 }
 
-export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatusProps) {
+export function ProjectCertificateStatus({ personnel, highlightedCertificateId, onClearHighlight }: ProjectCertificateStatusProps) {
   const [selectedCertificate, setSelectedCertificate] = useState<CertificateWithPersonnel | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
@@ -48,6 +50,21 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [imgRotation, setImgRotation] = useState(0);
   const [imgZoom, setImgZoom] = useState(1);
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+
+  // Auto-clear highlight after 3 seconds
+  useEffect(() => {
+    if (!highlightedCertificateId) return;
+    const timer = setTimeout(() => onClearHighlight?.(), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightedCertificateId, onClearHighlight]);
+
+  // Scroll highlighted row into view
+  useEffect(() => {
+    if (highlightedCertificateId && highlightedRowRef.current) {
+      highlightedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedCertificateId]);
 
   // Reset image controls when certificate changes
   useEffect(() => {
@@ -214,10 +231,13 @@ export function ProjectCertificateStatus({ personnel }: ProjectCertificateStatus
                   const status = getCertificateStatus(cert.expiryDate);
                   const daysUntilExpiry = getDaysUntilExpiry(cert.expiryDate);
 
+                    const isHighlighted = highlightedCertificateId === cert.id;
+
                   return (
                     <TableRow 
                       key={`${cert.personnelId}-${cert.id}`}
-                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                      ref={isHighlighted ? highlightedRowRef : undefined}
+                      className={`group cursor-pointer hover:bg-muted/50 transition-all ${isHighlighted ? 'ring-2 ring-primary shadow-md' : ''}`}
                       onClick={() => setSelectedCertificate(cert)}
                     >
                       <TableCell>
