@@ -478,13 +478,13 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
           <div className="rounded-lg border border-border/50 overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="font-semibold">Document</TableHead>
-                  <TableHead className="font-semibold">Category</TableHead>
-                  <TableHead className="font-semibold">Date Uploaded</TableHead>
-                  <TableHead className="font-semibold">Size</TableHead>
-                  <TableHead className="font-semibold">Type</TableHead>
-                  <TableHead className="font-semibold w-28">Actions</TableHead>
+                <TableRow className="bg-primary hover:bg-primary">
+                  <TableHead className="font-semibold text-white">Document</TableHead>
+                  <TableHead className="font-semibold text-white">Category</TableHead>
+                  <TableHead className="font-semibold text-white">Date Uploaded</TableHead>
+                  <TableHead className="font-semibold text-white">Size</TableHead>
+                  <TableHead className="font-semibold text-white">Type</TableHead>
+                  <TableHead className="font-semibold text-white w-28">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
