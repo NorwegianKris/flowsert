@@ -130,14 +130,14 @@ export function ProjectTimeline({
           </div>
           <div className="flex flex-wrap gap-2">
             {onAddItem && (
-              <Button variant="outline" size="sm" onClick={onAddItem} className="gap-1.5 flex-shrink-0">
+              <Button size="sm" onClick={onAddItem} className="gap-1.5 flex-shrink-0 bg-primary hover:bg-primary/90 text-white">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add event or milestone</span>
                 <span className="sm:hidden">Add</span>
               </Button>
             )}
             {onAddPhase && (
-              <Button variant="outline" size="sm" onClick={onAddPhase} className="gap-1.5 flex-shrink-0">
+              <Button size="sm" onClick={onAddPhase} className="gap-1.5 flex-shrink-0 bg-primary hover:bg-primary/90 text-white">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Define phase</span>
                 <span className="sm:hidden">Phase</span>
