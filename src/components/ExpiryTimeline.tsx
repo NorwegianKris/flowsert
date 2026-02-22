@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Personnel } from '@/types';
 import { getDaysUntilExpiry } from '@/lib/certificateUtils';
-import { Clock, AlertTriangle, AlertCircle, CheckCircle, Users, Award, ChevronRight } from 'lucide-react';
+import { Clock, AlertTriangle, AlertCircle, CheckCircle, Users, Award } from 'lucide-react';
 import { TimelineChart } from '@/components/timeline/TimelineChart';
 import { TimelineZoomControls } from '@/components/timeline/TimelineZoomControls';
 import { ExpiryDetailsList } from '@/components/timeline/ExpiryDetailsList';
@@ -42,11 +41,12 @@ export function ExpiryTimeline({
   customRoles = [],
   customWorkerGroupIds = [],
 }: ExpiryTimelineProps) {
-  const navigate = useNavigate();
   const [timelineEndDays, setTimelineEndDays] = useState(90);
   const [timelineStartDays, setTimelineStartDays] = useState(-30);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [highlightedLaneId, setHighlightedLaneId] = useState<string | null>(null);
+  const [detailsListOpen, setDetailsListOpen] = useState(false);
   const { data: personnelWorkerGroups = [] } = usePersonnelWorkerGroups();
   
   // Fetch certificate types and categories
@@ -205,22 +205,9 @@ export function ExpiryTimeline({
     return events.sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime());
   }, [filteredPersonnel, selectedTypeId, selectedCategoryId, certificateTypes]);
 
-  const handleGroupClick = (group: ExpiryGroup) => {
-    // Build query params for navigation to a filtered certificate view
-    const params = new URLSearchParams();
-    
-    if (group.filterParams.overdue) {
-      params.set('status', 'overdue');
-    } else if (group.filterParams.minDays !== undefined && group.filterParams.maxDays !== undefined) {
-      params.set('expiryMin', group.filterParams.minDays.toString());
-      params.set('expiryMax', group.filterParams.maxDays.toString());
-    }
-    
-    if (personnelFilter !== 'all') {
-      params.set('category', personnelFilter);
-    }
-    
-    navigate(`/admin?tab=personnel&${params.toString()}`);
+  const handleLaneHighlight = (laneId: string) => {
+    setHighlightedLaneId(laneId);
+    setDetailsListOpen(true);
   };
 
   return (
@@ -243,7 +230,7 @@ export function ExpiryTimeline({
             return (
               <button
                 key={group.id}
-                onClick={() => handleGroupClick(group)}
+                onClick={() => handleLaneHighlight(group.id)}
                 disabled={!hasItems}
                 className={`
                   relative flex flex-col p-4 rounded-lg border transition-all text-left
@@ -260,9 +247,6 @@ export function ExpiryTimeline({
                       {group.label}
                     </span>
                   </div>
-                  {hasItems && (
-                    <ChevronRight className={`h-4 w-4 ${group.color} opacity-60`} />
-                  )}
                 </div>
                 
                 {/* Metrics */}
@@ -321,12 +305,17 @@ export function ExpiryTimeline({
             personnelFilter={personnelFilter}
             timelineEndDays={timelineEndDays}
             timelineStartDays={timelineStartDays}
+            onLaneClick={handleLaneHighlight}
           />
           <ExpiryDetailsList
             timelineEvents={timelineEvents}
             timelineStartDays={timelineStartDays}
             timelineEndDays={timelineEndDays}
             personnelFilter={personnelFilter}
+            highlightedLaneId={highlightedLaneId}
+            open={detailsListOpen}
+            onOpenChange={setDetailsListOpen}
+            onHighlightClear={() => setHighlightedLaneId(null)}
           />
         </div>
       </CardContent>

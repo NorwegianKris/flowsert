@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ChevronDown, List, Building2, Calendar, MapPin, Tag } from 'lucide-react';
@@ -14,6 +14,10 @@ interface ExpiryDetailsListProps {
   timelineStartDays: number;
   timelineEndDays: number;
   personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
+  highlightedLaneId?: string | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onHighlightClear?: () => void;
 }
 
 export function ExpiryDetailsList({
@@ -21,9 +25,40 @@ export function ExpiryDetailsList({
   timelineStartDays,
   timelineEndDays,
   personnelFilter,
+  highlightedLaneId = null,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onHighlightClear,
 }: ExpiryDetailsListProps) {
   const navigate = useNavigate();
-  const [listOpen, setListOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const highlightedRef = useRef<HTMLDivElement>(null);
+
+  const isControlled = controlledOpen !== undefined;
+  const listOpen = isControlled ? controlledOpen : internalOpen;
+  const setListOpen = useCallback((val: boolean) => {
+    if (isControlled && controlledOnOpenChange) {
+      controlledOnOpenChange(val);
+    } else {
+      setInternalOpen(val);
+    }
+  }, [isControlled, controlledOnOpenChange]);
+
+  // Auto-scroll to highlighted lane and clear after 3s
+  useEffect(() => {
+    if (!highlightedLaneId) return;
+    const timer = setTimeout(() => {
+      onHighlightClear?.();
+    }, 3000);
+    // Scroll into view after a short delay for DOM to update
+    const scrollTimer = setTimeout(() => {
+      highlightedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(scrollTimer);
+    };
+  }, [highlightedLaneId, onHighlightClear]);
 
   const visibleEvents = useMemo(
     () =>
@@ -90,7 +125,16 @@ export function ExpiryDetailsList({
           if (!events || events.length === 0) return null;
 
           return (
-            <div key={lane.id} className={cn('rounded-md border', lane.borderColor, lane.bgColor)}>
+            <div
+              key={lane.id}
+              ref={highlightedLaneId === lane.id ? highlightedRef : undefined}
+              className={cn(
+                'rounded-md border transition-all duration-300',
+                lane.borderColor,
+                lane.bgColor,
+                highlightedLaneId === lane.id && 'ring-2 ring-primary shadow-md'
+              )}
+            >
               <div className="px-3 py-2 flex items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 rounded-full flex-shrink-0"

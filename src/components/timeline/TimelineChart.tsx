@@ -14,6 +14,7 @@ interface TimelineChartProps {
   personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
   timelineEndDays?: number;
   timelineStartDays?: number;
+  onLaneClick?: (laneId: string) => void;
 }
 
 interface PositionedEvent extends TimelineEvent {
@@ -26,6 +27,7 @@ export function TimelineChart({
   personnelFilter,
   timelineEndDays = 90,
   timelineStartDays = -30,
+  onLaneClick,
 }: TimelineChartProps) {
   const navigate = useNavigate();
   const today = new Date();
@@ -169,6 +171,10 @@ export function TimelineChart({
   };
   
   const handleLaneClick = (laneConfig: LaneConfig) => {
+    if (onLaneClick) {
+      onLaneClick(laneConfig.id);
+      return;
+    }
     const params = new URLSearchParams();
     
     if (laneConfig.filterParams.overdue) {
