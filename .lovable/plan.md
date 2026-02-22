@@ -1,35 +1,24 @@
 
 
-## Add Text Labels to Login and Update Timestamps
+## Add Lavender Tint to Posted Project Header Card
 
-**Risk: GREEN** -- purely UI text/layout change.
+**Risk: GREEN** -- purely UI styling change.
 
-### Problem
+### What Changes
 
-Currently the "last login" and "last updated" lines only show an icon (Clock / RefreshCw) and a date, with no text label explaining what the date means. This makes it ambiguous -- especially when one says "Never logged in" but the other shows a recent date.
+The header card in `ProjectDetail.tsx` (line 191) will get a lavender background tint when the project is posted, and remain white (default) for active/non-posted projects.
 
-### Fix
+### Technical Detail
 
-Add short text labels ("Last login:" and "Last update:") before the date values in both the mobile and desktop views within `PersonnelDetail.tsx`.
+**File: `src/components/ProjectDetail.tsx`** (line 191)
 
-**File: `src/components/PersonnelDetail.tsx`**
+```tsx
+// Before
+<Card className="border-border/50">
 
-Desktop view (lines 246-261) -- change from:
-```
-<Clock /> Feb 17, 2025 14:30
-<RefreshCw /> Feb 17, 2025 14:30
-```
-to:
-```
-<Clock /> Last login: Feb 17, 2025 14:30
-<RefreshCw /> Last update: Feb 17, 2025 14:30
+// After
+<Card className={`border-border/50 ${project.isPosted ? 'border-[#C4B5FD]/50 bg-[#C4B5FD]/10' : ''}`}>
 ```
 
-Mobile view (lines 205-220) -- same pattern with shorter date format:
-```
-<Clock /> Last login: Feb 17, 2025
-<RefreshCw /> Last update: Feb 17, 2025
-```
-
-Four text insertions in one file. No logic changes.
+When a posted project is activated (`isPosted` becomes `false`), the card automatically reverts to the default white background. One line change in one file.
 
