@@ -1,39 +1,32 @@
 
 
-## Add Dashboard Background to Chat Picker View
+## Purple Certificate Header Bar in Personnel Profile
 
 **Risk: GREEN** -- purely UI styling change.
 
 ### What Changes
 
-The picker area in the Flowsert Chat (behind the three option buttons) gets the "raining documents" background pattern. The header bar ("Flowsert Chat") and the three buttons (Personnel/Admin Chat, Project Chat, AI Assistant) stay white.
+The certificate table header row inside a personnel profile (`CertificateTable.tsx`) will change from grey background with black text to a purple/indigo background with white text. This matches the project's primary brand color (Deep Indigo #4338CA).
 
 ### Technical Detail
 
-**File: `src/components/ChatBot.tsx`**
+**File: `src/components/CertificateTable.tsx`** (line 182)
 
-1. **Add import** (near existing imports):
-```typescript
-import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
-```
+Change the `TableRow` className in the `TableHeader`:
 
-2. **Apply background to picker container** (the `flex-1` div inside `renderPicker`):
 ```tsx
 // Before
-<div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+<TableRow className="bg-muted/30 hover:bg-muted/30">
+  <TableHead className="font-semibold">Certificate</TableHead>
+  ...
 
 // After
-<div
-  className="flex-1 flex flex-col items-center justify-center gap-4 p-6"
-  style={{
-    backgroundImage: `url(${dashboardBgPattern})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  }}
->
+<TableRow className="bg-primary hover:bg-primary">
+  <TableHead className="font-semibold text-white">Certificate</TableHead>
+  ...
 ```
 
-3. **Add `bg-card` to each of the three option buttons** so they remain white against the patterned background. Each button already has classes like `flex flex-col items-center gap-3 p-6 rounded-xl border ...` -- just append `bg-card` to each.
+Each of the 9 `TableHead` elements (Certificate, Status, Category, Type, Issuing Authority, Date of Issue, Expiry Date, Place of Issue, Document) gets `text-white` added to its className. The row background changes from `bg-muted/30` to `bg-primary` (the Deep Indigo #4338CA).
 
-One import addition and four small className/style tweaks in a single file.
+One file, one row className change and 9 small `text-white` additions.
 
