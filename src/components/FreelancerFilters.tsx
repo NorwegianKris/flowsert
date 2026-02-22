@@ -42,43 +42,44 @@ export function FreelancerFilters({
   };
 
   return (
-    <div className="flex items-center gap-6 py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
-      <div className="flex items-center gap-2 text-muted-foreground">
+    <div className="py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
+      <div className="flex items-center gap-2 text-muted-foreground mb-2">
         <Users className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">Personnel view:</span>
       </div>
-      
-      <div className="flex items-center gap-2">
-        <Switch
-          id="include-employees"
-          checked={includeEmployees}
-          onCheckedChange={handleIncludeEmployeesChange}
-        />
-        <Label htmlFor="include-employees" className="text-sm cursor-pointer">
-          Include Employees
-        </Label>
-      </div>
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="include-employees"
+            checked={includeEmployees}
+            onCheckedChange={handleIncludeEmployeesChange}
+          />
+          <Label htmlFor="include-employees" className="text-sm cursor-pointer">
+            Include Employees
+          </Label>
+        </div>
 
-      <div className="flex items-center gap-2">
-        <Switch
-          id="include-freelancers"
-          checked={includeFreelancers}
-          onCheckedChange={handleIncludeFreelancersChange}
-        />
-        <Label htmlFor="include-freelancers" className="text-sm cursor-pointer">
-          Include Freelancers
-        </Label>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <Switch
-          id="show-freelancers-only"
-          checked={showFreelancersOnly}
-          onCheckedChange={handleShowOnlyChange}
-        />
-        <Label htmlFor="show-freelancers-only" className="text-sm cursor-pointer">
-          Show Freelancers only
-        </Label>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="include-freelancers"
+            checked={includeFreelancers}
+            onCheckedChange={handleIncludeFreelancersChange}
+          />
+          <Label htmlFor="include-freelancers" className="text-sm cursor-pointer">
+            Include Freelancers
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id="show-freelancers-only"
+            checked={showFreelancersOnly}
+            onCheckedChange={handleShowOnlyChange}
+          />
+          <Label htmlFor="show-freelancers-only" className="text-sm cursor-pointer">
+            Show Freelancers only
+          </Label>
+        </div>
       </div>
     </div>
   );
