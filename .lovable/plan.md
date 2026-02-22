@@ -1,45 +1,45 @@
 
 
-## Purple Certificate Status Header in Project View
+## Fix Personnel View Toggles Overflow in New Project Dialog
 
-**Risk: GREEN** -- purely UI color/styling change, no backend or data changes.
+**Risk: GREEN** -- purely UI layout change.
 
-### What Changes
+### Problem
 
-The certificate status table header row in `ProjectCertificateStatus.tsx` (showing Personnel, Certificate, Status, Category, Issuing Authority, Date of Issue, Expiry Date, Place of Issue, Document) will change from grey background with dark text to purple background with white text -- matching the existing certificate and document headers in the personnel profile.
+The "Personnel view" section inside the New Project dialog places the label and all three toggles (Include Employees, Include Freelancers, Show Freelancers only) in a single horizontal row. Inside the narrower dialog width, this overflows to the right.
+
+### Solution
+
+Restructure `FreelancerFilters` so the "Personnel view:" label with icon sits on top, and the three toggles sit below it in a horizontal row with tighter spacing.
 
 ### Technical Detail
 
-**File: `src/components/ProjectCertificateStatus.tsx`** (lines 200-210)
+**File: `src/components/FreelancerFilters.tsx`**
 
-Change the `TableRow` background from `bg-muted/30` to `bg-primary` and add `text-white` to all 9 `TableHead` elements:
+Change the outer container from a single-row flex to a stacked layout:
 
 ```tsx
-// Before
-<TableRow className="bg-muted/30 hover:bg-muted/30">
-  <TableHead className="font-semibold">Personnel</TableHead>
-  <TableHead className="font-semibold">Certificate</TableHead>
-  <TableHead className="font-semibold">Status</TableHead>
-  <TableHead className="font-semibold">Category</TableHead>
-  <TableHead className="font-semibold">Issuing Authority</TableHead>
-  <TableHead className="font-semibold">Date of Issue</TableHead>
-  <TableHead className="font-semibold">Expiry Date</TableHead>
-  <TableHead className="font-semibold">Place of Issue</TableHead>
-  <TableHead className="font-semibold">Document</TableHead>
-</TableRow>
+// Before (single row)
+<div className="flex items-center gap-6 py-3 px-4 ...">
+  <div>  {/* icon + label */} </div>
+  <div>  {/* toggle 1 */} </div>
+  <div>  {/* toggle 2 */} </div>
+  <div>  {/* toggle 3 */} </div>
+</div>
 
-// After
-<TableRow className="bg-primary hover:bg-primary">
-  <TableHead className="font-semibold text-white">Personnel</TableHead>
-  <TableHead className="font-semibold text-white">Certificate</TableHead>
-  <TableHead className="font-semibold text-white">Status</TableHead>
-  <TableHead className="font-semibold text-white">Category</TableHead>
-  <TableHead className="font-semibold text-white">Issuing Authority</TableHead>
-  <TableHead className="font-semibold text-white">Date of Issue</TableHead>
-  <TableHead className="font-semibold text-white">Expiry Date</TableHead>
-  <TableHead className="font-semibold text-white">Place of Issue</TableHead>
-  <TableHead className="font-semibold text-white">Document</TableHead>
-</TableRow>
+// After (label on top, toggles below)
+<div className="py-3 px-4 ...">
+  <div className="flex items-center gap-2 text-muted-foreground mb-2">
+    <Users icon />
+    <span>Personnel view:</span>
+  </div>
+  <div className="flex items-center gap-4 flex-wrap">
+    {/* toggle 1 */}
+    {/* toggle 2 */}
+    {/* toggle 3 */}
+  </div>
+</div>
 ```
 
-One file, one row background change and 9 `text-white` additions.
+One file changed, layout only.
+
