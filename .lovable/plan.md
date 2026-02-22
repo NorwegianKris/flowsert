@@ -1,45 +1,28 @@
 
 
-## Fix Personnel View Toggles Overflow in New Project Dialog
+## Hide Rejected Applications from Project Applications View
 
-**Risk: GREEN** -- purely UI layout change.
+**Risk: GREEN** -- purely UI filtering change, no backend or data changes.
 
-### Problem
+### What Changes
 
-The "Personnel view" section inside the New Project dialog places the label and all three toggles (Include Employees, Include Freelancers, Show Freelancers only) in a single horizontal row. Inside the narrower dialog width, this overflows to the right.
-
-### Solution
-
-Restructure `FreelancerFilters` so the "Personnel view:" label with icon sits on top, and the three toggles sit below it in a horizontal row with tighter spacing.
+In `ProjectApplicationsList.tsx`, rejected applications will be filtered out of the displayed list so they no longer appear. The data still exists in the database -- it's just hidden from the admin's view.
 
 ### Technical Detail
 
-**File: `src/components/FreelancerFilters.tsx`**
+**File: `src/components/ProjectApplicationsList.tsx`** (line 60)
 
-Change the outer container from a single-row flex to a stacked layout:
+Add a filter before mapping to exclude rejected applications:
 
 ```tsx
-// Before (single row)
-<div className="flex items-center gap-6 py-3 px-4 ...">
-  <div>  {/* icon + label */} </div>
-  <div>  {/* toggle 1 */} </div>
-  <div>  {/* toggle 2 */} </div>
-  <div>  {/* toggle 3 */} </div>
-</div>
+// Before
+{applications.map(app => {
 
-// After (label on top, toggles below)
-<div className="py-3 px-4 ...">
-  <div className="flex items-center gap-2 text-muted-foreground mb-2">
-    <Users icon />
-    <span>Personnel view:</span>
-  </div>
-  <div className="flex items-center gap-4 flex-wrap">
-    {/* toggle 1 */}
-    {/* toggle 2 */}
-    {/* toggle 3 */}
-  </div>
-</div>
+// After
+{applications.filter(app => app.status !== 'rejected').map(app => {
 ```
 
-One file changed, layout only.
+Also update the empty-state check (line 42) to account for filtered results -- if all applications are rejected, show the "No applications yet" message. This will be handled by filtering early and checking the filtered array length instead.
+
+One file, one filter addition.
 
