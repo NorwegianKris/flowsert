@@ -39,7 +39,9 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
     );
   }
 
-  if (applications.length === 0) {
+  const visibleApplications = applications.filter(app => app.status !== 'rejected');
+
+  if (visibleApplications.length === 0) {
     return (
       <div className="text-center py-8">
         <div className="text-4xl mb-3">📩</div>
@@ -57,7 +59,7 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
   return (
     <>
       <div className="space-y-3">
-        {applications.map(app => {
+        {visibleApplications.map(app => {
           const config = statusConfig[app.status as keyof typeof statusConfig] || statusConfig.pending;
           const StatusIcon = config.icon;
           return (
