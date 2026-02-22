@@ -1,41 +1,45 @@
 
-## Click Lane Labels to Open and Highlight Expiry Details
 
-**Risk: GREEN** -- purely UI interaction change, no backend/data changes.
+## Purple Certificate Status Header in Project View
+
+**Risk: GREEN** -- purely UI color/styling change, no backend or data changes.
 
 ### What Changes
 
-Clicking any of the four summary boxes (Overdue, Next 30 Days, 31-60 Days, 61-90 Days) or lane labels in the timeline chart will:
-
-1. **Open** the Expiry Details collapsible dropdown (if not already open)
-2. **Highlight** the corresponding lane section with a purple ring/shadow frame
-3. **Auto-scroll** the highlighted section into view
-4. The highlight fades after 3 seconds
-
-The boxes and lane labels will no longer navigate away to the personnel tab. Individual event dots in the timeline chart still navigate to personnel profiles.
+The certificate status table header row in `ProjectCertificateStatus.tsx` (showing Personnel, Certificate, Status, Category, Issuing Authority, Date of Issue, Expiry Date, Place of Issue, Document) will change from grey background with dark text to purple background with white text -- matching the existing certificate and document headers in the personnel profile.
 
 ### Technical Detail
 
-**File: `src/components/ExpiryTimeline.tsx`**
+**File: `src/components/ProjectCertificateStatus.tsx`** (lines 200-210)
 
-- Add two new state variables: `highlightedLaneId` (string | null) and `detailsListOpen` (boolean)
-- Create a `handleLaneHighlight` function that sets both states
-- Change `handleGroupClick` to call `handleLaneHighlight` instead of navigating
-- Pass `onLaneClick={handleLaneHighlight}` to `TimelineChart`
-- Pass `highlightedLaneId`, `open={detailsListOpen}`, `onOpenChange={setDetailsListOpen}` to `ExpiryDetailsList`
-- Remove the `ChevronRight` icon from the summary boxes (since they no longer navigate away)
+Change the `TableRow` background from `bg-muted/30` to `bg-primary` and add `text-white` to all 9 `TableHead` elements:
 
-**File: `src/components/timeline/TimelineChart.tsx`**
+```tsx
+// Before
+<TableRow className="bg-muted/30 hover:bg-muted/30">
+  <TableHead className="font-semibold">Personnel</TableHead>
+  <TableHead className="font-semibold">Certificate</TableHead>
+  <TableHead className="font-semibold">Status</TableHead>
+  <TableHead className="font-semibold">Category</TableHead>
+  <TableHead className="font-semibold">Issuing Authority</TableHead>
+  <TableHead className="font-semibold">Date of Issue</TableHead>
+  <TableHead className="font-semibold">Expiry Date</TableHead>
+  <TableHead className="font-semibold">Place of Issue</TableHead>
+  <TableHead className="font-semibold">Document</TableHead>
+</TableRow>
 
-- Add optional `onLaneClick?: (laneId: string) => void` prop
-- Change `handleLaneClick` to call `onLaneClick` if provided, otherwise fall back to navigation
+// After
+<TableRow className="bg-primary hover:bg-primary">
+  <TableHead className="font-semibold text-white">Personnel</TableHead>
+  <TableHead className="font-semibold text-white">Certificate</TableHead>
+  <TableHead className="font-semibold text-white">Status</TableHead>
+  <TableHead className="font-semibold text-white">Category</TableHead>
+  <TableHead className="font-semibold text-white">Issuing Authority</TableHead>
+  <TableHead className="font-semibold text-white">Date of Issue</TableHead>
+  <TableHead className="font-semibold text-white">Expiry Date</TableHead>
+  <TableHead className="font-semibold text-white">Place of Issue</TableHead>
+  <TableHead className="font-semibold text-white">Document</TableHead>
+</TableRow>
+```
 
-**File: `src/components/timeline/ExpiryDetailsList.tsx`**
-
-- Add props: `highlightedLaneId?: string | null`, `open?: boolean`, `onOpenChange?: (open: boolean) => void`
-- Use controlled open/onOpenChange on the Collapsible when provided
-- Apply `ring-2 ring-primary shadow-md` to the lane div when `highlightedLaneId` matches `lane.id`
-- Use a ref + `scrollIntoView({ behavior: 'smooth', block: 'nearest' })` to auto-scroll to highlighted section
-- Auto-clear highlight after 3 seconds via `useEffect` with a timeout
-
-Three files modified, no database or backend changes.
+One file, one row background change and 9 `text-white` additions.
