@@ -1,32 +1,40 @@
 
 
-## Purple Certificate Header Bar in Personnel Profile
+## Purple Document Header Bar in Personnel Profile
 
 **Risk: GREEN** -- purely UI styling change.
 
 ### What Changes
 
-The certificate table header row inside a personnel profile (`CertificateTable.tsx`) will change from grey background with black text to a purple/indigo background with white text. This matches the project's primary brand color (Deep Indigo #4338CA).
+The document table header row in `PersonnelDocuments.tsx` (showing Document, Category, Date Uploaded, Size, Type, Actions) will change from grey background with black text to purple background with white text, matching the certificate header bar change.
 
 ### Technical Detail
 
-**File: `src/components/CertificateTable.tsx`** (line 182)
+**File: `src/components/PersonnelDocuments.tsx`** (lines 481-488)
 
-Change the `TableRow` className in the `TableHeader`:
+Change:
 
 ```tsx
 // Before
 <TableRow className="bg-muted/30 hover:bg-muted/30">
-  <TableHead className="font-semibold">Certificate</TableHead>
-  ...
+  <TableHead className="font-semibold">Document</TableHead>
+  <TableHead className="font-semibold">Category</TableHead>
+  <TableHead className="font-semibold">Date Uploaded</TableHead>
+  <TableHead className="font-semibold">Size</TableHead>
+  <TableHead className="font-semibold">Type</TableHead>
+  <TableHead className="font-semibold w-28">Actions</TableHead>
+</TableRow>
 
 // After
 <TableRow className="bg-primary hover:bg-primary">
-  <TableHead className="font-semibold text-white">Certificate</TableHead>
-  ...
+  <TableHead className="font-semibold text-white">Document</TableHead>
+  <TableHead className="font-semibold text-white">Category</TableHead>
+  <TableHead className="font-semibold text-white">Date Uploaded</TableHead>
+  <TableHead className="font-semibold text-white">Size</TableHead>
+  <TableHead className="font-semibold text-white">Type</TableHead>
+  <TableHead className="font-semibold text-white w-28">Actions</TableHead>
+</TableRow>
 ```
 
-Each of the 9 `TableHead` elements (Certificate, Status, Category, Type, Issuing Authority, Date of Issue, Expiry Date, Place of Issue, Document) gets `text-white` added to its className. The row background changes from `bg-muted/30` to `bg-primary` (the Deep Indigo #4338CA).
-
-One file, one row className change and 9 small `text-white` additions.
+One file, one row background change and 6 `text-white` additions.
 
