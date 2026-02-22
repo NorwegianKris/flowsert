@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import flowsertLogo from '@/assets/flowsert-logo.png';
+import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -438,14 +439,21 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
 
   // --- Render picker view ---
   const renderPicker = () => (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+    <div
+      className="flex-1 flex flex-col items-center justify-center gap-4 p-6"
+      style={{
+        backgroundImage: `url(${dashboardBgPattern})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <button
         onClick={() => {
           if (isAdmin) setView('admin-personnel-select');
           else handleWorkerChatClick();
         }}
         disabled={!isAdmin && workerBusinesses.length === 0}
-        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed relative"
+        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed relative"
       >
         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Building2 className="h-5 w-5 text-primary" />
@@ -469,7 +477,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
 
       <button
         onClick={() => setView('project-select')}
-        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left"
+        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-left"
       >
         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <FolderOpen className="h-5 w-5 text-primary" />
@@ -482,7 +490,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
 
       <button
         onClick={() => setView('ai')}
-        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors text-left"
+        className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-left"
       >
         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Sparkles className="h-5 w-5 text-primary" />
