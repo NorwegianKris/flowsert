@@ -71,12 +71,18 @@ export function ComplianceLane({
                   }}
                 >
                   <span className="text-[9px] text-white px-1 truncate block leading-[16px]">
-                    {bar.certificate.name}
+                    {[bar.certificate.category, bar.certificate.name, bar.certificate.issuingAuthority]
+                      .filter(Boolean)
+                      .join(' – ')}
                   </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="font-medium">{bar.certificate.name}</p>
+                <p className="font-medium">
+                  {[bar.certificate.category, bar.certificate.name, bar.certificate.issuingAuthority]
+                    .filter(Boolean)
+                    .join(' – ')}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {expiry
                     ? `Expires: ${format(expiry, 'MMM d, yyyy')}`
