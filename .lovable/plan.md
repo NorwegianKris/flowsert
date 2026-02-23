@@ -1,52 +1,35 @@
 
 
-## Fix Project Timeline Availability Bar Logic and Colors
+## Add Background Color Tints to Availability and Compliance Lanes
 
-**Risk: GREEN** -- purely UI logic changes, no backend/schema/RLS modifications.
-
----
-
-### Current Problems
-
-1. **Unavailable spans are hidden:** In `fillGapsWithAvailable()` (lines 50 and 64 of `useProjectTimelineData.ts`), spans with status `'unavailable'` are explicitly skipped and never added to the output array. This means red "unavailable" days simply vanish from the bar.
-
-2. **Colors don't match the calendar:** The calendar uses green for available, amber for partial, red for unavailable, and blue for other. But the timeline bar uses sky-blue for available, a hatched sky-blue for partial, and blue for other -- making them visually inconsistent and confusing.
-
-3. **"No availability data" message is misleading:** When a person has no calendar entries at all, they should be shown as fully available (one green bar spanning the whole project), not "No availability data."
+**Risk: GREEN** -- purely CSS styling changes.
 
 ---
 
-### Fix
+### What Changes
 
-**File 1: `src/hooks/useProjectTimelineData.ts`**
-
-- Remove the two `if (curStatus !== 'unavailable')` guards on lines 50 and 64. All statuses (available, partial, unavailable, other) should produce visible spans.
-- When a person has zero records in the database, the function already defaults every day to "available", which produces a single green span across the project -- this is correct per the new rules.
-
-**File 2: `src/components/project-timeline/AvailabilityLane.tsx`**
-
-- Update `statusColor()` to match the calendar colors:
-  - `available` = green (`bg-emerald-500/80`)
-  - `partial` = amber (`bg-amber-500/80`)
-  - `unavailable` = red (`bg-red-500/80`)
-  - `other` = blue (`bg-blue-500/70`)
-- Update `statusLabel()` to include "Unavailable" for the `unavailable` case.
-- Remove the "No availability data" empty-state message (since gaps are now always filled with "available", this state should never occur; but as a fallback, show one green bar instead of a text message).
-
----
-
-### Summary of Rules After Fix
-
-| Calendar status | Timeline bar color | When shown |
-|---|---|---|
-| No entries at all | Green (available) | Person hasn't defined anything -- assumed available |
-| Available (green) | Green | Explicitly marked available |
-| Partial (amber) | Amber | Explicitly marked partial |
-| Unavailable (red) | Red | Explicitly marked unavailable |
-| Other (blue) | Blue | Explicitly marked other |
+Apply subtle background tints to both the label column and the lane area for Availability and Compliance, matching the pattern used by Milestones (`bg-amber-500/5`) and Events (`bg-primary/5`).
 
 ### Files Changed (2)
 
-1. `src/hooks/useProjectTimelineData.ts` -- stop filtering out unavailable spans
-2. `src/components/project-timeline/AvailabilityLane.tsx` -- update colors to match calendar, add unavailable label
+**1. `src/components/project-timeline/AvailabilityLane.tsx`**
+
+- Line 59 (label div): Add `bg-sky-500/5` so the entire label area has a soft sky-blue tint
+- Line 65 (lane div): Change `bg-sky-500/[0.03]` to `bg-sky-500/5` so the lane area matches the label intensity
+
+**2. `src/components/project-timeline/ComplianceLane.tsx`**
+
+- Line 34 (label div): Add `bg-emerald-500/5` so the entire label area has a soft green tint
+- Line 40 (lane div): Change `bg-emerald-500/[0.03]` to `bg-emerald-500/5` so the lane area matches the label intensity
+
+### Result
+
+| Lane | Label background | Lane background |
+|---|---|---|
+| Milestones | `bg-amber-500/5` | `bg-amber-500/5` |
+| Events | `bg-primary/5` | `bg-primary/5` |
+| Availability | `bg-sky-500/5` (new) | `bg-sky-500/5` (updated) |
+| Compliance | `bg-emerald-500/5` (new) | `bg-emerald-500/5` (updated) |
+
+All four lane sections will have distinct, consistent color separation across their full width (label + content area).
 
