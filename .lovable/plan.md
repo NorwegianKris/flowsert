@@ -1,54 +1,59 @@
 
 
-# Three Fixes: Sort Options Rename, New Sort, Business Documents in Projects, Company Card Explainer
+# Fix: Certificate Row Click Opens Document Viewer
 
-**Risk: GREEN** -- purely UI text/layout changes and a read-only data fetch (no schema/RLS/auth changes).
+**Risk: GREEN** -- purely UI click-handler change, no database/schema/RLS modifications.
 
-## 1. Rename "Most Recent" to "Last Updated" and Add New "Most Recent" Sort
+## Problem
+Clicking a certificate row in the Expiry Details list navigates to the personnel page (`handleRowClick`). The document viewer only opens via the tiny `FileText` icon button. Users expect clicking the row itself to open the document.
 
-The current "Most Recent" sort option sorts by `updatedAt`. This should be renamed to "Last Updated". A new "Most Recent" option should sort by `createdAt` (registration date, newest first).
+## Solution
+Modify `handleRowClick` in `src/components/timeline/ExpiryDetailsList.tsx` so that:
+- If the event has a `documentUrl`, open the document viewer (reusing the existing `handleDocPreview` logic)
+- If no `documentUrl`, fall back to navigating to the personnel page as before
 
-### Changes in `src/components/PersonnelFilters.tsx`
-- Update `PersonnelSortOption` type from `'recent' | 'alphabetical'` to `'recent' | 'last_updated' | 'alphabetical'`
-- Update `sortOptions` array to three items:
-  - `{ value: 'recent', label: 'Most Recent' }` (new -- sorts by createdAt)
-  - `{ value: 'last_updated', label: 'Last Updated' }` (renamed from old "recent")
-  - `{ value: 'alphabetical', label: 'Alphabetical' }`
+### Changes in `src/components/timeline/ExpiryDetailsList.tsx`
 
-### Changes in `src/pages/AdminDashboard.tsx`
-- Update the default sort state from `'recent'` to `'last_updated'` (preserving current default behavior)
-- Update the sorting logic to handle three cases:
-  - `'alphabetical'`: sort by name (unchanged)
-  - `'last_updated'`: sort by `updatedAt` (the current "recent" logic)
-  - `'recent'`: sort by `createdAt` (newest registrations first)
+Update `handleRowClick` (lines 96-104) to check for `documentUrl` first:
 
-## 2. Show Business Documents in Every Project's Documents Tab
+```typescript
+const handleRowClick = async (event: TimelineEvent) => {
+  if (event.documentUrl) {
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(event.documentUrl);
+    setDocPreview({ name: event.certificateName, loading: true, data: null, error: null, isImage, imageUrl: null });
 
-Company-uploaded documents (`business_documents` table) are global and should appear in the documents section of every project belonging to that business.
+    try {
+      const signedUrl = await getSignedUrl('certificate-documents', event.documentUrl);
+      if (!signedUrl) throw new Error('Failed to get URL');
 
-### Changes in `src/components/ProjectDocuments.tsx`
-- Add a `businessId` prop (optional, passed from parent)
-- On mount, fetch `business_documents` for the given `businessId` alongside project documents
-- Render a separate "Company Documents" section (with a `Building2` icon and a subtle label like "Shared by your company") above or below the project-specific documents
-- These documents are read-only in the project context (no delete button) -- clicking opens them via signed URL from `business-documents` bucket
-- They should not be affected by the project's category filter
+      if (isImage) {
+        setDocPreview(prev => prev ? { ...prev, loading: false, imageUrl: signedUrl } : null);
+      } else {
+        const response = await fetch(signedUrl);
+        if (!response.ok) throw new Error('Failed to fetch');
+        const arrayBuffer = await response.arrayBuffer();
+        setDocPreview(prev => prev ? { ...prev, loading: false, data: arrayBuffer.slice(0) } : null);
+      }
+    } catch {
+      setDocPreview(prev => prev ? { ...prev, loading: false, error: 'Failed to load document' } : null);
+    }
+  } else {
+    const params = new URLSearchParams();
+    params.set('tab', 'personnel');
+    params.set('personnelId', event.personnelId);
+    if (personnelFilter !== 'all') {
+      params.set('category', personnelFilter);
+    }
+    navigate(`/admin?${params.toString()}`);
+  }
+};
+```
 
-### Changes in `src/components/ProjectDetail.tsx`
-- Pass `businessId` (from the project's `business_id`) to `ProjectDocuments`
-
-## 3. Add Explainer Text in Company Card Documents Tab
-
-### Changes in `src/components/CompanyCard.tsx`
-- In the admin documents tab (line ~566-567), update the description text to:
-  "Documents uploaded here are global and will be visible in the documents section of all your projects."
+This reuses the same loading/preview logic already in `handleDocPreview`, so behavior is identical to clicking the icon button -- just triggered by clicking anywhere on the row.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/PersonnelFilters.tsx` | Add `'last_updated'` to sort type, update sort options array to 3 items |
-| `src/pages/AdminDashboard.tsx` | Change default sort to `'last_updated'`, add `'recent'` sort by `createdAt` |
-| `src/components/ProjectDocuments.tsx` | Accept `businessId` prop, fetch and display business documents as read-only "Company Documents" section |
-| `src/components/ProjectDetail.tsx` | Pass `businessId` to `ProjectDocuments` |
-| `src/components/CompanyCard.tsx` | Update documents tab description to explain global visibility |
+| `src/components/timeline/ExpiryDetailsList.tsx` | Update `handleRowClick` to open document viewer when `documentUrl` exists, navigate otherwise |
 
