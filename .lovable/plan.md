@@ -1,71 +1,62 @@
 
 
-# Per-Person Invite/Assign Toggle + Info Hint
+# Match Invite/Assign Toggle to Roles/Groups Style
 
 ## Risk: GREEN
-Pure UI change in a single component. No database, RLS, auth, or edge function changes.
+Pure UI styling change in a single component. No database, RLS, auth, or edge function changes.
 
 ## Single file changed
 `src/components/AddProjectDialog.tsx`
 
-## Changes
+## What changes
 
-### 1. Remove global Mode section (lines 821-843)
-Delete the entire `bg-primary/10` bar containing the ToggleGroup for "Mode: Invite | Assign".
+### Replace the raw button pair (lines 1176-1199) with a ToggleGroup
 
-### 2. Add info hint between FreelancerFilters and Search bar (after line 852)
-Insert a small hint row with a lightbulb emoji:
+The current Invite/Assign toggle uses two raw `<button>` elements with manual class switching. Replace with the same `ToggleGroup` + `ToggleGroupItem` pattern used in the Roles/Groups filter.
 
-```text
-[lightbulb] Invite sends the person an invitation to accept or decline. Assign adds them directly to the project.
+**Current style** (raw buttons with `bg-[hsl(var(--primary))]` / `bg-white` toggling):
+```
+<div class="border border-primary rounded overflow-hidden">
+  <button class="bg-white text-primary ...">Invite</button>
+  <button class="bg-primary text-white ...">Assign</button>
+</div>
 ```
 
-Styled as: `text-xs text-muted-foreground` with a subtle `bg-amber-50 border border-amber-200 rounded-md px-3 py-1.5` container. The lightbulb is a plain emoji character.
-
-### 3. Replace per-person mode button (lines 1203-1226) with always-visible toggle
-Currently only shows a single button when selected. Replace with a two-button toggle group visible on every selectable row:
-
+**New style** (matching Roles/Groups toggle):
 ```
-[Invite | Assign]
-```
-
-- Both buttons always visible, side by side, flush (shared border, outer corners rounded)
-- **Active button**: `bg-white text-[#7c3aed] border-[#7c3aed] font-medium`
-- **Inactive button**: `bg-[#7c3aed] text-white`
-- Size: `h-6 text-[10px] px-2`
-- Default mode when first selecting a person: `'invite'`
-
-Clicking either button on an unselected person will both select them AND set their mode. On an already-selected person, it switches the mode.
-
-### 4. New handler: `setPersonnelMode`
-```typescript
-const setPersonnelMode = (personnelId: string, mode: PersonnelMode) => {
-  setPersonnelSelections(prev => {
-    const existing = prev.find(s => s.id === personnelId);
-    if (existing) {
-      return prev.map(s => s.id === personnelId ? { ...s, mode } : s);
-    }
-    return [...prev, { id: personnelId, mode }];
-  });
-};
+<ToggleGroup
+  type="single"
+  value={selected ? mode : undefined}
+  onValueChange={(val) => { if (val) setPersonnelMode(person.id, val as PersonnelMode); }}
+  className="bg-primary p-0.5 rounded-md flex-shrink-0"
+>
+  <ToggleGroupItem
+    value="invite"
+    className="h-5 px-2 text-[10px] text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+  >
+    Invite
+  </ToggleGroupItem>
+  <ToggleGroupItem
+    value="assign"
+    className="h-5 px-2 text-[10px] text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+  >
+    Assign
+  </ToggleGroupItem>
+</ToggleGroup>
 ```
 
-### 5. Update `togglePersonnel` default mode
-Change line 280 from `mode: globalMode` to `mode: 'invite'` (since there is no global mode anymore).
+Key differences from the Roles/Groups toggle (kept intentionally smaller for row context):
+- `p-0.5` instead of `p-1` (tighter padding -- fits in a row)
+- `h-5 text-[10px]` instead of default height (compact for inline use)
+- No icons (just text labels)
 
-### 6. Update `selectAllPersonnel` and `selectSuggestedPersonnel`
-Replace `globalMode` references with `'invite'` as the default mode for bulk selections.
+The wrapper `<div>` with the border is removed since `ToggleGroup` with `bg-primary rounded-md` provides the same purple container appearance.
 
-### 7. Optionally remove `globalMode` state and `handleGlobalModeChange`
-These become unused after the global section is removed. Clean up to avoid dead code.
+### Add import
+Add `ToggleGroup, ToggleGroupItem` from `@/components/ui/toggle-group` to the imports (if not already present).
 
-## Visual layout per personnel row
-
-```text
-[x] [Avatar] Name  Role  [badges...]  [Invite|Assign]
-                                        ^^^^^^^^^^^^^^
-                                        always visible
-```
-
-The toggle sits on the far right of each row. When a person is not yet selected and the user clicks "Invite" or "Assign", the person gets selected with that mode. The checkbox still works as before (defaults to invite mode).
+### Behavior preserved
+- Clicking Invite/Assign on an unselected person still selects them with that mode
+- The `onClick stopPropagation` wrapper stays to prevent row checkbox toggling
+- When no mode is selected (person not yet chosen), neither item appears active (both show as white text on purple background)
 
