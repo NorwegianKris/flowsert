@@ -31,13 +31,13 @@ export function ComplianceLane({
   return (
     <div className="flex items-stretch">
       {/* Label */}
-      <div className="w-[160px] flex-shrink-0 flex items-center pl-8 pr-3 py-0.5 border-r border-border/30 bg-emerald-500/5">
+      <div className="w-[160px] flex-shrink-0 flex items-center pl-8 pr-3 py-0.5 border-r border-border/30 bg-emerald-500/10">
         <span className="text-[10px] text-muted-foreground truncate">Compliance</span>
       </div>
 
       {/* Lane */}
       <div
-        className="relative flex-1 bg-emerald-500/5"
+        className="relative flex-1 bg-emerald-500/10"
         style={{ minHeight: Math.max(LANE_HEIGHT, laneRows * (rowHeight + 2) + 4), width: totalWidth }}
       >
         {bars.map((bar, i) => {
