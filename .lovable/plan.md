@@ -1,55 +1,38 @@
 
 
-## Fix: Toggle Click Still Opening Profile + Default to "Invite"
+## Fix: Toggle Click Opening Profile Sidebar (Take 4)
 
-**Risk: GREEN** -- pure UI bug fix, no DB/auth/RLS changes.
+**Risk: GREEN** -- pure UI event handling fix, no DB/auth/RLS changes.
 
 **Single file:** `src/components/AddProjectDialog.tsx`
 
 ### Root Cause
 
-Radix `ToggleGroupItem` uses internal pointer events that bubble past `stopPropagation` on the wrapper div. The row's `onClick={() => setPreviewPersonnel(person)}` (line 1127) still fires.
+All previous attempts relied on `stopPropagation` and `closest()` checks, but Radix UI's `ToggleGroupItem` uses complex internal pointer/focus event handling that can bypass these techniques. The click on the toggle still reaches the row's `onClick` handler.
 
-### Fix 1: Use a ref-based click guard on the row (lines 1124-1127)
+### New Approach: Move the click target instead of blocking propagation
 
-Instead of relying on `stopPropagation` (which Radix bypasses), change the row's `onClick` to check whether the click originated inside the toggle area using a ref:
+Instead of putting `onClick` on the entire row div (line 1124) and trying to block it from the toggle, **remove `onClick` from the row entirely** and instead put the `setPreviewPersonnel` handler only on the name/info area that should actually open the profile.
 
-```tsx
-// Add a ref to the toggle wrapper
-const toggleRef = useRef<HTMLDivElement>(null);
+**Changes:**
 
-// On the row div:
-onClick={(e) => {
-  // Don't open profile if click came from inside the toggle
-  if (toggleRef.current?.contains(e.target as Node)) return;
-  setPreviewPersonnel(person);
-}}
+1. **Line 1127**: Remove the `onClick` handler from the row `<div>` entirely (revert to no click handler on the outer div).
+
+2. **Lines 1143-1178 (the name/info `<div>`)**: Add `onClick={() => setPreviewPersonnel(person)}` and `className="cursor-pointer"` to the `<div className="flex-1 min-w-0">` element that contains the person's name and role. This is the area users naturally click to view a profile.
+
+3. **Line 1126**: Remove `cursor-pointer` from the row's className since the row itself is no longer clickable for profile opening.
+
+This approach is bulletproof because the toggle and the profile-opening area are now **separate sibling elements** with independent click handlers -- no event propagation conflict is possible.
+
+### Technical detail
+
+```
+Row div (no onClick)
+  |-- Checkbox (has its own onClick)
+  |-- Avatar
+  |-- Name/Role div  -->  onClick={() => setPreviewPersonnel(person)}
+  |-- Toggle div     -->  ToggleGroup (completely independent)
 ```
 
-Since we're inside a `.map()`, we can't use a single ref. Instead, we'll use an inline approach: give the toggle wrapper a `data-toggle` attribute and check for it in the row click:
-
-```tsx
-// Row (line 1127):
-onClick={(e) => {
-  if ((e.target as HTMLElement).closest('[data-toggle-mode]')) return;
-  setPreviewPersonnel(person);
-}}
-
-// Toggle wrapper (line 1176):
-<div data-toggle-mode onClick={(e) => e.stopPropagation()} ...>
-```
-
-This is bulletproof -- any click inside the toggle area (regardless of Radix internal event handling) will be detected by `closest()` and the profile won't open.
-
-### Fix 2: Default toggle to "invite" when selecting via checkbox
-
-The `togglePersonnel` function (line 279) already defaults to `mode: 'invite'` -- this is correct. The `ToggleGroup` value is `selected ? mode : undefined`, meaning unselected persons show no active toggle. When clicking the checkbox to select, the person gets `mode: 'invite'` and the "Invite" toggle item will appear active.
-
-No additional changes needed for this part -- the default is already `'invite'`.
-
-### Summary of changes
-
-1. **Line 1127**: Replace `onClick={() => setPreviewPersonnel(person)}` with a guarded version that checks `closest('[data-toggle-mode]')`
-2. **Line 1176**: Add `data-toggle-mode` attribute to the toggle wrapper div
-3. Keep all existing `stopPropagation` handlers as a secondary safety net
+The toggle wrapper keeps its existing `stopPropagation` handlers as a safety net, and the `data-toggle-mode` attribute can be removed since it's no longer needed.
 
