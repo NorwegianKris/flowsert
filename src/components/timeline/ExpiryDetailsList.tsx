@@ -93,14 +93,35 @@ export function ExpiryDetailsList({
     return map;
   }, [visibleEvents]);
 
-  const handleRowClick = (event: TimelineEvent) => {
-    const params = new URLSearchParams();
-    params.set('tab', 'personnel');
-    params.set('personnelId', event.personnelId);
-    if (personnelFilter !== 'all') {
-      params.set('category', personnelFilter);
+  const handleRowClick = async (event: TimelineEvent) => {
+    if (event.documentUrl) {
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(event.documentUrl);
+      setDocPreview({ name: event.certificateName, loading: true, data: null, error: null, isImage, imageUrl: null });
+
+      try {
+        const signedUrl = await getSignedUrl('certificate-documents', event.documentUrl);
+        if (!signedUrl) throw new Error('Failed to get URL');
+
+        if (isImage) {
+          setDocPreview(prev => prev ? { ...prev, loading: false, imageUrl: signedUrl } : null);
+        } else {
+          const response = await fetch(signedUrl);
+          if (!response.ok) throw new Error('Failed to fetch');
+          const arrayBuffer = await response.arrayBuffer();
+          setDocPreview(prev => prev ? { ...prev, loading: false, data: arrayBuffer.slice(0) } : null);
+        }
+      } catch {
+        setDocPreview(prev => prev ? { ...prev, loading: false, error: 'Failed to load document' } : null);
+      }
+    } else {
+      const params = new URLSearchParams();
+      params.set('tab', 'personnel');
+      params.set('personnelId', event.personnelId);
+      if (personnelFilter !== 'all') {
+        params.set('category', personnelFilter);
+      }
+      navigate(`/admin?${params.toString()}`);
     }
-    navigate(`/admin?${params.toString()}`);
   };
 
   const handleDocPreview = async (e: React.MouseEvent, documentUrl: string, certName: string) => {
