@@ -1,49 +1,48 @@
 
 
-## Fix Applicant Count After Rejection + Add Timeline Edit/Delete Functionality
+## Add Edit Capability to Timeline Items + Fix Button Styling
 
 **Risk: GREEN** -- purely UI changes, no backend/schema/RLS modifications.
 
 ---
 
-### Bug 1: Applicant count doesn't update after rejecting an application
+### Change 1: Add inline editing for each timeline item
 
-**Root cause:** Two separate locations show the count incorrectly:
+**File: `src/components/EditTimelineItemsDialog.tsx`**
 
-1. **`ProjectDetail.tsx` (line 252):** Uses `applications.length` (total count including rejected). Should filter to exclude rejected applications, matching the same logic used in `ProjectApplicationsList` which filters `app.status !== 'rejected'`.
+- Add a pencil icon button next to the trash icon on each `ItemRow`
+- Clicking the pencil toggles inline edit mode for that row, showing:
+  - For milestones/events: an input field for description, a date picker for the date
+  - For phases: an input field for name, date pickers for start/end dates
+- Add "Save" and "Cancel" buttons in edit mode
+- The dialog description will be updated to: "Edit or remove milestones, events, or phases from the project timeline."
 
-2. **`ProjectsTab.tsx` (line 150-157):** The `ProjectCard` component fetches applicant count once on mount via a `select('id', { count: 'exact', head: true })` query with no status filter. It needs to add `.neq('status', 'rejected')` to exclude rejected applicants. It also never re-fetches after a rejection happens in the detail view.
+**New props needed on the dialog:**
+- `onUpdateCalendarItem: (itemId: string, updates: { description?: string; date?: string }) => void`
+- `onUpdatePhase: (phaseId: string, updates: { name?: string; startDate?: string; endDate?: string }) => void`
 
-**Fix:**
-- **`ProjectDetail.tsx`**: Change `applications.length` to `applications.filter(a => a.status !== 'rejected').length` (2 occurrences on line 252)
-- **`ProjectsTab.tsx`**: Add `.neq('status', 'rejected')` to the count query on line 155-157
+**File: `src/components/ProjectDetail.tsx`**
+
+- Add `handleUpdateCalendarItem` function that updates a calendar item's description/date in the project's `calendarItems` array and calls `onUpdateProject`
+- Add `handleUpdatePhase` function -- this will call an `updatePhase` function from `useProjectPhases`
+
+**File: `src/hooks/useProjectPhases.ts`**
+
+- Add an `updatePhase` function that updates the phase name/dates in the `project_phases` table via Supabase, then re-fetches
 
 ---
 
-### Bug 2: No way to edit or delete milestones, events, or phases on the timeline
+### Change 2: Match Edit Timeline button style to Edit Project / Share Project
 
-**Current state:** The timeline header has "Add event or milestone" and "Define phase" buttons, but no way to manage existing items.
+**File: `src/components/project-timeline/ProjectTimeline.tsx`**
 
-**Fix:** Add a grey "Edit timeline" button next to the "Define phase" button. Clicking it opens a dialog that lists all current milestones, events, and phases with options to delete each one.
+- Change the Edit timeline button from `variant="secondary"` to `variant="outline"` to match the Edit Project and Share Project buttons in the project header
 
-**Files changed:**
-
-- **`ProjectDetail.tsx`**: Add new state `isEditTimelineOpen` and pass the open handler + calendar item/phase data to the timeline. Pass `onRemoveCalendarItem` and `onRemovePhase` callbacks.
-
-- **`ProjectTimeline.tsx`**: 
-  - Add new prop `onEditTimeline?: () => void`
-  - Add a grey `variant="secondary"` edit button next to the existing buttons in the header
-
-- **New file: `src/components/EditTimelineItemsDialog.tsx`**:
-  - A dialog listing all milestones, events, and phases in grouped sections
-  - Each item shows its name/description and date, with a delete (trash) icon button
-  - Milestones and events call `onRemoveCalendarItem(itemId)`
-  - Phases call `onRemovePhase(phaseId)`
-  - Renders in `ProjectDetail.tsx`
+---
 
 ### Files Changed (4)
 
-1. `src/components/ProjectDetail.tsx` -- fix applicant count filter, add edit timeline dialog state and callbacks
-2. `src/components/ProjectsTab.tsx` -- add `.neq('status', 'rejected')` to applicant count query
-3. `src/components/project-timeline/ProjectTimeline.tsx` -- add grey edit button
-4. `src/components/EditTimelineItemsDialog.tsx` -- new dialog for editing/deleting timeline items
+1. `src/components/EditTimelineItemsDialog.tsx` -- add pencil edit button + inline editing for each item
+2. `src/components/ProjectDetail.tsx` -- add update handlers and pass them to dialog
+3. `src/hooks/useProjectPhases.ts` -- add `updatePhase` function
+4. `src/components/project-timeline/ProjectTimeline.tsx` -- change button variant to `outline`
