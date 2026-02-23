@@ -75,6 +75,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
         phone: '',
         role: formData.role.trim(),
         business_id: businessId,
+        activated: true,
       }).select('id').single();
 
       if (error) throw error;
