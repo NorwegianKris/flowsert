@@ -14,7 +14,7 @@ import { PersonnelGroup } from './PersonnelGroup';
 import { PhaseLane } from './PhaseLane';
 import { LABEL_WIDTH } from './types';
 import { dateToX } from './utils';
-import { Clock, AlertTriangle, Plus } from 'lucide-react';
+import { Clock, AlertTriangle, Plus, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ProjectTimelineProps {
@@ -25,6 +25,7 @@ interface ProjectTimelineProps {
   onEditProject?: () => void;
   onAddItem?: () => void;
   onAddPhase?: () => void;
+  onEditTimeline?: () => void;
   onHighlightCertificate?: (certificateId: string) => void;
 }
 
@@ -36,6 +37,7 @@ export function ProjectTimeline({
   onEditProject,
   onAddItem,
   onAddPhase,
+  onEditTimeline,
   onHighlightCertificate,
 }: ProjectTimelineProps) {
   const assignedPersonnel = useMemo(
@@ -144,6 +146,13 @@ export function ProjectTimeline({
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Define phase</span>
                 <span className="sm:hidden">Phase</span>
+              </Button>
+            )}
+            {onEditTimeline && (
+              <Button variant="secondary" size="sm" onClick={onEditTimeline} className="gap-1.5 flex-shrink-0">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Edit timeline</span>
+                <span className="sm:hidden">Edit</span>
               </Button>
             )}
           </div>

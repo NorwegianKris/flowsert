@@ -154,6 +154,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
       .from('project_applications')
       .select('id', { count: 'exact', head: true })
       .eq('project_id', project.id)
+      .neq('status', 'rejected')
       .then(({ count }) => setApplicantCount(count ?? 0));
   }, [isPosted, project.id]);
 
