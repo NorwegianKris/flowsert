@@ -1,35 +1,34 @@
 
 
-## Add Background Color Tints to Availability and Compliance Lanes
+## Change Compliance Lane to Violet for Better Contrast
 
-**Risk: GREEN** -- purely CSS styling changes.
+**Risk: GREEN** -- purely CSS color changes.
 
----
+### Problem
 
-### What Changes
+Availability (sky-blue) and Compliance (emerald-green) look too similar at low opacity, making it hard to distinguish the two sections.
 
-Apply subtle background tints to both the label column and the lane area for Availability and Compliance, matching the pattern used by Milestones (`bg-amber-500/5`) and Events (`bg-primary/5`).
+### Fix
 
-### Files Changed (2)
+Change the Compliance lane background from emerald-green to violet/purple, which provides strong contrast against the sky-blue Availability lane and aligns with the project's indigo brand palette.
 
-**1. `src/components/project-timeline/AvailabilityLane.tsx`**
+**File: `src/components/project-timeline/ComplianceLane.tsx`**
 
-- Line 59 (label div): Add `bg-sky-500/5` so the entire label area has a soft sky-blue tint
-- Line 65 (lane div): Change `bg-sky-500/[0.03]` to `bg-sky-500/5` so the lane area matches the label intensity
-
-**2. `src/components/project-timeline/ComplianceLane.tsx`**
-
-- Line 34 (label div): Add `bg-emerald-500/5` so the entire label area has a soft green tint
-- Line 40 (lane div): Change `bg-emerald-500/[0.03]` to `bg-emerald-500/5` so the lane area matches the label intensity
+- Line 34 (label div): Change `bg-emerald-500/10` to `bg-violet-500/10`
+- Line 40 (lane div): Change `bg-emerald-500/10` to `bg-violet-500/10`
 
 ### Result
 
-| Lane | Label background | Lane background |
-|---|---|---|
-| Milestones | `bg-amber-500/5` | `bg-amber-500/5` |
-| Events | `bg-primary/5` | `bg-primary/5` |
-| Availability | `bg-sky-500/5` (new) | `bg-sky-500/5` (updated) |
-| Compliance | `bg-emerald-500/5` (new) | `bg-emerald-500/5` (updated) |
+| Lane | Color |
+|---|---|
+| Milestones | Amber tint |
+| Events | Primary/indigo tint |
+| Availability | Sky-blue tint |
+| Compliance | Violet/purple tint (changed) |
 
-All four lane sections will have distinct, consistent color separation across their full width (label + content area).
+All four sections now use distinctly different color families for clear visual separation.
+
+### Files Changed (1)
+
+1. `src/components/project-timeline/ComplianceLane.tsx`
 
