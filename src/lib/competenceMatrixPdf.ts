@@ -94,19 +94,20 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
     doc.text(`Generated: ${generatedDate}`, rightCol, y, { align: 'right' });
     y += 4;
 
-    // Thin horizontal divider
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-
-    // Batch label (multi-batch only)
+    // Batch label above divider (multi-batch only)
     if (batchLabel) {
-      y += 4;
+      y += 2.5;
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(120, 120, 120);
       doc.text(batchLabel, pageWidth / 2, y, { align: 'center' });
+      y += 3;
     }
+
+    // Thin horizontal divider
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
 
     doc.setTextColor(0, 0, 0);
   };
