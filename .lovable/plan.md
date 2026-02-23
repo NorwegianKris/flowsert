@@ -1,27 +1,25 @@
 
 
-# Fix: Polaroid Images Overflowing on Mobile
+# Fix: Polaroid Images Overflowing on Tablet View
 
 **Risk: GREEN** -- purely UI layout/sizing change.
 
 ## Problem
-Both polaroid sections ("Workforce compliance" and "Techno Dive") use `w-72` (288px) cards with absolute positioning offsets (`-translate-x-[85%]` and `-translate-x-[30%]`). Two overlapping 288px cards exceed the ~360-390px mobile viewport, causing horizontal overflow.
+At the `md` breakpoint (768px), the layout switches to a 2-column grid (`md:grid-cols-2`), giving each column roughly 320-400px of space. However, the polaroid cards jump to `md:w-72` (288px) with large translate offsets (`-translate-x-[85%]` / `-translate-x-[30%]`), causing two overlapping 288px cards to exceed the available column width on tablets.
 
 ## Solution
-Shrink the polaroid cards on mobile and reduce their overlap spread:
+Add an intermediate size at the `md` breakpoint so the cards scale more gradually: mobile (w-48, 192px) -> tablet (md:w-56, 224px) -> desktop (lg:w-72, 288px) -> wide (xl:w-[21rem], 336px).
 
-**For both polaroid sections** (lines ~601-635 and ~722-750 in `src/pages/Auth.tsx`):
+For both polaroid sections in `src/pages/Auth.tsx`:
 
-1. **Reduce card width on mobile**: Change `w-72` to `w-48` (192px), keeping `md:w-[21rem]` for desktop
-2. **Adjust translate offsets for mobile**: Use smaller offsets so both cards fit within the viewport
-   - Back polaroid: `w-48 md:w-72 lg:w-[21rem]` with `-translate-x-[75%] md:-translate-x-[85%]`
-   - Front polaroid: `w-48 md:w-72 lg:w-[21rem]` with `-translate-x-[25%] md:-translate-x-[30%]`
-3. **Reduce container height on mobile**: `h-[260px] md:h-[380px]`
-4. **Scale down the front polaroid top offset**: `top-14 md:top-20`
-5. **Adjust Before/After label widths** to match the new mobile card size
+1. Change card widths from `w-48 md:w-72 lg:w-[21rem]` to `w-48 md:w-56 lg:w-72 xl:w-[21rem]`
+2. Adjust container height: `h-[260px] md:h-[320px] lg:h-[380px]`
+3. Adjust translate offsets at md: use smaller values (`md:-translate-x-[80%]` / `md:-translate-x-[28%]`) so they fit within the narrower tablet column
+4. Scale top offset for front card: `top-14 md:top-16 lg:top-20`
+5. Apply matching width changes to Before/After labels
 
 ## Files modified
 | File | Change |
 |------|--------|
-| `src/pages/Auth.tsx` | Update polaroid card widths, translate offsets, and container heights for mobile responsiveness in both sections |
+| `src/pages/Auth.tsx` | Update polaroid card widths, translate offsets, container heights, and label widths to add a tablet-friendly intermediate size |
 
