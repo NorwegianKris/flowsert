@@ -1173,7 +1173,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{person.role}</p>
                         </div>
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                           <ToggleGroup
                             type="single"
                             value={selected ? mode : undefined}
