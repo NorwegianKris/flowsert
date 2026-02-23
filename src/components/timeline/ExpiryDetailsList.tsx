@@ -136,7 +136,7 @@ export function ExpiryDetailsList({
                 key={lane.id}
                 ref={highlightedLaneId === lane.id ? highlightedRef : undefined}
                 className={cn(
-                  'rounded-md border transition-all duration-300',
+                  'rounded-md border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20',
                   lane.borderColor,
                   lane.bgColor,
                   highlightedLaneId === lane.id && 'ring-2 ring-primary shadow-md'
@@ -160,7 +160,7 @@ export function ExpiryDetailsList({
                       <button
                         key={event.id}
                         onClick={() => handleRowClick(event)}
-                        className="w-full flex flex-col gap-1 px-3 py-2.5 text-left hover:bg-background/50 transition-colors"
+                        className="w-full flex flex-col gap-1 px-3 py-2.5 text-left hover:bg-background/50 transition-all duration-200 hover:ring-1 hover:ring-[#C4B5FD]/50"
                       >
                         {/* Primary row */}
                         <div className="flex items-center gap-3 text-sm">
