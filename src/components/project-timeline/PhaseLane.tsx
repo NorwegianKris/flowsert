@@ -14,6 +14,7 @@ interface PhaseLaneProps {
   projectStart: string;
   projectEnd: string;
   totalWidth: number;
+  onItemClick?: (phase: ProjectPhase) => void;
 }
 
 export function PhaseLane({
@@ -21,6 +22,7 @@ export function PhaseLane({
   projectStart,
   projectEnd,
   totalWidth,
+  onItemClick,
 }: PhaseLaneProps) {
   const rows = phases.length || 1;
 
@@ -54,8 +56,9 @@ export function PhaseLane({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className="absolute top-1 bottom-1 rounded bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-colors cursor-default flex items-center overflow-hidden px-1.5"
+                      className="absolute top-1 bottom-1 rounded bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-colors cursor-pointer flex items-center overflow-hidden px-1.5"
                       style={{ left: x1, width }}
+                      onClick={() => onItemClick?.(phase)}
                     >
                       <span className="text-[9px] font-medium text-primary truncate select-none">
                         {phase.name}

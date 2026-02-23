@@ -3,7 +3,7 @@ import { parseISO, isWithinInterval, subDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Project } from '@/hooks/useProjects';
+import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 import { ProjectPhase } from '@/hooks/useProjectPhases';
 import { Personnel } from '@/types';
 import { useProjectTimelineData, buildPersonnelTimelineData } from '@/hooks/useProjectTimelineData';
@@ -14,6 +14,7 @@ import { PersonnelGroup } from './PersonnelGroup';
 import { PhaseLane } from './PhaseLane';
 import { LABEL_WIDTH } from './types';
 import { dateToX } from './utils';
+import { TimelineItemDetailDialog, TimelineItemDetail } from './TimelineItemDetailDialog';
 import { Clock, AlertTriangle, Plus, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -92,6 +93,25 @@ export function ProjectTimeline({
   const showToday = hasEndDate && isWithinInterval(today, { start, end });
   const todayX = showToday ? dateToX(today, start, end, totalWidth) : null;
   const endLineX = hasEndDate ? dateToX(subDays(end, 1), start, end, totalWidth) : null;
+
+  // Detail dialog state
+  const [selectedItem, setSelectedItem] = useState<TimelineItemDetail | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const handleMilestoneClick = useCallback((item: ProjectCalendarItem) => {
+    setSelectedItem({ type: 'milestone', milestone: item });
+    setDetailOpen(true);
+  }, []);
+
+  const handleEventClick = useCallback((item: ProjectCalendarItem) => {
+    setSelectedItem({ type: 'event', event: item });
+    setDetailOpen(true);
+  }, []);
+
+  const handlePhaseClick = useCallback((phase: ProjectPhase) => {
+    setSelectedItem({ type: 'phase', phase });
+    setDetailOpen(true);
+  }, []);
 
   const handleScrollToCertificates = useCallback((certificateId: string) => {
     const el = document.querySelector('[data-certificate-status]');
@@ -194,11 +214,12 @@ export function ProjectTimeline({
                 )}
 
                 {/* Milestone lane */}
-                <MilestoneLane
+              <MilestoneLane
                   calendarItems={project.calendarItems || []}
                   projectStart={project.startDate}
                   projectEnd={project.endDate}
                   totalWidth={totalWidth}
+                  onItemClick={handleMilestoneClick}
                 />
 
                 {/* Events lane */}
@@ -207,6 +228,7 @@ export function ProjectTimeline({
                   projectStart={project.startDate}
                   projectEnd={project.endDate}
                   totalWidth={totalWidth}
+                  onItemClick={handleEventClick}
                 />
 
                 {/* Phase lane */}
@@ -215,6 +237,7 @@ export function ProjectTimeline({
                   projectStart={project.startDate}
                   projectEnd={project.endDate}
                   totalWidth={totalWidth}
+                  onItemClick={handlePhaseClick}
                 />
 
                 {/* Personnel groups */}
@@ -244,6 +267,12 @@ export function ProjectTimeline({
           </ScrollArea>
         </TooltipProvider>
       </CardContent>
+
+      <TimelineItemDetailDialog
+        item={selectedItem}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </Card>
   );
 }
