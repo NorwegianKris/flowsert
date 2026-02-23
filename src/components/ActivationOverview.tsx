@@ -225,7 +225,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                     <div className="flex-1 min-w-0">
                       <button
                         type="button"
-                        className="font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
+                        className="block w-full font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPreviewPerson(person);
