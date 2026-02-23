@@ -93,7 +93,7 @@ export default function AdminDashboard() {
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
-  const [sortOption, setSortOption] = useState<PersonnelSortOption>('recent');
+  const [sortOption, setSortOption] = useState<PersonnelSortOption>('last_updated');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('categories');
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
@@ -298,8 +298,13 @@ export default function AdminDashboard() {
     return filtered.sort((a, b) => {
       if (sortOption === 'alphabetical') {
         return a.name.localeCompare(b.name);
+      } else if (sortOption === 'recent') {
+        // Most Recent - sort by createdAt (newest registrations first)
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
       } else {
-        // Most recent - sort by updatedAt or id (newest first)
+        // Last Updated - sort by updatedAt (newest first)
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return dateB - dateA;

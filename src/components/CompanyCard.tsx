@@ -564,7 +564,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
       <TabsContent value="documents" className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Upload documents that will be shared with all workers in your company.
+            Documents uploaded here are global and will be visible in the documents section of all your projects.
           </p>
           <Button
             variant="outline"

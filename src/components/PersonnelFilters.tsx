@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-export type PersonnelSortOption = 'recent' | 'alphabetical';
+export type PersonnelSortOption = 'recent' | 'last_updated' | 'alphabetical';
 export type CertificateFilterMode = 'types' | 'categories' | 'issuers';
 
 interface WorkerGroupForFilter {
@@ -84,6 +84,7 @@ export function PersonnelFilters({
 
   const sortOptions = [
     { value: 'recent' as PersonnelSortOption, label: 'Most Recent' },
+    { value: 'last_updated' as PersonnelSortOption, label: 'Last Updated' },
     { value: 'alphabetical' as PersonnelSortOption, label: 'Alphabetical' },
   ];
 
