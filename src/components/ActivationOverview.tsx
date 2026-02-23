@@ -213,7 +213,8 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                 {filteredPersonnel.map((person) => (
                   <div
                     key={person.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => { setPreviewPerson(person); setPreviewOpen(true); }}
                   >
                     <Avatar className="h-9 w-9 shrink-0">
                       <AvatarImage src={person.avatarUrl} alt={person.name} />
