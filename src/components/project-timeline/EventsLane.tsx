@@ -14,6 +14,7 @@ interface EventsLaneProps {
   projectStart: string;
   projectEnd: string;
   totalWidth: number;
+  onItemClick?: (item: ProjectCalendarItem) => void;
 }
 
 export function EventsLane({
@@ -21,6 +22,7 @@ export function EventsLane({
   projectStart,
   projectEnd,
   totalWidth,
+  onItemClick,
 }: EventsLaneProps) {
   const events = calendarItems.filter((i) => !i.isMilestone);
 
@@ -42,6 +44,7 @@ export function EventsLane({
                 <div
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer z-10"
                   style={{ left: x }}
+                  onClick={() => onItemClick?.(item)}
                 >
                   <div className="w-2.5 h-2.5 rounded-full bg-primary/70 border border-primary shadow-sm hover:scale-150 transition-transform" />
                 </div>

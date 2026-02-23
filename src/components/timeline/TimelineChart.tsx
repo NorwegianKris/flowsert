@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, addDays, subDays } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import { TimelineEvent, getLaneConfigsForRange, TimelineEventStatus, LaneConfig } from './types';
 import {
   Tooltip,
@@ -8,6 +9,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PdfViewer } from '@/components/PdfViewer';
+import { getSignedUrl } from '@/lib/storageUtils';
 
 interface TimelineChartProps {
   events: TimelineEvent[];
@@ -166,8 +170,39 @@ export function TimelineChart({
     return labels;
   }, [today, totalDays, timelineEndDays, timelineStartDays]);
   
-  const handleEventClick = (event: TimelineEvent) => {
-    navigate(`/admin?tab=personnel&personnelId=${event.personnelId}`);
+  // Document preview state
+  const [docPreview, setDocPreview] = useState<{
+    name: string;
+    loading: boolean;
+    data: ArrayBuffer | null;
+    error: string | null;
+    isImage: boolean;
+    imageUrl: string | null;
+  } | null>(null);
+
+  const handleEventClick = async (event: TimelineEvent) => {
+    if (event.documentUrl) {
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(event.documentUrl);
+      setDocPreview({ name: event.certificateName, loading: true, data: null, error: null, isImage, imageUrl: null });
+
+      try {
+        const signedUrl = await getSignedUrl('certificate-documents', event.documentUrl);
+        if (!signedUrl) throw new Error('Failed to get URL');
+
+        if (isImage) {
+          setDocPreview(prev => prev ? { ...prev, loading: false, imageUrl: signedUrl } : null);
+        } else {
+          const response = await fetch(signedUrl);
+          if (!response.ok) throw new Error('Failed to fetch');
+          const arrayBuffer = await response.arrayBuffer();
+          setDocPreview(prev => prev ? { ...prev, loading: false, data: arrayBuffer.slice(0) } : null);
+        }
+      } catch {
+        setDocPreview(prev => prev ? { ...prev, loading: false, error: 'Failed to load document' } : null);
+      }
+    } else {
+      navigate(`/admin?tab=personnel&personnelId=${event.personnelId}`);
+    }
   };
   
   const handleLaneClick = (laneConfig: LaneConfig) => {
@@ -206,6 +241,7 @@ export function TimelineChart({
   }
   
   return (
+    <>
     <TooltipProvider delayDuration={100}>
       <div className="space-y-2">
         {/* Lanes */}
@@ -305,5 +341,34 @@ export function TimelineChart({
         </div>
       </div>
     </TooltipProvider>
+
+    {/* Document Preview Dialog */}
+    <Dialog open={!!docPreview} onOpenChange={(open) => { if (!open) setDocPreview(null); }}>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="truncate">{docPreview?.name}</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 min-h-0 overflow-auto">
+          {docPreview?.loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Loading document...</span>
+            </div>
+          )}
+          {docPreview?.error && (
+            <div className="text-center py-12 text-destructive">{docPreview.error}</div>
+          )}
+          {docPreview?.data && !docPreview.isImage && (
+            <PdfViewer pdfData={docPreview.data} />
+          )}
+          {docPreview?.isImage && docPreview.imageUrl && (
+            <div className="flex justify-center p-4">
+              <img src={docPreview.imageUrl} alt={docPreview.name} className="max-w-full max-h-[60vh] object-contain rounded" />
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

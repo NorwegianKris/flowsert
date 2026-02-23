@@ -14,6 +14,7 @@ interface MilestoneLaneProps {
   projectStart: string;
   projectEnd: string;
   totalWidth: number;
+  onItemClick?: (item: ProjectCalendarItem) => void;
 }
 
 export function MilestoneLane({
@@ -21,6 +22,7 @@ export function MilestoneLane({
   projectStart,
   projectEnd,
   totalWidth,
+  onItemClick,
 }: MilestoneLaneProps) {
   const milestones = calendarItems.filter((i) => i.isMilestone);
 
@@ -42,6 +44,7 @@ export function MilestoneLane({
                 <div
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer z-10"
                   style={{ left: x }}
+                  onClick={() => onItemClick?.(item)}
                 >
                   <div className="w-3.5 h-3.5 rotate-45 bg-amber-500 border border-amber-600 shadow-sm hover:scale-125 transition-transform" />
                 </div>
