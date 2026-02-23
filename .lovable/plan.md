@@ -1,54 +1,28 @@
 
 
-# Upgrade Document Viewer in Expiry Timeline to Match Project Certificate Status Viewer
+# Add Employee/Freelancer Tag to Personnel Group in Project Timeline
 
-**Risk: GREEN** -- purely UI component changes, no database/schema/RLS modifications.
+**Risk: GREEN** -- purely UI text/layout change, no database or backend modifications.
 
-## Problem
-The document viewer in both `ExpiryDetailsList` and `TimelineChart` (the expiry timeline) uses a minimal dialog that only shows the certificate name and the document. The `ProjectCertificateStatus` component has a much richer viewer that shows:
-- Certificate holder name, role, and avatar at the top
-- Blob-based downloads (ad-blocker resistant)
-- Image rotation and zoom controls
-- Download button
-- Full certificate details grid (dates, issuer, place, category, status)
-- A placeholder when no document is uploaded
+## What Changes
 
-## Solution
+In the project timeline, each personnel row header currently shows the person's name and role. We will add a small colored tag showing "Employee" or "Freelancer" based on their `category` field, giving a quick visual indicator of the workforce mix.
 
-### 1. Extend the `TimelineEvent` type to carry more personnel info
+## Technical Details
 
-Add optional `personnelAvatarUrl` and `personnelRole` fields to the `TimelineEvent` interface in `src/components/timeline/types.ts`, and populate them where events are created.
+### File: `src/components/project-timeline/PersonnelGroup.tsx`
 
-### 2. Populate new fields where timeline events are built
+- Import the `Badge` component from `@/components/ui/badge`
+- After the person's name `<span>`, add a `Badge` element:
+  - If `person.category === 'freelancer'`: show "Freelancer" with a blue/indigo style
+  - Otherwise: show "Employee" with a default/muted style
+  - Badge will use `text-[8px]` sizing and compact padding (`px-1.5 py-0`) to fit the compact timeline row
+- The tag appears between the name and the role text
 
-In `src/components/ExpiryTimeline.tsx` (or wherever `TimelineEvent` objects are constructed from personnel data), pass `personnelAvatarUrl` and `personnelRole` into each event.
+### Visual result
 
-### 3. Replace the basic dialog in both components with the rich viewer
+```
+v [Avatar] John Smith  Employee  Diver
+v [Avatar] Jane Doe    Freelancer  Welder
+```
 
-Update the document preview dialogs in both `ExpiryDetailsList.tsx` and `TimelineChart.tsx` to match the `ProjectCertificateStatus` pattern:
-
-**State changes:**
-- Replace `docPreview` state with a richer `selectedEvent` state holding the full `TimelineEvent`
-- Add `blobUrl`, `pdfData`, `loadingUrl`, `imgRotation`, `imgZoom` states
-- Use `supabase.storage.from().download()` (blob approach) instead of signed URL + fetch
-
-**Dialog content:**
-- Certificate holder section at the top (avatar, name, role with "Certificate Holder" label)
-- Document preview with image rotation/zoom controls (matching `ProjectCertificateStatus`)
-- Download button
-- Certificate details grid (date of issue, expiry date, place of issue, category, issuing authority, status)
-- Certificate placeholder when no document is attached
-- Certificate ID at the bottom
-
-### 4. Update click handlers
-
-Both `handleRowClick` (ExpiryDetailsList) and `handleEventClick` (TimelineChart) will simply set the `selectedEvent` state. The blob download happens via a `useEffect` watching the selected event, matching the `ProjectCertificateStatus` pattern.
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `src/components/timeline/types.ts` | Add `personnelAvatarUrl?` and `personnelRole?` to `TimelineEvent` |
-| `src/components/ExpiryTimeline.tsx` | Pass `avatarUrl` and `role` when constructing `TimelineEvent` objects |
-| `src/components/timeline/ExpiryDetailsList.tsx` | Replace basic dialog with rich certificate viewer matching `ProjectCertificateStatus` pattern |
-| `src/components/timeline/TimelineChart.tsx` | Replace basic dialog with rich certificate viewer matching `ProjectCertificateStatus` pattern |
