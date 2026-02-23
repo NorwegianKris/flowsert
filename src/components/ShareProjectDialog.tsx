@@ -63,128 +63,158 @@ export function ShareProjectDialog({
   const generateProjectCardPdf = (): jsPDF => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     let yPosition = 20;
 
-    // Title
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(project.name, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 10;
+    const tableStyles = {
+      theme: 'grid' as const,
+      headStyles: {
+        fillColor: [240, 240, 240] as [number, number, number],
+        textColor: [0, 0, 0] as [number, number, number],
+        fontSize: 7,
+        fontStyle: 'bold' as const,
+      },
+      bodyStyles: { fontSize: 7 },
+      styles: {
+        lineColor: [200, 200, 200] as [number, number, number],
+        lineWidth: 0.3,
+      },
+      margin: { left: 14, right: 14 },
+    };
 
-    // Project status badge
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const statusText = project.status.charAt(0).toUpperCase() + project.status.slice(1);
-    doc.text(`Status: ${statusText}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    // Project details section
+    // --- Header ---
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Project Details', 14, yPosition);
-    yPosition += 10;
+    doc.text('PROJECT CARD', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 5;
 
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(128, 128, 128);
+    doc.text('FlowSert Workforce Compliance', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 8;
 
-    // Duration
+    // --- Metadata block (left / right columns) ---
+    doc.setFontSize(7);
+    doc.setTextColor(128, 128, 128);
+    doc.setFont('helvetica', 'bold');
+
+    // Left column
+    doc.text('Project:', 14, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(project.name, 35, yPosition);
+    yPosition += 4;
+
+    if (project.projectNumber) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Project No:', 14, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(project.projectNumber, 35, yPosition);
+    }
+
+    // Right column (same rows)
+    const rightX = pageWidth / 2 + 10;
+    let rightY = yPosition - 4;
+
     const startDate = format(parseISO(project.startDate), 'MMM d, yyyy');
     const endDate = project.endDate ? format(parseISO(project.endDate), 'MMM d, yyyy') : 'Ongoing';
-    doc.text(`Duration: ${startDate} - ${endDate}`, 14, yPosition);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Duration:', rightX, rightY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${startDate} – ${endDate}`, rightX + 18, rightY);
+    rightY += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Generated:', rightX, rightY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(format(new Date(), 'MMM d, yyyy HH:mm'), rightX + 18, rightY);
+
+    yPosition += 5;
+
+    // Additional metadata rows
+    const extraFields: [string, string | undefined][] = [
+      ['Status', project.status.charAt(0).toUpperCase() + project.status.slice(1)],
+      ['Customer', project.customer || undefined],
+      ['Location', project.location || undefined],
+      ['Project Manager', project.projectManager || undefined],
+      ['Work Category', project.workCategory || undefined],
+    ];
+
+    for (const [label, value] of extraFields) {
+      if (!value) continue;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, 14, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, 40, yPosition);
+      yPosition += 4;
+    }
+
+    // --- Divider ---
+    yPosition += 2;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(14, yPosition, pageWidth - 14, yPosition);
     yPosition += 6;
 
-    // Project Number
-    if (project.projectNumber) {
-      doc.text(`Project Number: ${project.projectNumber}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    // Customer
-    if (project.customer) {
-      doc.text(`Customer: ${project.customer}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    // Location
-    if (project.location) {
-      doc.text(`Location: ${project.location}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    // Project Manager
-    if (project.projectManager) {
-      doc.text(`Project Manager: ${project.projectManager}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    // Work Category
-    if (project.workCategory) {
-      doc.text(`Work Category: ${project.workCategory}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    // Description
+    // --- Description ---
+    doc.setTextColor(0, 0, 0);
     if (project.description) {
-      yPosition += 4;
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('Description:', 14, yPosition);
-      yPosition += 6;
+      doc.text('Description', 14, yPosition);
+      yPosition += 4;
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       const descLines = doc.splitTextToSize(project.description, pageWidth - 28);
       doc.text(descLines, 14, yPosition);
-      yPosition += descLines.length * 5 + 8;
+      yPosition += descLines.length * 3.5 + 6;
     }
 
-    // Assigned Personnel section
-    yPosition += 5;
-    doc.setFontSize(14);
+    // --- Assigned Personnel table ---
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
     doc.text(`Assigned Personnel (${assignedPersonnel.length})`, 14, yPosition);
-    yPosition += 10;
+    yPosition += 5;
 
     if (assignedPersonnel.length > 0) {
       const personnelTableData = assignedPersonnel.map(person => [
         person.name,
         person.role,
-        person.location || 'N/A',
+        person.location || '—',
         person.email,
-        person.phone || 'N/A'
+        person.phone || '—'
       ]);
 
       autoTable(doc, {
         startY: yPosition,
         head: [['Name', 'Role', 'Location', 'Email', 'Phone']],
         body: personnelTableData,
-        theme: 'striped',
-        headStyles: { 
-          fillColor: [59, 130, 246],
-          fontSize: 9,
-          fontStyle: 'bold'
-        },
-        bodyStyles: { fontSize: 9 },
-        margin: { left: 14, right: 14 },
+        ...tableStyles,
       });
 
-      yPosition = (doc as any).lastAutoTable.finalY + 10;
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
     } else {
-      doc.setFontSize(10);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
       doc.setTextColor(128, 128, 128);
       doc.text('No personnel assigned', 14, yPosition);
       doc.setTextColor(0, 0, 0);
-      yPosition += 10;
+      yPosition += 8;
     }
 
-    // Calendar items section
+    // --- Calendar items table ---
     if (project.calendarItems && project.calendarItems.length > 0) {
-      if (yPosition > 240) {
+      if (yPosition > pageHeight - 50) {
         doc.addPage();
         yPosition = 20;
       }
 
-      doc.setFontSize(14);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
       doc.text(`Calendar Items (${project.calendarItems.length})`, 14, yPosition);
-      yPosition += 10;
+      yPosition += 5;
 
       const calendarTableData = project.calendarItems.map(item => [
         format(parseISO(item.date), 'MMM d, yyyy'),
@@ -196,29 +226,18 @@ export function ShareProjectDialog({
         startY: yPosition,
         head: [['Date', 'Description', 'Milestone']],
         body: calendarTableData,
-        theme: 'striped',
-        headStyles: { 
-          fillColor: [59, 130, 246],
-          fontSize: 9,
-          fontStyle: 'bold'
-        },
-        bodyStyles: { fontSize: 9 },
-        margin: { left: 14, right: 14 },
+        ...tableStyles,
       });
     }
 
-    // Footer with generation date
+    // --- Footer ---
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Generated on ${format(new Date(), 'MMM d, yyyy HH:mm')} | Page ${i} of ${pageCount}`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text('Generated by FlowSert', pageWidth - 14, pageHeight - 10, { align: 'right' });
     }
 
     return doc;
