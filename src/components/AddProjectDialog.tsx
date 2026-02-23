@@ -1173,29 +1173,26 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{person.role}</p>
                         </div>
-                        <div className="flex items-center border border-[hsl(var(--primary))] rounded overflow-hidden flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            className={`h-6 text-[10px] px-2 font-medium transition-colors ${
-                              selected && mode === 'invite'
-                                ? 'bg-white text-[hsl(var(--primary))]'
-                                : 'bg-[hsl(var(--primary))] text-white'
-                            }`}
-                            onClick={() => setPersonnelMode(person.id, 'invite')}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <ToggleGroup
+                            type="single"
+                            value={selected ? mode : undefined}
+                            onValueChange={(val) => { if (val) setPersonnelMode(person.id, val as PersonnelMode); }}
+                            className="bg-primary p-0.5 rounded-md flex-shrink-0"
                           >
-                            Invite
-                          </button>
-                          <button
-                            type="button"
-                            className={`h-6 text-[10px] px-2 font-medium transition-colors ${
-                              selected && mode === 'assign'
-                                ? 'bg-white text-[hsl(var(--primary))]'
-                                : 'bg-[hsl(var(--primary))] text-white'
-                            }`}
-                            onClick={() => setPersonnelMode(person.id, 'assign')}
-                          >
-                            Assign
-                          </button>
+                            <ToggleGroupItem
+                              value="invite"
+                              className="h-5 px-2 text-[10px] text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary rounded-sm"
+                            >
+                              Invite
+                            </ToggleGroupItem>
+                            <ToggleGroupItem
+                              value="assign"
+                              className="h-5 px-2 text-[10px] text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary rounded-sm"
+                            >
+                              Assign
+                            </ToggleGroupItem>
+                          </ToggleGroup>
                         </div>
                       </div>
                     );
