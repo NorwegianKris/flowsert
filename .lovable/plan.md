@@ -1,38 +1,42 @@
 
 
-## Fix: Toggle Click Opening Profile Sidebar (Take 4)
+## Apply Yellow Info Frame to All Lightbulb Tips
 
-**Risk: GREEN** -- pure UI event handling fix, no DB/auth/RLS changes.
+**Risk: GREEN** -- purely UI styling, no DB/auth/RLS changes.
 
-**Single file:** `src/components/AddProjectDialog.tsx`
+### Reference Style (from AddProjectDialog)
 
-### Root Cause
-
-All previous attempts relied on `stopPropagation` and `closest()` checks, but Radix UI's `ToggleGroupItem` uses complex internal pointer/focus event handling that can bypass these techniques. The click on the toggle still reaches the row's `onClick` handler.
-
-### New Approach: Move the click target instead of blocking propagation
-
-Instead of putting `onClick` on the entire row div (line 1124) and trying to block it from the toggle, **remove `onClick` from the row entirely** and instead put the `setPreviewPersonnel` handler only on the name/info area that should actually open the profile.
-
-**Changes:**
-
-1. **Line 1127**: Remove the `onClick` handler from the row `<div>` entirely (revert to no click handler on the outer div).
-
-2. **Lines 1143-1178 (the name/info `<div>`)**: Add `onClick={() => setPreviewPersonnel(person)}` and `className="cursor-pointer"` to the `<div className="flex-1 min-w-0">` element that contains the person's name and role. This is the area users naturally click to view a profile.
-
-3. **Line 1126**: Remove `cursor-pointer` from the row's className since the row itself is no longer clickable for profile opening.
-
-This approach is bulletproof because the toggle and the profile-opening area are now **separate sibling elements** with independent click handlers -- no event propagation conflict is possible.
-
-### Technical detail
-
+The yellow frame pattern already exists:
 ```
-Row div (no onClick)
-  |-- Checkbox (has its own onClick)
-  |-- Avatar
-  |-- Name/Role div  -->  onClick={() => setPreviewPersonnel(person)}
-  |-- Toggle div     -->  ToggleGroup (completely independent)
+bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5
 ```
 
-The toggle wrapper keeps its existing `stopPropagation` handlers as a safety net, and the `data-toggle-mode` attribute can be removed since it's no longer needed.
+### Files and Changes
+
+**1. `src/components/CategoriesSection.tsx`** -- 2 instances
+
+- **Lines 52-55** (Workers tab hint): Wrap the existing `<span>` in a styled `<div>` with the amber frame classes.
+- **Lines 95-98** (Certificates tab hint): Same treatment.
+
+Both currently use plain `<span className="flex items-center gap-1.5 text-sm text-muted-foreground">`. They will become:
+```tsx
+<div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+  <span className="text-sm">💡</span>
+  <span className="text-xs text-muted-foreground">
+    Roles define job categories; Worker Groups organize personnel into custom teams.
+  </span>
+</div>
+```
+
+**2. `src/components/AvailabilityCalendar.tsx`** -- 1 instance
+
+- **Lines 449-451**: Replace the plain `<p>` with the amber-framed `<div>` wrapper.
+
+**3. `src/components/certificate-upload/UploadZone.tsx`** -- 1 instance
+
+- **Lines 119-121**: Replace the plain `<p>` with the amber-framed `<div>` wrapper, separating the lightbulb emoji into its own `<span>`.
+
+### Summary
+
+4 lightbulb tips across 3 files will be updated to match the yellow info frame style from AddProjectDialog. The AddProjectDialog instance already has the correct styling and needs no changes.
 
