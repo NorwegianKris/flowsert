@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { PersonnelTimelineData } from './types';
 import { AvailabilityLane } from './AvailabilityLane';
 import { ComplianceLane } from './ComplianceLane';
@@ -51,6 +52,12 @@ export function PersonnelGroup({
           <AvatarFallback className="text-[8px]">{initials}</AvatarFallback>
         </Avatar>
         <span className="text-xs font-medium text-foreground truncate">{person.name}</span>
+        <Badge
+          variant={person.category === 'freelancer' ? 'default' : 'secondary'}
+          className="text-[8px] px-1.5 py-0 ml-1.5 uppercase h-4 flex-shrink-0"
+        >
+          {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
+        </Badge>
         <span className="text-[10px] text-muted-foreground ml-2 truncate">{person.role}</span>
       </button>
 
