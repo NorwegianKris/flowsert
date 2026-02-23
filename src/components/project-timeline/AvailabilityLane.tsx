@@ -56,13 +56,13 @@ export function AvailabilityLane({
   return (
     <div className="flex items-stretch">
       {/* Label */}
-      <div className="w-[160px] flex-shrink-0 flex items-center pl-8 pr-3 py-0.5 border-r border-border/30">
+      <div className="w-[160px] flex-shrink-0 flex items-center pl-8 pr-3 py-0.5 border-r border-border/30 bg-sky-500/5">
         <span className="text-[10px] text-muted-foreground truncate">Availability</span>
       </div>
 
       {/* Lane */}
       <div
-        className="relative flex-1 bg-sky-500/[0.03] cursor-pointer"
+        className="relative flex-1 bg-sky-500/5 cursor-pointer"
         style={{ minHeight: LANE_HEIGHT, width: totalWidth }}
         onClick={onClick}
       >
