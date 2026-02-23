@@ -596,14 +596,14 @@ export default function Auth() {
 
               {/* Polaroid Images - Left */}
               <div className="order-1 md:order-1">
-                <div className="relative h-[380px] flex justify-center">
+                <div className="relative h-[260px] md:h-[380px] flex justify-center">
                   {/* Before label */}
-                  <span className="absolute left-1/2 -translate-x-[85%] -top-8 text-lg font-bold text-muted-foreground text-left w-72 md:w-[21rem]">
+                  <span className="absolute left-1/2 -translate-x-[75%] md:-translate-x-[85%] -top-8 text-lg font-bold text-muted-foreground text-left w-48 md:w-72 lg:w-[21rem]">
                     Before
                   </span>
                   {/* Back Polaroid */}
                   <div 
-                    className="absolute left-1/2 -translate-x-[85%] top-0 w-72 md:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
+                    className="absolute left-1/2 -translate-x-[75%] md:-translate-x-[85%] top-0 w-48 md:w-72 lg:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
                     style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
@@ -616,12 +616,12 @@ export default function Auth() {
                   </div>
                   
                   {/* After label */}
-                  <span className="absolute left-1/2 -translate-x-[30%] top-12 text-right w-72 md:w-[21rem] text-lg font-bold text-muted-foreground">
+                  <span className="absolute left-1/2 -translate-x-[25%] md:-translate-x-[30%] top-8 md:top-12 text-right w-48 md:w-72 lg:w-[21rem] text-lg font-bold text-muted-foreground">
                     After
                   </span>
                   {/* Front Polaroid */}
                   <div 
-                    className="absolute left-1/2 -translate-x-[30%] top-20 w-72 md:w-[21rem] bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
+                    className="absolute left-1/2 -translate-x-[25%] md:-translate-x-[30%] top-14 md:top-20 w-48 md:w-72 lg:w-[21rem] bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
                     style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
@@ -720,10 +720,10 @@ export default function Auth() {
             <div className="grid md:grid-cols-2 gap-16 items-start">
               {/* Polaroid Images */}
               <div className="order-2 md:order-1">
-                <div className="relative h-[380px] flex justify-center">
+                <div className="relative h-[260px] md:h-[380px] flex justify-center">
                   {/* Back Polaroid */}
                   <div 
-                    className="absolute left-1/2 -translate-x-[85%] top-0 w-72 md:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
+                    className="absolute left-1/2 -translate-x-[75%] md:-translate-x-[85%] top-0 w-48 md:w-72 lg:w-[21rem] bg-card rounded-sm shadow-xl border border-border/30 p-2 pb-8 transform -rotate-6 hover:rotate-0 transition-transform duration-300"
                     style={{ boxShadow: '0 10px 30px -10px hsl(var(--foreground) / 0.15)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
@@ -737,7 +737,7 @@ export default function Auth() {
                   
                   {/* Front Polaroid */}
                   <div 
-                    className="absolute left-1/2 -translate-x-[30%] top-20 w-72 md:w-[21rem] bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
+                    className="absolute left-1/2 -translate-x-[25%] md:-translate-x-[30%] top-14 md:top-20 w-48 md:w-72 lg:w-[21rem] bg-card rounded-sm shadow-2xl border border-border/30 p-2 pb-8 transform rotate-3 hover:rotate-0 transition-transform duration-300 z-10"
                     style={{ boxShadow: '0 15px 40px -10px hsl(var(--foreground) / 0.2)' }}
                   >
                     <div className="aspect-[4/3] bg-muted rounded-sm overflow-hidden">
