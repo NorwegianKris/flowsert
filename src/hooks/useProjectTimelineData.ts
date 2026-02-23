@@ -47,28 +47,24 @@ function fillGapsWithAvailable(
     if (status === curStatus) {
       curEnd = date;
     } else {
-      if (curStatus !== 'unavailable') {
-        spans.push({
-          personnelId,
-          startDate: curStart,
-          endDate: curEnd,
-          status: curStatus as AvailabilitySpan['status'],
-        });
-      }
+      spans.push({
+        personnelId,
+        startDate: curStart,
+        endDate: curEnd,
+        status: curStatus as AvailabilitySpan['status'],
+      });
       curStatus = status;
       curStart = date;
       curEnd = date;
     }
   }
   // Push last span
-  if (curStatus !== 'unavailable') {
-    spans.push({
-      personnelId,
-      startDate: curStart,
-      endDate: curEnd,
-      status: curStatus as AvailabilitySpan['status'],
-    });
-  }
+  spans.push({
+    personnelId,
+    startDate: curStart,
+    endDate: curEnd,
+    status: curStatus as AvailabilitySpan['status'],
+  });
 
   return spans;
 }

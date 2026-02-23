@@ -19,9 +19,11 @@ interface AvailabilityLaneProps {
 function statusColor(status: AvailabilitySpan['status']): string {
   switch (status) {
     case 'available':
-      return 'bg-sky-500/80';
+      return 'bg-emerald-500/80';
     case 'partial':
-      return 'bg-sky-500/40 bg-[repeating-linear-gradient(45deg,transparent,transparent_3px,hsl(var(--background)/0.3)_3px,hsl(var(--background)/0.3)_6px)]';
+      return 'bg-amber-500/80';
+    case 'unavailable':
+      return 'bg-red-500/80';
     case 'other':
       return 'bg-blue-500/70';
     default:
@@ -35,6 +37,8 @@ function statusLabel(status: AvailabilitySpan['status']): string {
       return 'Available';
     case 'partial':
       return 'Partially available';
+    case 'unavailable':
+      return 'Unavailable';
     case 'other':
       return 'Other';
     default:
@@ -90,9 +94,10 @@ export function AvailabilityLane({
         })}
 
         {spans.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] text-muted-foreground/60">No availability data</span>
-          </div>
+          <div
+            className="absolute rounded-sm bg-emerald-500/80"
+            style={{ left: 0, width: totalWidth, top: 2, height: 16 }}
+          />
         )}
       </div>
     </div>
