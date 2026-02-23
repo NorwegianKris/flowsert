@@ -371,10 +371,10 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         </div>
 
         {/* Right Side Tabs - Personnel & Calendar Items */}
-        <div className="lg:col-span-1">
-          <Card className="border-border/50 h-full">
-            <Tabs defaultValue="personnel" className="h-full flex flex-col">
-              <CardHeader className="pb-0">
+        <div className="lg:col-span-1 h-[400px]">
+          <Card className="border-border/50 h-full flex flex-col">
+            <Tabs defaultValue="personnel" className="h-full flex flex-col min-h-0">
+              <CardHeader className="pb-0 flex-shrink-0">
               <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="personnel" className="gap-1.5 text-xs sm:text-sm">
                     <Users className="h-4 w-4" />
@@ -386,9 +386,9 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                   </TabsTrigger>
                 </TabsList>
               </CardHeader>
-              <CardContent className="flex-1 overflow-auto pt-4">
+              <CardContent className="flex-1 min-h-0 overflow-hidden pt-4">
                 {/* Assigned Personnel Tab */}
-                <TabsContent value="personnel" className="mt-0 h-full">
+                <TabsContent value="personnel" className="mt-0 h-full overflow-y-auto">
                   {assignedPersonnel.length > 0 ? (
                     <div className="space-y-3">
                       {assignedPersonnel.map((person) => (
@@ -429,7 +429,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                 </TabsContent>
 
                 {/* Documents Tab */}
-                <TabsContent value="documents" className="mt-0 h-full">
+                <TabsContent value="documents" className="mt-0 h-full overflow-y-auto">
                   <ProjectDocuments projectId={project.id} businessId={businessId || undefined} />
                 </TabsContent>
 
