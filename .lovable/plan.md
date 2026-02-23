@@ -1,32 +1,33 @@
 
 
-## Fix Clickable Names in Profile Activation List
+## Make Entire Row Clickable in Activation List
 
-**Risk: GREEN** -- UI-only styling fix.
+**Risk: GREEN** -- UI-only styling change.
 
----
+### Change
 
-### Problem
+**File: `src/components/ActivationOverview.tsx`**
 
-The `<button>` element wrapping the person's name has the `truncate` CSS class but lacks `display: block` and `w-full`. Inside a flex container with `min-w-0`, this can cause the button to have zero or minimal clickable width, making it appear unclickable.
+Make the entire row (`div` with class `flex items-center gap-3 p-3 rounded-lg ...`) act as a clickable area that opens the profile preview sheet, while keeping the edit, delete, and toggle buttons functional via `stopPropagation`.
 
-### Fix
+1. Add `cursor-pointer` to the outer row `div` and attach an `onClick` handler that sets `previewPerson` and opens the sheet.
+2. The existing `e.stopPropagation()` calls on the edit button, delete button, and switch already prevent event bubbling, so those controls will continue to work independently.
+3. The name `<button>` can remain styled with `hover:underline` for visual affordance, but the click now also works anywhere on the row.
 
-**File: `src/components/ActivationOverview.tsx`** (line 228)
+### Technical Detail
 
-Add `block w-full` to the button's className so it fills the available width and becomes reliably clickable:
+On the row container (around line 217):
 
-Change:
 ```
-className="font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
+// Before
+<div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+
+// After
+<div
+  className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors cursor-pointer"
+  onClick={() => { setPreviewPerson(person); setPreviewOpen(true); }}
+>
 ```
 
-To:
-```
-className="block w-full font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
-```
-
-### Files Changed (1)
-
-1. `src/components/ActivationOverview.tsx` -- add `block w-full` to the name button
+No other files changed.
 
