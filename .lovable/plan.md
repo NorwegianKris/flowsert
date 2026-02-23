@@ -1,56 +1,52 @@
 
-# Add Purple Hover Border to Project Cards and Personnel Cards
+# Add Purple Hover Effect to Expiry Timeline Boxes
 
 **Risk: GREEN** -- purely UI styling, no database or backend changes.
 
-## Changes
+## What Changes
 
-### 1. `src/components/ProjectsTab.tsx` (ProjectCard)
+Add the same purple hover border and lift effect to the expiry detail lane boxes and individual certificate rows in the Expiry Details list.
 
-Update the `<Card>` className to add the lift effect and purple hover ring:
+## Technical Details
 
-**Current:**
+### File: `src/components/timeline/ExpiryDetailsList.tsx`
+
+**1. Lane group boxes** (the colored containers like "Overdue", "Next 30 days", etc.)
+
+Update the `<div>` at ~line 121 that wraps each lane group:
+
+Current:
 ```
-hover:shadow-md transition-shadow cursor-pointer
-```
-
-**New:**
-```
-hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20
-```
-
-### 2. `src/components/PersonnelCard.tsx`
-
-Add `hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20` to the existing Card className (which already has the lift and shadow effects).
-
-**Current (line 132):**
-```
-cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group relative
+className={cn(
+  'rounded-md border transition-all duration-300',
+  lane.borderColor,
+  lane.bgColor,
+  highlightedLaneId === lane.id && 'ring-2 ring-primary shadow-md'
+)}
 ```
 
-**New:**
+New — add hover lift + purple ring:
 ```
-cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 group relative
-```
-
-### 3. `src/components/RecentRegistrations.tsx`
-
-The recent registrations cards (inside the collapsible) also show personnel -- add the same purple hover ring there for consistency.
-
-**Current (line ~117):**
-```
-cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative
+className={cn(
+  'rounded-md border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20',
+  lane.borderColor,
+  lane.bgColor,
+  highlightedLaneId === lane.id && 'ring-2 ring-primary shadow-md'
+)}
 ```
 
-**New:**
+**2. Individual certificate rows** (each row inside a lane)
+
+Update the `<button>` at ~line 137:
+
+Current:
 ```
-cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 relative
+className="w-full flex flex-col gap-1 px-3 py-2.5 text-left hover:bg-background/50 transition-colors"
 ```
 
-## Summary
+New — add subtle purple ring on hover:
+```
+className="w-full flex flex-col gap-1 px-3 py-2.5 text-left hover:bg-background/50 transition-all duration-200 hover:ring-1 hover:ring-[#C4B5FD]/50"
+```
 
-| File | Change |
-|------|--------|
-| `src/components/ProjectsTab.tsx` | Add lift effect + purple hover ring to ProjectCard |
-| `src/components/PersonnelCard.tsx` | Add purple hover ring to existing card |
-| `src/components/RecentRegistrations.tsx` | Add purple hover ring for consistency |
+The rows use a thinner ring (`ring-1` at 50% opacity) so they don't compete visually with the parent lane box effect.
