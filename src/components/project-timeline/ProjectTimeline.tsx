@@ -149,7 +149,7 @@ export function ProjectTimeline({
               </Button>
             )}
             {onEditTimeline && (
-              <Button variant="secondary" size="sm" onClick={onEditTimeline} className="gap-1.5 flex-shrink-0">
+              <Button variant="outline" size="sm" onClick={onEditTimeline} className="gap-1.5 flex-shrink-0">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Edit timeline</span>
                 <span className="sm:hidden">Edit</span>

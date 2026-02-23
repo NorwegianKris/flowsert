@@ -72,7 +72,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
   const [isEditTimelineOpen, setIsEditTimelineOpen] = useState(false);
   const [highlightedCertificateId, setHighlightedCertificateId] = useState<string | null>(null);
 
-  const { phases, addPhase, removePhase } = useProjectPhases(project.id);
+  const { phases, addPhase, removePhase, updatePhase } = useProjectPhases(project.id);
   const { applications } = useProjectApplications(project.isPosted ? project.id : undefined);
 
   const config = statusConfig[project.status];
@@ -124,6 +124,19 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         calendarItems: updatedItems,
       });
       toast.success('Calendar item removed');
+    }
+  };
+
+  const handleUpdateCalendarItem = (itemId: string, updates: { description?: string; date?: string }) => {
+    if (onUpdateProject) {
+      const updatedItems = (project.calendarItems || []).map((i) =>
+        i.id === itemId ? { ...i, ...updates } : i
+      );
+      onUpdateProject({
+        ...project,
+        calendarItems: updatedItems,
+      });
+      toast.success('Calendar item updated');
     }
   };
 
@@ -536,6 +549,8 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         phases={phases}
         onRemoveCalendarItem={handleRemoveCalendarItem}
         onRemovePhase={removePhase}
+        onUpdateCalendarItem={handleUpdateCalendarItem}
+        onUpdatePhase={updatePhase}
       />
 
       <AlertDialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
