@@ -18,13 +18,14 @@ import {
 } from '@/components/ui/select';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
+import { ProjectPhase } from '@/hooks/useProjectPhases';
 import { FileDown, Mail, FileText, Users, FileStack, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from '@/lib/certificateUtils';
+import { getCertificateStatus, getPersonnelOverallStatus, EXPIRY_WARNING_DAYS } from '@/lib/certificateUtils';
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
 
@@ -34,6 +35,7 @@ interface ShareProjectDialogProps {
   project: Project;
   personnel: Personnel[];
   businessName?: string;
+  phases?: ProjectPhase[];
 }
 
 export function ShareProjectDialog({
@@ -42,6 +44,7 @@ export function ShareProjectDialog({
   project,
   personnel,
   businessName,
+  phases = [],
 }: ShareProjectDialogProps) {
   const [selectedExports, setSelectedExports] = useState<string[]>([]);
   const [selectedBundlePersonId, setSelectedBundlePersonId] = useState<string>('');
@@ -82,6 +85,16 @@ export function ShareProjectDialog({
       margin: { left: 14, right: 14 },
     };
 
+    const STATUS_SYMBOLS: Record<string, string> = { valid: 'V', expiring: 'E', expired: 'X' };
+    const NOT_HELD = '—';
+
+    const checkPageBreak = (needed: number) => {
+      if (yPosition + needed > pageHeight - 20) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    };
+
     // --- Header ---
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
@@ -99,7 +112,6 @@ export function ShareProjectDialog({
     doc.setTextColor(128, 128, 128);
     doc.setFont('helvetica', 'bold');
 
-    // Left column
     doc.text('Project:', 14, yPosition);
     doc.setFont('helvetica', 'normal');
     doc.text(project.name, 35, yPosition);
@@ -112,7 +124,6 @@ export function ShareProjectDialog({
       doc.text(project.projectNumber, 35, yPosition);
     }
 
-    // Right column (same rows)
     const rightX = pageWidth / 2 + 10;
     let rightY = yPosition - 4;
 
@@ -131,7 +142,6 @@ export function ShareProjectDialog({
 
     yPosition += 5;
 
-    // Additional metadata rows
     const extraFields: [string, string | undefined][] = [
       ['Status', project.status.charAt(0).toUpperCase() + project.status.slice(1)],
       ['Customer', project.customer || undefined],
@@ -170,7 +180,82 @@ export function ShareProjectDialog({
       yPosition += descLines.length * 3.5 + 6;
     }
 
-    // --- Assigned Personnel table ---
+    // --- Project Phases ---
+    if (phases.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Project Phases (${phases.length})`, 14, yPosition);
+      yPosition += 5;
+
+      const phaseData = phases.map(p => {
+        const s = parseISO(p.startDate);
+        const e = parseISO(p.endDate);
+        const dur = differenceInDays(e, s) + 1;
+        return [
+          p.name,
+          format(s, 'MMM d, yyyy'),
+          format(e, 'MMM d, yyyy'),
+          `${dur} days`,
+        ];
+      });
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Phase', 'Start', 'End', 'Duration']],
+        body: phaseData,
+        ...tableStyles,
+      });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // --- Milestones ---
+    const milestones = (project.calendarItems || [])
+      .filter(i => i.isMilestone)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (milestones.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Milestones (${milestones.length})`, 14, yPosition);
+      yPosition += 5;
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Date', 'Description']],
+        body: milestones.map(m => [format(parseISO(m.date), 'MMM d, yyyy'), m.description]),
+        ...tableStyles,
+      });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // --- Events ---
+    const events = (project.calendarItems || [])
+      .filter(i => !i.isMilestone)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (events.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Events (${events.length})`, 14, yPosition);
+      yPosition += 5;
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Date', 'Description']],
+        body: events.map(e => [format(parseISO(e.date), 'MMM d, yyyy'), e.description]),
+        ...tableStyles,
+      });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // --- Assigned Personnel with Compliance ---
+    checkPageBreak(30);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
@@ -178,21 +263,35 @@ export function ShareProjectDialog({
     yPosition += 5;
 
     if (assignedPersonnel.length > 0) {
-      const personnelTableData = assignedPersonnel.map(person => [
-        person.name,
-        person.role,
-        person.location || '—',
-        person.email,
-        person.phone || '—'
-      ]);
+      const personnelTableData = assignedPersonnel.map(person => {
+        const overallStatus = getPersonnelOverallStatus(person);
+        const complianceLabel = overallStatus === 'valid' ? 'V' : overallStatus === 'expiring' ? 'E' : 'X';
+        return [
+          person.name,
+          person.role,
+          person.location || '—',
+          person.email,
+          person.phone || '—',
+          complianceLabel,
+        ];
+      });
 
       autoTable(doc, {
         startY: yPosition,
-        head: [['Name', 'Role', 'Location', 'Email', 'Phone']],
+        head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Compliance']],
         body: personnelTableData,
         ...tableStyles,
+        didParseCell: (data) => {
+          if (data.section !== 'body') return;
+          if (data.column.index !== 5) return;
+          const val = String(data.cell.raw);
+          if (val === 'V') data.cell.styles.fillColor = [235, 245, 235];
+          else if (val === 'E') data.cell.styles.fillColor = [255, 245, 230];
+          else if (val === 'X') data.cell.styles.fillColor = [250, 232, 232];
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.halign = 'center';
+        },
       });
-
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     } else {
       doc.setFontSize(7);
@@ -203,31 +302,123 @@ export function ShareProjectDialog({
       yPosition += 8;
     }
 
-    // --- Calendar items table ---
-    if (project.calendarItems && project.calendarItems.length > 0) {
-      if (yPosition > pageHeight - 50) {
-        doc.addPage();
-        yPosition = 20;
+    // --- Inline Competence Matrix ---
+    const activePersonnel = assignedPersonnel.filter(p => p.activated);
+    if (activePersonnel.length > 0) {
+      const sortedPeople = [...activePersonnel].sort((a, b) => a.name.localeCompare(b.name));
+      const certTypeSet = new Set<string>();
+      activePersonnel.forEach(p => p.certificates.forEach(c => certTypeSet.add(c.name)));
+      const certTypes = Array.from(certTypeSet).sort((a, b) => a.localeCompare(b));
+
+      if (certTypes.length > 0) {
+        checkPageBreak(40);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Personnel Competence Matrix', 14, yPosition);
+        yPosition += 5;
+
+        // Calculate how many cert columns fit per page in portrait
+        const fixedColsWidth = 40 + 24; // Name + Role
+        const availableForCerts = pageWidth - 28 - fixedColsWidth;
+        const minCertColWidth = 14;
+        const maxCertCols = Math.max(1, Math.floor(availableForCerts / minCertColWidth));
+
+        // Chunk cert types into batches
+        const batches: string[][] = [];
+        for (let i = 0; i < certTypes.length; i += maxCertCols) {
+          batches.push(certTypes.slice(i, i + maxCertCols));
+        }
+
+        const STATUS_FILLS: Record<string, [number, number, number] | null> = {
+          V: [235, 245, 235],
+          E: [255, 245, 230],
+          X: [250, 232, 232],
+        };
+
+        batches.forEach((batchCerts, batchIdx) => {
+          if (batchIdx > 0) checkPageBreak(30);
+
+          const batchLabel = batches.length > 1
+            ? `Certificates ${batchIdx * maxCertCols + 1}–${Math.min((batchIdx + 1) * maxCertCols, certTypes.length)} of ${certTypes.length}`
+            : undefined;
+
+          if (batchLabel) {
+            doc.setFontSize(6);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(120, 120, 120);
+            doc.text(batchLabel, 14, yPosition);
+            doc.setTextColor(0, 0, 0);
+            yPosition += 4;
+          }
+
+          const head = ['Name', 'Role', ...batchCerts];
+          const body = sortedPeople.map(person => {
+            const row = [person.name, person.role];
+            batchCerts.forEach(certType => {
+              const cert = person.certificates.find(c => c.name === certType);
+              if (!cert) {
+                row.push(NOT_HELD);
+              } else {
+                row.push(STATUS_SYMBOLS[getCertificateStatus(cert.expiryDate)] || NOT_HELD);
+              }
+            });
+            return row;
+          });
+
+          const certColWidth = batchCerts.length > 0 ? availableForCerts / batchCerts.length : 20;
+          const columnStyles: Record<number, any> = {
+            0: { halign: 'left', cellWidth: 40, fontStyle: 'bold' },
+            1: { halign: 'left', cellWidth: 24 },
+          };
+          batchCerts.forEach((_, i) => {
+            columnStyles[i + 2] = { halign: 'center', cellWidth: certColWidth };
+          });
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [head],
+            body,
+            theme: 'grid',
+            headStyles: {
+              fillColor: [240, 240, 240] as [number, number, number],
+              textColor: [0, 0, 0] as [number, number, number],
+              fontSize: 5,
+              fontStyle: 'bold' as const,
+              halign: 'center',
+              overflow: 'linebreak',
+            },
+            bodyStyles: { fontSize: 6, halign: 'center' },
+            columnStyles,
+            styles: {
+              lineColor: [200, 200, 200] as [number, number, number],
+              lineWidth: 0.2,
+              cellPadding: 2,
+            },
+            margin: { left: 14, right: 14 },
+            didParseCell: (data) => {
+              if (data.section !== 'body' || data.column.index < 2) return;
+              const val = String(data.cell.raw);
+              const fill = STATUS_FILLS[val];
+              if (fill) data.cell.styles.fillColor = fill;
+              data.cell.styles.fontStyle = 'bold';
+            },
+          });
+          yPosition = (doc as any).lastAutoTable.finalY + 6;
+        });
+
+        // Legend
+        doc.setFontSize(6);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text(
+          `Legend:  V – Valid    E – Expiring within ${EXPIRY_WARNING_DAYS} days    X – Expired    — – Not required / Not registered`,
+          14,
+          yPosition,
+        );
+        doc.setTextColor(0, 0, 0);
+        yPosition += 6;
       }
-
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Calendar Items (${project.calendarItems.length})`, 14, yPosition);
-      yPosition += 5;
-
-      const calendarTableData = project.calendarItems.map(item => [
-        format(parseISO(item.date), 'MMM d, yyyy'),
-        item.description,
-        item.isMilestone ? 'Yes' : 'No'
-      ]);
-
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Date', 'Description', 'Milestone']],
-        body: calendarTableData,
-        ...tableStyles,
-      });
     }
 
     // --- Footer ---

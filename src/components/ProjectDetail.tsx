@@ -543,6 +543,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         project={project}
         personnel={personnel}
         businessName={businessName}
+        phases={phases}
       />
       <EditTimelineItemsDialog
         open={isEditTimelineOpen}
