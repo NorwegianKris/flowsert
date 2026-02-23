@@ -129,7 +129,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
   return (
     <>
       <Card
-        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group relative ${
+        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 group relative ${
           highlighted
             ? 'ring-2 ring-primary shadow-lg shadow-primary/20'
             : ''

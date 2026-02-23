@@ -160,7 +160,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
 
   return (
     <Card 
-      className={`hover:shadow-md transition-shadow cursor-pointer flex flex-col ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
+      className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
       onClick={onClick}
     >
       <CardHeader className="pb-2">
