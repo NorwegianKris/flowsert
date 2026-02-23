@@ -682,16 +682,18 @@ export default function AdminDashboard() {
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">Profile Activation Overview</span>
+                      <span className="font-semibold text-lg">Profile Activation and Billing Overview</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">
                         {personnel.filter(p => p.activated).length} active &mdash;
-                        {personnel.filter(p => p.activated).length >= 76
-                          ? ' Tier 3'
-                          : personnel.filter(p => p.activated).length >= 26
-                            ? ' Tier 2'
-                            : ' Tier 1'}
+                        {personnel.filter(p => p.activated).length >= 201
+                          ? ' Enterprise'
+                          : personnel.filter(p => p.activated).length >= 76
+                            ? ' Professional'
+                            : personnel.filter(p => p.activated).length >= 26
+                              ? ' Growth'
+                              : ' Starter'}
                       </span>
                       <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                     </div>

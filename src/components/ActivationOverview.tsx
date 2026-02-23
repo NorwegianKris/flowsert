@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +20,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Personnel } from '@/types';
-import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search } from 'lucide-react';
+import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search, ChevronDown, FileText, ExternalLink } from 'lucide-react';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
+import { PdfViewer } from '@/components/PdfViewer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,6 +35,22 @@ interface ActivationOverviewProps {
   onPersonnelRemoved?: () => void;
 }
 
+const TC_PDF_URL = '/documents/FlowSert_Terms_and_Conditions.pdf';
+
+const TIERS = [
+  { name: 'Starter', range: '1–25 profiles', monthly: '1,990', annual: '19,900', min: 1, max: 25 },
+  { name: 'Growth', range: '26–75 profiles', monthly: '4,490', annual: '44,900', min: 26, max: 75 },
+  { name: 'Professional', range: '76–200 profiles', monthly: '8,990', annual: '89,900', min: 76, max: 200 },
+  { name: 'Enterprise', range: '201+ profiles', monthly: 'Custom', annual: 'Custom', min: 201, max: Infinity },
+];
+
+function getCurrentTierIndex(activeCount: number) {
+  if (activeCount >= 201) return 3;
+  if (activeCount >= 76) return 2;
+  if (activeCount >= 26) return 1;
+  return 0;
+}
+
 export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPersonnelRemoved }: ActivationOverviewProps) {
   const [filter, setFilter] = useState<FilterMode>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,6 +59,9 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personnelToDelete, setPersonnelToDelete] = useState<Personnel | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tcOpen, setTcOpen] = useState(false);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const { toast } = useToast();
 
   const activeCount = useMemo(
@@ -68,6 +89,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
   }, [personnel, filter, searchQuery]);
 
   const progressPercent = personnel.length > 0 ? (activeCount / personnel.length) * 100 : 0;
+  const currentTierIndex = getCurrentTierIndex(activeCount);
 
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -115,13 +137,25 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
     }
   };
 
+  // Load T&C PDF when dropdown is opened for the first time
+  useEffect(() => {
+    if (tcOpen && !pdfData && !pdfLoading) {
+      setPdfLoading(true);
+      fetch(TC_PDF_URL)
+        .then((res) => res.arrayBuffer())
+        .then((data) => setPdfData(data))
+        .catch((err) => console.error('Failed to load T&C PDF:', err))
+        .finally(() => setPdfLoading(false));
+    }
+  }, [tcOpen, pdfData, pdfLoading]);
+
   return (
     <>
       <Card className="border-border/50">
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            Profile Activation Overview
+            Profile Activation and Billing Overview
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -238,45 +272,73 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
             </ScrollArea>
           )}
 
-          {/* Billing Tiers */}
-          {(() => {
-            const tiers = [
-              { name: 'Tier 1', range: '1–25 profiles', min: 1, max: 25 },
-              { name: 'Tier 2', range: '26–75 profiles', min: 26, max: 75 },
-              { name: 'Tier 3', range: '75+ profiles', min: 76, max: Infinity },
-            ];
-            const currentTierIndex = activeCount >= 76 ? 2 : activeCount >= 26 ? 1 : 0;
-
-            return (
-              <div className="grid grid-cols-3 gap-3">
-                {tiers.map((tier, i) => {
-                  const isCurrent = i === currentTierIndex;
-                  return (
-                    <div
-                      key={tier.name}
-                      className={`rounded-lg border-2 p-3 text-center transition-colors ${
-                        isCurrent
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border/50 bg-muted/30'
-                      }`}
-                    >
-                      <p className={`text-sm font-semibold ${isCurrent ? 'text-primary' : 'text-foreground'}`}>
-                        {tier.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{tier.range}</p>
-                      {isCurrent && (
-                        <p className="text-[10px] font-medium text-primary mt-1.5">Your Current Tier</p>
-                      )}
+          {/* Pricing Tiers */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Subscription Tiers</p>
+            <p className="text-xs text-muted-foreground">Annual plan = 2 months free (16.7% discount)</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {TIERS.map((tier, i) => {
+                const isCurrent = i === currentTierIndex;
+                return (
+                  <div
+                    key={tier.name}
+                    className={`rounded-lg border-2 p-3 text-center transition-colors ${
+                      isCurrent
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border/50 bg-muted/30'
+                    }`}
+                  >
+                    <p className={`text-sm font-semibold ${isCurrent ? 'text-primary' : 'text-foreground'}`}>
+                      {tier.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{tier.range}</p>
+                    <div className="mt-2 space-y-0.5">
+                      <p className="text-xs font-medium text-foreground">{tier.monthly} NOK/mo</p>
+                      <p className="text-[10px] text-muted-foreground">{tier.annual} NOK/yr</p>
                     </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+                    {isCurrent && (
+                      <p className="text-[10px] font-medium text-primary mt-1.5">Your Current Tier</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           <p className="text-xs text-muted-foreground">
-            Active profiles count toward your billing tier. Inactive profiles retain their data but are excluded from projects and exports.
+            Billing is based on the highest number of active profiles reached during the billing month (High-Water Mark Billing). Deactivating profiles before month-end does not reduce the invoice for that month.
           </p>
+
+          {/* Terms & Conditions */}
+          <Collapsible open={tcOpen} onOpenChange={setTcOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Terms & Conditions (View)</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs gap-1.5"
+                  onClick={() => window.open(TC_PDF_URL, '_blank')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open in new tab
+                </Button>
+              </div>
+              {pdfLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading document...</span>
+                </div>
+              )}
+              {pdfData && <PdfViewer pdfData={pdfData} />}
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
 
