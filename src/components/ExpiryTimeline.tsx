@@ -198,6 +198,7 @@ export function ExpiryTimeline({
           dateOfIssue: cert.dateOfIssue ?? null,
           categoryName: cert.category ?? null,
           placeOfIssue: cert.placeOfIssue ?? null,
+          documentUrl: cert.documentUrl ?? null,
         });
       });
     });
