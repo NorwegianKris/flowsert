@@ -900,7 +900,7 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
   };
 
   return (
-    <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
+    <Card className="fixed bottom-24 left-3 right-3 sm:left-auto sm:right-6 sm:w-96 h-[500px] shadow-xl z-50 flex flex-col border-border">
       {renderHeader()}
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         {renderContent()}
