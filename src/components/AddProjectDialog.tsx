@@ -1124,7 +1124,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                       <div
                         key={person.id}
                         className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer ${selected ? 'bg-muted/50' : ''} ${suggestion ? 'ring-1 ring-primary/20' : ''}`}
-                        onClick={() => setPreviewPersonnel(person)}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('[data-toggle-mode]')) return;
+                          setPreviewPersonnel(person);
+                        }}
                       >
                         <Checkbox
                           checked={selected}
@@ -1173,7 +1176,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{person.role}</p>
                         </div>
-                        <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+                        <div data-toggle-mode onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                           <ToggleGroup
                             type="single"
                             value={selected ? mode : undefined}
