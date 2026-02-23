@@ -17,6 +17,7 @@ export interface TimelineEvent {
   dateOfIssue?: string | null;
   categoryName?: string | null;
   placeOfIssue?: string | null;
+  documentUrl?: string | null;
 }
 
 export interface LaneConfig {

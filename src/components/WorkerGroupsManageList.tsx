@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Loader2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Users, ChevronDown, User } from 'lucide-react';
 import {
   useWorkerGroups,
   useCreateWorkerGroup,
@@ -29,10 +29,18 @@ import {
   useWorkerGroupMemberCounts,
   WorkerGroup,
 } from '@/hooks/useWorkerGroups';
+import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
+import { usePersonnel } from '@/hooks/usePersonnel';
+import { PersonnelPreviewSheet } from '@/components/PersonnelPreviewSheet';
+import { Personnel } from '@/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 export function WorkerGroupsManageList() {
   const { data: groups = [], isLoading } = useWorkerGroups();
   const { data: memberCounts = [] } = useWorkerGroupMemberCounts();
+  const { data: personnelWorkerGroups = [] } = usePersonnelWorkerGroups();
+  const { personnel: allPersonnel = [] } = usePersonnel();
   const createMutation = useCreateWorkerGroup();
   const updateMutation = useUpdateWorkerGroup();
   const deleteMutation = useDeleteWorkerGroup();
@@ -42,11 +50,27 @@ export function WorkerGroupsManageList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<WorkerGroup | null>(null);
   const [editName, setEditName] = useState('');
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+  const [previewPersonnel, setPreviewPersonnel] = useState<Personnel | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Member count lookup
   const countMap = new Map<string, number>();
   for (const mc of memberCounts) countMap.set(mc.worker_group_id, mc.count);
+
+  // Build a map of group -> personnel list
+  const groupMembersMap = useMemo(() => {
+    const map = new Map<string, Personnel[]>();
+    const personnelMap = new Map(allPersonnel.map(p => [p.id, p]));
+    for (const pwg of personnelWorkerGroups) {
+      const person = personnelMap.get(pwg.personnel_id);
+      if (!person) continue;
+      const list = map.get(pwg.worker_group_id) ?? [];
+      list.push(person);
+      map.set(pwg.worker_group_id, list);
+    }
+    return map;
+  }, [personnelWorkerGroups, allPersonnel]);
 
   // Auto-focus input when empty state
   useEffect(() => {
@@ -74,6 +98,9 @@ export function WorkerGroupsManageList() {
     setDeleteDialogOpen(false);
     setSelectedGroup(null);
   };
+
+  const getInitials = (name: string) =>
+    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   if (isLoading) {
     return (
@@ -110,39 +137,78 @@ export function WorkerGroupsManageList() {
         <div className="border rounded-lg divide-y">
           {groups.map((group) => {
             const count = countMap.get(group.id) || 0;
+            const isExpanded = expandedGroupId === group.id;
+            const members = groupMembersMap.get(group.id) ?? [];
             return (
-              <div key={group.id} className="flex items-center justify-between p-3 hover:bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{group.name}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {count} {count === 1 ? 'member' : 'members'}
-                  </Badge>
+              <div key={group.id}>
+                <div
+                  className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer"
+                  onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-180')} />
+                    <span className="font-medium">{group.name}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {count} {count === 1 ? 'member' : 'members'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        setSelectedGroup(group);
+                        setEditName(group.name);
+                        setEditDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setSelectedGroup(group);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => {
-                      setSelectedGroup(group);
-                      setEditName(group.name);
-                      setEditDialogOpen(true);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      setSelectedGroup(group);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+
+                {/* Expanded member list */}
+                {isExpanded && (
+                  <div className="bg-muted/30 border-t">
+                    {members.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">No members assigned to this group.</p>
+                    ) : (
+                      <div className="divide-y divide-border/40">
+                        {members.map((person) => (
+                          <button
+                            key={person.id}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors"
+                            onClick={() => setPreviewPersonnel(person)}
+                          >
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={person.avatarUrl} alt={person.name} />
+                              <AvatarFallback className="text-xs">{getInitials(person.name)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{person.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{person.role || person.email}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
+                            </Badge>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -198,6 +264,13 @@ export function WorkerGroupsManageList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Personnel Preview Sheet */}
+      <PersonnelPreviewSheet
+        open={!!previewPersonnel}
+        onOpenChange={(open) => { if (!open) setPreviewPersonnel(null); }}
+        personnel={previewPersonnel}
+      />
     </div>
   );
 }
