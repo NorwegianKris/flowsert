@@ -24,6 +24,7 @@ export function CertificateViewerDialog({ event, onClose }: CertificateViewerDia
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
   const [imgRotation, setImgRotation] = useState(0);
   const [imgZoom, setImgZoom] = useState(1);
 
@@ -43,6 +44,7 @@ export function CertificateViewerDialog({ event, onClose }: CertificateViewerDia
     }
 
     setLoadingUrl(true);
+    setDownloadError(false);
     setBlobUrl(null);
     setPdfData(null);
 
@@ -58,6 +60,7 @@ export function CertificateViewerDialog({ event, onClose }: CertificateViewerDia
       .then(({ data, error }) => {
         if (error) {
           console.error('Error downloading file:', error);
+          setDownloadError(true);
           return;
         }
         if (data) {
@@ -165,6 +168,44 @@ export function CertificateViewerDialog({ event, onClose }: CertificateViewerDia
                   {loadingUrl ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : downloadError ? (
+                    <div className="flex flex-col items-center gap-4 py-8 text-center">
+                      <div className="p-4 rounded-full bg-destructive/10">
+                        <File className="h-12 w-12 text-destructive" />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="font-medium text-foreground">Could not load document</p>
+                        <p className="text-sm text-muted-foreground max-w-sm">
+                          The document could not be retrieved. This may be a temporary issue.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setDownloadError(false);
+                          setLoadingUrl(true);
+                          setBlobUrl(null);
+                          setPdfData(null);
+                          const path = event.documentUrl!.includes('certificate-documents/')
+                            ? event.documentUrl!.match(/certificate-documents\/(.+)/)?.[1] || event.documentUrl!
+                            : event.documentUrl!;
+                          supabase.storage.from('certificate-documents').download(path)
+                            .then(({ data, error: err }) => {
+                              if (err) { setDownloadError(true); return; }
+                              if (data) {
+                                setBlobUrl(URL.createObjectURL(data));
+                                if (isPdfFile(event.documentUrl || '')) {
+                                  data.arrayBuffer().then(buffer => setPdfData(buffer));
+                                }
+                              }
+                            })
+                            .finally(() => setLoadingUrl(false));
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Retry
+                      </Button>
                     </div>
                   ) : displayUrl && isImageFile(event.documentUrl) ? (
                     <div className="w-full">
