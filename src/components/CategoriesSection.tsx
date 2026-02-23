@@ -49,10 +49,10 @@ export function CategoriesSection() {
                   <TabsTrigger value="roles">Roles</TabsTrigger>
                   <TabsTrigger value="worker-groups">Worker Groups</TabsTrigger>
                 </TabsList>
-                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <span>💡</span>
-                  Roles define job categories; Worker Groups organize personnel into custom teams.
-                </span>
+                <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+                  <span className="text-sm">💡</span>
+                  <span className="text-xs text-muted-foreground">Roles define job categories; Worker Groups organize personnel into custom teams.</span>
+                </div>
               </div>
               
               <TabsContent value="roles">
@@ -92,10 +92,10 @@ export function CategoriesSection() {
                   <TabsTrigger value="types">Types</TabsTrigger>
                   <TabsTrigger value="issuers">Issuers</TabsTrigger>
                 </TabsList>
-                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <span>💡</span>
-                  Categories are broad groupings; Types are specific classifications; Issuers are issuing authorities.
-                </span>
+                <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+                  <span className="text-sm">💡</span>
+                  <span className="text-xs text-muted-foreground">Categories are broad groupings; Types are specific classifications; Issuers are issuing authorities.</span>
+                </div>
               </div>
               
               <TabsContent value="categories">
