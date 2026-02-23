@@ -88,5 +88,29 @@ export function useProjectPhases(projectId: string) {
     [fetchPhases]
   );
 
-  return { phases, loading, addPhase, removePhase, refetch: fetchPhases };
+  const updatePhase = useCallback(
+    async (phaseId: string, updates: { name?: string; startDate?: string; endDate?: string }) => {
+      try {
+        const updateData: Record<string, string> = {};
+        if (updates.name !== undefined) updateData.name = updates.name;
+        if (updates.startDate !== undefined) updateData.start_date = updates.startDate;
+        if (updates.endDate !== undefined) updateData.end_date = updates.endDate;
+
+        const { error } = await supabase
+          .from('project_phases')
+          .update(updateData)
+          .eq('id', phaseId);
+
+        if (error) throw error;
+        toast.success('Phase updated');
+        await fetchPhases();
+      } catch (err) {
+        console.error('Error updating phase:', err);
+        toast.error('Failed to update phase');
+      }
+    },
+    [fetchPhases]
+  );
+
+  return { phases, loading, addPhase, removePhase, updatePhase, refetch: fetchPhases };
 }
