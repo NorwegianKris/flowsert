@@ -158,7 +158,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            Profile Activation and Billing Overview
+            Profile Activation and Tier Overview
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
