@@ -1,22 +1,32 @@
 
 
-## Make Activation List Names Clickable with Profile Preview
+## Fix Clickable Names in Profile Activation List
 
-**Risk: GREEN** -- UI-only change, no schema/RLS/backend modifications.
+**Risk: GREEN** -- UI-only styling fix.
 
 ---
 
-### Change
+### Problem
 
-**File: `src/components/ActivationOverview.tsx`**
+The `<button>` element wrapping the person's name has the `truncate` CSS class but lacks `display: block` and `w-full`. Inside a flex container with `min-w-0`, this can cause the button to have zero or minimal clickable width, making it appear unclickable.
 
-1. **Add state** for the preview sheet: `previewOpen` (boolean) and `previewPerson` (Personnel | null).
+### Fix
 
-2. **Import** `PersonnelPreviewSheet` from `@/components/PersonnelPreviewSheet`.
+**File: `src/components/ActivationOverview.tsx`** (line 228)
 
-3. **Make the name clickable**: On line 223, change the plain `<p>` tag displaying `person.name` to a `<button>` (or styled clickable element) with `cursor-pointer`, `hover:underline`, and an `onClick` handler that sets `previewPerson` to the clicked person and opens the sheet.
+Add `block w-full` to the button's className so it fills the available width and becomes reliably clickable:
 
-4. **Render** `<PersonnelPreviewSheet>` at the bottom of the component, passing `previewOpen`, `onOpenChange`, and `previewPerson`.
+Change:
+```
+className="font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
+```
 
-### No other files changed.
+To:
+```
+className="block w-full font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
+```
+
+### Files Changed (1)
+
+1. `src/components/ActivationOverview.tsx` -- add `block w-full` to the name button
 
