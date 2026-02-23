@@ -18,6 +18,8 @@ export interface TimelineEvent {
   categoryName?: string | null;
   placeOfIssue?: string | null;
   documentUrl?: string | null;
+  personnelAvatarUrl?: string | null;
+  personnelRole?: string | null;
 }
 
 export interface LaneConfig {

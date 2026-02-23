@@ -199,6 +199,8 @@ export function ExpiryTimeline({
           categoryName: cert.category ?? null,
           placeOfIssue: cert.placeOfIssue ?? null,
           documentUrl: cert.documentUrl ?? null,
+          personnelAvatarUrl: person.avatarUrl ?? null,
+          personnelRole: person.role ?? null,
         });
       });
     });
