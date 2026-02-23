@@ -22,6 +22,7 @@ import {
 import { Personnel } from '@/types';
 import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search, ChevronDown, FileText, ExternalLink } from 'lucide-react';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
+import { PersonnelPreviewSheet } from '@/components/PersonnelPreviewSheet';
 import { PdfViewer } from '@/components/PdfViewer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +63,8 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
   const [tcOpen, setTcOpen] = useState(false);
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewPerson, setPreviewPerson] = useState<Personnel | null>(null);
   const { toast } = useToast();
 
   const activeCount = useMemo(
@@ -220,7 +223,17 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{person.name}</p>
+                      <button
+                        type="button"
+                        className="font-medium text-sm truncate text-left cursor-pointer hover:underline text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewPerson(person);
+                          setPreviewOpen(true);
+                        }}
+                      >
+                        {person.name}
+                      </button>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground truncate">{person.role}</span>
                         {person.category && (
@@ -351,6 +364,14 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
           isCurrentlyActivated={selectedPerson.activated}
           isFreelancer={selectedPerson.isFreelancer}
           onSuccess={onRefresh}
+        />
+      )}
+
+      {previewPerson && (
+        <PersonnelPreviewSheet
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          personnel={previewPerson}
         />
       )}
 
