@@ -446,9 +446,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               numberOfMonths={1}
             />
 
-            <p className="text-xs text-muted-foreground">
-              💡 Tip: Click the start date, then click the end date to select a period.
-            </p>
+            <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+              <span className="text-sm">💡</span>
+              <span className="text-xs text-muted-foreground">Tip: Click the start date, then click the end date to select a period.</span>
+            </div>
 
             {selectedRange?.from && (
               <Card className="mt-4 border-border/50">
