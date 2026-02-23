@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, Mail, Users, ArrowLeft, Check, Clock, GripVertical } from 'lucide-react';
@@ -158,7 +158,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl h-[80vh] max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {selectedNotification ? (
@@ -187,59 +187,59 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : selectedNotification ? (
-          // Detail view
-          <div className="flex-1 flex flex-col min-h-0 space-y-4">
-            {/* Notification content - resizable */}
-            <div className="border rounded-lg overflow-hidden shrink-0">
-              <div 
-                style={{ height: messageHeight }} 
-                className="p-4 bg-muted/30 overflow-y-auto"
-              >
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <h3 className="font-semibold text-lg text-foreground">
-                    {selectedNotification.subject}
-                  </h3>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
-                  </span>
-                </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
-                  {selectedNotification.message}
-                </p>
-              </div>
-              {/* Resize handle */}
-              <div
-                className="h-3 bg-muted/50 hover:bg-muted cursor-ns-resize flex items-center justify-center border-t"
-                onMouseDown={handleResizeStart}
-              >
-                <GripVertical className="h-3 w-3 text-muted-foreground rotate-90" />
-              </div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-
-            {/* Recipients list */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-3 shrink-0">
-                <h4 className="font-medium text-foreground flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Recipients ({selectedNotification.recipient_count})
-                </h4>
-                <Badge variant={selectedNotification.read_count === selectedNotification.recipient_count ? 'default' : 'secondary'}>
-                  {selectedNotification.read_count}/{selectedNotification.recipient_count} read
-                </Badge>
+          ) : selectedNotification ? (
+            // Detail view
+            <div className="flex flex-col space-y-4">
+              {/* Notification content - resizable */}
+              <div className="border rounded-lg overflow-hidden shrink-0">
+                <div 
+                  style={{ height: messageHeight }} 
+                  className="p-4 bg-muted/30 overflow-y-auto"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <h3 className="font-semibold text-lg text-foreground">
+                      {selectedNotification.subject}
+                    </h3>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {format(new Date(selectedNotification.created_at), 'MMM d, yyyy HH:mm')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">
+                    {selectedNotification.message}
+                  </p>
+                </div>
+                {/* Resize handle */}
+                <div
+                  className="h-3 bg-muted/50 hover:bg-muted cursor-ns-resize flex items-center justify-center border-t"
+                  onMouseDown={handleResizeStart}
+                >
+                  <GripVertical className="h-3 w-3 text-muted-foreground rotate-90" />
+                </div>
               </div>
 
-              {loadingRecipients ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              {/* Recipients list */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Recipients ({selectedNotification.recipient_count})
+                  </h4>
+                  <Badge variant={selectedNotification.read_count === selectedNotification.recipient_count ? 'default' : 'secondary'}>
+                    {selectedNotification.read_count}/{selectedNotification.recipient_count} read
+                  </Badge>
                 </div>
-              ) : (
-                <ScrollArea className="flex-1 min-h-0 max-h-[30vh] border rounded-lg">
-                  <div className="space-y-2 p-2">
+
+                {loadingRecipients ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
                     {selectedNotification.recipients?.map((recipient) => (
                       <div
                         key={recipient.id}
@@ -269,18 +269,16 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Mail className="h-12 w-12 mb-4 opacity-50" />
-            <p>No notifications have been sent yet.</p>
-          </div>
-        ) : (
-          // List view
-          <ScrollArea className="flex-1 min-h-0 max-h-[55vh]">
+          ) : notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Mail className="h-12 w-12 mb-4 opacity-50" />
+              <p>No notifications have been sent yet.</p>
+            </div>
+          ) : (
+            // List view - plain div, parent handles scroll
             <div className="space-y-3 pb-4">
               {notifications.map((notification) => (
                 <div
@@ -326,8 +324,8 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                 </div>
               ))}
             </div>
-          </ScrollArea>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
