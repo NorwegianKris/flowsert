@@ -122,7 +122,7 @@ export function RecentRegistrations({
                     key={person.id}
                     onClick={() => onPersonnelClick(person)}
                     className={cn(
-                      "cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative",
+                      "cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 relative",
                       isFreelancer 
                         ? 'border-[#C4B5FD] bg-[#C4B5FD]/10 dark:bg-[#C4B5FD]/10 dark:border-[#C4B5FD]/50' 
                         : 'border-border/50'
