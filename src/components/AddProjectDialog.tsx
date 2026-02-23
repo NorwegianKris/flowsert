@@ -60,7 +60,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [location, setLocation] = useState('');
   const [projectManager, setProjectManager] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [globalMode, setGlobalMode] = useState<PersonnelMode>('invite');
+  
   const [isPosted, setIsPosted] = useState(false);
   const [projectCountry, setProjectCountry] = useState('');
   const [projectLocationLabel, setProjectLocationLabel] = useState('');
@@ -240,7 +240,6 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setProjectNumber('');
     setLocation('');
     setProjectManager('');
-    setGlobalMode('invite');
     setAiPrompt('');
     setIncludeFreelancers(false);
     setIsPosted(false);
@@ -277,32 +276,23 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       if (existing) {
         return prev.filter(s => s.id !== personnelId);
       }
-      return [...prev, { id: personnelId, mode: globalMode }];
+      return [...prev, { id: personnelId, mode: 'invite' }];
     });
   };
 
-  const togglePersonnelMode = (personnelId: string) => {
+  const setPersonnelMode = (personnelId: string, mode: PersonnelMode) => {
     setPersonnelSelections((prev) => {
-      return prev.map(s => {
-        if (s.id === personnelId) {
-          return { ...s, mode: s.mode === 'invite' ? 'assign' : 'invite' };
-        }
-        return s;
-      });
+      const existing = prev.find(s => s.id === personnelId);
+      if (existing) {
+        return prev.map(s => s.id === personnelId ? { ...s, mode } : s);
+      }
+      return [...prev, { id: personnelId, mode }];
     });
-  };
-
-  const handleGlobalModeChange = (mode: PersonnelMode) => {
-    setGlobalMode(mode);
-    setPersonnelSelections((prev) =>
-      prev.map(s => ({ ...s, mode }))
-    );
   };
 
   const selectAllPersonnel = () => {
-    // Use the same filtering logic as the displayed list
     const selectable = getFilteredPersonnel();
-    setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: globalMode })));
+    setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: 'invite' })));
   };
 
   const deselectAllPersonnel = () => {
@@ -322,7 +312,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     const selectableIds = personnel
       .filter(p => suggestedIds.includes(p.id) && (p.category !== 'freelancer' || p.activated))
       .map(p => p.id);
-    setPersonnelSelections(selectableIds.map(id => ({ id, mode: globalMode })));
+    setPersonnelSelections(selectableIds.map(id => ({ id, mode: 'invite' })));
   };
 
   // Sort personnel: suggested first (by score), then apply sort option
@@ -454,7 +444,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const getPersonnelMode = (personnelId: string): PersonnelMode => {
     const selection = personnelSelections.find(s => s.id === personnelId);
-    return selection?.mode || globalMode;
+    return selection?.mode || 'invite';
   };
 
   const getCategoryLabel = (person: Personnel) => {
@@ -818,30 +808,6 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               </div>
             </div>
 
-            <div className="flex items-center justify-between bg-primary/10 rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Mode:</span>
-                <ToggleGroup
-                  type="single"
-                  value={globalMode}
-                  onValueChange={(value) => value && handleGlobalModeChange(value as PersonnelMode)}
-                  className="gap-1"
-                >
-                  <ToggleGroupItem value="invite" size="sm" className="gap-1.5 px-3">
-                    <Mail className="h-3.5 w-3.5" />
-                    Invite
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="assign" size="sm" className="gap-1.5 px-3">
-                    <UserPlus className="h-3.5 w-3.5" />
-                    Assign
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-              <p className="text-xs text-muted-foreground hidden sm:block">
-                {globalMode === 'invite' ? 'Send invitations' : 'Direct assignment'}
-              </p>
-            </div>
-
             <FreelancerFilters
               includeEmployees={includeEmployees}
               onIncludeEmployeesChange={setIncludeEmployees}
@@ -850,6 +816,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               showFreelancersOnly={showFreelancersOnly}
               onShowFreelancersOnlyChange={setShowFreelancersOnly}
             />
+
+            <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+              <span className="text-sm">💡</span>
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Invite</span> sends the person an invitation to accept or decline. <span className="font-medium">Assign</span> adds them directly to the project.
+              </p>
+            </div>
 
             {/* Search & Filter */}
             <div className="flex items-center gap-2">
@@ -1200,30 +1173,30 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{person.role}</p>
                         </div>
-                        {selected && (
-                          <Button
+                        <div className="flex items-center border border-[hsl(var(--primary))] rounded overflow-hidden flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <button
                             type="button"
-                            variant={mode === 'invite' ? 'outline' : 'secondary'}
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePersonnelMode(person.id);
-                            }}
-                            className="h-7 text-xs gap-1 flex-shrink-0"
+                            className={`h-6 text-[10px] px-2 font-medium transition-colors ${
+                              selected && mode === 'invite'
+                                ? 'bg-white text-[hsl(var(--primary))]'
+                                : 'bg-[hsl(var(--primary))] text-white'
+                            }`}
+                            onClick={() => setPersonnelMode(person.id, 'invite')}
                           >
-                            {mode === 'invite' ? (
-                              <>
-                                <Mail className="h-3 w-3" />
-                                Invite
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus className="h-3 w-3" />
-                                Assign
-                              </>
-                            )}
-                          </Button>
-                        )}
+                            Invite
+                          </button>
+                          <button
+                            type="button"
+                            className={`h-6 text-[10px] px-2 font-medium transition-colors ${
+                              selected && mode === 'assign'
+                                ? 'bg-white text-[hsl(var(--primary))]'
+                                : 'bg-[hsl(var(--primary))] text-white'
+                            }`}
+                            onClick={() => setPersonnelMode(person.id, 'assign')}
+                          >
+                            Assign
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
