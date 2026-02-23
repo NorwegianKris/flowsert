@@ -1,28 +1,56 @@
 
+# Add Purple Hover Border to Project Cards and Personnel Cards
 
-# Add Employee/Freelancer Tag to Personnel Group in Project Timeline
+**Risk: GREEN** -- purely UI styling, no database or backend changes.
 
-**Risk: GREEN** -- purely UI text/layout change, no database or backend modifications.
+## Changes
 
-## What Changes
+### 1. `src/components/ProjectsTab.tsx` (ProjectCard)
 
-In the project timeline, each personnel row header currently shows the person's name and role. We will add a small colored tag showing "Employee" or "Freelancer" based on their `category` field, giving a quick visual indicator of the workforce mix.
+Update the `<Card>` className to add the lift effect and purple hover ring:
 
-## Technical Details
-
-### File: `src/components/project-timeline/PersonnelGroup.tsx`
-
-- Import the `Badge` component from `@/components/ui/badge`
-- After the person's name `<span>`, add a `Badge` element:
-  - If `person.category === 'freelancer'`: show "Freelancer" with a blue/indigo style
-  - Otherwise: show "Employee" with a default/muted style
-  - Badge will use `text-[8px]` sizing and compact padding (`px-1.5 py-0`) to fit the compact timeline row
-- The tag appears between the name and the role text
-
-### Visual result
-
+**Current:**
 ```
-v [Avatar] John Smith  Employee  Diver
-v [Avatar] Jane Doe    Freelancer  Welder
+hover:shadow-md transition-shadow cursor-pointer
 ```
 
+**New:**
+```
+hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20
+```
+
+### 2. `src/components/PersonnelCard.tsx`
+
+Add `hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20` to the existing Card className (which already has the lift and shadow effects).
+
+**Current (line 132):**
+```
+cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 group relative
+```
+
+**New:**
+```
+cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 group relative
+```
+
+### 3. `src/components/RecentRegistrations.tsx`
+
+The recent registrations cards (inside the collapsible) also show personnel -- add the same purple hover ring there for consistency.
+
+**Current (line ~117):**
+```
+cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative
+```
+
+**New:**
+```
+cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 relative
+```
+
+## Summary
+
+| File | Change |
+|------|--------|
+| `src/components/ProjectsTab.tsx` | Add lift effect + purple hover ring to ProjectCard |
+| `src/components/PersonnelCard.tsx` | Add purple hover ring to existing card |
+| `src/components/RecentRegistrations.tsx` | Add purple hover ring for consistency |
