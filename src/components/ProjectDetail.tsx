@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useProjectApplications } from '@/hooks/useProjectApplications';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,7 @@ const statusConfig = {
 };
 
 export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick, businessName }: ProjectDetailProps) {
+  const { businessId } = useAuth();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isAddPhaseOpen, setIsAddPhaseOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -428,7 +430,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
 
                 {/* Documents Tab */}
                 <TabsContent value="documents" className="mt-0 h-full">
-                  <ProjectDocuments projectId={project.id} />
+                  <ProjectDocuments projectId={project.id} businessId={businessId || undefined} />
                 </TabsContent>
 
               </CardContent>

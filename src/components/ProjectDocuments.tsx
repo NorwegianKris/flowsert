@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProjectDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
+import { getProjectDocumentUrl, downloadAsBlob, getSignedUrl } from '@/lib/storageUtils';
 import { PdfViewer } from '@/components/PdfViewer';
 import {
   Upload,
@@ -44,6 +45,7 @@ import {
   File,
   Image,
   Loader2,
+  Building2,
 } from 'lucide-react';
 
 interface DocumentCategory {
@@ -63,11 +65,21 @@ interface ProjectDocument {
   createdAt: string;
 }
 
-interface ProjectDocumentsProps {
-  projectId: string;
+interface BusinessDocument {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileSize: number | null;
+  fileType: string | null;
+  createdAt: string;
 }
 
-export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
+interface ProjectDocumentsProps {
+  projectId: string;
+  businessId?: string;
+}
+
+export function ProjectDocuments({ projectId, businessId }: ProjectDocumentsProps) {
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,6 +99,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
   const [blobRevoke, setBlobRevoke] = useState<(() => void) | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingDocument, setLoadingDocument] = useState(false);
+  const [businessDocuments, setBusinessDocuments] = useState<BusinessDocument[]>([]);
 
   // Load document data when document is selected
   useEffect(() => {
@@ -164,6 +177,40 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
   useEffect(() => {
     fetchData();
   }, [projectId]);
+
+  useEffect(() => {
+    if (businessId) fetchBusinessDocuments();
+  }, [businessId]);
+
+  const fetchBusinessDocuments = async () => {
+    if (!businessId) return;
+    try {
+      const { data, error } = await supabase
+        .from('business_documents')
+        .select('*')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const docsWithUrls = await Promise.all(
+        (data || []).map(async (doc) => {
+          const signed = await getSignedUrl('business-documents', doc.file_url);
+          return {
+            id: doc.id,
+            name: doc.name,
+            fileUrl: signed || doc.file_url,
+            fileSize: doc.file_size,
+            fileType: doc.file_type,
+            createdAt: doc.created_at,
+          } as BusinessDocument;
+        })
+      );
+      setBusinessDocuments(docsWithUrls);
+    } catch (error) {
+      console.error('Error fetching business documents:', error);
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -391,6 +438,58 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
               ))}
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {/* Company Documents Section */}
+      {businessDocuments.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            <span className="font-medium">Company Documents</span>
+          </div>
+          {businessDocuments.map((doc) => {
+            const isImage = doc.fileType?.startsWith('image/');
+            return (
+              <div
+                key={`biz-${doc.id}`}
+                className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors group cursor-pointer"
+                onClick={() => doc.fileUrl && window.open(doc.fileUrl, '_blank')}
+              >
+                <div className="p-2 rounded-lg bg-primary/10">
+                  {isImage ? (
+                    <Image className="h-5 w-5 text-primary" />
+                  ) : (
+                    <FileText className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{doc.name}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{formatFileSize(doc.fileSize)}</span>
+                    <span>•</span>
+                    <Badge variant="outline" className="text-xs">
+                      <Building2 className="h-3 w-3 mr-1" />
+                      Company
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (doc.fileUrl) window.open(doc.fileUrl, '_blank');
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
