@@ -375,11 +375,11 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
               <CardHeader className="pb-0">
               <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="personnel" className="gap-1.5 text-xs sm:text-sm">
-                    <Users className="h-4 w-4 text-violet-500" />
+                    <Users className="h-4 w-4" />
                     <span className="hidden sm:inline">Personnel</span>
                   </TabsTrigger>
                   <TabsTrigger value="documents" className="gap-1.5 text-xs sm:text-sm">
-                    <FileText className="h-5 w-5 text-amber-500" />
+                    <FileText className="h-5 w-5" />
                     <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
                 </TabsList>
