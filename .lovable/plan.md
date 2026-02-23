@@ -1,50 +1,54 @@
 
 
-# Interactive Clicks on Project Timeline and Expiry Timeline
+# Three Fixes: Sort Options Rename, New Sort, Business Documents in Projects, Company Card Explainer
 
-**Risk: GREEN** -- purely UI interaction changes, no database/schema/RLS modifications.
+**Risk: GREEN** -- purely UI text/layout changes and a read-only data fetch (no schema/RLS/auth changes).
 
-## Two Features
+## 1. Rename "Most Recent" to "Last Updated" and Add New "Most Recent" Sort
 
-### 1. Click Phase / Milestone / Event in Project Timeline to Show Detail Popup
+The current "Most Recent" sort option sorts by `updatedAt`. This should be renamed to "Last Updated". A new "Most Recent" option should sort by `createdAt` (registration date, newest first).
 
-Currently, clicking these items only shows a hover tooltip. We will add an `onClick` handler that opens a Dialog (popup) with full details.
+### Changes in `src/components/PersonnelFilters.tsx`
+- Update `PersonnelSortOption` type from `'recent' | 'alphabetical'` to `'recent' | 'last_updated' | 'alphabetical'`
+- Update `sortOptions` array to three items:
+  - `{ value: 'recent', label: 'Most Recent' }` (new -- sorts by createdAt)
+  - `{ value: 'last_updated', label: 'Last Updated' }` (renamed from old "recent")
+  - `{ value: 'alphabetical', label: 'Alphabetical' }`
 
-**Approach:**
-- Create a new component `src/components/project-timeline/TimelineItemDetailDialog.tsx` that accepts an item (phase, milestone, or event) and displays its details in a Dialog
-- The dialog will show:
-  - For milestones/events: description, date, type (milestone or event)
-  - For phases: name, start date, end date, color
-- Modify `MilestoneLane.tsx`, `EventsLane.tsx`, and `PhaseLane.tsx` to:
-  - Accept an `onItemClick` callback prop
-  - Add `onClick` handlers to each item element that call `onItemClick` with the item data
-- Modify `ProjectTimeline.tsx` to:
-  - Hold state for the selected item (`selectedItem`) and whether the dialog is open
-  - Pass `onItemClick` to each lane component
-  - Render the `TimelineItemDetailDialog`
+### Changes in `src/pages/AdminDashboard.tsx`
+- Update the default sort state from `'recent'` to `'last_updated'` (preserving current default behavior)
+- Update the sorting logic to handle three cases:
+  - `'alphabetical'`: sort by name (unchanged)
+  - `'last_updated'`: sort by `updatedAt` (the current "recent" logic)
+  - `'recent'`: sort by `createdAt` (newest registrations first)
 
-### 2. Click Dot in Expiry Timeline to Open Document Viewer
+## 2. Show Business Documents in Every Project's Documents Tab
 
-Currently, clicking a dot in `TimelineChart.tsx` navigates to the personnel page. We will change it to open the document viewer (same pattern used in `ExpiryDetailsList.tsx`) when the certificate has a `documentUrl`, and fall back to the personnel navigation otherwise.
+Company-uploaded documents (`business_documents` table) are global and should appear in the documents section of every project belonging to that business.
 
-**Approach:**
-- Modify `TimelineChart.tsx` to:
-  - Add state for document preview (`docPreview`) -- same pattern as `ExpiryDetailsList.tsx`
-  - Import `getSignedUrl`, `PdfViewer`, `Dialog`, and related components
-  - Change `handleEventClick` to check if the event has a `documentUrl`; if yes, open the document viewer dialog; if no, navigate to personnel page as before
-  - Render a document preview Dialog at the bottom of the component
+### Changes in `src/components/ProjectDocuments.tsx`
+- Add a `businessId` prop (optional, passed from parent)
+- On mount, fetch `business_documents` for the given `businessId` alongside project documents
+- Render a separate "Company Documents" section (with a `Building2` icon and a subtle label like "Shared by your company") above or below the project-specific documents
+- These documents are read-only in the project context (no delete button) -- clicking opens them via signed URL from `business-documents` bucket
+- They should not be affected by the project's category filter
 
-## Files to Create
-| File | Purpose |
-|------|---------|
-| `src/components/project-timeline/TimelineItemDetailDialog.tsx` | Reusable dialog showing details of a phase, milestone, or event |
+### Changes in `src/components/ProjectDetail.tsx`
+- Pass `businessId` (from the project's `business_id`) to `ProjectDocuments`
 
-## Files to Modify
+## 3. Add Explainer Text in Company Card Documents Tab
+
+### Changes in `src/components/CompanyCard.tsx`
+- In the admin documents tab (line ~566-567), update the description text to:
+  "Documents uploaded here are global and will be visible in the documents section of all your projects."
+
+## Files Modified
+
 | File | Change |
 |------|--------|
-| `src/components/project-timeline/MilestoneLane.tsx` | Add `onItemClick` prop, attach `onClick` to milestone markers |
-| `src/components/project-timeline/EventsLane.tsx` | Add `onItemClick` prop, attach `onClick` to event markers |
-| `src/components/project-timeline/PhaseLane.tsx` | Add `onItemClick` prop, attach `onClick` to phase bars |
-| `src/components/project-timeline/ProjectTimeline.tsx` | Manage selected item state, pass callbacks to lanes, render detail dialog |
-| `src/components/timeline/TimelineChart.tsx` | Add document preview state and dialog; change dot click to open document viewer when `documentUrl` exists |
+| `src/components/PersonnelFilters.tsx` | Add `'last_updated'` to sort type, update sort options array to 3 items |
+| `src/pages/AdminDashboard.tsx` | Change default sort to `'last_updated'`, add `'recent'` sort by `createdAt` |
+| `src/components/ProjectDocuments.tsx` | Accept `businessId` prop, fetch and display business documents as read-only "Company Documents" section |
+| `src/components/ProjectDetail.tsx` | Pass `businessId` to `ProjectDocuments` |
+| `src/components/CompanyCard.tsx` | Update documents tab description to explain global visibility |
 
