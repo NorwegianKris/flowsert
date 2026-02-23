@@ -24,6 +24,14 @@ const STATUS_FILLS: Record<string, [number, number, number] | null> = {
   [NOT_HELD_SYMBOL]: null,
 };
 
+function chunk<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
+
 export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): jsPDF {
   const { personnel, projectName, companyName } = options;
   const doc = new jsPDF('l');
@@ -43,10 +51,17 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
   });
   const certTypes = Array.from(certTypeSet).sort((a, b) => a.localeCompare(b));
 
-  // ── Header drawing function (called on every page) ──
-  const headerHeight = 34;
+  // ── Batch parameters ──
+  const fixedColsWidth = 42 + 26 + 20; // Name + Role + Type = 88mm
+  const availableForCerts = pageWidth - 2 * margin - fixedColsWidth;
+  const minCertColWidth = 12;
+  const maxCertColsPerBatch = Math.max(1, Math.floor(availableForCerts / minCertColWidth));
+  const batches = certTypes.length > 0 ? chunk(certTypes, maxCertColsPerBatch) : [[]];
+  const isMultiBatch = batches.length > 1;
+  const headerHeight = isMultiBatch ? 38 : 34;
 
-  const drawHeader = () => {
+  // ── Header drawing function ──
+  const drawHeader = (batchLabel?: string) => {
     let y = 12;
 
     // Title
@@ -66,9 +81,7 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
     // Metadata block
     doc.setFontSize(8);
     doc.setTextColor(80, 80, 80);
-
     const leftCol = margin;
-
     const rightCol = pageWidth - margin;
 
     if (companyName) {
@@ -86,92 +99,114 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
     doc.setLineWidth(0.3);
     doc.line(margin, y, pageWidth - margin, y);
 
+    // Batch label (multi-batch only)
+    if (batchLabel) {
+      y += 4;
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text(batchLabel, pageWidth / 2, y, { align: 'center' });
+    }
+
     doc.setTextColor(0, 0, 0);
   };
 
-  // ── Build table data ──
-  const fixedColsWidth = 42 + 26 + 20; // Name + Role + Type
-  const availableForCerts = pageWidth - 2 * margin - fixedColsWidth;
-  const certColWidth = certTypes.length > 0
-    ? Math.max(12, Math.min(30, availableForCerts / certTypes.length))
-    : 20;
-
-  const tableHead = ['Name', 'Role', 'Type', ...certTypes];
-
-  const tableBody = sortedPersonnel.map(person => {
+  // ── Pre-compute person fixed cells ──
+  const personFixedCells = sortedPersonnel.map(person => {
     const role = person.role && person.role !== 'N/A' ? person.role : '-';
     const type = person.category
       ? person.category.charAt(0).toUpperCase() + person.category.slice(1)
       : '-';
-    const row: string[] = [person.name, role, type];
-    certTypes.forEach(certType => {
-      const cert = person.certificates.find(c => c.name === certType);
-      if (!cert) {
-        row.push(NOT_HELD_SYMBOL);
-      } else {
-        const status = getCertificateStatus(cert.expiryDate);
-        row.push(STATUS_SYMBOLS[status] || NOT_HELD_SYMBOL);
-      }
+    return [person.name, role, type];
+  });
+
+  // ── Batch loop ──
+  batches.forEach((batchCertTypes, batchIndex) => {
+    if (batchIndex > 0) {
+      doc.addPage('l');
+    }
+
+    const batchLabel = isMultiBatch
+      ? `Certificates ${batchIndex * maxCertColsPerBatch + 1}\u2013${Math.min((batchIndex + 1) * maxCertColsPerBatch, certTypes.length)} of ${certTypes.length}`
+      : undefined;
+
+    const batchTableHead = ['Name', 'Role', 'Type', ...batchCertTypes];
+
+    const batchTableBody = sortedPersonnel.map((person, pIdx) => {
+      const row = [...personFixedCells[pIdx]];
+      batchCertTypes.forEach(certType => {
+        const cert = person.certificates.find(c => c.name === certType);
+        if (!cert) {
+          row.push(NOT_HELD_SYMBOL);
+        } else {
+          const status = getCertificateStatus(cert.expiryDate);
+          row.push(STATUS_SYMBOLS[status] || NOT_HELD_SYMBOL);
+        }
+      });
+      return row;
     });
-    return row;
+
+    const batchCertColWidth = batchCertTypes.length > 0
+      ? availableForCerts / batchCertTypes.length
+      : 20;
+
+    const batchColumnStyles: Record<number, any> = {
+      0: { halign: 'left' as const, cellWidth: 42, fontStyle: 'bold' as const },
+      1: { halign: 'left' as const, cellWidth: 26 },
+      2: { halign: 'left' as const, cellWidth: 20 },
+    };
+    batchCertTypes.forEach((_, i) => {
+      batchColumnStyles[i + 3] = { halign: 'center' as const, cellWidth: batchCertColWidth };
+    });
+
+    autoTable(doc, {
+      startY: headerHeight,
+      head: [batchTableHead],
+      body: batchTableBody,
+      theme: 'grid',
+      showHead: 'everyPage',
+      rowPageBreak: 'avoid',
+      margin: { left: margin, right: margin, top: headerHeight },
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 0, 0],
+        fontSize: 6,
+        fontStyle: 'bold',
+        halign: 'center',
+        valign: 'middle',
+        overflow: 'linebreak',
+      },
+      bodyStyles: {
+        fontSize: 8,
+        halign: 'center',
+        valign: 'middle',
+      },
+      columnStyles: batchColumnStyles,
+      styles: {
+        cellPadding: 3,
+        lineWidth: 0.2,
+        lineColor: [200, 200, 200],
+      },
+      didParseCell: (data) => {
+        if (data.section !== 'body') return;
+        const colIdx = data.column.index;
+        if (colIdx < 3) return;
+
+        const value = String(data.cell.raw);
+        const fill = STATUS_FILLS[value];
+        if (fill) {
+          data.cell.styles.fillColor = fill;
+        }
+        data.cell.styles.fontStyle = 'bold';
+      },
+      didDrawPage: () => {
+        drawHeader(batchLabel);
+      },
+    });
   });
-
-  // ── Column styles ──
-  const columnStyles: Record<number, any> = {
-    0: { halign: 'left' as const, cellWidth: 42, fontStyle: 'bold' as const },
-    1: { halign: 'left' as const, cellWidth: 26 },
-    2: { halign: 'left' as const, cellWidth: 20 },
-  };
-  certTypes.forEach((_, i) => {
-    columnStyles[i + 3] = { halign: 'center' as const, cellWidth: certColWidth };
-  });
-
-  // ── Render table ──
-  autoTable(doc, {
-    startY: headerHeight,
-    head: [tableHead],
-    body: tableBody,
-    theme: 'grid',
-    showHead: 'everyPage',
-    rowPageBreak: 'avoid',
-    margin: { left: margin, right: margin, top: headerHeight },
-    headStyles: {
-      fillColor: [240, 240, 240],
-      textColor: [0, 0, 0],
-      fontSize: 6,
-      fontStyle: 'bold',
-      halign: 'center',
-      valign: 'middle',
-      overflow: 'linebreak',
-    },
-    bodyStyles: {
-      fontSize: 8,
-      halign: 'center',
-      valign: 'middle',
-    },
-    columnStyles,
-    styles: {
-      cellPadding: 3,
-      lineWidth: 0.2,
-      lineColor: [200, 200, 200],
-    },
-    didParseCell: (data) => {
-      if (data.section !== 'body') return;
-      const colIdx = data.column.index;
-      if (colIdx < 3) return;
-
-      const value = String(data.cell.raw);
-      const fill = STATUS_FILLS[value];
-      if (fill) {
-        data.cell.styles.fillColor = fill;
-      }
-      data.cell.styles.fontStyle = 'bold';
-    },
-  });
-
-  const finalY = (doc as any).lastAutoTable?.finalY || headerHeight + 20;
 
   // ── Legend (last page, below table) ──
+  const finalY = (doc as any).lastAutoTable?.finalY || headerHeight + 20;
   const lastPage = doc.getNumberOfPages();
   doc.setPage(lastPage);
   const legendY = Math.min(finalY + 10, pageHeight - 20);
@@ -185,13 +220,10 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
     legendY,
   );
 
-  // ── Draw headers and footers on every page ──
+  // ── Global footer pass (page numbers only — headers already drawn by didDrawPage) ──
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    drawHeader();
-
-    // Footer
     doc.setFontSize(7);
     doc.setTextColor(128, 128, 128);
     doc.text(
