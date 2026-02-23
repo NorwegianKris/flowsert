@@ -1123,11 +1123,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     return (
                       <div
                         key={person.id}
-                        className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer ${selected ? 'bg-muted/50' : ''} ${suggestion ? 'ring-1 ring-primary/20' : ''}`}
-                        onClick={(e) => {
-                          if ((e.target as HTMLElement).closest('[data-toggle-mode]')) return;
-                          setPreviewPersonnel(person);
-                        }}
+                         className={`flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors ${selected ? 'bg-muted/50' : ''} ${suggestion ? 'ring-1 ring-primary/20' : ''}`}
                       >
                         <Checkbox
                           checked={selected}
@@ -1140,7 +1136,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                             {getInitials(person.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setPreviewPersonnel(person)}>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium truncate">
                               {person.name}
