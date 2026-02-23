@@ -10,6 +10,7 @@ import { ProjectTimeline } from '@/components/project-timeline/ProjectTimeline';
 import { AddPhaseDialog } from '@/components/AddPhaseDialog';
 import { AddCalendarItemDialog } from '@/components/AddCalendarItemDialog';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
+import { EditTimelineItemsDialog } from '@/components/EditTimelineItemsDialog';
 import { EditProjectDialog } from '@/components/EditProjectDialog';
 import { ProjectCertificateStatus } from '@/components/ProjectCertificateStatus';
 import { ProjectDocuments } from '@/components/ProjectDocuments';
@@ -68,9 +69,10 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditTimelineOpen, setIsEditTimelineOpen] = useState(false);
   const [highlightedCertificateId, setHighlightedCertificateId] = useState<string | null>(null);
 
-  const { phases, addPhase } = useProjectPhases(project.id);
+  const { phases, addPhase, removePhase } = useProjectPhases(project.id);
   const { applications } = useProjectApplications(project.isPosted ? project.id : undefined);
 
   const config = statusConfig[project.status];
@@ -249,7 +251,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                 {project.isPosted && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Users className="h-4 w-4 text-primary" />
-                    <span>{applications.length} Applicant{applications.length !== 1 ? 's' : ''}</span>
+                    <span>{applications.filter(a => a.status !== 'rejected').length} Applicant{applications.filter(a => a.status !== 'rejected').length !== 1 ? 's' : ''}</span>
                   </div>
                 )}
               </div>
@@ -342,6 +344,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         onAddItem={() => setIsAddItemOpen(true)}
         onAddPhase={() => setIsAddPhaseOpen(true)}
         onHighlightCertificate={setHighlightedCertificateId}
+        onEditTimeline={() => setIsEditTimelineOpen(true)}
       />
 
       {/* Main Content - Tabs with Side Panels */}
@@ -525,6 +528,14 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
         project={project}
         personnel={personnel}
         businessName={businessName}
+      />
+      <EditTimelineItemsDialog
+        open={isEditTimelineOpen}
+        onOpenChange={setIsEditTimelineOpen}
+        calendarItems={project.calendarItems || []}
+        phases={phases}
+        onRemoveCalendarItem={handleRemoveCalendarItem}
+        onRemovePhase={removePhase}
       />
 
       <AlertDialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
