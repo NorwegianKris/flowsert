@@ -1,68 +1,72 @@
 
 
-## Unify External Sharing PDF with Project View Export + Add Project Toggle
+## Add FlowSert Logo to All Exported PDF Documents
 
-**Risk: GREEN** -- Client-side PDF generation and UI only. No database, RLS, auth, or backend changes.
-
-### Single file: `src/components/ExternalSharingDialog.tsx`
+**Risk: GREEN** -- Purely visual change to client-side PDF generation. No database, RLS, auth, or backend changes.
 
 ---
 
-### Problem
+### What This Does
 
-The `ExternalSharingDialog` (Admin Dashboard > Actions > External Sharing) has its own `generateProjectCardPdf` function (lines 138-291) that uses the **old template**: portrait orientation, blue striped headers, basic layout. This does not match the standardized design system used in `ShareProjectDialog` (landscape, grid theme, gray headers, multi-section layout with phases/milestones/events/matrix).
+Adds the uploaded black-and-white FlowSert logo to the top-left corner of every page header across all four PDF export types, shifting the existing centered title/subtitle layout to accommodate it.
 
-### Two Changes
+### Logo Asset
 
-#### 1. Replace the old PDF generator with the standardized one
+The uploaded `flowsert_logo_black_white.png` will be copied to `src/assets/flowsert-logo-bw.png` and imported as an ES6 module in each file that generates PDFs.
 
-Delete the local `generateProjectCardPdf` function (lines 138-291) and replace it with the same implementation from `ShareProjectDialog.tsx`. This means the ExternalSharingDialog will need to:
+### Files Modified
 
-- Fetch project phases for the selected project (using the `useProjectPhases` hook or a direct query)
-- Use the same landscape orientation, header, table config, section layout (description, phases, milestones, events, personnel with compliance, inline competence matrix, legend), and footer
+| File | Export Type | Change |
+|------|-----------|--------|
+| `src/lib/competenceMatrixPdf.ts` | Competence Matrix | Add logo to `drawHeader` |
+| `src/components/ShareProjectDialog.tsx` | Project Card (project view) | Add logo to `drawHeader` |
+| `src/components/ExternalSharingDialog.tsx` | Project Card (admin external sharing) | Add logo to `drawHeader` |
+| `src/lib/mergeCertificatesPdf.ts` | Certificate Bundle | Add logo to `addOverviewPage` header |
 
-Since `ShareProjectDialog` receives `phases` as a prop from the project detail view, the `ExternalSharingDialog` will need to fetch phases on-demand when a project is selected. This will be done with a direct Supabase query inside the component (fetch `project_phases` where `project_id` matches the selected project).
+### Layout Change
 
-#### 2. Add Active/Previous toggle to project selector
+All four documents currently center the title and subtitle. The new layout will be:
 
-Currently the project dropdown (lines 483-498) shows all projects in a flat list. Add a toggle similar to what `ProjectsTab` already uses, allowing the user to switch between:
+```text
+Before (all documents):
+                    PERSONNEL COMPETENCE MATRIX          (centered)
+                  FlowSert Workforce Compliance          (centered)
 
-- **Active and Upcoming** (status = 'active' or 'pending') -- shown by default
-- **Previous** (status = 'completed')
+After (all documents):
+[LOGO]              PERSONNEL COMPETENCE MATRIX          (centered)
+                  FlowSert Workforce Compliance          (centered)
+```
 
-Implementation: Add a small toggle or segmented control above the project Select dropdown. Filter the projects list based on the selected category.
-
----
+The logo sits in the top-left at the margin position (x = 14mm, y ~8mm), sized to approximately 12mm height to align with the two-line title block. The title and subtitle remain centered on the full page width, which keeps them visually centered even with the logo present -- this is how most professional report headers work.
 
 ### Technical Details
 
-**Phases fetching**: When `selectedProjectId` changes, fetch phases from `project_phases` table:
-```typescript
-const [projectPhases, setProjectPhases] = useState<ProjectPhase[]>([]);
+**Logo embedding in jsPDF**: jsPDF's `addImage` requires a base64 data URI or a raw image path. Since the logo is a static asset imported via Vite, it resolves to a URL at build time. Each PDF generator will:
 
-useEffect(() => {
-  if (!selectedProjectId) { setProjectPhases([]); return; }
-  supabase.from('project_phases').select('*')
-    .eq('project_id', selectedProjectId)
-    .order('start_date')
-    .then(({ data }) => setProjectPhases(data || []));
-}, [selectedProjectId]);
-```
+1. Import the logo: `import flowsertLogoBW from '@/assets/flowsert-logo-bw.png';`
+2. Before generating the PDF, load the image into a base64 string using a canvas (or `fetch` + blob conversion)
+3. Use `doc.addImage(base64, 'PNG', margin, 8, logoWidth, logoHeight)` in the header
 
-**Project category toggle**: A simple state variable (`projectFilter: 'active' | 'previous'`) with two small buttons or a segmented control, defaulting to `'active'`. Active shows projects with status `active` or `pending`, Previous shows `completed`.
+To avoid duplicating the image-loading logic, a small shared helper will be added:
 
-**PDF generation**: Copy the `generateProjectCardPdf` function body from `ShareProjectDialog.tsx` (lines 66-500+), adapting it to accept the project as a parameter (since ExternalSharingDialog doesn't have a single fixed project). The function signature becomes `generateProjectCardPdf(project: Project, phases: ProjectPhase[])`.
+**New file: `src/lib/pdfLogoUtils.ts`**
+- Exports an `async` function `loadPdfLogo(): Promise<string>` that fetches the logo asset URL, converts to base64 via canvas, and caches the result
+- Each PDF generator calls this once before building the document and passes the base64 string to its header function
 
-All other export options (Personnel and Certificates Matrix, Certificate Bundle) remain unchanged -- they already use the shared utility functions.
+**Header function changes** (same pattern in all four files):
+- Accept a `logoBase64: string` parameter
+- Add `doc.addImage(logoBase64, 'PNG', margin, 8, logoWidth, logoHeight)` as the first line of the header draw
+- Logo dimensions: approximately 40mm wide x 12mm tall (matching the aspect ratio of the uploaded image), positioned at `(margin, 8)`
+- No changes to title position (stays centered on page width) -- the logo and title coexist without overlap because the logo is left-aligned and compact
 
----
+**Certificate Bundle specifics**:
+- The overview page (`addOverviewPage`) gets the logo in its header section
+- The per-certificate header overlay (`addCertificateHeader`) does NOT get the logo -- it is a compact inline label, not a full page header
+- Footer pages already say "Generated by FlowSert" and remain unchanged
 
-### Summary
+**Async consideration**: The `generateCompetenceMatrixPdf` function is currently synchronous. It will become async (returning `Promise<jsPDF>`) to await the logo loading. The callers in `ExternalSharingDialog` and `ShareProjectDialog` already handle async exports (certificate bundle), so adding `await` is straightforward. The `mergeCertificatesPdf` function is already async.
 
-| What | Before | After |
-|------|--------|-------|
-| Project Card PDF template | Old (portrait, blue striped, basic) | Standardized (landscape, grid, full sections) |
-| Project selector | Flat list of all projects | Toggle between Active/Upcoming and Previous |
-| Phases in PDF | Not included | Fetched and included (matching project view export) |
-| Other exports | Unchanged | Unchanged |
+### Summary of Visual Result
+
+Every exported PDF (Competence Matrix, Project Card from project view, Project Card from external sharing, Certificate Bundle overview page) will display the FlowSert black-and-white logo in the top-left corner of every page header, aligned with the left margin used by metadata text. The centered title and subtitle remain unchanged.
 
