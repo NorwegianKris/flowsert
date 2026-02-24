@@ -227,7 +227,7 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
                             <DropdownMenuItem 
                               onClick={() => handleStatusChange(invitation.id, 'accepted')}
                               disabled={invitation.status === 'accepted' || isUpdating}
-                              className="text-green-600"
+                              className="text-emerald-600"
                             >
                               <Check className="h-4 w-4 mr-2" />
                               Set as Added to Project

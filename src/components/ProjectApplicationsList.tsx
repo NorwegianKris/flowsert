@@ -162,7 +162,7 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
                 variant="outline"
                 onClick={() => handleStatusUpdate('rejected')}
                 disabled={updating}
-                className="text-destructive hover:text-destructive"
+                className="text-red-600 hover:text-red-700"
               >
                 <XCircle className="h-4 w-4 mr-1" />
                 Reject
@@ -170,6 +170,7 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
               <Button
                 onClick={() => handleStatusUpdate('accepted')}
                 disabled={updating}
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Accept
