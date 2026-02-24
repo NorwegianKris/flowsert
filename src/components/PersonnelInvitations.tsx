@@ -104,7 +104,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
                     size="sm"
                     onClick={(e) => handleStatusChange(invitation.id, false, e)}
                     disabled={respondingId === invitation.id}
-                    className="text-destructive hover:text-destructive flex-1 sm:flex-initial"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700 flex-1 sm:flex-initial"
                   >
                     <X className="h-4 w-4 sm:mr-1" />
                     <span className="hidden sm:inline">Decline</span>
@@ -113,7 +113,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
                     size="sm"
                     onClick={(e) => handleStatusChange(invitation.id, true, e)}
                     disabled={respondingId === invitation.id}
-                    className="flex-1 sm:flex-initial"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700 flex-1 sm:flex-initial"
                   >
                     <Check className="h-4 w-4 sm:mr-1" />
                     <span className="hidden sm:inline">Accept</span>
@@ -267,7 +267,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
               variant="outline"
               onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, false)}
               disabled={respondingId === selectedInvitation?.id}
-              className="text-destructive hover:text-destructive"
+              className="text-red-600 hover:text-red-700"
             >
               <X className="h-4 w-4 mr-2" />
               Decline
@@ -275,6 +275,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
             <Button
               onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, true)}
               disabled={respondingId === selectedInvitation?.id}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <Check className="h-4 w-4 mr-2" />
               Accept Invitation
