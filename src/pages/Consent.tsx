@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate, Link } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { needsConsent, TERMS_VERSION, PRIVACY_VERSION } from '@/lib/legalVersions';
@@ -106,13 +106,13 @@ export default function Consent() {
               />
               <label htmlFor="consent-checkbox" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
                 I agree to the{' '}
-                <Link to="/terms" className="text-primary hover:underline">
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   Terms of Service
-                </Link>{' '}
+                </a>{' '}
                 and{' '}
-                <Link to="/privacy" className="text-primary hover:underline">
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                   Privacy Policy
-                </Link>
+                </a>
                 .
               </label>
             </div>
