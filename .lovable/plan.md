@@ -1,34 +1,23 @@
 
 
-# Clean Up Test-Mode Billing Data
+# Temporarily Replace starter_monthly with 10 NOK Price ID
 
-## What we found
+## What changes
 
-Business `38672512-2331-4546-8bc4-de942605fce1` has test-mode Stripe data:
+Replace `starter_monthly` price ID from `price_1T4TiBCTVQHwswgoMCQBB0Kv` to `price_1T4UM3CTVQHwswgojzCUGSYV` in three files:
 
-- **billing_customers**: 1 row (`cus_U2WuEddEsGCQ3d`)
-- **billing_subscriptions**: 1 row (`sub_1T4SbSCTZs6lfaVYZf2axohZ`, status: trialing)
-- **billing_events**: 4 rows (test-mode webhook events)
+| File | What changes |
+|------|-------------|
+| `src/lib/stripePrices.ts` | `starter_monthly` value → new price ID |
+| `supabase/functions/create-checkout-session/index.ts` | Replace old ID with new in `ALLOWED_PRICE_IDS` |
+| `supabase/functions/stripe-webhook/index.ts` | Replace old ID with new in `TIER_MAP` |
 
-## Plan
+## Security anchor
 
-Delete all three sets of test-mode records so the billing UI shows "No subscription" and is ready for live-mode checkout:
+- Q2 (edge functions): 🔴 anchor required before publish
+- No schema changes, no RLS changes
 
-1. `DELETE FROM billing_customers WHERE business_id = '38672512-...'`
-2. `DELETE FROM billing_subscriptions WHERE business_id = '38672512-...'`
-3. `DELETE FROM billing_events WHERE business_id = '38672512-...'`
+## Technical detail
 
-The entitlements row does not need deletion — the webhook will re-sync it on the first live subscription event.
-
-## Security anchors
-
-- Q1 (SQL): Data deletion — anchor recommended.
-- GREEN classification: deleting stale test data only, no schema change.
-- No code changes required.
-
-| Table | Rows deleted |
-|-------|-------------|
-| billing_customers | 1 |
-| billing_subscriptions | 1 |
-| billing_events | 4 |
+All three files have the old price ID `price_1T4TiBCTVQHwswgoMCQBB0Kv` hardcoded. Each occurrence is swapped to `price_1T4UM3CTVQHwswgojzCUGSYV`. Both edge functions will be redeployed automatically.
 
