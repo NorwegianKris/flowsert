@@ -64,83 +64,24 @@ export function ShareProjectDialog({
   };
 
   const generateProjectCardPdf = (): jsPDF => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('l');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
-
-    const tableStyles = {
-      theme: 'grid' as const,
-      headStyles: {
-        fillColor: [240, 240, 240] as [number, number, number],
-        textColor: [0, 0, 0] as [number, number, number],
-        fontSize: 7,
-        fontStyle: 'bold' as const,
-      },
-      bodyStyles: { fontSize: 7 },
-      styles: {
-        lineColor: [200, 200, 200] as [number, number, number],
-        lineWidth: 0.3,
-      },
-      margin: { left: 14, right: 14 },
-    };
+    const margin = 14;
+    const generatedDate = format(new Date(), 'd MMM yyyy · HH:mm');
 
     const STATUS_SYMBOLS: Record<string, string> = { valid: 'V', expiring: 'E', expired: 'X' };
     const NOT_HELD = '—';
-
-    const checkPageBreak = (needed: number) => {
-      if (yPosition + needed > pageHeight - 20) {
-        doc.addPage();
-        yPosition = 20;
-      }
+    const STATUS_FILLS: Record<string, [number, number, number] | null> = {
+      V: [235, 245, 235],
+      E: [255, 245, 230],
+      X: [250, 232, 232],
+      [NOT_HELD]: null,
     };
 
-    // --- Header ---
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PROJECT CARD', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 5;
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(128, 128, 128);
-    doc.text('FlowSert Workforce Compliance', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 8;
-
-    // --- Metadata block (left / right columns) ---
-    doc.setFontSize(7);
-    doc.setTextColor(128, 128, 128);
-    doc.setFont('helvetica', 'bold');
-
-    doc.text('Project:', 14, yPosition);
-    doc.setFont('helvetica', 'normal');
-    doc.text(project.name, 35, yPosition);
-    yPosition += 4;
-
-    if (project.projectNumber) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Project No:', 14, yPosition);
-      doc.setFont('helvetica', 'normal');
-      doc.text(project.projectNumber, 35, yPosition);
-    }
-
-    const rightX = pageWidth / 2 + 10;
-    let rightY = yPosition - 4;
-
-    const startDate = format(parseISO(project.startDate), 'MMM d, yyyy');
-    const endDate = project.endDate ? format(parseISO(project.endDate), 'MMM d, yyyy') : 'Ongoing';
-    doc.setFont('helvetica', 'bold');
-    doc.text('Duration:', rightX, rightY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${startDate} – ${endDate}`, rightX + 18, rightY);
-    rightY += 4;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Generated:', rightX, rightY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(format(new Date(), 'MMM d, yyyy HH:mm'), rightX + 18, rightY);
-
-    yPosition += 5;
+    // --- Header height & metadata ---
+    const startDateFmt = format(parseISO(project.startDate), 'd MMM yyyy');
+    const endDateFmt = project.endDate ? format(parseISO(project.endDate), 'd MMM yyyy') : 'Ongoing';
 
     const extraFields: [string, string | undefined][] = [
       ['Status', project.status.charAt(0).toUpperCase() + project.status.slice(1)],
@@ -149,34 +90,110 @@ export function ShareProjectDialog({
       ['Project Manager', project.projectManager || undefined],
       ['Work Category', project.workCategory || undefined],
     ];
+    const visibleExtras = extraFields.filter(([, v]) => !!v);
+    const headerHeight = 34 + visibleExtras.length * 4;
 
-    for (const [label, value] of extraFields) {
-      if (!value) continue;
+    // --- drawHeader (called by didDrawPage on every page) ---
+    const drawHeader = () => {
+      let y = 12;
+
+      // Title
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, 14, yPosition);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, 40, yPosition);
-      yPosition += 4;
-    }
+      doc.setTextColor(0, 0, 0);
+      doc.text('PROJECT CARD', pageWidth / 2, y, { align: 'center' });
+      y += 7;
 
-    // --- Divider ---
-    yPosition += 2;
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(14, yPosition, pageWidth - 14, yPosition);
-    yPosition += 6;
+      // Subtitle
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text('FlowSert Workforce Compliance', pageWidth / 2, y, { align: 'center' });
+      y += 7;
+
+      // Metadata block
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+      const leftCol = margin;
+      const rightCol = pageWidth - margin;
+
+      if (businessName) {
+        doc.text(`Company: ${businessName}`, leftCol, y);
+      }
+      doc.text(`Project: ${project.name}${project.projectNumber ? ` (${project.projectNumber})` : ''}`, rightCol, y, { align: 'right' });
+      y += 4.5;
+
+      doc.text(`Duration: ${startDateFmt} – ${endDateFmt}`, leftCol, y);
+      doc.text(`Generated: ${generatedDate}`, rightCol, y, { align: 'right' });
+      y += 4.5;
+
+      // Extra fields
+      for (const [label, value] of visibleExtras) {
+        doc.text(`${label}: ${value}`, leftCol, y);
+        y += 4;
+      }
+
+      // Horizontal divider
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageWidth - margin, y);
+
+      doc.setTextColor(0, 0, 0);
+    };
+
+    // --- Shared table config (matches competenceMatrixPdf.ts exactly) ---
+    const sharedTableConfig = {
+      theme: 'grid' as const,
+      showHead: 'everyPage' as const,
+      rowPageBreak: 'avoid' as const,
+      margin: { left: margin, right: margin, top: headerHeight },
+      headStyles: {
+        fillColor: [240, 240, 240] as [number, number, number],
+        textColor: [0, 0, 0] as [number, number, number],
+        fontSize: 6,
+        fontStyle: 'bold' as const,
+        halign: 'center' as const,
+        valign: 'middle' as const,
+        overflow: 'linebreak' as const,
+      },
+      bodyStyles: {
+        fontSize: 8,
+        halign: 'center' as const,
+        valign: 'middle' as const,
+      },
+      styles: {
+        cellPadding: 3,
+        lineWidth: 0.2,
+        lineColor: [200, 200, 200] as [number, number, number],
+      },
+      didDrawPage: () => {
+        drawHeader();
+      },
+    };
+
+    let yPosition = headerHeight + 2;
+
+    const checkPageBreak = (needed: number) => {
+      if (yPosition + needed > pageHeight - 20) {
+        doc.addPage('l');
+        yPosition = headerHeight + 2;
+      }
+    };
+
+    // --- Draw initial header ---
+    drawHeader();
 
     // --- Description ---
-    doc.setTextColor(0, 0, 0);
     if (project.description) {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('Description', 14, yPosition);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Description', margin, yPosition);
       yPosition += 4;
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      const descLines = doc.splitTextToSize(project.description, pageWidth - 28);
-      doc.text(descLines, 14, yPosition);
+      const descLines = doc.splitTextToSize(project.description, pageWidth - 2 * margin);
+      doc.text(descLines, margin, yPosition);
       yPosition += descLines.length * 3.5 + 6;
     }
 
@@ -186,26 +203,21 @@ export function ShareProjectDialog({
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text(`Project Phases (${phases.length})`, 14, yPosition);
+      doc.text(`Project Phases (${phases.length})`, margin, yPosition);
       yPosition += 5;
 
       const phaseData = phases.map(p => {
         const s = parseISO(p.startDate);
         const e = parseISO(p.endDate);
         const dur = differenceInDays(e, s) + 1;
-        return [
-          p.name,
-          format(s, 'MMM d, yyyy'),
-          format(e, 'MMM d, yyyy'),
-          `${dur} days`,
-        ];
+        return [p.name, format(s, 'd MMM yyyy'), format(e, 'd MMM yyyy'), `${dur} days`];
       });
 
       autoTable(doc, {
         startY: yPosition,
         head: [['Phase', 'Start', 'End', 'Duration']],
         body: phaseData,
-        ...tableStyles,
+        ...sharedTableConfig,
       });
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
@@ -220,14 +232,14 @@ export function ShareProjectDialog({
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text(`Milestones (${milestones.length})`, 14, yPosition);
+      doc.text(`Milestones (${milestones.length})`, margin, yPosition);
       yPosition += 5;
 
       autoTable(doc, {
         startY: yPosition,
         head: [['Date', 'Description']],
-        body: milestones.map(m => [format(parseISO(m.date), 'MMM d, yyyy'), m.description]),
-        ...tableStyles,
+        body: milestones.map(m => [format(parseISO(m.date), 'd MMM yyyy'), m.description]),
+        ...sharedTableConfig,
       });
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
@@ -242,14 +254,14 @@ export function ShareProjectDialog({
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text(`Events (${events.length})`, 14, yPosition);
+      doc.text(`Events (${events.length})`, margin, yPosition);
       yPosition += 5;
 
       autoTable(doc, {
         startY: yPosition,
         head: [['Date', 'Description']],
-        body: events.map(e => [format(parseISO(e.date), 'MMM d, yyyy'), e.description]),
-        ...tableStyles,
+        body: events.map(e => [format(parseISO(e.date), 'd MMM yyyy'), e.description]),
+        ...sharedTableConfig,
       });
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
@@ -259,7 +271,7 @@ export function ShareProjectDialog({
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text(`Assigned Personnel (${assignedPersonnel.length})`, 14, yPosition);
+    doc.text(`Assigned Personnel (${assignedPersonnel.length})`, margin, yPosition);
     yPosition += 5;
 
     if (assignedPersonnel.length > 0) {
@@ -280,7 +292,7 @@ export function ShareProjectDialog({
         startY: yPosition,
         head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Compliance']],
         body: personnelTableData,
-        ...tableStyles,
+        ...sharedTableConfig,
         didParseCell: (data) => {
           if (data.section !== 'body') return;
           if (data.column.index !== 5) return;
@@ -291,18 +303,21 @@ export function ShareProjectDialog({
           data.cell.styles.fontStyle = 'bold';
           data.cell.styles.halign = 'center';
         },
+        didDrawPage: () => {
+          drawHeader();
+        },
       });
       yPosition = (doc as any).lastAutoTable.finalY + 8;
     } else {
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(128, 128, 128);
-      doc.text('No personnel assigned', 14, yPosition);
+      doc.text('No personnel assigned', margin, yPosition);
       doc.setTextColor(0, 0, 0);
       yPosition += 8;
     }
 
-    // --- Inline Competence Matrix ---
+    // --- Inline Competence Matrix (matches competenceMatrixPdf.ts exactly) ---
     const activePersonnel = assignedPersonnel.filter(p => p.activated);
     if (activePersonnel.length > 0) {
       const sortedPeople = [...activePersonnel].sort((a, b) => a.name.localeCompare(b.name));
@@ -315,46 +330,47 @@ export function ShareProjectDialog({
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text('Personnel Competence Matrix', 14, yPosition);
+        doc.text('Personnel Competence Matrix', margin, yPosition);
         yPosition += 5;
 
-        // Calculate how many cert columns fit per page in portrait
-        const fixedColsWidth = 40 + 24; // Name + Role
-        const availableForCerts = pageWidth - 28 - fixedColsWidth;
-        const minCertColWidth = 14;
+        // Matching matrix column widths: Name 42, Role 26, Type 20
+        const fixedColsWidth = 42 + 26 + 20;
+        const availableForCerts = pageWidth - 2 * margin - fixedColsWidth;
+        const minCertColWidth = 12;
         const maxCertCols = Math.max(1, Math.floor(availableForCerts / minCertColWidth));
 
-        // Chunk cert types into batches
         const batches: string[][] = [];
         for (let i = 0; i < certTypes.length; i += maxCertCols) {
           batches.push(certTypes.slice(i, i + maxCertCols));
         }
 
-        const STATUS_FILLS: Record<string, [number, number, number] | null> = {
-          V: [235, 245, 235],
-          E: [255, 245, 230],
-          X: [250, 232, 232],
-        };
+        const personFixedCells = sortedPeople.map(person => {
+          const role = person.role && person.role !== 'N/A' ? person.role : '-';
+          const type = person.category
+            ? person.category.charAt(0).toUpperCase() + person.category.slice(1)
+            : '-';
+          return [person.name, role, type];
+        });
 
         batches.forEach((batchCerts, batchIdx) => {
           if (batchIdx > 0) checkPageBreak(30);
 
           const batchLabel = batches.length > 1
-            ? `Certificates ${batchIdx * maxCertCols + 1}–${Math.min((batchIdx + 1) * maxCertCols, certTypes.length)} of ${certTypes.length}`
+            ? `Certificates ${batchIdx * maxCertCols + 1}\u2013${Math.min((batchIdx + 1) * maxCertCols, certTypes.length)} of ${certTypes.length}`
             : undefined;
 
           if (batchLabel) {
-            doc.setFontSize(6);
+            doc.setFontSize(7);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(120, 120, 120);
-            doc.text(batchLabel, 14, yPosition);
+            doc.text(batchLabel, pageWidth / 2, yPosition, { align: 'center' });
             doc.setTextColor(0, 0, 0);
             yPosition += 4;
           }
 
-          const head = ['Name', 'Role', ...batchCerts];
-          const body = sortedPeople.map(person => {
-            const row = [person.name, person.role];
+          const head = ['Name', 'Role', 'Type', ...batchCerts];
+          const body = sortedPeople.map((person, pIdx) => {
+            const row = [...personFixedCells[pIdx]];
             batchCerts.forEach(certType => {
               const cert = person.certificates.find(c => c.name === certType);
               if (!cert) {
@@ -368,69 +384,64 @@ export function ShareProjectDialog({
 
           const certColWidth = batchCerts.length > 0 ? availableForCerts / batchCerts.length : 20;
           const columnStyles: Record<number, any> = {
-            0: { halign: 'left', cellWidth: 40, fontStyle: 'bold' },
-            1: { halign: 'left', cellWidth: 24 },
+            0: { halign: 'left' as const, cellWidth: 42, fontStyle: 'bold' as const },
+            1: { halign: 'left' as const, cellWidth: 26 },
+            2: { halign: 'left' as const, cellWidth: 20 },
           };
           batchCerts.forEach((_, i) => {
-            columnStyles[i + 2] = { halign: 'center', cellWidth: certColWidth };
+            columnStyles[i + 3] = { halign: 'center' as const, cellWidth: certColWidth };
           });
 
           autoTable(doc, {
             startY: yPosition,
             head: [head],
             body,
-            theme: 'grid',
-            headStyles: {
-              fillColor: [240, 240, 240] as [number, number, number],
-              textColor: [0, 0, 0] as [number, number, number],
-              fontSize: 5,
-              fontStyle: 'bold' as const,
-              halign: 'center',
-              overflow: 'linebreak',
-            },
-            bodyStyles: { fontSize: 6, halign: 'center' },
+            ...sharedTableConfig,
             columnStyles,
-            styles: {
-              lineColor: [200, 200, 200] as [number, number, number],
-              lineWidth: 0.2,
-              cellPadding: 2,
-            },
-            margin: { left: 14, right: 14 },
             didParseCell: (data) => {
-              if (data.section !== 'body' || data.column.index < 2) return;
+              if (data.section !== 'body') return;
+              const colIdx = data.column.index;
+              if (colIdx < 3) return;
               const val = String(data.cell.raw);
               const fill = STATUS_FILLS[val];
               if (fill) data.cell.styles.fillColor = fill;
               data.cell.styles.fontStyle = 'bold';
             },
+            didDrawPage: () => {
+              drawHeader();
+            },
           });
           yPosition = (doc as any).lastAutoTable.finalY + 6;
         });
-
-        // Legend
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(80, 80, 80);
-        doc.text(
-          `Legend:  V – Valid    E – Expiring within ${EXPIRY_WARNING_DAYS} days    X – Expired    — – Not required / Not registered`,
-          14,
-          yPosition,
-        );
-        doc.setTextColor(0, 0, 0);
-        yPosition += 6;
       }
     }
 
-    // --- Footer ---
+    // --- Legend (once at end, matching matrix) ---
+    const finalY = (doc as any).lastAutoTable?.finalY || yPosition;
+    const lastPage = doc.getNumberOfPages();
+    doc.setPage(lastPage);
+    const legendY = Math.min(finalY + 10, pageHeight - 20);
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(
+      `Legend:  V \u2013 Valid    E \u2013 Expiring within ${EXPIRY_WARNING_DAYS} days    X \u2013 Expired    \u2014 \u2013 Not required / Not registered`,
+      margin,
+      legendY,
+    );
+
+    // --- Footer (matching matrix exactly) ---
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(7);
-      doc.setTextColor(160, 160, 160);
-      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-      doc.text('Generated by FlowSert', pageWidth - 14, pageHeight - 10, { align: 'right' });
+      doc.setTextColor(128, 128, 128);
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+      doc.text('Generated by FlowSert', pageWidth - margin, pageHeight - 8, { align: 'right' });
     }
 
+    doc.setTextColor(0, 0, 0);
     return doc;
   };
 
