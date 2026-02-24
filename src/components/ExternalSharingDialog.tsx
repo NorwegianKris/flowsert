@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,13 +23,23 @@ import { Progress } from '@/components/ui/progress';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { FileDown, Mail, FileText, Users, Search, X, GripVertical, FileStack, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from '@/lib/certificateUtils';
+import { getCertificateStatus, getPersonnelOverallStatus, EXPIRY_WARNING_DAYS } from '@/lib/certificateUtils';
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ProjectPhaseRow {
+  id: string;
+  project_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  color: string | null;
+}
 
 interface ExternalSharingDialogProps {
   open: boolean;
@@ -40,6 +50,7 @@ interface ExternalSharingDialogProps {
 }
 
 type RecipientGroup = 'employee' | 'freelancer';
+type ProjectFilter = 'active' | 'previous';
 
 export function ExternalSharingDialog({
   open,
@@ -57,6 +68,22 @@ export function ExternalSharingDialog({
   const [listHeight, setListHeight] = useState(160);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [bundleProgress, setBundleProgress] = useState<{ current: number; total: number; label: string } | null>(null);
+  const [projectFilter, setProjectFilter] = useState<ProjectFilter>('active');
+  const [projectPhases, setProjectPhases] = useState<ProjectPhaseRow[]>([]);
+
+  // Fetch phases when selected project changes
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setProjectPhases([]);
+      return;
+    }
+    supabase
+      .from('project_phases')
+      .select('*')
+      .eq('project_id', selectedProjectId)
+      .order('start_date')
+      .then(({ data }) => setProjectPhases((data as ProjectPhaseRow[]) || []));
+  }, [selectedProjectId]);
 
   const groupLabels: Record<RecipientGroup, string> = {
     employee: 'Employees',
@@ -64,6 +91,14 @@ export function ExternalSharingDialog({
   };
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Filter projects by active/previous toggle
+  const filteredProjects = useMemo(() => {
+    if (projectFilter === 'active') {
+      return projects.filter(p => p.status === 'active' || p.status === 'pending');
+    }
+    return projects.filter(p => p.status === 'completed');
+  }, [projects, projectFilter]);
 
   const toggleExport = (exportType: string) => {
     setSelectedExports(prev =>
@@ -135,158 +170,391 @@ export function ExternalSharingDialog({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  // --- Standardized Project Card PDF (matches ShareProjectDialog exactly) ---
   const generateProjectCardPdf = (project: Project): jsPDF => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('l');
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yPosition = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const generatedDate = format(new Date(), 'd MMM yyyy · HH:mm');
 
     const assignedPersonnel = project.assignedPersonnel
       .map(id => personnel.find(p => p.id === id))
       .filter((p): p is Personnel => p !== undefined);
 
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(project.name, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 10;
+    const STATUS_SYMBOLS: Record<string, string> = { valid: 'V', expiring: 'E', expired: 'X' };
+    const NOT_HELD = '—';
+    const STATUS_FILLS: Record<string, [number, number, number] | null> = {
+      V: [235, 245, 235],
+      E: [255, 245, 230],
+      X: [250, 232, 232],
+      [NOT_HELD]: null,
+    };
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const statusText = project.status.charAt(0).toUpperCase() + project.status.slice(1);
-    doc.text(`Status: ${statusText}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
+    // --- Header height & metadata ---
+    const startDateFmt = format(parseISO(project.startDate), 'd MMM yyyy');
+    const endDateFmt = project.endDate ? format(parseISO(project.endDate), 'd MMM yyyy') : 'Ongoing';
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Project Details', 14, yPosition);
-    yPosition += 10;
+    const extraFields: [string, string | undefined][] = [
+      ['Status', project.status.charAt(0).toUpperCase() + project.status.slice(1)],
+      ['Customer', project.customer || undefined],
+      ['Location', project.location || undefined],
+      ['Project Manager', project.projectManager || undefined],
+      ['Work Category', project.workCategory || undefined],
+    ];
+    const visibleExtras = extraFields.filter(([, v]) => !!v);
+    const headerHeight = 34 + visibleExtras.length * 4;
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    // --- drawHeader (called by didDrawPage on every page) ---
+    const drawHeader = () => {
+      let y = 12;
 
-    const startDate = format(parseISO(project.startDate), 'MMM d, yyyy');
-    const endDate = project.endDate ? format(parseISO(project.endDate), 'MMM d, yyyy') : 'Ongoing';
-    doc.text(`Duration: ${startDate} - ${endDate}`, 14, yPosition);
-    yPosition += 6;
-
-    if (project.projectNumber) {
-      doc.text(`Project Number: ${project.projectNumber}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    if (project.customer) {
-      doc.text(`Customer: ${project.customer}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    if (project.location) {
-      doc.text(`Location: ${project.location}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    if (project.projectManager) {
-      doc.text(`Project Manager: ${project.projectManager}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    if (project.workCategory) {
-      doc.text(`Work Category: ${project.workCategory}`, 14, yPosition);
-      yPosition += 6;
-    }
-
-    if (project.description) {
-      yPosition += 4;
+      // Title
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Description:', 14, yPosition);
-      yPosition += 6;
-      doc.setFont('helvetica', 'normal');
-      const descLines = doc.splitTextToSize(project.description, pageWidth - 28);
-      doc.text(descLines, 14, yPosition);
-      yPosition += descLines.length * 5 + 8;
-    }
-
-    yPosition += 5;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Assigned Personnel (${assignedPersonnel.length})`, 14, yPosition);
-    yPosition += 10;
-
-    if (assignedPersonnel.length > 0) {
-      const personnelTableData = assignedPersonnel.map(person => [
-        person.name,
-        person.role,
-        person.location || 'N/A',
-        person.email,
-        person.phone || 'N/A'
-      ]);
-
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Name', 'Role', 'Location', 'Email', 'Phone']],
-        body: personnelTableData,
-        theme: 'striped',
-        headStyles: {
-          fillColor: [59, 130, 246],
-          fontSize: 9,
-          fontStyle: 'bold'
-        },
-        bodyStyles: { fontSize: 9 },
-        margin: { left: 14, right: 14 },
-      });
-
-      yPosition = (doc as any).lastAutoTable.finalY + 10;
-    } else {
-      doc.setFontSize(10);
-      doc.setTextColor(128, 128, 128);
-      doc.text('No personnel assigned', 14, yPosition);
       doc.setTextColor(0, 0, 0);
-      yPosition += 10;
-    }
+      doc.text('PROJECT CARD', pageWidth / 2, y, { align: 'center' });
+      y += 7;
 
-    if (project.calendarItems && project.calendarItems.length > 0) {
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
+      // Subtitle
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text('FlowSert Workforce Compliance', pageWidth / 2, y, { align: 'center' });
+      y += 7;
+
+      // Metadata block
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+      const leftCol = margin;
+      const rightCol = pageWidth - margin;
+
+      if (businessName) {
+        doc.text(`Company: ${businessName}`, leftCol, y);
+      }
+      doc.text(`Project: ${project.name}${project.projectNumber ? ` (${project.projectNumber})` : ''}`, rightCol, y, { align: 'right' });
+      y += 4.5;
+
+      doc.text(`Duration: ${startDateFmt} – ${endDateFmt}`, leftCol, y);
+      doc.text(`Generated: ${generatedDate}`, rightCol, y, { align: 'right' });
+      y += 4.5;
+
+      // Extra fields
+      for (const [label, value] of visibleExtras) {
+        doc.text(`${label}: ${value}`, leftCol, y);
+        y += 4;
       }
 
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Calendar Items (${project.calendarItems.length})`, 14, yPosition);
-      yPosition += 10;
+      // Horizontal divider
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageWidth - margin, y);
 
-      const calendarTableData = project.calendarItems.map(item => [
-        format(parseISO(item.date), 'MMM d, yyyy'),
-        item.description,
-        item.isMilestone ? 'Yes' : 'No'
-      ]);
+      doc.setTextColor(0, 0, 0);
+    };
+
+    // --- Shared table config (matches competenceMatrixPdf.ts exactly) ---
+    const sharedTableConfig = {
+      theme: 'grid' as const,
+      showHead: 'everyPage' as const,
+      rowPageBreak: 'avoid' as const,
+      margin: { left: margin, right: margin, top: headerHeight },
+      headStyles: {
+        fillColor: [240, 240, 240] as [number, number, number],
+        textColor: [0, 0, 0] as [number, number, number],
+        fontSize: 6,
+        fontStyle: 'bold' as const,
+        halign: 'center' as const,
+        valign: 'middle' as const,
+        overflow: 'linebreak' as const,
+      },
+      bodyStyles: {
+        fontSize: 8,
+        halign: 'center' as const,
+        valign: 'middle' as const,
+      },
+      styles: {
+        cellPadding: 3,
+        lineWidth: 0.2,
+        lineColor: [200, 200, 200] as [number, number, number],
+      },
+      didDrawPage: () => {
+        drawHeader();
+      },
+    };
+
+    let yPosition = headerHeight + 2;
+
+    const checkPageBreak = (needed: number) => {
+      if (yPosition + needed > pageHeight - 20) {
+        doc.addPage('l');
+        yPosition = headerHeight + 2;
+      }
+    };
+
+    // --- Draw initial header ---
+    drawHeader();
+
+    // --- Description ---
+    if (project.description) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Description', margin, yPosition);
+      yPosition += 4;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(project.description, pageWidth - 2 * margin);
+      doc.text(descLines, margin, yPosition);
+      yPosition += descLines.length * 3.5 + 6;
+    }
+
+    // --- Project Phases ---
+    const phases = projectPhases;
+    if (phases.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Project Phases (${phases.length})`, margin, yPosition);
+      yPosition += 5;
+
+      const phaseData = phases.map(p => {
+        const s = parseISO(p.start_date);
+        const e = parseISO(p.end_date);
+        const dur = differenceInDays(e, s) + 1;
+        return [p.name, format(s, 'd MMM yyyy'), format(e, 'd MMM yyyy'), `${dur} days`];
+      });
 
       autoTable(doc, {
         startY: yPosition,
-        head: [['Date', 'Description', 'Milestone']],
-        body: calendarTableData,
-        theme: 'striped',
-        headStyles: {
-          fillColor: [59, 130, 246],
-          fontSize: 9,
-          fontStyle: 'bold'
-        },
-        bodyStyles: { fontSize: 9 },
-        margin: { left: 14, right: 14 },
+        head: [['Phase', 'Start', 'End', 'Duration']],
+        body: phaseData,
+        ...sharedTableConfig,
       });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
     }
 
+    // --- Milestones ---
+    const milestones = (project.calendarItems || [])
+      .filter(i => i.isMilestone)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (milestones.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Milestones (${milestones.length})`, margin, yPosition);
+      yPosition += 5;
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Date', 'Description']],
+        body: milestones.map(m => [format(parseISO(m.date), 'd MMM yyyy'), m.description]),
+        ...sharedTableConfig,
+      });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // --- Events ---
+    const events = (project.calendarItems || [])
+      .filter(i => !i.isMilestone)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (events.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Events (${events.length})`, margin, yPosition);
+      yPosition += 5;
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Date', 'Description']],
+        body: events.map(e => [format(parseISO(e.date), 'd MMM yyyy'), e.description]),
+        ...sharedTableConfig,
+      });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // --- Assigned Personnel with Compliance ---
+    checkPageBreak(30);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Assigned Personnel (${assignedPersonnel.length})`, margin, yPosition);
+    yPosition += 5;
+
+    if (assignedPersonnel.length > 0) {
+      const personnelTableData = assignedPersonnel.map(person => {
+        const overallStatus = getPersonnelOverallStatus(person);
+        const complianceLabel = overallStatus === 'valid' ? 'V' : overallStatus === 'expiring' ? 'E' : 'X';
+        return [
+          person.name,
+          person.role,
+          person.location || '—',
+          person.email,
+          person.phone || '—',
+          complianceLabel,
+        ];
+      });
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Name', 'Role', 'Location', 'Email', 'Phone', 'Compliance']],
+        body: personnelTableData,
+        ...sharedTableConfig,
+        didParseCell: (data) => {
+          if (data.section !== 'body') return;
+          if (data.column.index !== 5) return;
+          const val = String(data.cell.raw);
+          if (val === 'V') data.cell.styles.fillColor = [235, 245, 235];
+          else if (val === 'E') data.cell.styles.fillColor = [255, 245, 230];
+          else if (val === 'X') data.cell.styles.fillColor = [250, 232, 232];
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.halign = 'center';
+        },
+        didDrawPage: () => {
+          drawHeader();
+        },
+      });
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+    } else {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(128, 128, 128);
+      doc.text('No personnel assigned', margin, yPosition);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 8;
+    }
+
+    // --- Inline Competence Matrix (matches competenceMatrixPdf.ts exactly) ---
+    const activePersonnel = assignedPersonnel.filter(p => p.activated);
+    if (activePersonnel.length > 0) {
+      const sortedPeople = [...activePersonnel].sort((a, b) => a.name.localeCompare(b.name));
+      const certTypeSet = new Set<string>();
+      activePersonnel.forEach(p => p.certificates.forEach(c => certTypeSet.add(c.name)));
+      const certTypes = Array.from(certTypeSet).sort((a, b) => a.localeCompare(b));
+
+      if (certTypes.length > 0) {
+        checkPageBreak(40);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Personnel Competence Matrix', margin, yPosition);
+        yPosition += 5;
+
+        // Matching matrix column widths: Name 42, Role 26, Type 20
+        const fixedColsWidth = 42 + 26 + 20;
+        const availableForCerts = pageWidth - 2 * margin - fixedColsWidth;
+        const minCertColWidth = 12;
+        const maxCertCols = Math.max(1, Math.floor(availableForCerts / minCertColWidth));
+
+        const batches: string[][] = [];
+        for (let i = 0; i < certTypes.length; i += maxCertCols) {
+          batches.push(certTypes.slice(i, i + maxCertCols));
+        }
+
+        const personFixedCells = sortedPeople.map(person => {
+          const role = person.role && person.role !== 'N/A' ? person.role : '-';
+          const type = person.category
+            ? person.category.charAt(0).toUpperCase() + person.category.slice(1)
+            : '-';
+          return [person.name, role, type];
+        });
+
+        batches.forEach((batchCerts, batchIdx) => {
+          if (batchIdx > 0) checkPageBreak(30);
+
+          const batchLabel = batches.length > 1
+            ? `Certificates ${batchIdx * maxCertCols + 1}\u2013${Math.min((batchIdx + 1) * maxCertCols, certTypes.length)} of ${certTypes.length}`
+            : undefined;
+
+          if (batchLabel) {
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(120, 120, 120);
+            doc.text(batchLabel, pageWidth / 2, yPosition, { align: 'center' });
+            doc.setTextColor(0, 0, 0);
+            yPosition += 4;
+          }
+
+          const head = ['Name', 'Role', 'Type', ...batchCerts];
+          const body = sortedPeople.map((person, pIdx) => {
+            const row = [...personFixedCells[pIdx]];
+            batchCerts.forEach(certType => {
+              const cert = person.certificates.find(c => c.name === certType);
+              if (!cert) {
+                row.push(NOT_HELD);
+              } else {
+                row.push(STATUS_SYMBOLS[getCertificateStatus(cert.expiryDate)] || NOT_HELD);
+              }
+            });
+            return row;
+          });
+
+          const certColWidth = batchCerts.length > 0 ? availableForCerts / batchCerts.length : 20;
+          const columnStyles: Record<number, any> = {
+            0: { halign: 'left' as const, cellWidth: 42, fontStyle: 'bold' as const },
+            1: { halign: 'left' as const, cellWidth: 26 },
+            2: { halign: 'left' as const, cellWidth: 20 },
+          };
+          batchCerts.forEach((_, i) => {
+            columnStyles[i + 3] = { halign: 'center' as const, cellWidth: certColWidth };
+          });
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [head],
+            body,
+            ...sharedTableConfig,
+            columnStyles,
+            didParseCell: (data) => {
+              if (data.section !== 'body') return;
+              const colIdx = data.column.index;
+              if (colIdx < 3) return;
+              const val = String(data.cell.raw);
+              const fill = STATUS_FILLS[val];
+              if (fill) data.cell.styles.fillColor = fill;
+              data.cell.styles.fontStyle = 'bold';
+            },
+            didDrawPage: () => {
+              drawHeader();
+            },
+          });
+          yPosition = (doc as any).lastAutoTable.finalY + 6;
+        });
+      }
+    }
+
+    // --- Legend (once at end, matching matrix) ---
+    const finalY = (doc as any).lastAutoTable?.finalY || yPosition;
+    const lastPage = doc.getNumberOfPages();
+    doc.setPage(lastPage);
+    const legendY = Math.min(finalY + 10, pageHeight - 20);
+
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(
+      `Legend:  V \u2013 Valid    E \u2013 Expiring within ${EXPIRY_WARNING_DAYS} days    X \u2013 Expired    \u2014 \u2013 Not required / Not registered`,
+      margin,
+      legendY,
+    );
+
+    // --- Footer (matching matrix exactly) ---
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Generated on ${format(new Date(), 'MMM d, yyyy HH:mm')} | Page ${i} of ${pageCount}`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+      doc.text('Generated by FlowSert', pageWidth - margin, pageHeight - 8, { align: 'right' });
     }
 
+    doc.setTextColor(0, 0, 0);
     return doc;
   };
 
@@ -328,7 +596,7 @@ export function ExternalSharingDialog({
 
       if (selectedExports.includes('certificateBundle')) {
         await handleBundleDownload();
-        return; // bundle handles its own toast
+        return;
       }
 
       toast.success('PDF(s) downloaded successfully');
@@ -435,6 +703,7 @@ export function ExternalSharingDialog({
     setSelectedIndividuals([]);
     setShowIndividualSelect(false);
     setSearchQuery('');
+    setProjectFilter('active');
     onOpenChange(false);
   };
 
@@ -483,16 +752,47 @@ export function ExternalSharingDialog({
             {selectedExports.includes('projectCard') && (
               <div className="ml-8 space-y-2">
                 <Label className="text-sm">Select project:</Label>
+                {/* Active / Previous toggle */}
+                <div className="flex gap-1">
+                  <Button
+                    variant={projectFilter === 'active' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setProjectFilter('active');
+                      setSelectedProjectId('');
+                    }}
+                    className="text-xs h-7"
+                  >
+                    Active & Upcoming
+                  </Button>
+                  <Button
+                    variant={projectFilter === 'previous' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setProjectFilter('previous');
+                      setSelectedProjectId('');
+                    }}
+                    className="text-xs h-7"
+                  >
+                    Previous
+                  </Button>
+                </div>
                 <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a project..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
+                    {filteredProjects.length === 0 ? (
+                      <SelectItem value="_none" disabled>
+                        No {projectFilter === 'active' ? 'active' : 'previous'} projects
                       </SelectItem>
-                    ))}
+                    ) : (
+                      filteredProjects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
