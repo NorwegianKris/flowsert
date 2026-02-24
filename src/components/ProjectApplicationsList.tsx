@@ -17,6 +17,7 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
   const { applications, loading, updateApplicationStatus } = useProjectApplications(projectId);
   const [selectedApp, setSelectedApp] = useState<ProjectApplication | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const handleStatusUpdate = async (status: 'accepted' | 'rejected') => {
     if (!selectedApp) return;
@@ -24,6 +25,12 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
     await updateApplicationStatus(selectedApp.id, status);
     setUpdating(false);
     setSelectedApp(null);
+  };
+
+  const handleInlineStatusUpdate = async (applicationId: string, status: 'accepted' | 'rejected') => {
+    setUpdatingId(applicationId);
+    await updateApplicationStatus(applicationId, status);
+    setUpdatingId(null);
   };
 
   const getInitials = (name: string) => {
@@ -65,7 +72,7 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
           return (
             <div
               key={app.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+              className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-card border border-border hover:shadow-sm transition-all cursor-pointer"
               onClick={() => setSelectedApp(app)}
             >
               <Avatar className="h-10 w-10">
@@ -86,6 +93,28 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
                   <StatusIcon className="h-3 w-3" />
                   {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                 </Badge>
+                {app.status === 'pending' && (
+                  <>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                      disabled={updatingId === app.id}
+                      onClick={(e) => { e.stopPropagation(); handleInlineStatusUpdate(app.id, 'accepted'); }}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-destructive hover:bg-red-50 hover:text-red-700"
+                      disabled={updatingId === app.id}
+                      onClick={(e) => { e.stopPropagation(); handleInlineStatusUpdate(app.id, 'rejected'); }}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           );
