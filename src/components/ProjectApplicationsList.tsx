@@ -143,7 +143,7 @@ export function ProjectApplicationsList({ projectId }: ProjectApplicationsListPr
                 </div>
               </div>
 
-              <div className="rounded-lg bg-muted/50 p-3">
+              <div className="rounded-lg bg-white dark:bg-card border border-border p-3">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
                   <MessageSquare className="h-3 w-3" />
                   Application Message
