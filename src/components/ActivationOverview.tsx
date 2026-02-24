@@ -266,13 +266,15 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                      <span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {person.activated ? 'Active' : 'Inactive'}
-                      </span>
-                      <Switch
-                        checked={person.activated}
-                        onCheckedChange={() => handleToggle(person)}
-                      />
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
+                          {person.activated ? 'Active' : 'Inactive'}
+                        </span>
+                        <Switch
+                          checked={person.activated}
+                          onCheckedChange={() => handleToggle(person)}
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}
