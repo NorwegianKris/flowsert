@@ -18,14 +18,14 @@ const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 // ──────────────────────────────────────────────
 const TIER_MAP: Record<string, { tier: string; profile_cap: number; is_unlimited: boolean }> = {
   // Starter
-  "price_1T4Q47CTZs6lfaVYaVf2mLWJ": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Monthly
-  "price_1T4Q5FCTZs6lfaVYJcUidzzL": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Annual
+  "price_1T4TiBCTVQHwswgoMCQBB0Kv": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Monthly
+  "price_1T4TipCTVQHwswgo3i7Wxi0p": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Annual
   // Growth
-  "price_1T4Q5nCTZs6lfaVYNr3gobm3": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Monthly
-  "price_1T4Q6HCTZs6lfaVYoReiRSXM": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Annual
+  "price_1T4TjxCTVQHwswgobYyRRe10": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Monthly
+  "price_1T4TkFCTVQHwswgop7yCPQRM": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Annual
   // Professional
-  "price_1T4Q6iCTZs6lfaVYZEZNA1yo": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Monthly
-  "price_1T4Q78CTZs6lfaVYkfdJW4eq": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Annual
+  "price_1T4TksCTVQHwswgoItMP8J6n": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Monthly
+  "price_1T4Tl8CTVQHwswgoHkYuB2S9": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Annual
 };
 
 const DEFAULT_ENTITLEMENT = {
