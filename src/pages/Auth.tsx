@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { TERMS_VERSION, PRIVACY_VERSION } from '@/lib/legalVersions';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
 import beforeCompliance from '@/assets/before-compliance.png';
@@ -32,6 +33,8 @@ import afterCompliance from '@/assets/after-compliance.png';
 import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
 import dashboardPreview from '@/assets/dashboard-preview.png';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PublicFooter } from '@/components/PublicFooter';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -52,6 +55,7 @@ export default function Auth() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [invitationDetails, setInvitationDetails] = useState<{
     email: string;
@@ -279,6 +283,20 @@ export default function Auth() {
         description: message,
       });
     } else {
+      // After successful signup, update profile with consent versions
+      // The profile is created by the trigger, so we update it right after signup
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (currentUser) {
+        await supabase
+          .from('profiles')
+          .update({
+            terms_accepted_at: new Date().toISOString(),
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
+          })
+          .eq('id', currentUser.id);
+      }
+
       toast({
         title: 'Account created',
         description: 'You have been signed in automatically.',
@@ -421,6 +439,7 @@ export default function Auth() {
     setEmail('');
     setPassword('');
     setFullName('');
+    setTermsAccepted(false);
   };
 
   if (loading) {
@@ -873,6 +892,8 @@ export default function Auth() {
         </div>
       </section>
 
+      <PublicFooter />
+
       {/* Auth Dialog */}
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -1065,7 +1086,25 @@ export default function Auth() {
                   After registration, upload your certificates and documents to stand out to employers.
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={isLoading || (!!inviteToken && !invitationDetails)}>
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="terms-checkbox"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                />
+                <label htmlFor="terms-checkbox" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                  I agree to the{' '}
+                  <a href="/terms" className="text-primary hover:underline">
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a href="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </a>
+                  .
+                </label>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading || !termsAccepted || (!!inviteToken && !invitationDetails)}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>

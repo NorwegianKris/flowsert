@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { needsConsent } from '@/lib/legalVersions';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -10,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole, allowedRoles }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth();
+  const { user, role, profile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -23,6 +24,10 @@ export function ProtectedRoute({ children, requiredRole, allowedRoles }: Protect
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (needsConsent(profile)) {
+    return <Navigate to="/consent" state={{ from: location }} replace />;
   }
 
   // Check role requirements

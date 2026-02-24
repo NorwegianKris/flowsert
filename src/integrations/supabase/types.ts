@@ -1112,6 +1112,9 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          privacy_version: string | null
+          terms_accepted_at: string | null
+          terms_version: string | null
           updated_at: string
         }
         Insert: {
@@ -1120,6 +1123,9 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          privacy_version?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -1128,6 +1134,9 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          privacy_version?: string | null
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: [

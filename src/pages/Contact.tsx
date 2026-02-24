@@ -7,6 +7,7 @@ import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PublicFooter } from '@/components/PublicFooter';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 export default function Contact() {
@@ -152,6 +153,8 @@ export default function Contact() {
           </div>
         </div>
       </section>
+
+      <PublicFooter />
     </div>
   );
 }

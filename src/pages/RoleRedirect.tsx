@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { needsConsent } from '@/lib/legalVersions';
 import { Loader2 } from 'lucide-react';
 
 export default function RoleRedirect() {
-  const { user, role, loading } = useAuth();
+  const { user, role, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -12,6 +13,11 @@ export default function RoleRedirect() {
 
     if (!user) {
       navigate('/auth', { replace: true });
+      return;
+    }
+
+    if (needsConsent(profile)) {
+      navigate('/consent', { replace: true });
       return;
     }
 
@@ -24,7 +30,7 @@ export default function RoleRedirect() {
       // No role assigned yet, might be a new user
       navigate('/auth', { replace: true });
     }
-  }, [user, role, loading, navigate]);
+  }, [user, role, profile, loading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

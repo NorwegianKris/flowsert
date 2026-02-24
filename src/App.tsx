@@ -15,6 +15,12 @@ import WorkerDashboard from "./pages/WorkerDashboard";
 import FreelancerRedirect from "./pages/FreelancerRedirect";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import Consent from "./pages/Consent";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Subprocessors from "./pages/Subprocessors";
+import SecurityPage from "./pages/SecurityPage";
+import Trust from "./pages/Trust";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +40,12 @@ const App = () => (
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/consent" element={<Consent />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/subprocessors" element={<Subprocessors />} />
+            <Route path="/security" element={<SecurityPage />} />
+            <Route path="/trust" element={<Trust />} />
             
             {/* Role-based redirect */}
             <Route path="/" element={<RoleRedirect />} />
