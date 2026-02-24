@@ -137,7 +137,7 @@ export function AdminOverview() {
     
     setActionLoading(admin.id);
     try {
-      const { error } = await supabase
+      const { data: newPersonnel, error } = await supabase
         .from('personnel')
         .insert({
           name: admin.fullName || admin.email.split('@')[0],
@@ -148,10 +148,29 @@ export function AdminOverview() {
           business_id: profile.business_id,
           user_id: admin.id,
           is_freelancer: false,
-          activated: true,
-        });
+          activated: false,
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Attempt activation via RPC
+      if (newPersonnel) {
+        const { error: rpcError } = await supabase.rpc('activate_personnel', {
+          p_personnel_id: newPersonnel.id,
+        } as any);
+
+        if (rpcError) {
+          const msg = rpcError.message || '';
+          if (msg.includes('PROFILE_CAP_REACHED')) {
+            toast.info('Profile created but inactive — plan limit reached.');
+            await fetchAdmins();
+            return;
+          }
+          console.error('Activation RPC error:', rpcError);
+        }
+      }
 
       toast.success('Personnel profile created successfully');
       await fetchAdmins();

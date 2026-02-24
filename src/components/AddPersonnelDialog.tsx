@@ -75,10 +75,33 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
         phone: '',
         role: formData.role.trim(),
         business_id: businessId,
-        activated: true,
+        activated: false,
       }).select('id').single();
 
       if (error) throw error;
+
+      // Attempt to activate via RPC
+      let activationFailed = false;
+      if (newPersonnel) {
+        const { error: rpcError } = await supabase.rpc('activate_personnel', {
+          p_personnel_id: newPersonnel.id,
+        } as any);
+
+        if (rpcError) {
+          const msg = rpcError.message || '';
+          if (msg.includes('PROFILE_CAP_REACHED')) {
+            activationFailed = true;
+          } else {
+            console.error('Activation RPC error:', rpcError);
+          }
+        }
+      }
+
+      if (activationFailed) {
+        toast.info('Personnel added but could not be activated — plan limit reached.', {
+          description: 'Upgrade your plan or deactivate other profiles to activate this person.',
+        });
+      }
 
       // Send invitation if checkbox is checked
       if (sendInvitation && newPersonnel) {

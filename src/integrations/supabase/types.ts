@@ -552,6 +552,41 @@ export type Database = {
           },
         ]
       }
+      entitlements: {
+        Row: {
+          business_id: string
+          is_active: boolean
+          is_unlimited: boolean
+          profile_cap: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          is_active?: boolean
+          is_unlimited?: boolean
+          profile_cap?: number
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          is_active?: boolean
+          is_unlimited?: boolean
+          profile_cap?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entitlements_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_events: {
         Row: {
           actor_user_id: string | null
@@ -1652,6 +1687,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_personnel: {
+        Args: { p_category?: string; p_personnel_id: string }
+        Returns: Json
+      }
       add_personnel_to_project: {
         Args: { _personnel_id: string; _project_id: string }
         Returns: boolean
@@ -1680,9 +1719,19 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      deactivate_personnel: { Args: { p_personnel_id: string }; Returns: Json }
       enforce_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
         Returns: undefined
+      }
+      get_business_entitlement: {
+        Args: { p_business_id: string }
+        Returns: {
+          is_active: boolean
+          is_unlimited: boolean
+          profile_cap: number
+          tier: string
+        }[]
       }
       get_freelancer_invitation_by_token: {
         Args: { lookup_token: string }

@@ -20,12 +20,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Personnel } from '@/types';
-import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search, ChevronDown, FileText, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search, ChevronDown, FileText, ExternalLink, AlertTriangle } from 'lucide-react';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { PersonnelPreviewSheet } from '@/components/PersonnelPreviewSheet';
 import { PdfViewer } from '@/components/PdfViewer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { getBusinessEntitlement, type BusinessEntitlement } from '@/lib/entitlements';
 
 type FilterMode = 'all' | 'active' | 'inactive';
 
@@ -66,12 +68,19 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPerson, setPreviewPerson] = useState<Personnel | null>(null);
   const { toast } = useToast();
+  const { businessId } = useAuth();
+  const [entitlement, setEntitlement] = useState<BusinessEntitlement | null>(null);
+
+  useEffect(() => {
+    if (businessId) {
+      getBusinessEntitlement(businessId).then(setEntitlement);
+    }
+  }, [businessId]);
 
   const activeCount = useMemo(
     () => personnel.filter((p) => p.activated).length,
     [personnel]
   );
-
   const filteredPersonnel = useMemo(() => {
     let list = personnel;
     switch (filter) {
@@ -91,8 +100,10 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
     return list;
   }, [personnel, filter, searchQuery]);
 
-  const progressPercent = personnel.length > 0 ? (activeCount / personnel.length) * 100 : 0;
-  const currentTierIndex = getCurrentTierIndex(activeCount);
+  const capValue = entitlement?.is_unlimited ? activeCount : (entitlement?.profile_cap ?? 25);
+  const progressPercent = capValue > 0 ? Math.min((activeCount / capValue) * 100, 100) : 0;
+  const currentTierIndex = entitlement ? TIERS.findIndex(t => t.name.toLowerCase() === entitlement.tier) : getCurrentTierIndex(activeCount);
+  const isOverCap = entitlement && !entitlement.is_unlimited && activeCount > entitlement.profile_cap;
 
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -160,7 +171,11 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                <span className="font-semibold text-foreground">{activeCount}</span> / {personnel.length} profiles activated
+                Active: <span className="font-semibold text-foreground">{activeCount}</span>
+                {' | '}
+                Plan cap: <span className="font-semibold text-foreground">
+                  {entitlement?.is_unlimited ? 'Unlimited' : (entitlement?.profile_cap ?? 25)}
+                </span>
               </span>
               <Badge variant="secondary" className="text-xs">
                 {activeCount} billable
@@ -168,6 +183,16 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
             </div>
             <Progress value={progressPercent} className="h-2" />
           </div>
+
+          {isOverCap && (
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                You have more active profiles ({activeCount}) than your plan allows ({entitlement?.profile_cap}). 
+                New activations are blocked. Upgrade your plan or deactivate profiles.
+              </p>
+            </div>
+          )}
 
           {/* Filter */}
           <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterMode)}>
