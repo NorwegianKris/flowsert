@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Personnel, Certificate } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { getCertificateStatus } from '@/lib/certificateUtils';
+import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -67,9 +68,15 @@ function addOverviewPage(
   person: Personnel,
   allCertificates: Certificate[],
   companyName?: string,
+  logoBase64?: string,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = MARGIN + 4;
+
+  // Logo
+  if (logoBase64) {
+    drawPdfLogo(doc, logoBase64, MARGIN);
+  }
 
   // Title
   doc.setFontSize(14);
@@ -262,10 +269,11 @@ export async function generateCertificateBundlePdf(
     );
   }
 
+  const logoBase64 = await loadPdfLogo();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   // Overview page with table of ALL certificates
-  addOverviewPage(doc, person, person.certificates, companyName);
+  addOverviewPage(doc, person, person.certificates, companyName, logoBase64);
 
   let included = 0;
   let skipped = 0;
