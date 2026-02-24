@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const ALLOWED_PRICE_IDS = new Set([
-  "price_1T4UM3CTVQHwswgojzCUGSYV",
+  "price_1T4TiBCTVQHwswgoMCQBB0Kv",
   "price_1T4TipCTVQHwswgo3i7Wxi0p",
   "price_1T4TjxCTVQHwswgobYyRRe10",
   "price_1T4TkFCTVQHwswgop7yCPQRM",

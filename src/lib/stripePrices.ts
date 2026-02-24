@@ -1,6 +1,6 @@
 export const PRICE_MAP = {
   // Starter
-  starter_monthly:      "price_1T4UM3CTVQHwswgojzCUGSYV",
+  starter_monthly:      "price_1T4TiBCTVQHwswgoMCQBB0Kv",
   starter_annual:       "price_1T4TipCTVQHwswgo3i7Wxi0p",
 
   // Growth

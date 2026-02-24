@@ -18,7 +18,7 @@ const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 // ──────────────────────────────────────────────
 const TIER_MAP: Record<string, { tier: string; profile_cap: number; is_unlimited: boolean }> = {
   // Starter
-  "price_1T4UM3CTVQHwswgojzCUGSYV": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Monthly (10 NOK test)
+  "price_1T4TiBCTVQHwswgoMCQBB0Kv": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Monthly
   "price_1T4TipCTVQHwswgo3i7Wxi0p": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Annual
   // Growth
   "price_1T4TjxCTVQHwswgobYyRRe10": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Monthly
