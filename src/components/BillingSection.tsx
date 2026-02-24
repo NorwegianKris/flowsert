@@ -71,14 +71,22 @@ export function BillingSection({ businessId }: BillingSectionProps) {
       const token = sessionData?.session?.access_token;
       if (!token) { toast.error('Please sign in first'); return; }
 
-      const res = await supabase.functions.invoke('create-checkout-session', {
-        body: { price_id: priceId },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ price_id: priceId }),
+        }
+      );
 
-      if (res.error) throw new Error(res.error.message);
-      const { url } = res.data;
-      if (url) window.location.href = url;
-      else throw new Error('No checkout URL returned');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Checkout failed');
+      if (!data.url) throw new Error('No checkout URL returned');
+      window.location.href = data.url;
     } catch (err: any) {
       toast.error(err.message || 'Failed to start checkout');
     } finally {
@@ -89,11 +97,26 @@ export function BillingSection({ businessId }: BillingSectionProps) {
   const handleManageBilling = async () => {
     setPortalLoading(true);
     try {
-      const res = await supabase.functions.invoke('create-portal-session', {});
-      if (res.error) throw new Error(res.error.message);
-      const { url } = res.data;
-      if (url) window.open(url, '_blank');
-      else throw new Error('No portal URL returned');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) { toast.error('Please sign in first'); return; }
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Portal failed');
+      if (!data.url) throw new Error('No portal URL returned');
+      window.open(data.url, '_blank');
     } catch (err: any) {
       toast.error(err.message || 'Failed to open billing portal');
     } finally {
