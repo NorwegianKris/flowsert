@@ -1,41 +1,167 @@
 
 
-## Fix: Switch Toggle in Activation List Opens Sidebar Instead of Toggling
+## Standardize Project Card PDF to Match FlowSert Export Design System
 
-**Risk: GREEN** -- purely UI event handling fix, no DB/auth/RLS changes.
+**Risk: GREEN** -- Client-side PDF generation only. No database, RLS, auth, or backend changes.
 
-### Single file: `src/components/ActivationOverview.tsx`
+### Single file: `src/components/ShareProjectDialog.tsx`
 
-### Root Cause
+### Summary of Changes
 
-The personnel row `div` (line 208-211) has an `onClick` that opens the profile preview sidebar. The `Switch` component (lines 272-275) does not stop event propagation, so clicking the toggle bubbles up to the row and opens the sidebar instead of (or in addition to) toggling activation.
+Rewrite the `generateProjectCardPdf()` function (lines 66-434) to match the Competence Matrix export (`competenceMatrixPdf.ts`) in orientation, header, typography, table styling, footer, and legend.
 
-### Fix
+---
 
-Wrap the Switch and its "Active/Inactive" label in a container `div` with `onClick={(e) => e.stopPropagation()}` so that any click in the toggle area is isolated from the row's click handler.
+### 1. Page Setup
 
-**Lines 269-275** -- wrap the status label and Switch:
+**Current**: Portrait (`new jsPDF()`)
+**Change to**: Landscape (`new jsPDF('l')`)
 
-```tsx
-// Before
-<span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
-  {person.activated ? 'Active' : 'Inactive'}
-</span>
-<Switch
-  checked={person.activated}
-  onCheckedChange={() => handleToggle(person)}
-/>
+**Current**: Margins mixed (14 used but inconsistently)
+**Change to**: `const margin = 14` used consistently throughout, matching the matrix.
 
-// After
-<div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-  <span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
-    {person.activated ? 'Active' : 'Inactive'}
-  </span>
-  <Switch
-    checked={person.activated}
-    onCheckedChange={() => handleToggle(person)}
-  />
-</div>
+---
+
+### 2. Header Structure
+
+Replace the current header (lines 98-167) with the exact matrix header pattern:
+
+```text
+Line 1: "PROJECT CARD" -- fontSize 16, bold, centered (matrix uses 16)
+Line 2: "FlowSert Workforce Compliance" -- fontSize 9, gray(120), centered
+Metadata block (fontSize 8, gray(80,80,80)):
+  Left:  "Company: {name}"          Right: "Project: {name}"
+  Left:  "Duration: {start} - {end}" Right: "Generated: {date}"
+Extra fields (Status, Customer, Location, PM, Work Category) rendered below in same fontSize 8
+Horizontal divider: drawColor(200,200,200), lineWidth 0.3
 ```
 
-This ensures clicks on the toggle and the area directly around it only trigger the activation dialog, not the profile sidebar.
+The header is drawn via a `drawHeader()` function that is called by `didDrawPage` on every table, ensuring it repeats on every page (matching the matrix pattern).
+
+**Header height**: 34mm base (matching matrix single-section).
+
+---
+
+### 3. Typography Alignment
+
+| Element | Current | Matrix Reference | Change to |
+|---------|---------|-----------------|-----------|
+| Title | fontSize 14 | fontSize 16 | 16 |
+| Subtitle | fontSize 8 | fontSize 9 | 9 |
+| Metadata | fontSize 7 | fontSize 8 | 8 |
+| Section titles | fontSize 8 | fontSize 8 | 8 (no change) |
+| Table head | fontSize 7 | fontSize 6 | 6 |
+| Table body | fontSize 7 | fontSize 8 | 8 |
+| Legend | fontSize 6 | fontSize 7 | 7 |
+| Footer | fontSize 7 | fontSize 7 | 7 (no change) |
+
+All gray tones match matrix: metadata text uses `(80,80,80)`, subtitle uses `(120,120,120)`, footer uses `(128,128,128)`.
+
+---
+
+### 4. Table Styling (All Tables)
+
+Replace the current `tableStyles` object (lines 72-86) with the exact matrix autoTable configuration:
+
+```typescript
+// Shared table config matching competenceMatrixPdf.ts exactly
+const sharedTableConfig = {
+  theme: 'grid' as const,
+  showHead: 'everyPage' as const,
+  rowPageBreak: 'avoid' as const,
+  margin: { left: margin, right: margin, top: headerHeight },
+  headStyles: {
+    fillColor: [240, 240, 240],
+    textColor: [0, 0, 0],
+    fontSize: 6,
+    fontStyle: 'bold',
+    halign: 'center',
+    valign: 'middle',
+    overflow: 'linebreak',
+  },
+  bodyStyles: {
+    fontSize: 8,
+    halign: 'center',
+    valign: 'middle',
+  },
+  styles: {
+    cellPadding: 3,
+    lineWidth: 0.2,
+    lineColor: [200, 200, 200],
+  },
+};
+```
+
+All tables (Phases, Milestones, Events, Personnel, Competence Matrix) use this shared config with `didDrawPage: () => drawHeader()` to redraw the header on every page.
+
+---
+
+### 5. Compliance Status Styling
+
+No changes needed -- the V/E/X fills `[235,245,235]`, `[255,245,230]`, `[250,232,232]` already match the matrix exactly. The `didParseCell` logic stays the same.
+
+---
+
+### 6. Section Spacing
+
+Standardize vertical spacing between sections to 8mm (matching current `yPosition += 8` after tables). Section titles use fontSize 8, bold, black -- already consistent.
+
+---
+
+### 7. Inline Competence Matrix Subsection
+
+The inline matrix (lines 305-421) currently uses slightly different font sizes (head: 5, body: 6) and column widths (40+24) compared to the standalone matrix (head: 6, body: 8, columns 42+26+20).
+
+**Change to**: Match the standalone matrix exactly:
+- Head fontSize: 6
+- Body fontSize: 8
+- Fixed columns: Name (42mm), Role (26mm), Type (20mm) -- add Type column
+- Cell padding: 3
+- Use landscape-appropriate available width for cert columns
+- Same batching logic with batch labels
+
+---
+
+### 8. Legend
+
+**Current**: fontSize 6 at bottom of matrix section
+**Change to**: fontSize 7, rendered once at the end of the entire document (after all sections), matching the matrix legend exactly:
+
+```
+Legend:  V - Valid    E - Expiring within 60 days    X - Expired    - - Not required / Not registered
+```
+
+Position: `Math.min(finalY + 10, pageHeight - 20)` matching matrix.
+
+---
+
+### 9. Footer
+
+**Current**: `pageHeight - 10`, centered page number + right-aligned branding
+**Change to**: `pageHeight - 8`, matching matrix exactly:
+
+```typescript
+for (let i = 1; i <= pageCount; i++) {
+  doc.setPage(i);
+  doc.setFontSize(7);
+  doc.setTextColor(128, 128, 128);
+  doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+  doc.text('Generated by FlowSert', pageWidth - margin, pageHeight - 8, { align: 'right' });
+}
+```
+
+---
+
+### 10. Page Break Handling
+
+Replace the current manual `checkPageBreak()` approach. Since landscape gives more vertical space per page and `didDrawPage` redraws headers, the autoTable pagination handles page breaks naturally. The `checkPageBreak` helper is kept but updated to use `headerHeight` as the top margin instead of hardcoded 20.
+
+---
+
+### What Does NOT Change
+
+- Data content (project fields, personnel data, certificate status calculations)
+- Business logic (filtering, sorting, status computation)
+- The rest of `ShareProjectDialog.tsx` (dialog UI, export selection, bundle generation)
+- `competenceMatrixPdf.ts` (untouched, used as reference only)
+
