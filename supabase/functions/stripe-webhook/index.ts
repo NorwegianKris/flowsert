@@ -158,9 +158,14 @@ Deno.serve(async (req: Request) => {
 
   // 2. Read raw body and verify signature
   const rawBody = await req.text();
+  if (!webhookSecret) {
+    log("STRIPE_WEBHOOK_SECRET is not configured");
+    return new Response("Webhook secret not configured", { status: 500 });
+  }
+
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(rawBody, sig, webhookSecret);
   } catch (err) {
     log("Invalid signature", { error: String(err) });
     return new Response("Invalid signature", { status: 400 });
