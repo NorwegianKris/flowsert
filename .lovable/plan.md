@@ -1,33 +1,41 @@
 
-## Consistent Accept/Decline Color Coding Across the System
 
-**Risk: GREEN** -- purely UI styling, no DB/auth/RLS changes.
+## Fix: Switch Toggle in Activation List Opens Sidebar Instead of Toggling
 
-### The Standard Pattern
+**Risk: GREEN** -- purely UI event handling fix, no DB/auth/RLS changes.
 
-All accept/decline actions will follow these consistent styles:
+### Single file: `src/components/ActivationOverview.tsx`
 
-- **Accept button**: `text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700` (green)
-- **Decline/Reject button**: `text-red-600 hover:bg-red-50 hover:text-red-700` (red)
-- **Accept full button** (in dialogs): `bg-emerald-600 text-white hover:bg-emerald-700`
-- **Decline full button** (in dialogs): `variant="outline"` with `text-red-600 hover:text-red-700`
+### Root Cause
 
-### Files to Update
+The personnel row `div` (line 208-211) has an `onClick` that opens the profile preview sidebar. The `Switch` component (lines 272-275) does not stop event propagation, so clicking the toggle bubbles up to the row and opens the sidebar instead of (or in addition to) toggling activation.
 
-**1. `src/components/PersonnelInvitations.tsx`** (Worker-side invitation accept/decline)
+### Fix
 
-- **Inline buttons (lines 102-120)**: Change the Decline button from `text-destructive hover:text-destructive` to `text-red-600 hover:bg-red-50 hover:text-red-700`. Change Accept button from default primary to `bg-emerald-600 text-white hover:bg-emerald-700`.
-- **Dialog footer (lines 266-281)**: Same changes -- Decline gets red styling, Accept gets green styling.
+Wrap the Switch and its "Active/Inactive" label in a container `div` with `onClick={(e) => e.stopPropagation()}` so that any click in the toggle area is isolated from the row's click handler.
 
-**2. `src/components/ProjectApplicationsList.tsx`** (Admin-side application accept/reject)
+**Lines 269-275** -- wrap the status label and Switch:
 
-- **Dialog footer (lines 161-176)**: Change Reject from `text-destructive hover:text-destructive` to `text-red-600 hover:text-red-700`. Change Accept from default primary to `bg-emerald-600 text-white hover:bg-emerald-700`.
-- Inline buttons already use the correct green/red pattern -- no changes needed there.
+```tsx
+// Before
+<span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
+  {person.activated ? 'Active' : 'Inactive'}
+</span>
+<Switch
+  checked={person.activated}
+  onCheckedChange={() => handleToggle(person)}
+/>
 
-**3. `src/components/InvitationLog.tsx`** (Admin invitation status management)
+// After
+<div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+  <span className={`text-xs font-medium w-12 text-right ${person.activated ? 'text-primary' : 'text-muted-foreground'}`}>
+    {person.activated ? 'Active' : 'Inactive'}
+  </span>
+  <Switch
+    checked={person.activated}
+    onCheckedChange={() => handleToggle(person)}
+  />
+</div>
+```
 
-- **Dropdown items (lines 227-250)**: Already uses `text-green-600` and `text-red-600` which is consistent. Normalize to `text-emerald-600` and `text-red-600` for exact consistency with the other components.
-
-### Summary
-
-3 files updated for visual consistency. All accept actions become emerald green, all decline/reject actions become red. The pattern from `ProjectApplicationsList` inline buttons is used as the reference standard.
+This ensures clicks on the toggle and the area directly around it only trigger the activation dialog, not the profile sidebar.
