@@ -1,35 +1,21 @@
 
 
-## Temporary Tier Adjustment for Techno Dive
+## Request STRIPE_WEBHOOK_SECRET via Secure Input
 
-**Risk: GREEN** -- Data-only update to one row. No schema, RLS, function, or code changes.
+**Risk: GREEN** -- No code or schema changes. Secret configuration only.
 
 ---
 
-### What we know
+### What happens when you approve this plan
 
-- Business: **Techno Dive** (`38672512-2331-4546-8bc4-de942605fce1`)
-- Current entitlement: `starter`, `profile_cap = 25`
-- Active profiles: **157**
-- Warning banner is correctly showing
+1. A secure input modal will appear prompting you to enter your **STRIPE_WEBHOOK_SECRET** (the `whsec_...` value from Stripe Dashboard > Developers > Webhooks > your endpoint > Signing secret)
 
-### Change
+2. The following URL secrets will also be configured:
+   - `STRIPE_SUCCESS_URL` = `https://flowsert.lovable.app/admin?billing=success`
+   - `STRIPE_CANCEL_URL` = `https://flowsert.lovable.app/admin?billing=canceled`
+   - `STRIPE_PORTAL_RETURN_URL` = `https://flowsert.lovable.app/admin`
 
-Run a single UPDATE via migration (the only write path available):
+3. After secrets are saved, the full billing implementation (database migration, edge functions, frontend) will proceed in the next step.
 
-```sql
-UPDATE entitlements
-SET tier = 'professional',
-    profile_cap = 200,
-    is_unlimited = false,
-    updated_at = now()
-WHERE business_id = '38672512-2331-4546-8bc4-de942605fce1';
-```
-
-### After refresh
-
-- Warning banner disappears (157 < 200)
-- Activations allowed up to 200
-- Cap enforcement remains intact for activations 201+
-- No code changes needed
+### No code changes in this step
 
