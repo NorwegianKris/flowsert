@@ -9,12 +9,12 @@ const corsHeaders = {
 };
 
 const ALLOWED_PRICE_IDS = new Set([
-  "price_1T4Q47CTZs6lfaVYaVf2mLWJ",
-  "price_1T4Q5FCTZs6lfaVYJcUidzzL",
-  "price_1T4Q5nCTZs6lfaVYNr3gobm3",
-  "price_1T4Q6HCTZs6lfaVYoReiRSXM",
-  "price_1T4Q6iCTZs6lfaVYZEZNA1yo",
-  "price_1T4Q78CTZs6lfaVYkfdJW4eq",
+  "price_1T4TiBCTVQHwswgoMCQBB0Kv",
+  "price_1T4TipCTVQHwswgo3i7Wxi0p",
+  "price_1T4TjxCTVQHwswgobYyRRe10",
+  "price_1T4TkFCTVQHwswgop7yCPQRM",
+  "price_1T4TksCTVQHwswgoItMP8J6n",
+  "price_1T4Tl8CTVQHwswgoHkYuB2S9",
 ]);
 
 const log = (step: string, details?: unknown) => {

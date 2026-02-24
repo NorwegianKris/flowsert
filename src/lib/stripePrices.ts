@@ -1,10 +1,15 @@
 export const PRICE_MAP = {
-  starter_monthly: "price_1T4Q47CTZs6lfaVYaVf2mLWJ",
-  starter_annual: "price_1T4Q5FCTZs6lfaVYJcUidzzL",
-  growth_monthly: "price_1T4Q5nCTZs6lfaVYNr3gobm3",
-  growth_annual: "price_1T4Q6HCTZs6lfaVYoReiRSXM",
-  professional_monthly: "price_1T4Q6iCTZs6lfaVYZEZNA1yo",
-  professional_annual: "price_1T4Q78CTZs6lfaVYkfdJW4eq",
+  // Starter
+  starter_monthly:      "price_1T4TiBCTVQHwswgoMCQBB0Kv",
+  starter_annual:       "price_1T4TipCTVQHwswgo3i7Wxi0p",
+
+  // Growth
+  growth_monthly:       "price_1T4TjxCTVQHwswgobYyRRe10",
+  growth_annual:        "price_1T4TkFCTVQHwswgop7yCPQRM",
+
+  // Professional
+  professional_monthly: "price_1T4TksCTVQHwswgoItMP8J6n",
+  professional_annual:  "price_1T4Tl8CTVQHwswgoHkYuB2S9",
 } as const;
 
 export const ALLOWED_PRICE_IDS = new Set(Object.values(PRICE_MAP));
