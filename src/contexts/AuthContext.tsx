@@ -9,6 +9,9 @@ interface Profile {
   email: string;
   full_name: string | null;
   business_id: string | null;
+  terms_accepted_at: string | null;
+  terms_version: string | null;
+  privacy_version: string | null;
 }
 
 interface AuthContextType {
@@ -21,6 +24,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string, inviteToken?: string, jobSeekerToken?: string, jobSeekerRole?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAdmin: boolean;
   isWorker: boolean;
   isSuperadmin: boolean;
@@ -183,6 +187,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshProfile = useCallback(async () => {
+    if (!user) return;
+    fetchedUserIdRef.current = null;
+    await fetchUserData(user.id);
+  }, [user, fetchUserData]);
+
   // Superadmin is determined by email - only kmu@live.no can be superadmin
   const isSuperadmin = profile?.email === 'kmu@live.no';
 
@@ -196,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
+    refreshProfile,
     isAdmin: role === 'admin',
     isWorker: role === 'worker',
     isSuperadmin,

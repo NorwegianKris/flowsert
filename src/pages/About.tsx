@@ -2,6 +2,7 @@ import { Shield, Users, Award, Target, FileCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PublicFooter } from '@/components/PublicFooter';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 export default function About() {
@@ -172,6 +173,8 @@ export default function About() {
           </Button>
         </div>
       </section>
+
+      <PublicFooter />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PublicFooter } from '@/components/PublicFooter';
 import {
   Accordion,
   AccordionContent,
@@ -120,6 +121,8 @@ export default function FAQ() {
           </div>
         </div>
       </section>
+
+      <PublicFooter />
     </div>
   );
 }
