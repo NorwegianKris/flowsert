@@ -1,49 +1,57 @@
 
+Goal
+- Restore successful Stripe webhook verification and stop HTTP 400 “Invalid signature” responses.
 
-## Update TIER_MAP in stripe-webhook with Stripe Price IDs
+What I found (anchored evidence)
+- 🔴 Anchor 1 (edge function code): `supabase/functions/stripe-webhook/index.ts` currently uses synchronous signature verification:
+  - `event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);`
+- 🔴 Anchor 2 (runtime logs): Latest `stripe-webhook` logs show:
+  - `SubtleCryptoProvider cannot be used in a synchronous context. Use await constructEventAsync(...) instead of constructEvent(...)`
+- This means failures are not only from secret mismatch; the current code path itself is incompatible in this runtime and will keep returning 400 even with a correct secret.
 
-**Risk: RED** -- Modifying the webhook's subscription-to-entitlement mapping logic.
+Implementation plan (after approval)
+1) Secret re-entry flow (requested by you)
+- I will guide and trigger the secret re-entry flow for `STRIPE_WEBHOOK_SECRET` using the available secure secret workflow.
+- You’ll paste the `whsec_...` from Stripe Test mode webhook endpoint signing secret.
+- Confirmation checkpoint: verify the secret key name is exactly `STRIPE_WEBHOOK_SECRET` (case-sensitive, no extra spaces/newlines).
 
----
+2) Webhook verification fix in code
+- Update `supabase/functions/stripe-webhook/index.ts`:
+  - Replace `constructEvent(...)` with `await constructEventAsync(...)`.
+  - Keep raw body handling via `await req.text()` (already correct).
+  - Add a defensive startup/runtime check for missing `STRIPE_WEBHOOK_SECRET` to return a clear operational error message (instead of opaque 400s).
+- Keep existing idempotency and event-processing logic unchanged.
 
-### What changes
+3) Restart/redeploy webhook function
+- Redeploy/restart `stripe-webhook` so it reloads environment variables and new verification logic.
+- This ensures both new secret + async signature verification are active.
 
-**File:** `supabase/functions/stripe-webhook/index.ts`
+4) End-to-end validation
+- Send Stripe test webhook events (at minimum):
+  - `checkout.session.completed`
+  - `customer.subscription.updated`
+- Verify expected outcomes:
+  - No “Invalid signature” log entries.
+  - “Event received” + downstream processing logs appear.
+  - Rows are inserted/updated correctly in:
+    - `billing_events`
+    - `billing_subscriptions`
+    - `entitlements` (for subscription events)
 
-Replace the commented-out placeholder `TIER_MAP` with the actual Stripe price IDs:
+5) Fast rollback/triage if still failing
+- If 400 persists:
+  - Confirm Stripe endpoint is pointing to the exact deployed webhook URL.
+  - Confirm test-mode secret is used with test-mode events (and live with live).
+  - Re-check `stripe-signature` header presence in incoming request logs.
+  - Inspect latest webhook event payload + headers to isolate mismatch source quickly.
 
-```text
-const TIER_MAP = {
-  // Starter
-  "price_1T4Q47CTZs6lfaVYaVf2mLWJ": { tier: "starter",       profile_cap: 25,  is_unlimited: false }, // Monthly
-  "price_1T4Q5FCTZs6lfaVYJcUidzzL": { tier: "starter",       profile_cap: 25,  is_unlimited: false }, // Annual
-  // Growth
-  "price_1T4Q5nCTZs6lfaVYNr3gobm3": { tier: "growth",        profile_cap: 75,  is_unlimited: false }, // Monthly
-  "price_1T4Q6HCTZs6lfaVYoReiRSXM": { tier: "growth",        profile_cap: 75,  is_unlimited: false }, // Annual
-  // Professional
-  "price_1T4Q6iCTZs6lfaVYZEZNA1yo": { tier: "professional",  profile_cap: 200, is_unlimited: false }, // Monthly
-  "price_1T4Q78CTZs6lfaVYkfdJW4eq": { tier: "professional",  profile_cap: 200, is_unlimited: false }, // Annual
-};
-```
+Risks and mitigations
+- Risk: Secret is correct but old code path remains deployed.
+  - Mitigation: explicit redeploy after code change.
+- Risk: Test/live mode mismatch in Stripe dashboard.
+  - Mitigation: validate endpoint + mode during post-deploy checks.
+- Risk: Hidden whitespace in pasted secret.
+  - Mitigation: re-paste and save once; test immediately after.
 
-No product ID fallbacks needed since all 6 price IDs are provided. The commented-out product ID lines will be removed.
-
-### What does NOT change
-
-- Processing order, signature verification, idempotency, entitlement sync logic
-- Deterministic downgrade behavior for non-active statuses
-- No database changes
-- No frontend changes
-
-### After deploy -- verification steps
-
-1. In Stripe Dashboard (Test mode), go to **Developers > Webhooks > Send test webhook**
-2. Select event type `customer.subscription.updated`
-3. Check your database:
-   - `billing_events`: new row with the test event's `stripe_event_id`
-   - If `resolution_failed = true`, that's expected for a synthetic test event (no real customer/business mapping)
-4. For a real end-to-end test: complete a Stripe Checkout flow, then verify:
-   - `billing_customers`: row linking your `business_id` to `stripe_customer_id`
-   - `billing_subscriptions`: row with correct `stripe_price_id` and `status = 'active'`
-   - `entitlements`: `is_active = true`, correct `tier` and `profile_cap` matching the price
-
+Expected result
+- Webhook signature verification succeeds (HTTP 200 for valid events), and billing sync resumes reliably without repeated 400 invalid signature failures.
