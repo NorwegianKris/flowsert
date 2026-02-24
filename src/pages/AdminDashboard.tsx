@@ -13,6 +13,7 @@ import { ExpiryTimeline } from '@/components/ExpiryTimeline';
 import { RecentRegistrations } from '@/components/RecentRegistrations';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
+import { BillingSection } from '@/components/BillingSection';
 import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsManager';
 import { LocationStandardizationTool } from '@/components/LocationStandardizationTool';
 
@@ -716,6 +717,8 @@ export default function AdminDashboard() {
                   </CollapsibleContent>
                 </Collapsible>
                 
+                <BillingSection businessId={profile?.business_id} />
+
                 <CategoriesSection />
 
                 <Collapsible>
