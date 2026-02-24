@@ -17,18 +17,15 @@ const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 // TIER_MAP — Update with your actual Stripe IDs
 // ──────────────────────────────────────────────
 const TIER_MAP: Record<string, { tier: string; profile_cap: number; is_unlimited: boolean }> = {
-  // Price IDs (preferred lookup)
-  // "price_starter_monthly":  { tier: "starter",       profile_cap: 25,  is_unlimited: false },
-  // "price_starter_annual":   { tier: "starter",       profile_cap: 25,  is_unlimited: false },
-  // "price_growth_monthly":   { tier: "growth",        profile_cap: 75,  is_unlimited: false },
-  // "price_growth_annual":    { tier: "growth",        profile_cap: 75,  is_unlimited: false },
-  // "price_pro_monthly":      { tier: "professional",  profile_cap: 200, is_unlimited: false },
-  // "price_pro_annual":       { tier: "professional",  profile_cap: 200, is_unlimited: false },
-  // Product IDs (fallback)
-  // "prod_starter":           { tier: "starter",       profile_cap: 25,  is_unlimited: false },
-  // "prod_growth":            { tier: "growth",        profile_cap: 75,  is_unlimited: false },
-  // "prod_professional":      { tier: "professional",  profile_cap: 200, is_unlimited: false },
-  // "prod_enterprise":        { tier: "enterprise",    profile_cap: 0,   is_unlimited: true  },
+  // Starter
+  "price_1T4Q47CTZs6lfaVYaVf2mLWJ": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Monthly
+  "price_1T4Q5FCTZs6lfaVYJcUidzzL": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Annual
+  // Growth
+  "price_1T4Q5nCTZs6lfaVYNr3gobm3": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Monthly
+  "price_1T4Q6HCTZs6lfaVYoReiRSXM": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Annual
+  // Professional
+  "price_1T4Q6iCTZs6lfaVYZEZNA1yo": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Monthly
+  "price_1T4Q78CTZs6lfaVYkfdJW4eq": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Annual
 };
 
 const DEFAULT_ENTITLEMENT = {
