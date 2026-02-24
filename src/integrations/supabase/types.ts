@@ -88,6 +88,118 @@ export type Database = {
           },
         ]
       }
+      billing_customers: {
+        Row: {
+          business_id: string
+          created_at: string
+          stripe_customer_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          stripe_customer_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          stripe_customer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_customers_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_events: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json | null
+          resolution_failed: boolean
+          stripe_customer_id: string | null
+          stripe_event_id: string
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          resolution_failed?: boolean
+          stripe_customer_id?: string | null
+          stripe_event_id: string
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          resolution_failed?: boolean
+          stripe_customer_id?: string | null
+          stripe_event_id?: string
+          stripe_subscription_id?: string | null
+        }
+        Relationships: []
+      }
+      billing_subscriptions: {
+        Row: {
+          business_id: string
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          stripe_subscription_id: string
+          trial_end: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          stripe_subscription_id: string
+          trial_end?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          stripe_subscription_id?: string
+          trial_end?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_documents: {
         Row: {
           business_id: string
