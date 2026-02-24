@@ -1,167 +1,68 @@
 
 
-## Standardize Project Card PDF to Match FlowSert Export Design System
+## Unify External Sharing PDF with Project View Export + Add Project Toggle
 
-**Risk: GREEN** -- Client-side PDF generation only. No database, RLS, auth, or backend changes.
+**Risk: GREEN** -- Client-side PDF generation and UI only. No database, RLS, auth, or backend changes.
 
-### Single file: `src/components/ShareProjectDialog.tsx`
-
-### Summary of Changes
-
-Rewrite the `generateProjectCardPdf()` function (lines 66-434) to match the Competence Matrix export (`competenceMatrixPdf.ts`) in orientation, header, typography, table styling, footer, and legend.
+### Single file: `src/components/ExternalSharingDialog.tsx`
 
 ---
 
-### 1. Page Setup
+### Problem
 
-**Current**: Portrait (`new jsPDF()`)
-**Change to**: Landscape (`new jsPDF('l')`)
+The `ExternalSharingDialog` (Admin Dashboard > Actions > External Sharing) has its own `generateProjectCardPdf` function (lines 138-291) that uses the **old template**: portrait orientation, blue striped headers, basic layout. This does not match the standardized design system used in `ShareProjectDialog` (landscape, grid theme, gray headers, multi-section layout with phases/milestones/events/matrix).
 
-**Current**: Margins mixed (14 used but inconsistently)
-**Change to**: `const margin = 14` used consistently throughout, matching the matrix.
+### Two Changes
 
----
+#### 1. Replace the old PDF generator with the standardized one
 
-### 2. Header Structure
+Delete the local `generateProjectCardPdf` function (lines 138-291) and replace it with the same implementation from `ShareProjectDialog.tsx`. This means the ExternalSharingDialog will need to:
 
-Replace the current header (lines 98-167) with the exact matrix header pattern:
+- Fetch project phases for the selected project (using the `useProjectPhases` hook or a direct query)
+- Use the same landscape orientation, header, table config, section layout (description, phases, milestones, events, personnel with compliance, inline competence matrix, legend), and footer
 
-```text
-Line 1: "PROJECT CARD" -- fontSize 16, bold, centered (matrix uses 16)
-Line 2: "FlowSert Workforce Compliance" -- fontSize 9, gray(120), centered
-Metadata block (fontSize 8, gray(80,80,80)):
-  Left:  "Company: {name}"          Right: "Project: {name}"
-  Left:  "Duration: {start} - {end}" Right: "Generated: {date}"
-Extra fields (Status, Customer, Location, PM, Work Category) rendered below in same fontSize 8
-Horizontal divider: drawColor(200,200,200), lineWidth 0.3
-```
+Since `ShareProjectDialog` receives `phases` as a prop from the project detail view, the `ExternalSharingDialog` will need to fetch phases on-demand when a project is selected. This will be done with a direct Supabase query inside the component (fetch `project_phases` where `project_id` matches the selected project).
 
-The header is drawn via a `drawHeader()` function that is called by `didDrawPage` on every table, ensuring it repeats on every page (matching the matrix pattern).
+#### 2. Add Active/Previous toggle to project selector
 
-**Header height**: 34mm base (matching matrix single-section).
+Currently the project dropdown (lines 483-498) shows all projects in a flat list. Add a toggle similar to what `ProjectsTab` already uses, allowing the user to switch between:
+
+- **Active and Upcoming** (status = 'active' or 'pending') -- shown by default
+- **Previous** (status = 'completed')
+
+Implementation: Add a small toggle or segmented control above the project Select dropdown. Filter the projects list based on the selected category.
 
 ---
 
-### 3. Typography Alignment
+### Technical Details
 
-| Element | Current | Matrix Reference | Change to |
-|---------|---------|-----------------|-----------|
-| Title | fontSize 14 | fontSize 16 | 16 |
-| Subtitle | fontSize 8 | fontSize 9 | 9 |
-| Metadata | fontSize 7 | fontSize 8 | 8 |
-| Section titles | fontSize 8 | fontSize 8 | 8 (no change) |
-| Table head | fontSize 7 | fontSize 6 | 6 |
-| Table body | fontSize 7 | fontSize 8 | 8 |
-| Legend | fontSize 6 | fontSize 7 | 7 |
-| Footer | fontSize 7 | fontSize 7 | 7 (no change) |
-
-All gray tones match matrix: metadata text uses `(80,80,80)`, subtitle uses `(120,120,120)`, footer uses `(128,128,128)`.
-
----
-
-### 4. Table Styling (All Tables)
-
-Replace the current `tableStyles` object (lines 72-86) with the exact matrix autoTable configuration:
-
+**Phases fetching**: When `selectedProjectId` changes, fetch phases from `project_phases` table:
 ```typescript
-// Shared table config matching competenceMatrixPdf.ts exactly
-const sharedTableConfig = {
-  theme: 'grid' as const,
-  showHead: 'everyPage' as const,
-  rowPageBreak: 'avoid' as const,
-  margin: { left: margin, right: margin, top: headerHeight },
-  headStyles: {
-    fillColor: [240, 240, 240],
-    textColor: [0, 0, 0],
-    fontSize: 6,
-    fontStyle: 'bold',
-    halign: 'center',
-    valign: 'middle',
-    overflow: 'linebreak',
-  },
-  bodyStyles: {
-    fontSize: 8,
-    halign: 'center',
-    valign: 'middle',
-  },
-  styles: {
-    cellPadding: 3,
-    lineWidth: 0.2,
-    lineColor: [200, 200, 200],
-  },
-};
+const [projectPhases, setProjectPhases] = useState<ProjectPhase[]>([]);
+
+useEffect(() => {
+  if (!selectedProjectId) { setProjectPhases([]); return; }
+  supabase.from('project_phases').select('*')
+    .eq('project_id', selectedProjectId)
+    .order('start_date')
+    .then(({ data }) => setProjectPhases(data || []));
+}, [selectedProjectId]);
 ```
 
-All tables (Phases, Milestones, Events, Personnel, Competence Matrix) use this shared config with `didDrawPage: () => drawHeader()` to redraw the header on every page.
+**Project category toggle**: A simple state variable (`projectFilter: 'active' | 'previous'`) with two small buttons or a segmented control, defaulting to `'active'`. Active shows projects with status `active` or `pending`, Previous shows `completed`.
+
+**PDF generation**: Copy the `generateProjectCardPdf` function body from `ShareProjectDialog.tsx` (lines 66-500+), adapting it to accept the project as a parameter (since ExternalSharingDialog doesn't have a single fixed project). The function signature becomes `generateProjectCardPdf(project: Project, phases: ProjectPhase[])`.
+
+All other export options (Personnel and Certificates Matrix, Certificate Bundle) remain unchanged -- they already use the shared utility functions.
 
 ---
 
-### 5. Compliance Status Styling
+### Summary
 
-No changes needed -- the V/E/X fills `[235,245,235]`, `[255,245,230]`, `[250,232,232]` already match the matrix exactly. The `didParseCell` logic stays the same.
-
----
-
-### 6. Section Spacing
-
-Standardize vertical spacing between sections to 8mm (matching current `yPosition += 8` after tables). Section titles use fontSize 8, bold, black -- already consistent.
-
----
-
-### 7. Inline Competence Matrix Subsection
-
-The inline matrix (lines 305-421) currently uses slightly different font sizes (head: 5, body: 6) and column widths (40+24) compared to the standalone matrix (head: 6, body: 8, columns 42+26+20).
-
-**Change to**: Match the standalone matrix exactly:
-- Head fontSize: 6
-- Body fontSize: 8
-- Fixed columns: Name (42mm), Role (26mm), Type (20mm) -- add Type column
-- Cell padding: 3
-- Use landscape-appropriate available width for cert columns
-- Same batching logic with batch labels
-
----
-
-### 8. Legend
-
-**Current**: fontSize 6 at bottom of matrix section
-**Change to**: fontSize 7, rendered once at the end of the entire document (after all sections), matching the matrix legend exactly:
-
-```
-Legend:  V - Valid    E - Expiring within 60 days    X - Expired    - - Not required / Not registered
-```
-
-Position: `Math.min(finalY + 10, pageHeight - 20)` matching matrix.
-
----
-
-### 9. Footer
-
-**Current**: `pageHeight - 10`, centered page number + right-aligned branding
-**Change to**: `pageHeight - 8`, matching matrix exactly:
-
-```typescript
-for (let i = 1; i <= pageCount; i++) {
-  doc.setPage(i);
-  doc.setFontSize(7);
-  doc.setTextColor(128, 128, 128);
-  doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
-  doc.text('Generated by FlowSert', pageWidth - margin, pageHeight - 8, { align: 'right' });
-}
-```
-
----
-
-### 10. Page Break Handling
-
-Replace the current manual `checkPageBreak()` approach. Since landscape gives more vertical space per page and `didDrawPage` redraws headers, the autoTable pagination handles page breaks naturally. The `checkPageBreak` helper is kept but updated to use `headerHeight` as the top margin instead of hardcoded 20.
-
----
-
-### What Does NOT Change
-
-- Data content (project fields, personnel data, certificate status calculations)
-- Business logic (filtering, sorting, status computation)
-- The rest of `ShareProjectDialog.tsx` (dialog UI, export selection, bundle generation)
-- `competenceMatrixPdf.ts` (untouched, used as reference only)
+| What | Before | After |
+|------|--------|-------|
+| Project Card PDF template | Old (portrait, blue striped, basic) | Standardized (landscape, grid, full sections) |
+| Project selector | Flat list of all projects | Toggle between Active/Upcoming and Previous |
+| Phases in PDF | Not included | Fetched and included (matching project view export) |
+| Other exports | Unchanged | Unchanged |
 
