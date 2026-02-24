@@ -1,98 +1,45 @@
 
 
-# Fix BillingSection: Replace supabase.functions.invoke with direct fetch
+# Update Stripe Price IDs to Live Mode
 
-## Problem
-`supabase.functions.invoke()` is returning an opaque response that prevents reading JSON. The UI spinner never resolves.
+## Summary
+Replace all test-mode Stripe price IDs with live-mode price IDs across three files, updated atomically.
 
-## Solution
-Replace `supabase.functions.invoke` calls in both `handleSubscribe` and `handleManageBilling` with direct `fetch()` using the default CORS mode, explicit Authorization header, and proper JSON parsing with error handling.
+## Note on shared config
+Edge functions run in Deno and cannot import from `src/`, so the `ALLOWED_PRICE_IDS` set in `create-checkout-session/index.ts` and `TIER_MAP` in `stripe-webhook/index.ts` must be hardcoded. All three files will be updated in the same change to keep them in sync.
 
 ## Changes
 
-### File: `src/components/BillingSection.tsx`
+### 1. `src/lib/stripePrices.ts`
+Replace the `PRICE_MAP` values with the six new live-mode price IDs. Keep all other exports (`TIER_INFO`, `getPriceId`, types) unchanged.
 
-**handleSubscribe** (lines 66-87): Replace `supabase.functions.invoke` with:
+### 2. `supabase/functions/stripe-webhook/index.ts`
+Replace the six `TIER_MAP` keys with the new live-mode price IDs. Tier/cap/unlimited values stay the same.
 
-```typescript
-const handleSubscribe = async (tier: TierKey) => {
-  const priceId = getPriceId(tier, interval);
-  setLoadingPrice(priceId);
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
-    if (!token) { toast.error('Please sign in first'); return; }
+### 3. `supabase/functions/create-checkout-session/index.ts`
+Replace the six entries in the `ALLOWED_PRICE_IDS` set with the new live-mode price IDs.
 
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ price_id: priceId }),
-      }
-    );
+## New Price IDs
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Checkout failed');
-    if (!data.url) throw new Error('No checkout URL returned');
-    window.location.href = data.url;
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to start checkout');
-  } finally {
-    setLoadingPrice(null);
-  }
-};
-```
+| Key | New Live Price ID |
+|-----|------------------|
+| starter_monthly | price_1T4TiBCTVQHwswgoMCQBB0Kv |
+| starter_annual | price_1T4TipCTVQHwswgo3i7Wxi0p |
+| growth_monthly | price_1T4TjxCTVQHwswgobYyRRe10 |
+| growth_annual | price_1T4TkFCTVQHwswgop7yCPQRM |
+| professional_monthly | price_1T4TksCTVQHwswgoItMP8J6n |
+| professional_annual | price_1T4Tl8CTVQHwswgoHkYuB2S9 |
 
-**handleManageBilling** (lines 89-101): Same pattern:
+## Post-deploy
+After the code changes deploy, you will need to update `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to their live-mode values.
 
-```typescript
-const handleManageBilling = async () => {
-  setPortalLoading(true);
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
-    if (!token) { toast.error('Please sign in first'); return; }
-
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      }
-    );
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Portal failed');
-    if (!data.url) throw new Error('No portal URL returned');
-    window.open(data.url, '_blank');
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to open billing portal');
-  } finally {
-    setPortalLoading(false);
-  }
-};
-```
-
-## Key improvements
-- Default fetch mode (no opaque response)
-- Explicit JSON parsing with `res.json()`
-- Error checking via `res.ok` before using data
-- `finally` block clears loading state in all cases
-- Error toast shown for any failure
-
-## Files Changed
+## Security Anchors
+- Q2 (edge functions): Two edge functions modified -- anchor required before publish.
+- All three files updated atomically to prevent price mismatch.
 
 | File | Action |
 |------|--------|
-| `src/components/BillingSection.tsx` | Edit (replace invoke calls with direct fetch) |
+| src/lib/stripePrices.ts | Edit -- replace 6 price IDs |
+| supabase/functions/stripe-webhook/index.ts | Edit -- replace TIER_MAP keys |
+| supabase/functions/create-checkout-session/index.ts | Edit -- replace ALLOWED_PRICE_IDS entries |
 
-## Security Anchors
-- Q5 (UI only): Yes -- purely frontend fetch logic change, no auth/schema/RLS changes
