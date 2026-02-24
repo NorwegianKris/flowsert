@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { Personnel } from '@/types';
 import { getCertificateStatus, EXPIRY_WARNING_DAYS } from '@/lib/certificateUtils';
+import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
 
 export interface CompetenceMatrixOptions {
   personnel: Personnel[];
@@ -32,8 +33,9 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
-export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): jsPDF {
+export async function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): Promise<jsPDF> {
   const { personnel, projectName, companyName } = options;
+  const logoBase64 = await loadPdfLogo();
   const doc = new jsPDF('l');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -62,6 +64,7 @@ export function generateCompetenceMatrixPdf(options: CompetenceMatrixOptions): j
 
   // ── Header drawing function ──
   const drawHeader = (batchLabel?: string) => {
+    drawPdfLogo(doc, logoBase64, margin);
     let y = 12;
 
     // Title

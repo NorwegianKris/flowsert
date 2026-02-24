@@ -31,6 +31,7 @@ import { getCertificateStatus, getPersonnelOverallStatus, EXPIRY_WARNING_DAYS } 
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
 import { supabase } from '@/integrations/supabase/client';
+import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
 
 interface ProjectPhaseRow {
   id: string;
@@ -171,7 +172,8 @@ export function ExternalSharingDialog({
   };
 
   // --- Standardized Project Card PDF (matches ShareProjectDialog exactly) ---
-  const generateProjectCardPdf = (project: Project): jsPDF => {
+  const generateProjectCardPdf = async (project: Project): Promise<jsPDF> => {
+    const logoBase64 = await loadPdfLogo();
     const doc = new jsPDF('l');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -207,6 +209,7 @@ export function ExternalSharingDialog({
 
     // --- drawHeader (called by didDrawPage on every page) ---
     const drawHeader = () => {
+      drawPdfLogo(doc, logoBase64, margin);
       let y = 12;
 
       // Title
@@ -558,7 +561,7 @@ export function ExternalSharingDialog({
     return doc;
   };
 
-  const generatePersonnelCertificatesPdf = (selectedPersonnel: Personnel[]): jsPDF => {
+  const generatePersonnelCertificatesPdf = (selectedPersonnel: Personnel[]): Promise<jsPDF> => {
     return generateCompetenceMatrixPdf({
       personnel: selectedPersonnel,
       projectName: selectedProject?.name,
@@ -578,7 +581,7 @@ export function ExternalSharingDialog({
           toast.error('Please select a project to export');
           return;
         }
-        const doc = generateProjectCardPdf(selectedProject);
+        const doc = await generateProjectCardPdf(selectedProject);
         const fileName = `${selectedProject.name.replace(/[^a-z0-9]/gi, '_')}_project_card.pdf`;
         doc.save(fileName);
       }
@@ -589,7 +592,7 @@ export function ExternalSharingDialog({
           toast.error('Please select personnel to export');
           return;
         }
-        const doc = generatePersonnelCertificatesPdf(selectedPeople);
+        const doc = await generatePersonnelCertificatesPdf(selectedPeople);
         const fileName = `personnel_certificates_report.pdf`;
         doc.save(fileName);
       }
@@ -620,7 +623,7 @@ export function ExternalSharingDialog({
           toast.error('Please select a project to export');
           return;
         }
-        const doc = generateProjectCardPdf(selectedProject);
+        const doc = await generateProjectCardPdf(selectedProject);
         const fileName = `${selectedProject.name.replace(/[^a-z0-9]/gi, '_')}_project_card.pdf`;
         doc.save(fileName);
         attachmentNames.push(fileName);
@@ -632,7 +635,7 @@ export function ExternalSharingDialog({
           toast.error('Please select personnel to export');
           return;
         }
-        const doc = generatePersonnelCertificatesPdf(selectedPeople);
+        const doc = await generatePersonnelCertificatesPdf(selectedPeople);
         const fileName = `personnel_certificates_report.pdf`;
         doc.save(fileName);
         attachmentNames.push(fileName);

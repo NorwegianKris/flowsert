@@ -28,6 +28,7 @@ import autoTable from 'jspdf-autotable';
 import { getCertificateStatus, getPersonnelOverallStatus, EXPIRY_WARNING_DAYS } from '@/lib/certificateUtils';
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
+import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
 
 interface ShareProjectDialogProps {
   open: boolean;
@@ -63,7 +64,8 @@ export function ShareProjectDialog({
     );
   };
 
-  const generateProjectCardPdf = (): jsPDF => {
+  const generateProjectCardPdf = async (): Promise<jsPDF> => {
+    const logoBase64 = await loadPdfLogo();
     const doc = new jsPDF('l');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -95,6 +97,7 @@ export function ShareProjectDialog({
 
     // --- drawHeader (called by didDrawPage on every page) ---
     const drawHeader = () => {
+      drawPdfLogo(doc, logoBase64, margin);
       let y = 12;
 
       // Title
@@ -445,7 +448,7 @@ export function ShareProjectDialog({
     return doc;
   };
 
-  const generatePersonnelCertificatesPdf = (): jsPDF => {
+  const generatePersonnelCertificatesPdf = (): Promise<jsPDF> => {
     return generateCompetenceMatrixPdf({
       personnel: assignedPersonnel,
       projectName: project.name,
@@ -461,13 +464,13 @@ export function ShareProjectDialog({
 
     try {
       if (selectedExports.includes('projectCard')) {
-        const doc = generateProjectCardPdf();
+        const doc = await generateProjectCardPdf();
         const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_project_card.pdf`;
         doc.save(fileName);
       }
 
       if (selectedExports.includes('personnelCertificates')) {
-        const doc = generatePersonnelCertificatesPdf();
+        const doc = await generatePersonnelCertificatesPdf();
         const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_personnel_certificates.pdf`;
         doc.save(fileName);
       }
@@ -494,14 +497,14 @@ export function ShareProjectDialog({
       const attachmentNames: string[] = [];
 
       if (selectedExports.includes('projectCard')) {
-        const doc = generateProjectCardPdf();
+        const doc = await generateProjectCardPdf();
         const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_project_card.pdf`;
         doc.save(fileName);
         attachmentNames.push(fileName);
       }
 
       if (selectedExports.includes('personnelCertificates')) {
-        const doc = generatePersonnelCertificatesPdf();
+        const doc = await generatePersonnelCertificatesPdf();
         const fileName = `${project.name.replace(/[^a-z0-9]/gi, '_')}_personnel_certificates.pdf`;
         doc.save(fileName);
         attachmentNames.push(fileName);
