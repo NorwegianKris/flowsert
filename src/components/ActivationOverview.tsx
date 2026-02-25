@@ -181,26 +181,55 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
       : effectiveEntitlement.tier.charAt(0).toUpperCase() + effectiveEntitlement.tier.slice(1)
     : '—';
 
-  const statusBadge = getStatusBadgeProps(subscriptionStatus);
+  const statusBadge = effectiveEntitlement?.is_unlimited && subscriptionStatus === null
+    ? { label: 'Manual', variant: 'secondary' as const }
+    : getStatusBadgeProps(subscriptionStatus);
   const hasKnownSubscription = typeof subscriptionStatus === 'string';
+
+  const ctaLabel = effectiveEntitlement?.is_unlimited
+    ? 'Manage billing'
+    : hasKnownSubscription
+      ? 'Manage plan'
+      : 'Choose plan';
+  const ctaVariant = effectiveEntitlement?.is_unlimited || hasKnownSubscription ? 'outline' : 'default';
 
   return (
     <>
       <Card className="border-border/50">
         <CardContent className="space-y-4">
-          {/* Summary */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Active: <span className="font-semibold text-foreground">{effectiveActiveCount ?? '—'}</span>
-                {' | '}
-                Plan cap: <span className="font-semibold text-foreground">{capDisplay}</span>
-              </span>
-              <Badge variant="secondary" className="text-xs">
-                {effectiveActiveCount ?? '—'} billable
-              </Badge>
+          {/* Current Plan Summary */}
+          <div className="rounded-lg border border-border/50 p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Current Plan</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Plan</p>
+                <Badge variant="secondary" className="mt-1 text-xs">{planLabel}</Badge>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Usage</p>
+                <p className="text-sm font-medium text-foreground mt-1">
+                  {effectiveActiveCount ?? '—'} / {capDisplay}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
+                <Badge variant={statusBadge.variant} className="mt-1 text-xs">{statusBadge.label}</Badge>
+              </div>
             </div>
-            <Progress value={progressPercent} className="h-2" />
+            {!effectiveEntitlement?.is_unlimited && (
+              <Progress value={progressPercent} className="h-2" />
+            )}
+            <Button
+              variant={ctaVariant as 'outline' | 'default'}
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => onChoosePlan?.()}
+            >
+              {ctaLabel}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Only active profiles count toward your limit.
+            </p>
           </div>
 
           {isOverCap && (
@@ -325,38 +354,6 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
               </div>
             </ScrollArea>
           )}
-
-          {/* Current Plan Summary */}
-          <div className="rounded-lg border border-border/50 p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground">Current Plan</p>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Plan</p>
-                <Badge variant="secondary" className="mt-1 text-xs">{planLabel}</Badge>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Usage</p>
-                <p className="text-sm font-medium text-foreground mt-1">
-                  {effectiveActiveCount ?? '—'} / {capDisplay}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
-                <Badge variant={statusBadge.variant} className="mt-1 text-xs">{statusBadge.label}</Badge>
-              </div>
-            </div>
-            <Button
-              variant={hasKnownSubscription ? 'outline' : 'default'}
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => onChoosePlan?.()}
-            >
-              {hasKnownSubscription ? 'Manage plan' : 'Choose plan'}
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Your plan sets a maximum number of active profiles. Upgrading increases this limit.
-            </p>
-          </div>
 
           {/* Terms & Conditions */}
           <Collapsible open={tcOpen} onOpenChange={setTcOpen}>
