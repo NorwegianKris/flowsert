@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react';
+import { Loader2, Shield, FileCheck, Users, BarChart3, Clock, CheckCircle, ChevronDown } from 'lucide-react';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { TERMS_VERSION, PRIVACY_VERSION } from '@/lib/legalVersions';
@@ -31,7 +31,7 @@ import technoDiveWorker from '@/assets/techno-dive-worker.jpg';
 import beforeCompliance from '@/assets/before-compliance.png';
 import afterCompliance from '@/assets/after-compliance.png';
 import technoDiveDiver from '@/assets/techno-dive-diver.jpg';
-import dashboardPreview from '@/assets/dashboard-preview.png';
+import HeroSection from '@/components/HeroSection';
 import { PublicHeader } from '@/components/PublicHeader';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -501,89 +501,10 @@ export default function Auth() {
     <div className="min-h-screen bg-background">
       <PublicHeader onLogin={() => openAuthDialog('signin')} />
 
-      {/* Hero + Product Preview with Background */}
-      <div className="relative overflow-hidden min-h-[calc(100vh-73px)] flex flex-col justify-center">
-        {/* Background Pattern */}
-        <div 
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage: `url(${heroBgPattern})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        
-        {/* Hero Section */}
-        <section className="pt-5 pb-2 md:pt-7 md:pb-3 relative z-10">
-          <div className="container mx-auto px-6">
-            <div className="max-w-2xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-rajdhani text-foreground mb-3 leading-[1.1] tracking-tight">
-                Make personnel
-                <span className="block">
-                  compliance{' '}
-                  <span 
-                    className="bg-clip-text text-transparent"
-                    style={{
-                      backgroundImage: 'linear-gradient(to right, #C4B5FD, #6366F1, #4338CA)',
-                    }}
-                  >
-                    flow
-                  </span>
-                </span>
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4 max-w-lg mx-auto">
-                Transform your work, hiring and compliance operations with smart certificate management software—built for industrial SMEs.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2.5 justify-center items-center">
-                <Button size="default" onClick={() => navigate('/contact')} className="h-8 px-4 text-sm gap-2">
-                  Get in Touch <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-                <Button size="default" variant="outline" onClick={() => setDemoDialogOpen(true)} className="h-8 px-4 text-sm">
-                  Book a Demo
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Product Preview */}
-        <section className="pb-5 md:pb-7 relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="max-w-xl mx-auto">
-            <div className="bg-card rounded-xl border border-border/50 shadow-xl shadow-primary/5 overflow-hidden">
-              <div className="bg-muted/50 px-3 py-2 border-b border-border/50 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-destructive/60" />
-                <div className="w-2 h-2 rounded-full bg-yellow-500/60" />
-                <div className="w-2 h-2 rounded-full bg-green-500/60" />
-                <span className="ml-3 text-xs text-muted-foreground">FlowSert Dashboard</span>
-              </div>
-              <img 
-                src={dashboardPreview} 
-                alt="FlowSert Dashboard Preview" 
-                className="w-full h-auto rounded-lg"
-              />
-            </div>
-          </div>
-          {/* Mobile: 2x2 grid */}
-          <div className="grid grid-cols-2 gap-2 mt-5 text-[1.19rem] tracking-widest uppercase font-rajdhani text-muted-foreground sm:hidden">
-            <span className="text-center">Offshore</span>
-            <span className="text-center">Subsea</span>
-            <span className="text-center">Industry</span>
-            <span className="text-center">Construction</span>
-          </div>
-          {/* Desktop: horizontal row with separators */}
-          <div className="hidden sm:flex items-center justify-center gap-3 mt-5 text-[1.19rem] tracking-widest uppercase font-rajdhani text-muted-foreground">
-            <span>Offshore</span>
-            <Separator orientation="vertical" className="h-4" />
-            <span>Subsea</span>
-            <Separator orientation="vertical" className="h-4" />
-            <span>Industry</span>
-            <Separator orientation="vertical" className="h-4" />
-            <span>Construction</span>
-          </div>
-        </div>
-        </section>
-      </div>
+      <HeroSection
+        onGetInTouch={() => navigate('/contact')}
+        onBookDemo={() => setDemoDialogOpen(true)}
+      />
 
       {/* Workforce Compliance Section */}
       <section className="py-16 bg-primary/5">
