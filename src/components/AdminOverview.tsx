@@ -293,15 +293,11 @@ export function AdminOverview() {
 
   return (
     <>
-      <Card className="border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Shield className="h-5 w-5 text-indigo-500" />
-            Admin Users
-            <Badge variant="secondary" className="ml-2">
-              {admins.length}
+      <div className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <Badge variant="secondary">
+            {admins.length} admin{admins.length !== 1 ? 's' : ''}
           </Badge>
-          </CardTitle>
           {isSuperadmin && (
             <Button
               size="sm"
@@ -312,8 +308,7 @@ export function AdminOverview() {
               Invite Admin
             </Button>
           )}
-        </CardHeader>
-      <CardContent>
+        </div>
         {admins.length === 0 ? (
           <div className="text-center py-4">
             <div className="text-3xl mb-2">👔</div>
@@ -371,8 +366,7 @@ export function AdminOverview() {
             })}
           </div>
         )}
-        </CardContent>
-      </Card>
+      </div>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
