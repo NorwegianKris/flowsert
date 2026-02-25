@@ -231,7 +231,7 @@ export function BillingSection({ businessId }: BillingSectionProps) {
                         <Button
                           key={tier}
                           variant="outline"
-                          className="flex flex-col h-auto py-4 gap-1"
+                          className="flex flex-col h-auto py-4 gap-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD]"
                           disabled={!!loadingPrice}
                           onClick={() => handleSubscribe(tier)}
                         >
