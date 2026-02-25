@@ -92,7 +92,8 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
   const hasSubscriptionRow = !!effectiveSubscription;
   const isEnterprise = !!effectiveEntitlement?.is_unlimited;
   const isDelinquent = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(effectiveSubscription?.status ?? '');
-  const isPortalManaged = hasSubscriptionRow && !isEnterprise && !isDelinquent;
+  const isCanceled = effectiveSubscription?.status === 'canceled';
+  const isPortalManaged = hasSubscriptionRow && !isEnterprise && !isDelinquent && !isCanceled;
 
   const handleSubscribe = async (tier: TierKey) => {
     const priceId = getPriceId(tier, interval);
@@ -238,14 +239,25 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
           )}
 
           {/* Fix billing CTA for delinquent statuses */}
-          {effectiveSubscription && !effectiveSubscription.cancel_at_period_end &&
-           ['past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'canceled'].includes(effectiveSubscription.status ?? '') && (
+          {effectiveSubscription && !effectiveSubscription.cancel_at_period_end && isDelinquent && (
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3">
               <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
               <span className="text-sm text-destructive">Your subscription needs attention.</span>
               <Button size="sm" variant="destructive" onClick={handleManageBilling}
                 disabled={portalLoading} className="ml-auto">
                 {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Fix billing'}
+              </Button>
+            </div>
+          )}
+
+          {/* Canceled subscription callout */}
+          {isCanceled && !isEnterprise && (
+            <div className="flex items-center gap-2 rounded-md bg-muted/50 border border-border/50 p-3">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Your subscription has been canceled. Restart it in the billing portal.</span>
+              <Button size="sm" variant="outline" onClick={handleManageBilling}
+                disabled={portalLoading} className="ml-auto">
+                {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Manage Billing'}
               </Button>
             </div>
           )}
