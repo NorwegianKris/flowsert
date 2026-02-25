@@ -6,6 +6,9 @@ interface HeroSectionProps {
   onBookDemo: () => void;
 }
 
+type DocType = 'cert' | 'id' | 'checklist' | 'form';
+const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form'];
+
 interface FallingDoc {
   x: number;
   y: number;
@@ -14,12 +17,11 @@ interface FallingDoc {
   speed: number;
   rotation: number;
   rotationSpeed: number;
-  opacity: number;
-  lines: number;
+  docType: DocType;
 }
 
 function createDoc(canvasW: number, canvasH: number): FallingDoc {
-  const w = 38 + Math.random() * 28;
+  const w = 55 + Math.random() * 40;
   const h = w * (1.3 + Math.random() * 0.4);
   return {
     x: Math.random() * canvasW,
@@ -29,8 +31,7 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
     speed: 0.15 + Math.random() * 0.3,
     rotation: (Math.random() - 0.5) * 0.3,
     rotationSpeed: (Math.random() - 0.5) * 0.002,
-    opacity: 0.35 + Math.random() * 0.20,
-    lines: 2 + Math.floor(Math.random() * 2),
+    docType: DOC_TYPES[Math.floor(Math.random() * 4)],
   };
 }
 
@@ -71,9 +72,9 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
     const init = () => {
       resize();
       const rect = canvas.getBoundingClientRect();
-      docs = Array.from({ length: 18 }, () => {
+      docs = Array.from({ length: 65 }, () => {
         const d = createDoc(rect.width, rect.height);
-        d.y = Math.random() * rect.height; // spread initially
+        d.y = Math.random() * rect.height;
         return d;
       });
     };
@@ -93,22 +94,87 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         ctx.save();
         ctx.translate(d.x + d.w / 2, d.y + d.h / 2);
         ctx.rotate(d.rotation);
-        ctx.globalAlpha = d.opacity;
+        ctx.globalAlpha = 1;
+        ctx.lineCap = 'round';
 
         // doc body
         drawRoundRect(ctx, -d.w / 2, -d.h / 2, d.w, d.h, 4);
-        ctx.fillStyle = 'hsla(215, 38%, 75%, 1)';
+        ctx.fillStyle = 'hsla(215, 38%, 75%, 0.5)';
         ctx.fill();
-        ctx.strokeStyle = 'hsla(215, 38%, 60%, 1)';
-        ctx.lineWidth = 0.7;
+        ctx.strokeStyle = 'hsla(215, 42%, 55%, 0.45)';
+        ctx.lineWidth = 1.8;
         ctx.stroke();
 
-        // text lines
-        const lineY0 = -d.h / 2 + d.h * 0.28;
-        for (let i = 0; i < d.lines; i++) {
-          const lw = d.w * (0.5 + Math.random() * 0.3);
-          ctx.fillStyle = 'hsla(215, 38%, 55%, 1)';
-          ctx.fillRect(-d.w / 2 + 5, lineY0 + i * 7, lw, 2.5);
+        // internal details
+        const detailColor = 'hsla(215, 42%, 55%, 0.45)';
+        ctx.strokeStyle = detailColor;
+        ctx.fillStyle = detailColor;
+        ctx.lineWidth = 1.8;
+
+        const left = -d.w / 2;
+        const top = -d.h / 2;
+
+        if (d.docType === 'cert') {
+          // badge circle
+          ctx.beginPath();
+          ctx.arc(left + 12, top + 14, 5, 0, Math.PI * 2);
+          ctx.stroke();
+          // 4 lines below
+          for (let i = 0; i < 4; i++) {
+            const lw = d.w * (0.4 + Math.random() * 0.35);
+            ctx.beginPath();
+            ctx.moveTo(left + 5, top + 28 + i * 9);
+            ctx.lineTo(left + 5 + lw, top + 28 + i * 9);
+            ctx.stroke();
+          }
+        } else if (d.docType === 'id') {
+          // portrait placeholder
+          const pw = d.w * 0.28;
+          const ph = d.w * 0.35;
+          ctx.strokeRect(left + 5, top + 8, pw, ph);
+          // 3 short lines to the right
+          const rx = left + 5 + pw + 5;
+          for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(rx, top + 14 + i * 8);
+            ctx.lineTo(rx + d.w * 0.3, top + 14 + i * 8);
+            ctx.stroke();
+          }
+          // 2 full-width lines below
+          for (let i = 0; i < 2; i++) {
+            ctx.beginPath();
+            ctx.moveTo(left + 5, top + 8 + ph + 8 + i * 9);
+            ctx.lineTo(left + d.w - 5, top + 8 + ph + 8 + i * 9);
+            ctx.stroke();
+          }
+        } else if (d.docType === 'checklist') {
+          // 4 rows with checkboxes
+          for (let i = 0; i < 4; i++) {
+            const ry = top + 10 + i * 14;
+            ctx.strokeRect(left + 6, ry, 7, 7);
+            // checkmark in top 2
+            if (i < 2) {
+              ctx.beginPath();
+              ctx.moveTo(left + 7.5, ry + 4);
+              ctx.lineTo(left + 9, ry + 6);
+              ctx.lineTo(left + 12, ry + 1.5);
+              ctx.stroke();
+            }
+            // line extending right
+            ctx.beginPath();
+            ctx.moveTo(left + 17, ry + 3.5);
+            ctx.lineTo(left + d.w - 6, ry + 3.5);
+            ctx.stroke();
+          }
+        } else {
+          // form: 5 lines
+          for (let i = 0; i < 5; i++) {
+            const lw = d.w * (0.5 + Math.random() * 0.3);
+            ctx.beginPath();
+            ctx.moveTo(left + 5, top + 12 + i * 10);
+            ctx.lineTo(left + 5 + lw, top + 12 + i * 10);
+            ctx.stroke();
+          }
         }
 
         ctx.restore();
