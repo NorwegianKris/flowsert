@@ -1,33 +1,93 @@
 
 
-# Make Falling Document Cards More Visible
+# Overhaul Canvas Falling Documents
 
-**Classification: GREEN** — Pure canvas rendering tweak.
+**Classification: GREEN** — Pure canvas rendering changes in one file.
 
-## Changes in `src/components/HeroSection.tsx`
+## File: `src/components/HeroSection.tsx`
 
-### 1. Increase document opacity range (line 32)
+### Overview
 
-Change from `0.12 + Math.random() * 0.14` (range 0.12–0.26) to `0.35 + Math.random() * 0.20` (range 0.35–0.55).
+Replace the current simple falling-rectangle animation with a richer system: 4 document types (cert, id, checklist, form), each drawing distinct internal details via canvas strokes. Increase count to 65, widen size range to 55–95px, and use the specified opacity/colour values.
 
-### 2. Change document fill colour (line 100)
+### Data Model Change
 
-Change from `hsl(243, 30%, 96%)` to use the requested `hsla(215, 38%, 75%, <opacity>)` where opacity matches the document's opacity value. Since `globalAlpha` is already set per-document, we set the fill to `hsla(215, 38%, 75%, 1)` and let `globalAlpha` handle the per-card opacity — this gives the exact visual result requested.
+Add a `docType` field to `FallingDoc`:
 
-### 3. Increase stroke visibility (line 102)
+```ts
+interface FallingDoc {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  speed: number;
+  rotation: number;
+  rotationSpeed: number;
+  opacity: number;
+  docType: 'cert' | 'id' | 'checklist' | 'form';
+}
+```
 
-Change from `hsl(243, 40%, 82%)` to a stronger `hsla(215, 38%, 60%, 1)` so the border is more visible at the new opacity levels.
+Remove the old `lines` field — each type draws its own internal detail.
 
-### 4. Increase text-line visibility (line 110)
+### `createDoc` Changes
 
-Change from `hsl(243, 40%, 78%)` to `hsla(215, 38%, 55%, 1)` so the detail lines inside each card match the increased visibility.
+- **Width**: `55 + Math.random() * 40` (range 55–95px)
+- **Height**: `w * (1.3 + Math.random() * 0.4)` (unchanged ratio)
+- **x**: `Math.random() * canvasW` (full width, unchanged)
+- **y**: `-h - Math.random() * canvasH * 0.6` (for respawns; initial scatter handled separately)
+- **opacity**: removed from doc — will be set as a constant `0.5` via `globalAlpha` (per spec: fill `hsla(215,38%,75%,0.5)`)
+- **docType**: randomly pick one of `['cert','id','checklist','form']`
 
-| Element | Before | After |
-|---------|--------|-------|
-| globalAlpha range | 0.12–0.26 | 0.35–0.55 |
-| Fill colour | `hsl(243, 30%, 96%)` | `hsla(215, 38%, 75%, 1)` |
-| Stroke colour | `hsl(243, 40%, 82%)` | `hsla(215, 38%, 60%, 1)` |
-| Line colour | `hsl(243, 40%, 78%)` | `hsla(215, 38%, 55%, 1)` |
+### Init Change (line 74)
 
-Four single-line edits in one file. No other changes.
+- Count: `65` instead of `18`
+- Initial y: `Math.random() * rect.height` (already does this, just confirming)
+
+### Draw Loop Changes
+
+For each document:
+
+1. **Body**: `drawRoundRect` with fill `hsla(215, 38%, 75%, 0.5)` and stroke `hsla(215, 42%, 55%, 0.45)`, `lineWidth: 1.8`, `lineCap: 'round'`
+2. **`globalAlpha`**: set to `1` (opacity is baked into the hsla colours directly)
+3. **Internal detail** based on `docType`:
+
+**cert**:
+- Small circle (radius 5px) at top-left area (~`-w/2 + 12`, `-h/2 + 14`)
+- 4 horizontal lines below it at varying widths
+
+**id**:
+- Small filled rectangle (portrait placeholder) on left third (~`-w/2 + 5`, `-h/2 + 8`, width `w*0.28`, height `w*0.35`)
+- 3 short lines to its right
+- 2 full-width lines below
+
+**checklist**:
+- 4 rows, each with a 7×7 square checkbox at left
+- Checkmark stroke inside top 2 checkboxes
+- Horizontal line extending right from each checkbox
+
+**form**:
+- 5 horizontal lines of slightly varying widths
+
+All internal strokes use `hsla(215, 42%, 55%, 0.45)`, `lineWidth: 1.8`, `lineCap: 'round'`.
+
+### Respawn
+
+When a doc falls off screen (`d.y > rect.height + d.h`), call `createDoc(rect.width, rect.height)` which already uses `x: Math.random() * canvasW` — full width distribution confirmed.
+
+### Summary of Values
+
+| Property | Before | After |
+|----------|--------|-------|
+| DOC_COUNT | 18 | 65 |
+| Width range | 38–66px | 55–95px |
+| Fill | `hsla(215,38%,75%,1)` + globalAlpha 0.35–0.55 | `hsla(215,38%,75%,0.5)` globalAlpha 1 |
+| Stroke | `hsla(215,38%,60%,1)` | `hsla(215,42%,55%,0.45)` |
+| lineWidth | 0.7 | 1.8 |
+| lineCap | default (butt) | round |
+| Internal detail | generic fillRect lines | 4 distinct doc types with stroked details |
+| x distribution | `Math.random() * canvasW` | same (confirmed full width) |
+| Initial y | `Math.random() * rect.height` | same (confirmed full scatter) |
+
+Single file change, no backend impact.
 
