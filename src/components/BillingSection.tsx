@@ -74,8 +74,6 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
         : Promise.resolve(null);
 
       const [ent, subResult, countResult] = await Promise.all([entPromise, subPromise, countPromise]);
-
-      const [ent, subResult, countResult] = await Promise.all(promises);
       if (shouldFetchEnt && ent) setEntitlement(ent);
       if (shouldFetchSub && subResult) setSubscription(subResult.data as BillingSubscription | null);
       if (shouldFetchCount && countResult) setActiveCount(typeof countResult.count === 'number' ? countResult.count : null);
