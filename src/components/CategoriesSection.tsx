@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CertificateCategoriesManager } from '@/components/CertificateCategoriesManager';
 import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManager';
@@ -14,14 +14,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 
 export function CategoriesSection() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Categories</CardTitle>
-      <CardDescription>
-          Manage the categories used throughout your organization for workers, departments, certificates, and documents.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="p-4">
+      <p className="text-sm text-muted-foreground mb-4">
+        Manage the categories used throughout your organization for workers, departments, certificates, and documents.
+      </p>
         <Tabs defaultValue="workers" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="workers" className="flex items-center gap-2">
@@ -158,8 +154,7 @@ export function CategoriesSection() {
             <DocumentCategoriesContent />
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 

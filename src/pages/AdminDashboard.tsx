@@ -20,7 +20,7 @@ import { LocationStandardizationTool } from '@/components/LocationStandardizatio
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { MapPin, ShieldCheck, Link2 } from 'lucide-react';
+import { MapPin, ShieldCheck, Award, Link2 } from 'lucide-react';
 
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
@@ -682,7 +682,18 @@ export default function AdminDashboard() {
                   Company Card
                 </Button>
                 
-                <AdminOverview />
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Admin Users</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <AdminOverview />
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
@@ -719,7 +730,18 @@ export default function AdminDashboard() {
                 
                 <BillingSection businessId={profile?.business_id} />
 
-                <CategoriesSection />
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Categories</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CategoriesSection />
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
