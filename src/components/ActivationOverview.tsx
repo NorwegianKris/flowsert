@@ -192,6 +192,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
       ? 'Manage plan'
       : 'Choose plan';
   const ctaVariant = effectiveEntitlement?.is_unlimited || hasKnownSubscription ? 'outline' : 'default';
+  const isManual = effectiveEntitlement?.is_unlimited && subscriptionStatus === null;
 
   return (
     <>
@@ -200,7 +201,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
           {/* Current Plan Summary */}
           <div className="rounded-lg border border-border/50 p-4 space-y-3">
             <p className="text-sm font-medium text-foreground">Current Plan</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={`grid ${isManual ? 'grid-cols-2 gap-4' : 'grid-cols-3 gap-3'}`}>
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Plan</p>
                 <Badge variant="secondary" className="mt-1 text-xs">{planLabel}</Badge>
@@ -211,10 +212,12 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                   {effectiveActiveCount ?? '—'} / {capDisplay}
                 </p>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
-                <Badge variant={statusBadge.variant} className="mt-1 text-xs">{statusBadge.label}</Badge>
-              </div>
+              {!isManual && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
+                  <Badge variant={statusBadge.variant} className="mt-1 text-xs">{statusBadge.label}</Badge>
+                </div>
+              )}
             </div>
             {!effectiveEntitlement?.is_unlimited && (
               <Progress value={progressPercent} className="h-2" />
