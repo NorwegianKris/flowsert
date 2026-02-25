@@ -21,19 +21,36 @@ interface FallingDoc {
   docType: DocType;
 }
 
+function spawnWithMinDistance(existingDocs: FallingDoc[], canvasW: number, canvasH: number, minDist = 120): { x: number; y: number } {
+  let attempts = 0;
+  let x: number, y: number;
+  do {
+    x = Math.random() * canvasW;
+    y = Math.random() * canvasH;
+    attempts++;
+  } while (
+    attempts < 30 &&
+    existingDocs.some(d => Math.hypot(d.x - x, d.y - y) < minDist)
+  );
+  return { x, y };
+}
+
 function createDoc(canvasW: number, canvasH: number): FallingDoc {
-  const w = 60 + Math.random() * 40;
+  const docType = DOC_TYPES[Math.floor(Math.random() * DOC_TYPES.length)];
+  let w = 60 + Math.random() * 40;
+  if (docType === 'badge') {
+    w = 55 + Math.random() * 25;
+  }
   const h = w * (1.3 + Math.random() * 0.4);
-  const spawnMargin = canvasW * 0.075;
   return {
-    x: spawnMargin + Math.random() * (canvasW - spawnMargin * 2),
+    x: Math.random() * canvasW,
     y: -h - Math.random() * 200,
     w,
     h,
-    speed: 0.3 + Math.random() * 0.9,
+    speed: 0.4 + Math.random() * 1.4,
     rotation: (Math.random() - 0.5) * (50 * Math.PI / 180),
     rotationSpeed: (Math.random() - 0.5) * 0.002,
-    docType: DOC_TYPES[Math.floor(Math.random() * DOC_TYPES.length)],
+    docType,
   };
 }
 
@@ -74,14 +91,15 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
     const init = () => {
       resize();
       const rect = canvas.getBoundingClientRect();
-      const count = Math.floor((rect.width * rect.height) / 28000);
-      const spawnMargin = rect.width * 0.075;
-      docs = Array.from({ length: count }, () => {
+      const count = Math.max(60, Math.floor((rect.width * rect.height) / 22000));
+      docs = [];
+      for (let i = 0; i < count; i++) {
         const d = createDoc(rect.width, rect.height);
-        d.x = spawnMargin + Math.random() * (rect.width - spawnMargin * 2);
-        d.y = Math.random() * rect.height * 1.5 - rect.height * 0.5;
-        return d;
-      });
+        const pos = spawnWithMinDistance(docs, rect.width, rect.height, 120);
+        d.x = pos.x;
+        d.y = pos.y * 1.5 - rect.height * 0.5;
+        docs.push(d);
+      }
     };
 
     const draw = () => {
@@ -245,7 +263,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
           }
         } else if (d.docType === 'badge') {
           // badge: large circle + 2 short lines below
-          const cr = d.w * 0.35;
+          const cr = d.w * 0.28;
           const cy = top + pad + cr + 4;
           ctx.beginPath();
           ctx.arc(0, cy, cr, 0, Math.PI * 2);
@@ -311,7 +329,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
   }, []);
 
   return (
-    <div className="relative overflow-hidden flex flex-col items-center justify-start" style={{ minHeight: 'calc(100vh - 73px)', paddingTop: 'clamp(60px, 10vh, 120px)', paddingBottom: '64px' }}>
+    <div className="relative overflow-hidden flex flex-col items-center justify-start" style={{ minHeight: 'calc(100vh - 73px)', paddingTop: 'clamp(48px, 7vh, 96px)', paddingBottom: '64px' }}>
       {/* Canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }} />
 
@@ -330,7 +348,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         <h1
           className="font-rajdhani font-bold text-foreground leading-[1.09]"
           style={{
-            fontSize: 'clamp(2rem, 4vw, 4.5rem)',
+            fontSize: 'clamp(1.8rem, 3.2vw, 3.6rem)',
             marginBottom: 'clamp(12px, 2vh, 24px)',
             letterSpacing: '-0.01em',
             opacity: 0,
@@ -357,7 +375,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         <p
           className="text-muted-foreground max-w-[500px]"
           style={{
-            fontSize: 'clamp(0.95rem, 1.4vw, 1.15rem)',
+            fontSize: 'clamp(0.85rem, 1.1vw, 1.05rem)',
             marginBottom: 'clamp(20px, 3vh, 40px)',
             lineHeight: 1.65,
             opacity: 0,
@@ -370,13 +388,13 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         {/* CTA Row */}
         <div
           className="flex gap-3 items-center justify-center flex-wrap"
-          style={{ opacity: 0, animation: 'fadeUp 0.65s 0.5s ease forwards', marginBottom: 'clamp(32px, 5vh, 60px)' }}
+          style={{ opacity: 0, animation: 'fadeUp 0.65s 0.5s ease forwards', marginBottom: 'clamp(24px, 3.5vh, 48px)' }}
         >
           <button
             onClick={onGetInTouch}
             className="inline-flex items-center gap-[7px] bg-primary text-primary-foreground font-bold rounded-lg cursor-pointer border-none"
             style={{
-              fontSize: 'clamp(0.85rem, 1.1vw, 1rem)',
+              fontSize: 'clamp(0.8rem, 0.95vw, 0.92rem)',
               padding: '12px 22px',
               letterSpacing: '0.01em',
               boxShadow: '0 4px 18px hsl(243,75%,41%,0.30)',
@@ -389,7 +407,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
             onClick={onBookDemo}
             className="inline-flex items-center gap-[7px] text-foreground font-bold rounded-lg cursor-pointer backdrop-blur-[6px]"
             style={{
-              fontSize: 'clamp(0.85rem, 1.1vw, 1rem)',
+              fontSize: 'clamp(0.8rem, 0.95vw, 0.92rem)',
               padding: '11px 22px',
               letterSpacing: '0.01em',
               background: 'rgba(255,255,255,0.72)',
@@ -404,7 +422,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         {/* Dashboard Card */}
         <div
           className="relative w-full"
-          style={{ opacity: 0, animation: 'fadeUp 0.8s 0.62s ease forwards', maxWidth: 'min(660px, 88vw)' }}
+          style={{ opacity: 0, animation: 'fadeUp 0.8s 0.62s ease forwards', maxWidth: 'min(580px, 75vw)' }}
         >
           <div
             className="overflow-hidden"
@@ -435,13 +453,13 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
           className="flex gap-[10px] items-center justify-center flex-wrap mt-[30px]"
           style={{ opacity: 0, animation: 'fadeUp 0.65s 0.82s ease forwards' }}
         >
-          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Offshore</span>
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.6rem, 0.8vw, 0.85rem)' }}>Offshore</span>
           <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
-          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Maritime</span>
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.6rem, 0.8vw, 0.85rem)' }}>Maritime</span>
           <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
-          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Industry</span>
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.6rem, 0.8vw, 0.85rem)' }}>Industry</span>
           <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
-          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Construction</span>
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.6rem, 0.8vw, 0.85rem)' }}>Construction</span>
         </div>
       </div>
     </div>
