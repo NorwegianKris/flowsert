@@ -13,14 +13,15 @@ import { ExpiryTimeline } from '@/components/ExpiryTimeline';
 import { RecentRegistrations } from '@/components/RecentRegistrations';
 import { ProjectsTab } from '@/components/ProjectsTab';
 import { CategoriesSection } from '@/components/CategoriesSection';
-import { BillingSection } from '@/components/BillingSection';
+import { BillingSection, BillingSubscription } from '@/components/BillingSection';
 import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsManager';
 import { LocationStandardizationTool } from '@/components/LocationStandardizationTool';
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { MapPin, ShieldCheck, Award, Link2 } from 'lucide-react';
+import { MapPin, ShieldCheck, Award, Link2, FileText, MessageSquare, RefreshCw, CreditCard } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
@@ -48,6 +49,8 @@ import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
 import { NotificationsLog } from '@/components/NotificationsLog';
 import { ExternalSharingDialog } from '@/components/ExternalSharingDialog';
+import { getBusinessEntitlement, type BusinessEntitlement } from '@/lib/entitlements';
+import { format } from 'date-fns';
 
 import {
   DropdownMenu,
