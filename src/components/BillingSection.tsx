@@ -53,21 +53,27 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
     }
     setLoading(true);
     try {
-      const promises: Promise<any>[] = [];
-      if (shouldFetchEnt) promises.push(getBusinessEntitlement(businessId));
-      else promises.push(Promise.resolve(null));
-      if (shouldFetchSub) promises.push(supabase
-        .from('billing_subscriptions')
-        .select('status, stripe_price_id, trial_end, current_period_end, cancel_at_period_end')
-        .eq('business_id', businessId)
-        .maybeSingle());
-      else promises.push(Promise.resolve(null));
-      if (shouldFetchCount) promises.push(supabase
-        .from('personnel')
-        .select('id', { count: 'exact', head: true })
-        .eq('business_id', businessId)
-        .eq('activated', true));
-      else promises.push(Promise.resolve(null));
+      const entPromise = shouldFetchEnt
+        ? getBusinessEntitlement(businessId)
+        : Promise.resolve(null);
+      const subPromise = shouldFetchSub
+        ? supabase
+            .from('billing_subscriptions')
+            .select('status, stripe_price_id, trial_end, current_period_end, cancel_at_period_end')
+            .eq('business_id', businessId)
+            .maybeSingle()
+            .then(r => r)
+        : Promise.resolve(null);
+      const countPromise = shouldFetchCount
+        ? supabase
+            .from('personnel')
+            .select('id', { count: 'exact', head: true })
+            .eq('business_id', businessId)
+            .eq('activated', true)
+            .then(r => r)
+        : Promise.resolve(null);
+
+      const [ent, subResult, countResult] = await Promise.all([entPromise, subPromise, countPromise]);
 
       const [ent, subResult, countResult] = await Promise.all(promises);
       if (shouldFetchEnt && ent) setEntitlement(ent);
