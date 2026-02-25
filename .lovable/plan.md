@@ -1,46 +1,64 @@
 
 
-# Replace Passport with License Document Type
+# Add Diploma Document Type
 
 **Classification: GREEN** — Pure canvas rendering, single file.
+
+Note: The user references "passport" but in the current code, passport was already replaced with "license". I'll add `diploma` as a new type, with 1/3 of `license` selections becoming `diploma` instead (matching the user's intent of splitting an existing type).
 
 ## File: `src/components/HeroSection.tsx`
 
 ### 1. Update type system (lines 10–11)
 
-Replace `'passport'` with `'license'`:
+Add `'diploma'` to the union and array:
 ```ts
-type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license';
+type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license' | 'diploma';
 const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'license'];
 ```
+Array stays the same — the split happens in `createDoc`.
 
 ### 2. Update `createDoc` (lines 38–55)
 
-Add a `license` branch for landscape dimensions:
+After selecting `docType` from the array, add the 1/3 split:
 ```ts
-if (docType === 'badge') {
-  w = 55 + Math.random() * 25;
-} else if (docType === 'license') {
-  w = 80 + Math.random() * 30;
+let finalType = docType;
+if (finalType === 'license') {
+  finalType = Math.random() < 0.33 ? 'diploma' : 'license';
 }
-const h = (docType === 'license') ? w * 0.62 : w * (1.3 + Math.random() * 0.4);
 ```
 
-### 3. Replace passport renderer with license renderer (lines 283–311)
+Add diploma dimensions:
+```ts
+} else if (finalType === 'diploma') {
+  w = 65 + Math.random() * 25;
+}
+```
 
-Replace the `else` block (currently passport) with a license drawing routine:
+Update height calculation to include diploma:
+```ts
+const h = (finalType === 'license') ? w * 0.62
+        : (finalType === 'diploma') ? w * 1.45
+        : w * (1.3 + Math.random() * 0.4);
+```
 
-**Layout** (landscape card, wider than tall):
+Use `finalType` as the returned `docType`.
 
-- **Header strip**: Fill top 18% of card with `hsla(243, 60%, 88%, 0.5)`, draw a thin horizontal line at 18% from top
+### 3. Add diploma renderer (in the drawing switch, after badge/before license)
 
-- **Left section (38% of card width)**: Photo placeholder rectangle from top 20% to bottom 80% of card height, stroked with rounded corners (radius 2). Inside: circle head at 35% from top of box (radius = 18% of box width), shoulder arc below
+The diploma is portrait-oriented and drawn with:
 
-- **Right section (remaining width)**: 4 horizontal lines evenly spaced (widths 85%, 60%, 75%, 50% of right section width). First line at lineWidth 2 (name). Below lines: a small rounded rectangle (45% of right section width, 18% of card height) with 6 tiny evenly-spaced vertical lines inside (barcode)
+- **Decorative border**: Inner rounded rect 5px inset from card edge, stroked `hsla(243, 50%, 70%, 0.6)` at lineWidth 1
+- **Top laurel ornament**: Two mirrored arcs at top center curving outward, stroked `hsla(243, 50%, 65%, 0.7)`
+- **Title block**: Thick short line (50% card width, lineWidth 2.5) centered at 30% from top
+- **Subtitle**: Thinner line (35% card width, lineWidth 1.2) just below
+- **Center seal**: Double concentric circles at 55% from top (outer radius 18% of card width, inner 11%)
+- **Body lines**: 3 lines at 80%, 70%, 75% card width, evenly spaced below seal
+- **Signature field**: Full-width line at 80% from top with perpendicular tick marks at each end
+- **Bottom ornament**: Mirrored laurel arcs at bottom center
 
-All strokes use the same `detailColor` as other types.
+All strokes use `detailColor` consistent with other document types.
 
 ### Summary
 
-Single file change. Replace `'passport'` → `'license'` in type + array, add landscape sizing in `createDoc`, replace passport renderer with license renderer. All other document types remain untouched.
+Single file change. Add `'diploma'` to DocType union, split 1/3 from license selections, add portrait sizing (w × 1.45), and implement the full diploma renderer with decorative border, laurels, seal, and signature field.
 
