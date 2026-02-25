@@ -1,80 +1,102 @@
 
 
-# Part 3 Proof: Profile Hard-Stop Verification
+# P0 Security Remediation — Corrected Final Plan
 
-## Current State
+## Pre-Migration State (Just Verified via pg_policy Catalog)
 
-- **Only business**: Techno Dive (38672512-...), enterprise tier, `is_unlimited=true`, 157 active, 157 total
-- **CHECK constraint**: `entitlements_tier_check` — validated, enforces `starter|growth|professional|enterprise`
-- **`get_tier_profile_limit()`**: Working correctly (25/75/200/2147483647)
-- **Problem**: All 157 personnel are active. To test Starter cap (25), we'd need to deactivate 132 profiles and then re-test. This is destructive to production data.
+25 PERMISSIVE "Require authentication for \<table\>" policies confirmed using the canonical `pg_policy` catalog query (not the `pg_policies` view). All 25 have `polcmd: *` (FOR ALL) and `qual: (auth.uid() IS NOT NULL)`.
 
-## Recommended Test Approach
+## Migration
 
-Since this is a production database with real data, the safest approach is a **controlled temporary test** — not a full 25-profile walkthrough but targeted verification of each guard:
+Single migration, 25 DROP POLICY statements. Wrapped in BEGIN/COMMIT.
 
-### Test A: Starter limit enforcement (DB-level proof)
+```sql
+BEGIN;
 
-Temporarily set Techno Dive to `tier='starter', profile_cap=25, is_unlimited=false`. Then call `activate_personnel` on an already-inactive profile (if any exist) or attempt the RPC directly. Since 157 are already active (above cap), any new activation must be blocked.
+DROP POLICY IF EXISTS "Require authentication for availability" ON public.availability;
+DROP POLICY IF EXISTS "Require authentication for business_documents" ON public.business_documents;
+DROP POLICY IF EXISTS "Require authentication for businesses" ON public.businesses;
+DROP POLICY IF EXISTS "Require authentication for certificate_aliases" ON public.certificate_aliases;
+DROP POLICY IF EXISTS "Require authentication for certificate_categories" ON public.certificate_categories;
+DROP POLICY IF EXISTS "Require authentication for certificate_types" ON public.certificate_types;
+DROP POLICY IF EXISTS "Require authentication for certificates" ON public.certificates;
+DROP POLICY IF EXISTS "Require authentication for direct_messages" ON public.direct_messages;
+DROP POLICY IF EXISTS "Require authentication for document_categories" ON public.document_categories;
+DROP POLICY IF EXISTS "Require authentication for freelancer_invitations" ON public.freelancer_invitations;
+DROP POLICY IF EXISTS "Require authentication for invitations" ON public.invitations;
+DROP POLICY IF EXISTS "Require authentication for issuer_aliases" ON public.issuer_aliases;
+DROP POLICY IF EXISTS "Require authentication for issuer_types" ON public.issuer_types;
+DROP POLICY IF EXISTS "Require authentication for personnel" ON public.personnel;
+DROP POLICY IF EXISTS "Require authentication for personnel_document_categories" ON public.personnel_document_categories;
+DROP POLICY IF EXISTS "Require authentication for personnel_documents" ON public.personnel_documents;
+DROP POLICY IF EXISTS "Require authentication for profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Require authentication for project_applications" ON public.project_applications;
+DROP POLICY IF EXISTS "Require authentication for project_calendar_items" ON public.project_calendar_items;
+DROP POLICY IF EXISTS "Require authentication for project_document_categories" ON public.project_document_categories;
+DROP POLICY IF EXISTS "Require authentication for project_documents" ON public.project_documents;
+DROP POLICY IF EXISTS "Require authentication for project_invitations" ON public.project_invitations;
+DROP POLICY IF EXISTS "Require authentication for projects" ON public.projects;
+DROP POLICY IF EXISTS "Require authentication for user_roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Require authentication for worker_categories" ON public.worker_categories;
 
-**This actually proves both A and B simultaneously** — the cap is 25, active count is 157, so the very first activation attempt hits `PROFILE_CAP_REACHED`.
+COMMIT;
+```
 
-### Test B: 26th activation blocked
+NOT touched: `departments` (already RESTRICTIVE).
 
-Covered by Test A above — with 157 active and cap at 25, any activation is blocked.
+## Post-Migration Verification
 
-### Test C: Deactivation works at cap
+### Check 1 — Canonical catalog query (zero rows expected)
 
-While still at starter/25 with 157 active, call `deactivate_personnel` on one profile. Must succeed. Then reactivate it after restoring enterprise.
+```sql
+SELECT
+  n.nspname AS schemaname,
+  c.relname AS tablename,
+  p.polname,
+  CASE p.polpermissive WHEN true THEN 'PERMISSIVE' ELSE 'RESTRICTIVE' END AS permissive,
+  p.polcmd,
+  pg_get_expr(p.polqual, p.polrelid) AS qual
+FROM pg_policy p
+JOIN pg_class c ON c.oid = p.polrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND p.polpermissive = true
+  AND pg_get_expr(p.polqual, p.polrelid) ILIKE '%auth.uid()%not null%'
+  AND p.polname ILIKE 'Require authentication for %'
+ORDER BY c.relname, p.polname;
+```
 
-### Test D: UI upgrade modal behavior
+Expected: **0 rows**.
 
-Code review confirms: `ActivateProfileDialog` catches `PROFILE_CAP_REACHED` and renders a styled "Plan Limit Reached" warning with amber border, not a generic toast. The `BillingSection` renders plan cards with checkout CTAs. This is a code-level PASS — live UI testing requires you to trigger it in the browser.
+### Check 2 — No table at zero permissive policies
 
-### Test E: Enterprise/unlimited bypass
+```sql
+SELECT tablename, COUNT(*) AS permissive_policy_count
+FROM pg_policies
+WHERE schemaname='public'
+  AND permissive='PERMISSIVE'
+GROUP BY tablename
+ORDER BY permissive_policy_count ASC, tablename;
+```
 
-Restore `is_unlimited=true` — confirm activation succeeds again.
+Expected: no table at 0.
 
-## Execution Steps
+### Check 3 — Cross-tenant smoke test (via app, not service role)
 
-1. **Temporarily downgrade entitlement** (will NOT affect existing active profiles — soft enforcement):
-   ```sql
-   UPDATE entitlements 
-   SET tier='starter', profile_cap=25, is_unlimited=false 
-   WHERE business_id='38672512-2331-4546-8bc4-de942605fce1';
-   ```
+Log in as kmu@live.no (FlowSert TestCo) — Personnel/Projects/Certificates should be empty.
+Switch back to Techno Dive — everything reappears.
 
-2. **Test A+B**: Call `activate_personnel` via the app on any inactive profile (or if none exist, deactivate one first, then try to re-activate). Expect `PROFILE_CAP_REACHED`.
+## Safe Rollback (per-table, RESTRICTIVE only)
 
-3. **Test C**: Call `deactivate_personnel` on one active profile. Expect success.
+```sql
+CREATE POLICY "Require authentication for <table>"
+  ON public.<table>
+  AS RESTRICTIVE
+  FOR ALL
+  USING (auth.uid() IS NOT NULL);
+```
 
-4. **Test E**: Restore enterprise:
-   ```sql
-   UPDATE entitlements 
-   SET tier='enterprise', profile_cap=9999, is_unlimited=true 
-   WHERE business_id='38672512-2331-4546-8bc4-de942605fce1';
-   ```
-   Then re-activate the deactivated profile. Expect success.
+## Risk
 
-5. **Test D**: Code-level verified. The `capReached` state triggers a dedicated UI panel (not a toast) with "Plan Limit Reached" header and upgrade guidance pointing to BillingSection plan cards.
-
-## Risk Assessment
-
-- **YELLOW**: Temporarily changing entitlement tier on production. The window is <60 seconds. Existing active profiles are unaffected (soft enforcement — grandfathered). Only new activations are blocked.
-- No schema changes required.
-- No RLS changes.
-- Fully reversible.
-
-## What I Can Do vs What You Must Do
-
-| Test | I can verify | You must verify |
-|------|-------------|----------------|
-| A+B: Cap blocks activation | ✅ DB function logic confirmed | Try activating in UI while at starter |
-| C: Deactivation at cap | ✅ Code path confirmed | Click deactivate in UI |
-| D: Upgrade modal (not toast) | ✅ Code review PASS | See it visually in browser |
-| E: Enterprise bypass | ✅ Logic confirmed | Try activating after restore |
-
-## Implementation
-
-I will execute the temporary downgrade, run the RPC tests via SQL to prove the guards work at the database level, then restore enterprise. This gives you deterministic proof without requiring 25+ UI clicks.
+RED — 25 RLS policies across all multi-tenant tables. Access tightening only. No schema/data/code changes. Anchor required before publish.
 
