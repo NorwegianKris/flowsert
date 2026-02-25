@@ -935,6 +935,9 @@ export default function AdminDashboard() {
                   </CollapsibleContent>
                 </Collapsible>
               </div>
+            </div>
+          </div>
+        )}
         </main>
       
         <ChatBot isAdmin />
