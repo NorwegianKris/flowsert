@@ -309,6 +309,29 @@ async function writeErrorEvent(
   } catch (_) { /* fire-and-forget */ }
 }
 
+async function logUsage(params: {
+  serviceClient: ReturnType<typeof createClient>;
+  businessId: string;
+  eventType: "ocr_extraction" | "assistant_query" | "personnel_match" | "email_sent";
+  quantity?: number;
+  model?: string | null;
+}) {
+  try {
+    const billingMonth = new Date();
+    billingMonth.setDate(1);
+    billingMonth.setHours(0, 0, 0, 0);
+    await params.serviceClient.from("usage_ledger").insert({
+      business_id: params.businessId,
+      event_type: params.eventType,
+      quantity: params.quantity ?? 1,
+      model: params.model ?? null,
+      billing_month: billingMonth.toISOString().slice(0, 10),
+    });
+  } catch (err) {
+    console.error("[usage_ledger] non-fatal logging error:", err);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -392,6 +415,7 @@ serve(async (req) => {
 
     // Fetch data server-side based on user's permissions
     let contextData: string;
+    let businessId: string | null = null;
 
     if (isAdmin) {
       // Admin: fetch all personnel and projects for their business
@@ -407,6 +431,8 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      businessId = profile.business_id;
 
       // Fetch all personnel with certificates
       const { data: allPersonnel } = await supabase
@@ -465,6 +491,10 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      businessId = (personnel && "business_id" in personnel)
+        ? (personnel as { business_id?: string }).business_id ?? null
+        : null;
 
       // Fetch worker's assigned projects
       const { data: projects } = await supabase
@@ -589,6 +619,14 @@ When answering:
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (businessId) {
+      void logUsage({
+        serviceClient, businessId,
+        eventType: "assistant_query",
+        model: "google/gemini-2.5-flash",
       });
     }
 

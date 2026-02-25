@@ -57,6 +57,29 @@ async function writeErrorEvent(
   } catch (_) { /* fire-and-forget */ }
 }
 
+async function logUsage(params: {
+  serviceClient: ReturnType<typeof createClient>;
+  businessId: string;
+  eventType: "ocr_extraction" | "assistant_query" | "personnel_match" | "email_sent";
+  quantity?: number;
+  model?: string | null;
+}) {
+  try {
+    const billingMonth = new Date();
+    billingMonth.setDate(1);
+    billingMonth.setHours(0, 0, 0, 0);
+    await params.serviceClient.from("usage_ledger").insert({
+      business_id: params.businessId,
+      event_type: params.eventType,
+      quantity: params.quantity ?? 1,
+      model: params.model ?? null,
+      billing_month: billingMonth.toISOString().slice(0, 10),
+    });
+  } catch (err) {
+    console.error("[usage_ledger] non-fatal logging error:", err);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -91,6 +114,15 @@ serve(async (req) => {
     // Rate limit check (10 AI extract requests per 60 seconds)
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+
+    let businessId: string | null = null;
+    try {
+      const { data } = await serviceClient
+        .from("profiles").select("business_id")
+        .eq("id", userId).maybeSingle();
+      businessId = data?.business_id ?? null;
+    } catch (_) { businessId = null; }
+
     const { error: rlError } = await serviceClient.rpc('enforce_rate_limit', {
       p_key: `ai_extract:${userId}`,
       p_limit: 10,
@@ -362,6 +394,14 @@ Return the extracted data using the extract_certificate_data function.`;
       fieldsExtracted,
       issues,
     };
+
+    if (businessId) {
+      void logUsage({
+        serviceClient, businessId,
+        eventType: "ocr_extraction",
+        model: "google/gemini-2.5-flash",
+      });
+    }
 
     return new Response(
       JSON.stringify(result),

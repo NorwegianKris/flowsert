@@ -1712,6 +1712,44 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_ledger: {
+        Row: {
+          billing_month: string
+          business_id: string
+          created_at: string
+          event_type: string
+          id: string
+          model: string | null
+          quantity: number
+        }
+        Insert: {
+          billing_month?: string
+          business_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          model?: string | null
+          quantity?: number
+        }
+        Update: {
+          billing_month?: string
+          business_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          model?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_ledger_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
