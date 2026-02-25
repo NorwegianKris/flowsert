@@ -29,7 +29,7 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
     speed: 0.15 + Math.random() * 0.3,
     rotation: (Math.random() - 0.5) * 0.3,
     rotationSpeed: (Math.random() - 0.5) * 0.002,
-    opacity: 0.06 + Math.random() * 0.09,
+    opacity: 0.12 + Math.random() * 0.14,
     lines: 2 + Math.floor(Math.random() * 2),
   };
 }
@@ -139,26 +139,12 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         className="absolute inset-0 pointer-events-none"
         style={{
           zIndex: 1,
-          background: 'radial-gradient(ellipse 55% 45% at 50% 36%, hsl(209,40%,96%) 20%, hsl(209,40%,96%,0.4) 52%, transparent 100%)',
+          background: 'radial-gradient(ellipse 55% 45% at 50% 36%, hsl(209,40%,96%) 10%, hsl(209,40%,96%,0.4) 42%, transparent 100%)',
         }}
       />
 
       {/* Content */}
       <div className="relative flex flex-col items-center text-center max-w-[720px] px-6" style={{ zIndex: 2 }}>
-        {/* Badge */}
-        <div
-          className="inline-flex items-center gap-[7px] border border-border rounded-full px-3.5 py-[5px] pl-2.5 font-mono text-[0.73rem] font-semibold text-primary mb-[26px] backdrop-blur-[8px]"
-          style={{
-            background: 'rgba(255,255,255,0.78)',
-            letterSpacing: '0.02em',
-            opacity: 0,
-            animation: 'fadeUp 0.55s 0.1s ease forwards',
-          }}
-        >
-          <span className="w-[7px] h-[7px] rounded-full bg-primary flex-shrink-0" style={{ boxShadow: '0 0 0 3px hsl(243,75%,41%,0.18)' }} />
-          Smart Compliance Platform
-        </div>
-
         {/* Headline */}
         <h1
           className="font-rajdhani font-bold text-foreground mb-5 leading-[1.09]"
