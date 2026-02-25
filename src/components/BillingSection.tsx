@@ -149,9 +149,12 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
     }
   };
 
-  const statusLabel = effectiveSubscription?.status
-    ? effectiveSubscription.status.charAt(0).toUpperCase() + effectiveSubscription.status.slice(1)
-    : 'No subscription';
+  const status = effectiveSubscription?.status?.trim();
+  const statusLabel = status
+    ? status.charAt(0).toUpperCase() + status.slice(1)
+    : effectiveEntitlement?.is_unlimited
+      ? 'Manual billing'
+      : 'No subscription';
 
   const statusVariant = effectiveSubscription?.status === 'active'
     ? 'active'
@@ -180,7 +183,13 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Current Tier</p>
-              <p className="text-lg font-semibold capitalize">{effectiveEntitlement?.tier || 'Starter'}</p>
+              <p className="text-lg font-semibold">
+                {effectiveEntitlement?.is_unlimited
+                  ? 'Enterprise'
+                  : (effectiveEntitlement?.tier
+                      ? effectiveEntitlement.tier.charAt(0).toUpperCase() + effectiveEntitlement.tier.slice(1)
+                      : 'Starter')}
+              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Subscription Status</p>
@@ -235,8 +244,18 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
             </div>
           )}
 
-          {/* Subscribe buttons (only when no active/trialing subscription) */}
-          {!hasActiveSub && (
+          {/* Enterprise callout */}
+          {effectiveEntitlement?.is_unlimited && (
+            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-2">
+              <p className="text-sm font-medium">Enterprise Plan — Manual Billing</p>
+              <p className="text-xs text-muted-foreground">
+                You're on an Enterprise plan with manual billing. Contact us to change your agreement.
+              </p>
+            </div>
+          )}
+
+          {/* Subscribe buttons (only for non-enterprise without active/trialing subscription) */}
+          {!hasActiveSub && !effectiveEntitlement?.is_unlimited && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="font-semibold">Choose a Plan</p>
