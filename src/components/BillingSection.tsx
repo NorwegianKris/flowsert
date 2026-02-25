@@ -89,6 +89,10 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const hasActiveSub = effectiveSubscription && (effectiveSubscription.status === 'active' || effectiveSubscription.status === 'trialing');
+  const hasSubscriptionRow = !!effectiveSubscription;
+  const isEnterprise = !!effectiveEntitlement?.is_unlimited;
+  const isDelinquent = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(effectiveSubscription?.status ?? '');
+  const isPortalManaged = hasSubscriptionRow && !isEnterprise && !isDelinquent;
 
   const handleSubscribe = async (tier: TierKey) => {
     const priceId = getPriceId(tier, interval);
@@ -268,7 +272,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
           )}
 
           {/* Subscribe buttons (only for non-enterprise without active/trialing subscription) */}
-          {!hasActiveSub && !effectiveEntitlement?.is_unlimited && (
+          {!hasSubscriptionRow && !isEnterprise && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="font-semibold">Choose a Plan</p>
@@ -308,6 +312,16 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Portal-managed helper callout */}
+          {isPortalManaged && (
+            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-1">
+              <p className="text-sm font-medium">Plan changes happen in billing</p>
+              <p className="text-xs text-muted-foreground">
+                Upgrades, downgrades, and cancellations are managed in the billing portal.
+              </p>
             </div>
           )}
 
