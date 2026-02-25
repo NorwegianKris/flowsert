@@ -17,7 +17,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-export function RegistrationLinkCard() {
+interface RegistrationLinkCardProps {
+  embedded?: boolean;
+}
+
+export function RegistrationLinkCard({ embedded }: RegistrationLinkCardProps) {
   const { business, loading } = useBusinessInfo();
   const { toast } = useToast();
   const [copiedCode, setCopiedCode] = useState(false);
@@ -56,6 +60,9 @@ export function RegistrationLinkCard() {
   };
 
   if (loading) {
+    if (embedded) {
+      return <div className="h-20 animate-pulse bg-muted rounded p-4" />;
+    }
     return (
       <Card>
         <CardContent className="py-6">
@@ -69,80 +76,90 @@ export function RegistrationLinkCard() {
     return null;
   }
 
+  const innerContent = (
+    <div className={embedded ? "space-y-4 p-4" : undefined}>
+      <div className="space-y-2">
+        <Label htmlFor="company-code">Company Code</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            id="company-code"
+            value={companyCode}
+            readOnly
+            className="font-mono bg-muted"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => copyToClipboard(companyCode, 'code')}
+            title="Copy code"
+          >
+            {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="registration-link">Registration Link</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            id="registration-link"
+            value={registrationUrl}
+            readOnly
+            className="text-sm bg-muted"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => copyToClipboard(registrationUrl, 'link')}
+            title="Copy link"
+          >
+            {copiedLink ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => window.open(registrationUrl, '_blank')}
+            title="Open link"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowQr(true)}
+            title="Show QR code"
+          >
+            <QrCode className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Freelancers can use this link to register and be automatically associated with your company.
+      </p>
+    </div>
+  );
+
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Link2 className="h-5 w-5" />
-            Freelancer Registration Link
-          </CardTitle>
-          <CardDescription>
-            Share this link with freelancers to let them register for your company profile.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="company-code">Company Code</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="company-code"
-                value={companyCode}
-                readOnly
-                className="font-mono bg-muted"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => copyToClipboard(companyCode, 'code')}
-                title="Copy code"
-              >
-                {copiedCode ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="registration-link">Registration Link</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="registration-link"
-                value={registrationUrl}
-                readOnly
-                className="text-sm bg-muted"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => copyToClipboard(registrationUrl, 'link')}
-                title="Copy link"
-              >
-                {copiedLink ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => window.open(registrationUrl, '_blank')}
-                title="Open link"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowQr(true)}
-                title="Show QR code"
-              >
-                <QrCode className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Freelancers can use this link to register and be automatically associated with your company.
-          </p>
-        </CardContent>
-      </Card>
+      {embedded ? (
+        innerContent
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              Freelancer Registration Link
+            </CardTitle>
+            <CardDescription>
+              Share this link with freelancers to let them register for your company profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {innerContent}
+          </CardContent>
+        </Card>
+      )}
 
       {/* QR Code Dialog */}
       <AlertDialog open={showQr} onOpenChange={setShowQr}>

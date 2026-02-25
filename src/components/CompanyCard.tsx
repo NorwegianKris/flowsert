@@ -43,9 +43,10 @@ interface CompanyCardProps {
   isAdmin?: boolean;
   onClose?: () => void;
   businessId?: string;
+  mode?: 'panel' | 'inline';
 }
 
-export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdProp }: CompanyCardProps) {
+export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdProp, mode = 'panel' }: CompanyCardProps) {
   const { businessId: authBusinessId } = useAuth();
   const businessId = businessIdProp || authBusinessId;
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,6 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
 
       if (error) throw error;
 
-      // Type assertion for the new columns
       const business = data as BusinessInfo;
       setBusinessInfo(business);
       setFormData({
@@ -119,7 +119,6 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
 
       if (error) throw error;
 
-      // Get signed URLs for each document
       const docsWithUrls = await Promise.all(
         (data || []).map(async (doc) => {
           const signedUrl = await getSignedUrl('business-documents', doc.file_url);
@@ -210,6 +209,9 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
       toast.success('Business information saved');
       setLogoFile(null);
       fetchBusinessInfo();
+      if (mode !== 'inline') {
+        onClose?.();
+      }
     } catch (error: any) {
       console.error('Error saving business info:', error);
       toast.error(error.message || 'Failed to save business information');
@@ -229,7 +231,6 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
       const fileName = `${businessId}/${Date.now()}_${file.name}`;
 
       const { error: uploadError } = await supabase.storage
@@ -549,7 +550,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          {onClose && (
+          {onClose && mode !== 'inline' && (
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>

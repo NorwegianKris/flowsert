@@ -20,12 +20,19 @@ interface Feedback {
   user_name: string | null;
 }
 
-export function FeedbackList() {
+interface FeedbackListProps {
+  embedded?: boolean;
+  open?: boolean;
+}
+
+export function FeedbackList({ embedded, open: externalOpen }: FeedbackListProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  const effectiveOpen = embedded ? (externalOpen ?? false) : isOpen;
 
   const fetchFeedback = async () => {
     setLoading(true);
@@ -43,7 +50,6 @@ export function FeedbackList() {
 
       if (error) throw error;
 
-      // Fetch user names for each feedback item
       const feedbackWithNames = await Promise.all(
         (data || []).map(async (item) => {
           if (item.user_id) {
@@ -70,10 +76,10 @@ export function FeedbackList() {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (effectiveOpen) {
       fetchFeedback();
     }
-  }, [isOpen]);
+  }, [effectiveOpen]);
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
@@ -98,7 +104,6 @@ export function FeedbackList() {
 
     setExporting(true);
     try {
-      // Create printable HTML content
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -137,7 +142,6 @@ export function FeedbackList() {
         </html>
       `;
 
-      // Open print dialog
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(htmlContent);
@@ -168,6 +172,77 @@ export function FeedbackList() {
     }
   };
 
+  const feedbackContent = (
+    <div className={embedded ? "px-4 pb-4 space-y-3" : undefined}>
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : feedback.length === 0 ? (
+        <div className="text-center py-4">
+          <div className="text-3xl mb-2">💬</div>
+          <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={exporting}
+              className="gap-2"
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Export PDF
+            </Button>
+          </div>
+          {feedback.map((item) => (
+            <Card key={item.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getCategoryBadge(item.category)}
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(item.created_at), 'MMM d, yyyy h:mm a')}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      Reported by: {item.user_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {item.message}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(item.id)}
+                    disabled={deleting === item.id}
+                    className="shrink-0"
+                  >
+                    {deleting === item.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </>
+      )}
+    </div>
+  );
+
+  if (embedded) return feedbackContent;
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
@@ -189,70 +264,7 @@ export function FeedbackList() {
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent className="px-4 pb-4 space-y-3">
-        {loading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : feedback.length === 0 ? (
-          <div className="text-center py-4">
-            <div className="text-3xl mb-2">💬</div>
-            <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-                disabled={exporting}
-                className="gap-2"
-              >
-                {exporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Export PDF
-              </Button>
-            </div>
-            {feedback.map((item) => (
-              <Card key={item.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {getCategoryBadge(item.category)}
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(item.created_at), 'MMM d, yyyy h:mm a')}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-foreground">
-                        Reported by: {item.user_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {item.message}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(item.id)}
-                      disabled={deleting === item.id}
-                      className="shrink-0"
-                    >
-                      {deleting === item.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </>
-        )}
+        {feedbackContent}
       </CollapsibleContent>
     </Collapsible>
   );
