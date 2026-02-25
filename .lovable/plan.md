@@ -1,21 +1,21 @@
 
 
-# Plan: Create Internal Remediation Note
+# Switch kmu@live.no Back to Techno Dive
 
-## What
+## Current State
+Profile `6f4e9869-09b6-4329-8356-de6bcb7616f1` has `business_id = c9e4b56d-bcca-4852-930f-7927498694c7` (FlowSert TestCo).
 
-Create a markdown file at `docs/2026-02-multi-tenant-isolation-remediation.md` documenting the P0 security fix that was just applied.
+## Action
+Run a single UPDATE to set it back to Techno Dive:
 
-## Content
+```sql
+UPDATE public.profiles
+SET business_id = '38672512-2331-4546-8bc4-de942605fce1'
+WHERE id = '6f4e9869-09b6-4329-8356-de6bcb7616f1';
+```
 
-The note will cover:
-- **Root cause:** 25 tables had PERMISSIVE "Require authentication" RLS policies with `USING (auth.uid() IS NOT NULL)`. Because these were PERMISSIVE (not RESTRICTIVE), they acted as independent grants — any authenticated user could read/write any tenant's data, bypassing business_id scoping.
-- **Tables affected:** All 25 listed.
-- **Fix:** Dropped all 25 policies via migration `20260225214207`.
-- **Verification:** Catalog query confirming 0 bad policies remain; policy coverage check; cross-tenant smoke test.
-- **Date:** 2026-02-25.
+Then verify the row returns the Techno Dive UUID.
 
 ## Risk
-
-GREEN — documentation only, no schema/policy/code changes.
+GREEN — single row data update, no schema or policy changes.
 
