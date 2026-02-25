@@ -7,8 +7,8 @@ interface HeroSectionProps {
   onBookDemo: () => void;
 }
 
-type DocType = 'cert' | 'id' | 'checklist' | 'form';
-const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form'];
+type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'passport';
+const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'passport'];
 
 interface FallingDoc {
   x: number;
@@ -26,13 +26,13 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
   const h = w * (1.3 + Math.random() * 0.4);
   return {
     x: Math.random() * canvasW,
-    y: -h - Math.random() * canvasH * 0.6,
+    y: -h - Math.random() * 200,
     w,
     h,
-    speed: 0.15 + Math.random() * 0.3,
+    speed: 0.3 + Math.random() * 0.9,
     rotation: (Math.random() - 0.5) * (50 * Math.PI / 180),
     rotationSpeed: (Math.random() - 0.5) * 0.002,
-    docType: DOC_TYPES[Math.floor(Math.random() * 4)],
+    docType: DOC_TYPES[Math.floor(Math.random() * DOC_TYPES.length)],
   };
 }
 
@@ -74,12 +74,10 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
       resize();
       const rect = canvas.getBoundingClientRect();
       const count = 78;
-      const cols = 8;
-      const rows = Math.ceil(count / cols);
-      docs = Array.from({ length: count }, (_, i) => {
+      docs = Array.from({ length: count }, () => {
         const d = createDoc(rect.width, rect.height);
-        d.x = (i % cols) * (rect.width / cols) + Math.random() * (rect.width / cols);
-        d.y = Math.floor(i / cols) * (rect.height / rows) + Math.random() * (rect.height / rows);
+        d.x = Math.random() * rect.width;
+        d.y = Math.random() * rect.height * 1.5 - rect.height * 0.5;
         return d;
       });
     };
@@ -232,8 +230,38 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
             ctx.lineTo(left + pad + 12 + lw - pad - 18, ry + 4);
             ctx.stroke();
           }
+        } else if (d.docType === 'form') {
+          // form: 5 lines of alternating widths
+          const widths = [0.75, 0.90, 0.60, 0.85, 0.70];
+          for (let i = 0; i < 5; i++) {
+            const lw = (d.w - pad * 2) * widths[i];
+            const ly = top + 10 + i * ((d.h - 20) / 5);
+            ctx.beginPath();
+            ctx.moveTo(left + pad, ly);
+            ctx.lineTo(left + pad + lw, ly);
+            ctx.stroke();
+          }
+        } else if (d.docType === 'badge') {
+          // badge: large circle + 2 short lines below
+          const cr = d.w * 0.35;
+          const cy = top + pad + cr + 4;
+          ctx.beginPath();
+          ctx.arc(0, cy, cr, 0, Math.PI * 2);
+          ctx.stroke();
+          // 2 short centered lines below circle
+          const lineY1 = cy + cr + 10;
+          const lineY2 = lineY1 + 10;
+          const shortW = d.w * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(-shortW / 2, lineY1);
+          ctx.lineTo(shortW / 2, lineY1);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-shortW / 2, lineY2);
+          ctx.lineTo(shortW / 2, lineY2);
+          ctx.stroke();
         } else {
-          // form: title line
+          // passport: thick title, divider, 2x3 grid
           ctx.lineWidth = 2.5;
           ctx.beginPath();
           ctx.moveTo(left + pad, top + 10);
@@ -248,22 +276,17 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
           ctx.lineTo(left + d.w - pad, divY);
           ctx.stroke();
 
-          // 5 rows, two columns
+          // 2 rows x 3 cols grid of small rects
           ctx.lineWidth = 1.8;
-          const colL = left + pad;
-          const colLW = d.w * 0.40;
-          const colR = left + d.w * 0.52;
-          const colRW = d.w * 0.40;
-          for (let i = 0; i < 5; i++) {
-            const ly = top + 30 + i * 10;
-            ctx.beginPath();
-            ctx.moveTo(colL, ly);
-            ctx.lineTo(colL + colLW, ly);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(colR, ly);
-            ctx.lineTo(colR + colRW, ly);
-            ctx.stroke();
+          const gridTop = divY + 6;
+          const cellW = (d.w - pad * 2 - 8) / 3;
+          const cellH = (d.h - (gridTop - top) - pad - 4) / 2;
+          for (let r = 0; r < 2; r++) {
+            for (let c = 0; c < 3; c++) {
+              const cx = left + pad + c * (cellW + 4);
+              const cy = gridTop + r * (cellH + 4);
+              ctx.strokeRect(cx, cy, cellW, cellH);
+            }
           }
         }
 
