@@ -1,64 +1,171 @@
 
 
-# Add Diploma Document Type
+# Step 4: AI Usage Ledger — Implementation Plan
 
-**Classification: GREEN** — Pure canvas rendering, single file.
+**Classification: YELLOW** — Additive table + RLS + edge function modifications. All fail-soft.
 
-Note: The user references "passport" but in the current code, passport was already replaced with "license". I'll add `diploma` as a new type, with 1/3 of `license` selections becoming `diploma` instead (matching the user's intent of splitting an existing type).
+## Execution Order
 
-## File: `src/components/HeroSection.tsx`
+1. Apply SQL migration (create `usage_ledger` table)
+2. Deploy all 3 edge function changes
+3. Trigger each AI function once
+4. Run sanity queries
 
-### 1. Update type system (lines 10–11)
+## 1. Database Migration
 
-Add `'diploma'` to the union and array:
-```ts
-type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license' | 'diploma';
-const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'license'];
+Single migration creating the table, indexes, RLS with FORCE, and idempotent SELECT policy. No INSERT policy -- inserts are service-role only.
+
+```sql
+CREATE TABLE IF NOT EXISTS public.usage_ledger (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id   uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+  event_type    text NOT NULL
+    CHECK (event_type IN (
+      'ocr_extraction',
+      'assistant_query',
+      'personnel_match',
+      'email_sent'
+    )),
+  quantity      bigint NOT NULL DEFAULT 1,
+  model         text,
+  billing_month date NOT NULL DEFAULT date_trunc('month', now())::date,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_ledger_business_month
+  ON public.usage_ledger (business_id, billing_month);
+CREATE INDEX IF NOT EXISTS idx_usage_ledger_business_created
+  ON public.usage_ledger (business_id, created_at DESC);
+
+ALTER TABLE public.usage_ledger ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usage_ledger FORCE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS usage_ledger_read_own ON public.usage_ledger;
+CREATE POLICY usage_ledger_read_own
+  ON public.usage_ledger FOR SELECT TO authenticated
+  USING (business_id = public.get_user_business_id(auth.uid()));
 ```
-Array stays the same — the split happens in `createDoc`.
 
-### 2. Update `createDoc` (lines 38–55)
+Rollback: `DROP TABLE IF EXISTS public.usage_ledger CASCADE;`
 
-After selecting `docType` from the array, add the 1/3 split:
+## 2. Shared `logUsage` helper (added to all 3 edge functions)
+
+Identical function, fire-and-forget, never throws:
+
 ```ts
-let finalType = docType;
-if (finalType === 'license') {
-  finalType = Math.random() < 0.33 ? 'diploma' : 'license';
+async function logUsage(params: {
+  serviceClient: ReturnType<typeof createClient>;
+  businessId: string;
+  eventType: "ocr_extraction" | "assistant_query" | "personnel_match" | "email_sent";
+  quantity?: number;
+  model?: string | null;
+}) {
+  try {
+    const billingMonth = new Date();
+    billingMonth.setDate(1);
+    billingMonth.setHours(0, 0, 0, 0);
+    await params.serviceClient.from("usage_ledger").insert({
+      business_id: params.businessId,
+      event_type: params.eventType,
+      quantity: params.quantity ?? 1,
+      model: params.model ?? null,
+      billing_month: billingMonth.toISOString().slice(0, 10),
+    });
+  } catch (err) {
+    console.error("[usage_ledger] non-fatal logging error:", err);
+  }
 }
 ```
 
-Add diploma dimensions:
-```ts
-} else if (finalType === 'diploma') {
-  w = 65 + Math.random() * 25;
-}
+## 3. Per-function changes
+
+### `extract-certificate-data/index.ts`
+
+- Add `logUsage` function after `writeErrorEvent` (after line 58)
+- After `serviceClient` creation (line 93), add fail-soft businessId lookup:
+  ```ts
+  let businessId: string | null = null;
+  try {
+    const { data } = await serviceClient
+      .from("profiles").select("business_id")
+      .eq("id", userId).maybeSingle();
+    businessId = data?.business_id ?? null;
+  } catch (_) { businessId = null; }
+  ```
+- After `result` is built (line 364), before the return on line 366:
+  ```ts
+  if (businessId) {
+    void logUsage({
+      serviceClient, businessId,
+      eventType: "ocr_extraction",
+      model: "google/gemini-2.5-flash",
+    });
+  }
+  ```
+
+### `certificate-chat/index.ts`
+
+- Add `logUsage` function after `writeErrorEvent` (after line 310)
+- Hoist `let businessId: string | null = null;` before the `if (isAdmin)` block (before line 396)
+- Admin branch: after line 404 check, assign `businessId = profile?.business_id ?? null;`
+- Worker branch: after line 462 personnel check, safely assign:
+  ```ts
+  businessId = (personnel && "business_id" in personnel)
+    ? (personnel as { business_id?: string }).business_id ?? null
+    : null;
+  ```
+- After confirming `response.ok` (line 593), before returning stream (line 595):
+  ```ts
+  if (businessId) {
+    void logUsage({
+      serviceClient, businessId,
+      eventType: "assistant_query",
+      model: "google/gemini-2.5-flash",
+    });
+  }
+  ```
+- No new DB queries -- reuses existing profile/personnel objects.
+
+### `suggest-project-personnel/index.ts`
+
+- Add `logUsage` function after `writeErrorEvent` (after line 73)
+- After `serviceClient` creation (line 107), add fail-soft businessId lookup (same pattern as extract)
+- After result is validated and filtered (line 368), before return on line 370:
+  ```ts
+  if (businessId) {
+    void logUsage({
+      serviceClient, businessId,
+      eventType: "personnel_match",
+      model: "google/gemini-3-flash-preview",
+    });
+  }
+  ```
+
+## 4. Post-deploy verification
+
+```sql
+-- Quick count (expect 3 rows after triggering each function once)
+SELECT event_type, COUNT(*)
+FROM public.usage_ledger
+GROUP BY event_type
+ORDER BY event_type;
+
+-- Detail check
+SELECT event_type, model, quantity, billing_month, created_at
+FROM public.usage_ledger
+ORDER BY created_at DESC
+LIMIT 25;
 ```
 
-Update height calculation to include diploma:
-```ts
-const h = (finalType === 'license') ? w * 0.62
-        : (finalType === 'diploma') ? w * 1.45
-        : w * (1.3 + Math.random() * 0.4);
-```
+If 0 rows: check serviceClient uses `SUPABASE_SERVICE_ROLE_KEY` (confirmed at lines 92-93, 106-107, 348-349) and that businessId is not null.
 
-Use `finalType` as the returned `docType`.
+## Risk Assessment
 
-### 3. Add diploma renderer (in the drawing switch, after badge/before license)
-
-The diploma is portrait-oriented and drawn with:
-
-- **Decorative border**: Inner rounded rect 5px inset from card edge, stroked `hsla(243, 50%, 70%, 0.6)` at lineWidth 1
-- **Top laurel ornament**: Two mirrored arcs at top center curving outward, stroked `hsla(243, 50%, 65%, 0.7)`
-- **Title block**: Thick short line (50% card width, lineWidth 2.5) centered at 30% from top
-- **Subtitle**: Thinner line (35% card width, lineWidth 1.2) just below
-- **Center seal**: Double concentric circles at 55% from top (outer radius 18% of card width, inner 11%)
-- **Body lines**: 3 lines at 80%, 70%, 75% card width, evenly spaced below seal
-- **Signature field**: Full-width line at 80% from top with perpendicular tick marks at each end
-- **Bottom ornament**: Mirrored laurel arcs at bottom center
-
-All strokes use `detailColor` consistent with other document types.
-
-### Summary
-
-Single file change. Add `'diploma'` to DocType union, split 1/3 from license selections, add portrait sizing (w × 1.45), and implement the full diploma renderer with decorative border, laurels, seal, and signature field.
+| Check | Result |
+|---|---|
+| Destructive changes | None -- purely additive |
+| All `void logUsage(...)` | Yes, consistent fire-and-forget |
+| `maybeSingle()` + try/catch | Yes, for extract + suggest lookups |
+| certificate-chat reuses existing data | Yes, no extra queries |
+| Rollback | `DROP TABLE IF EXISTS public.usage_ledger CASCADE;` + revert 3 edge functions |
 
