@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getBusinessEntitlement, BusinessEntitlement } from '@/lib/entitlements';
 import { TIER_INFO, getPriceId, TierKey, BillingInterval } from '@/lib/stripePrices';
@@ -35,6 +36,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
   const [loadingPrice, setLoadingPrice] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const shouldFetchSub = subProp === undefined;
   const shouldFetchEnt = entProp === undefined;
@@ -246,11 +248,22 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
 
           {/* Enterprise callout */}
           {effectiveEntitlement?.is_unlimited && (
-            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-2">
-              <p className="text-sm font-medium">Enterprise Plan — Manual Billing</p>
-              <p className="text-xs text-muted-foreground">
-                You're on an Enterprise plan with manual billing. Contact us to change your agreement.
-              </p>
+            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Enterprise Plan — Manual Billing</p>
+                <p className="text-xs text-muted-foreground">
+                  You're on an Enterprise plan with manual billing. Contact us to change your agreement.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => navigate('/contact')}
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Contact support
+              </Button>
             </div>
           )}
 
