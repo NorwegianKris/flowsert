@@ -361,7 +361,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                           <span className="text-sm flex-1 truncate">{p.name}</span>
                           <span className="text-xs text-muted-foreground truncate max-w-[120px]">{p.role}</span>
                           {p.category === 'freelancer' && (
-                            <Badge variant="secondary" className="text-xs bg-lavender-100 text-lavender-700 shrink-0">
+                            <Badge variant="secondary" className="text-xs shrink-0">
                               Freelancer
                             </Badge>
                           )}

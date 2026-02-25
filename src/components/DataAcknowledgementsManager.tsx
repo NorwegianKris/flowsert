@@ -154,7 +154,7 @@ export function DataAcknowledgementsManager({
                   >
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant={p.category === 'freelancer' ? 'secondary' : 'default'} className="text-xs">
                         {p.category === 'freelancer' ? 'Freelancer' : 'Employee'}
                       </Badge>
                     </TableCell>
