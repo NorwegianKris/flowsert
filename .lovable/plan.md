@@ -1,34 +1,39 @@
 
 
-# Clean Up Test-Mode Billing Data
+# Style the Billing Section Toggle and Tier Cards to Match System Design
 
-## What we found
+## What needs to change
 
-Business `38672512-2331-4546-8bc4-de942605fce1` has test-mode Stripe data:
+Two visual issues in the "Payment & Billing" section:
 
-- **billing_customers**: 1 row (`cus_U2WuEddEsGCQ3d`)
-- **billing_subscriptions**: 1 row (`sub_1T4SbSCTZs6lfaVYZf2axohZ`, status: trialing)
-- **billing_events**: 4 rows (test-mode webhook events)
+1. **Monthly/Annual toggle** — currently uses default `ToggleGroup` styling (white-on-primary-foreground). It should use the system's primary purple (`#4338CA`) for the selected state with white text, matching the design language.
 
-## Plan
+2. **Subscription tier cards** — currently plain `variant="outline"` buttons with no hover lift effect. They should get the standardized card hover interaction (subtle lift, shadow, Lavender border ring) consistent with the rest of the system.
 
-Delete all three sets of test-mode records so the billing UI shows "No subscription" and is ready for live-mode checkout:
+## Changes
 
-1. `DELETE FROM billing_customers WHERE business_id = '38672512-...'`
-2. `DELETE FROM billing_subscriptions WHERE business_id = '38672512-...'`
-3. `DELETE FROM billing_events WHERE business_id = '38672512-...'`
+### File: `src/components/ui/toggle.tsx`
 
-The entitlements row does not need deletion — the webhook will re-sync it on the first live subscription event.
+Update the `data-[state=on]` classes in `toggleVariants` from:
+```
+data-[state=on]:bg-primary-foreground data-[state=on]:text-primary
+```
+to:
+```
+data-[state=on]:bg-primary data-[state=on]:text-primary-foreground
+```
 
-## Security anchors
+This makes the selected toggle item show as purple background with white text (matching the system's primary color), instead of white background with purple text.
 
-- Q1 (SQL): Data deletion — anchor recommended.
-- GREEN classification: deleting stale test data only, no schema change.
-- No code changes required.
+### File: `src/components/BillingSection.tsx`
 
-| Table | Rows deleted |
-|-------|-------------|
-| billing_customers | 1 |
-| billing_subscriptions | 1 |
-| billing_events | 4 |
+Update the tier `Button` elements (lines 231-249) to add the standardized hover effect:
+- Add `transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD]` classes to each tier card button.
+- This matches the card-interaction-standardization pattern used on Project cards, Personnel cards, and Expiry Timeline boxes.
+
+## Scope
+
+- Purely UI/styling (Q5: green, anchor optional)
+- No database, RLS, auth, or edge function changes
+- The toggle variant change is global but intentional — it aligns the component with the system's primary color convention
 
