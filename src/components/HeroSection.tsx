@@ -73,7 +73,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
     const init = () => {
       resize();
       const rect = canvas.getBoundingClientRect();
-      const count = 98;
+      const count = 78;
       const cols = 8;
       const rows = Math.ceil(count / cols);
       docs = Array.from({ length: count }, (_, i) => {
