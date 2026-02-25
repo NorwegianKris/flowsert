@@ -1,44 +1,59 @@
 
 
-# Enterprise Callout — Add "Contact support" with SPA Navigation
+# Consistent Employee/Freelancer Badge Colors
 
-One edit, one file, UI-only.
+The PersonnelCard in the admin dashboard is the canonical source. It uses:
+- **Employee** → `variant="default"` (indigo/primary)
+- **Freelancer** → `variant="secondary"` (dark slate)
 
-## Edit A — Add actionable button with same-tab navigation
+Five files have inconsistent styling. Here are the fixes:
 
-**File:** `src/components/BillingSection.tsx` **Lines 248–255**
+---
 
-Replace the static Enterprise callout with an actionable version using React Router's `useNavigate` for clean SPA navigation:
+## File 1: `src/components/project-timeline/PersonnelGroup.tsx` (line 56)
 
-```tsx
-{effectiveEntitlement?.is_unlimited && (
-  <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-3">
-    <div className="space-y-1">
-      <p className="text-sm font-medium">Enterprise Plan — Manual Billing</p>
-      <p className="text-xs text-muted-foreground">
-        You're on an Enterprise plan with manual billing. Contact us to change your agreement.
-      </p>
-    </div>
-    <Button
-      variant="outline"
-      size="sm"
-      className="text-xs"
-      onClick={() => navigate('/contact')}
-    >
-      <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-      Contact support
-    </Button>
-  </div>
-)}
-```
+**Problem**: Variants are reversed — freelancer uses `default`, employee uses `secondary`.
 
-Also requires adding `useNavigate` import and hook call:
+**Fix**: Swap to `person.category === 'freelancer' ? 'secondary' : 'default'`
 
-- **Line 1 area** — add `import { useNavigate } from 'react-router-dom';`
-- **Inside the component body** (before the existing `fetchData` callback) — add `const navigate = useNavigate();`
+---
 
-Same-tab navigation keeps the user inside the app shell. `ExternalLink` icon is already imported. No new dependencies.
+## File 2: `src/components/WorkerGroupsManageList.tsx` (line 203)
+
+**Problem**: Uses `variant="outline"` for both categories.
+
+**Fix**: Change to `variant={person.category === 'freelancer' ? 'secondary' : 'default'}`
+
+---
+
+## File 3: `src/components/DataAcknowledgementsManager.tsx` (line 157)
+
+**Problem**: Uses `variant="outline"` for both categories.
+
+**Fix**: Change to `variant={p.category === 'freelancer' ? 'secondary' : 'default'}`
+
+---
+
+## File 4: `src/components/SendNotificationDialog.tsx` (line 364)
+
+**Problem**: Uses `variant="secondary"` but overrides with custom `bg-lavender-100 text-lavender-700` classes (which likely don't resolve to anything in the Tailwind config).
+
+**Fix**: Remove the custom color classes, keep `variant="secondary" className="text-xs shrink-0"`
+
+---
+
+## File 5: `src/components/ExternalSharingDialog.tsx` (line 950)
+
+**Status**: Already correct — `variant="secondary"` for freelancer. No change needed.
+
+---
+
+## Already consistent (no changes)
+
+- `PersonnelCard.tsx` — canonical source
+- `PersonnelPreviewSheet.tsx` — correct
+- `RecentRegistrations.tsx` — correct
 
 ## Risk
-UI copy only. No database, RLS, auth, edge function, or migration changes.
+UI-only. No database, RLS, auth, or edge function changes.
 
