@@ -1913,6 +1913,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_tier_profile_limit: { Args: { p_tier: string }; Returns: number }
       get_user_business_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
