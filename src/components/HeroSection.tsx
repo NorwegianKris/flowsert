@@ -22,7 +22,7 @@ interface FallingDoc {
 }
 
 function createDoc(canvasW: number, canvasH: number): FallingDoc {
-  const w = 55 + Math.random() * 40;
+  const w = 60 + Math.random() * 40;
   const h = w * (1.3 + Math.random() * 0.4);
   return {
     x: Math.random() * canvasW,
@@ -30,7 +30,7 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
     w,
     h,
     speed: 0.15 + Math.random() * 0.3,
-    rotation: (Math.random() - 0.5) * 0.3,
+    rotation: (Math.random() - 0.5) * (50 * Math.PI / 180),
     rotationSpeed: (Math.random() - 0.5) * 0.002,
     docType: DOC_TYPES[Math.floor(Math.random() * 4)],
   };
@@ -98,82 +98,167 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         ctx.globalAlpha = 1;
         ctx.lineCap = 'round';
 
-        // doc body
-        drawRoundRect(ctx, -d.w / 2, -d.h / 2, d.w, d.h, 4);
-        ctx.fillStyle = 'hsla(215, 38%, 75%, 0.5)';
+        const hw = d.w / 2;
+        const hh = d.h / 2;
+        const left = -hw;
+        const top = -hh;
+
+        // drop shadow
+        drawRoundRect(ctx, left + 2, top + 2, d.w, d.h, 4);
+        ctx.fillStyle = 'hsla(220, 40%, 70%, 0.15)';
         ctx.fill();
-        ctx.strokeStyle = 'hsla(215, 42%, 55%, 0.45)';
-        ctx.lineWidth = 1.8;
+
+        // card body
+        drawRoundRect(ctx, left, top, d.w, d.h, 4);
+        ctx.fillStyle = 'hsla(220, 40%, 97%, 0.75)';
+        ctx.fill();
+        ctx.strokeStyle = 'hsla(220, 50%, 75%, 0.6)';
+        ctx.lineWidth = 1;
         ctx.stroke();
 
-        // internal details
-        const detailColor = 'hsla(215, 42%, 55%, 0.45)';
+        // detail defaults
+        const detailColor = 'hsla(220, 30%, 65%, 0.7)';
         ctx.strokeStyle = detailColor;
         ctx.fillStyle = detailColor;
         ctx.lineWidth = 1.8;
 
-        const left = -d.w / 2;
-        const top = -d.h / 2;
+        const pad = 6;
 
         if (d.docType === 'cert') {
-          // badge circle
+          // header bar
+          const barH = d.h * 0.28;
+          ctx.fillStyle = 'hsla(243, 60%, 88%, 0.8)';
+          drawRoundRect(ctx, left, top, d.w, barH, 4);
+          ctx.fill();
+          // clip bottom corners of header to card
+          ctx.fillRect(left, top + barH - 4, d.w, 4);
+
+          // circle/star in header
           ctx.beginPath();
-          ctx.arc(left + 12, top + 14, 5, 0, Math.PI * 2);
+          ctx.arc(0, top + barH / 2, 8, 0, Math.PI * 2);
+          ctx.strokeStyle = 'hsla(243, 70%, 55%, 0.9)';
+          ctx.lineWidth = 1.8;
           ctx.stroke();
-          // 4 lines below
+
+          // 4 lines below header
+          ctx.strokeStyle = detailColor;
+          const widths = [0.85, 0.70, 0.80, 0.55];
+          const lineAreaTop = top + barH + 8;
+          const lineAreaH = d.h - barH - 14;
+          const spacing = lineAreaH / 4;
           for (let i = 0; i < 4; i++) {
-            const lw = d.w * (0.4 + Math.random() * 0.35);
+            const lw = d.w * widths[i];
+            const ly = lineAreaTop + i * spacing;
             ctx.beginPath();
-            ctx.moveTo(left + 5, top + 28 + i * 9);
-            ctx.lineTo(left + 5 + lw, top + 28 + i * 9);
+            ctx.moveTo(-lw / 2, ly);
+            ctx.lineTo(lw / 2, ly);
             ctx.stroke();
           }
         } else if (d.docType === 'id') {
-          // portrait placeholder
-          const pw = d.w * 0.28;
-          const ph = d.w * 0.35;
-          ctx.strokeRect(left + 5, top + 8, pw, ph);
+          // portrait rect
+          const pw = d.w * 0.30;
+          const ph = d.h * 0.45;
+          const px = left + pad;
+          const py = top + pad;
+          ctx.strokeStyle = detailColor;
+          ctx.strokeRect(px, py, pw, ph);
+
+          // silhouette: head circle
+          const cx = px + pw / 2;
+          const headR = pw * 0.22;
+          const headY = py + ph * 0.32;
+          ctx.beginPath();
+          ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+          ctx.stroke();
+          // shoulders arc
+          ctx.beginPath();
+          ctx.arc(cx, headY + headR + pw * 0.38, pw * 0.35, Math.PI, 0);
+          ctx.stroke();
+
           // 3 short lines to the right
-          const rx = left + 5 + pw + 5;
+          const rx = px + pw + 6;
           for (let i = 0; i < 3; i++) {
             ctx.beginPath();
-            ctx.moveTo(rx, top + 14 + i * 8);
-            ctx.lineTo(rx + d.w * 0.3, top + 14 + i * 8);
+            ctx.moveTo(rx, py + 8 + i * 10);
+            ctx.lineTo(rx + d.w * 0.32, py + 8 + i * 10);
             ctx.stroke();
           }
+
+          // divider
+          const divY = py + ph + 8;
+          ctx.beginPath();
+          ctx.moveTo(left + pad, divY);
+          ctx.lineTo(left + d.w - pad, divY);
+          ctx.stroke();
+
           // 2 full-width lines below
           for (let i = 0; i < 2; i++) {
             ctx.beginPath();
-            ctx.moveTo(left + 5, top + 8 + ph + 8 + i * 9);
-            ctx.lineTo(left + d.w - 5, top + 8 + ph + 8 + i * 9);
+            ctx.moveTo(left + pad, divY + 10 + i * 10);
+            ctx.lineTo(left + d.w - pad, divY + 10 + i * 10);
             ctx.stroke();
           }
         } else if (d.docType === 'checklist') {
-          // 4 rows with checkboxes
+          // header line
+          ctx.beginPath();
+          ctx.moveTo(left + pad, top + 10);
+          ctx.lineTo(left + d.w * 0.65, top + 10);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.lineWidth = 1.8;
+
+          // 4 checkbox rows
           for (let i = 0; i < 4; i++) {
-            const ry = top + 10 + i * 14;
-            ctx.strokeRect(left + 6, ry, 7, 7);
-            // checkmark in top 2
-            if (i < 2) {
+            const ry = top + 22 + i * 16;
+            // rounded checkbox 8×8
+            drawRoundRect(ctx, left + pad, ry, 8, 8, 1.5);
+            ctx.stroke();
+            // checkmark in first 3
+            if (i < 3) {
               ctx.beginPath();
-              ctx.moveTo(left + 7.5, ry + 4);
-              ctx.lineTo(left + 9, ry + 6);
-              ctx.lineTo(left + 12, ry + 1.5);
+              ctx.moveTo(left + pad + 1.5, ry + 4.5);
+              ctx.lineTo(left + pad + 3.5, ry + 6.5);
+              ctx.lineTo(left + pad + 6.5, ry + 1.5);
               ctx.stroke();
             }
             // line extending right
+            const lw = d.w * (i % 2 === 0 ? 0.75 : 0.90);
             ctx.beginPath();
-            ctx.moveTo(left + 17, ry + 3.5);
-            ctx.lineTo(left + d.w - 6, ry + 3.5);
+            ctx.moveTo(left + pad + 12, ry + 4);
+            ctx.lineTo(left + pad + 12 + lw - pad - 18, ry + 4);
             ctx.stroke();
           }
         } else {
-          // form: 5 lines
+          // form: title line
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(left + pad, top + 10);
+          ctx.lineTo(left + d.w * 0.60, top + 10);
+          ctx.stroke();
+
+          // divider
+          ctx.lineWidth = 1;
+          const divY = top + 20;
+          ctx.beginPath();
+          ctx.moveTo(left + pad, divY);
+          ctx.lineTo(left + d.w - pad, divY);
+          ctx.stroke();
+
+          // 5 rows, two columns
+          ctx.lineWidth = 1.8;
+          const colL = left + pad;
+          const colLW = d.w * 0.40;
+          const colR = left + d.w * 0.52;
+          const colRW = d.w * 0.40;
           for (let i = 0; i < 5; i++) {
-            const lw = d.w * (0.5 + Math.random() * 0.3);
+            const ly = top + 30 + i * 10;
             ctx.beginPath();
-            ctx.moveTo(left + 5, top + 12 + i * 10);
-            ctx.lineTo(left + 5 + lw, top + 12 + i * 10);
+            ctx.moveTo(colL, ly);
+            ctx.lineTo(colL + colLW, ly);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(colR, ly);
+            ctx.lineTo(colR + colRW, ly);
             ctx.stroke();
           }
         }
