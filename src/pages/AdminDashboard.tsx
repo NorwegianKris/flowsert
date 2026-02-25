@@ -170,7 +170,10 @@ export default function AdminDashboard() {
 
   const getStatusBadge = () => {
     if (liftedError) return <Badge variant="outline" className="text-muted-foreground" title="Could not load subscription status">Unknown</Badge>;
-    if (!liftedSubscription) return <Badge variant="outline">No plan</Badge>;
+    if (!liftedSubscription) {
+      if (liftedEntitlement?.is_unlimited) return <Badge variant="secondary">Manual</Badge>;
+      return <Badge variant="outline">No plan</Badge>;
+    }
     const s = liftedSubscription.status;
     if (s === 'active') return <Badge variant="active">Active</Badge>;
     if (s === 'trialing') return <Badge variant="secondary">Trialing</Badge>;
@@ -754,7 +757,7 @@ export default function AdminDashboard() {
                       </span>
                     </>
                   )}
-                  {['past_due', 'unpaid'].includes(liftedSubscription?.status ?? '') && (
+                  {['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(liftedSubscription?.status ?? '') && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-0.5">
                       <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
                       <span className="text-xs text-destructive">Past due</span>
