@@ -29,7 +29,7 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
     speed: 0.15 + Math.random() * 0.3,
     rotation: (Math.random() - 0.5) * 0.3,
     rotationSpeed: (Math.random() - 0.5) * 0.002,
-    opacity: 0.12 + Math.random() * 0.14,
+    opacity: 0.35 + Math.random() * 0.20,
     lines: 2 + Math.floor(Math.random() * 2),
   };
 }
@@ -97,9 +97,9 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
 
         // doc body
         drawRoundRect(ctx, -d.w / 2, -d.h / 2, d.w, d.h, 4);
-        ctx.fillStyle = 'hsl(243, 30%, 96%)';
+        ctx.fillStyle = 'hsla(215, 38%, 75%, 1)';
         ctx.fill();
-        ctx.strokeStyle = 'hsl(243, 40%, 82%)';
+        ctx.strokeStyle = 'hsla(215, 38%, 60%, 1)';
         ctx.lineWidth = 0.7;
         ctx.stroke();
 
@@ -107,7 +107,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         const lineY0 = -d.h / 2 + d.h * 0.28;
         for (let i = 0; i < d.lines; i++) {
           const lw = d.w * (0.5 + Math.random() * 0.3);
-          ctx.fillStyle = 'hsl(243, 40%, 78%)';
+          ctx.fillStyle = 'hsla(215, 38%, 55%, 1)';
           ctx.fillRect(-d.w / 2 + 5, lineY0 + i * 7, lw, 2.5);
         }
 
