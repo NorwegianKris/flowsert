@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import dashboardBgPattern from '@/assets/dashboard-bg-pattern.png';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { DashboardStats } from '@/components/DashboardStats';
@@ -81,6 +81,8 @@ export default function AdminDashboard() {
   const [sendNotificationOpen, setSendNotificationOpen] = useState(false);
   const [notificationsLogOpen, setNotificationsLogOpen] = useState(false);
   const [externalSharingOpen, setExternalSharingOpen] = useState(false);
+  const [billingOpen, setBillingOpen] = useState(false);
+  const billingRef = useRef<HTMLDivElement>(null);
   
   const [linkProfileOpen, setLinkProfileOpen] = useState(false);
   const [addPersonnelPrefill, setAddPersonnelPrefill] = useState<{ name: string; email: string } | null>(null);
@@ -787,40 +789,49 @@ export default function AdminDashboard() {
                         setSelectedPersonnel(person);
                       }}
                       onPersonnelRemoved={refetch}
+                      onChoosePlan={() => {
+                        setBillingOpen(true);
+                        setTimeout(() => billingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                      }}
+                      subscriptionStatus={liftedSubscription?.status ?? null}
+                      liftedEntitlement={liftedEntitlement}
+                      liftedActiveCount={liftedActiveCount}
                     />
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">Payment & Billing</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        title="Refresh billing status"
-                        aria-label="Refresh billing status"
-                        disabled={liftedLoading}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); fetchBillingData(); }}
-                        className={`p-1 rounded hover:bg-muted disabled:opacity-50 transition-opacity ${liftedLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                      >
-                        <RefreshCw className={`h-4 w-4 text-muted-foreground ${liftedLoading ? 'animate-spin' : ''}`} />
-                      </button>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <BillingSection
-                      businessId={profile?.business_id}
-                      embedded
-                      subscription={liftedSubscription}
-                      entitlement={liftedEntitlement}
-                      activeCount={liftedActiveCount === null ? null : liftedActiveCount}
-                    />
-                  </CollapsibleContent>
-                </Collapsible>
+                <div ref={billingRef}>
+                  <Collapsible open={billingOpen} onOpenChange={setBillingOpen}>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-lg">Payment & Billing</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          title="Refresh billing status"
+                          aria-label="Refresh billing status"
+                          disabled={liftedLoading}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); fetchBillingData(); }}
+                          className={`p-1 rounded hover:bg-muted disabled:opacity-50 transition-opacity ${liftedLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                        >
+                          <RefreshCw className={`h-4 w-4 text-muted-foreground ${liftedLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <BillingSection
+                        businessId={profile?.business_id}
+                        embedded
+                        subscription={liftedSubscription}
+                        entitlement={liftedEntitlement}
+                        activeCount={liftedActiveCount === null ? null : liftedActiveCount}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
 
                 {/* GROUP 2: ACCESS & TEAM */}
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Access & Team</p>

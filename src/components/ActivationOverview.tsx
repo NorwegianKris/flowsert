@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Personnel } from '@/types';
-import { ShieldCheck, Users, Pencil, Trash2, Loader2, Search, ChevronDown, FileText, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Users, Pencil, Trash2, Loader2, Search, ChevronDown, FileText, ExternalLink, AlertTriangle } from 'lucide-react';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { PersonnelPreviewSheet } from '@/components/PersonnelPreviewSheet';
 import { PdfViewer } from '@/components/PdfViewer';
@@ -36,25 +36,27 @@ interface ActivationOverviewProps {
   onRefresh: () => void;
   onEditPersonnel?: (person: Personnel) => void;
   onPersonnelRemoved?: () => void;
+  onChoosePlan?: () => void;
+  subscriptionStatus?: string | null;
+  liftedEntitlement?: BusinessEntitlement | null;
+  liftedActiveCount?: number | null;
 }
 
 const TC_PDF_URL = '/documents/FlowSert_Terms_and_Conditions.pdf';
 
-const TIERS = [
-  { name: 'Starter', range: '1–25 profiles', monthly: '1,990', annual: '19,900', min: 1, max: 25 },
-  { name: 'Growth', range: '26–75 profiles', monthly: '4,490', annual: '44,900', min: 26, max: 75 },
-  { name: 'Professional', range: '76–200 profiles', monthly: '8,990', annual: '89,900', min: 76, max: 200 },
-  { name: 'Enterprise', range: '201+ profiles', monthly: 'Custom', annual: 'Custom', min: 201, max: Infinity },
-];
+const PAST_DUE_STATUSES = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'];
 
-function getCurrentTierIndex(activeCount: number) {
-  if (activeCount >= 201) return 3;
-  if (activeCount >= 76) return 2;
-  if (activeCount >= 26) return 1;
-  return 0;
+function getStatusBadgeProps(status: string | null | undefined): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
+  if (status === undefined) return { label: 'Unknown', variant: 'outline' };
+  if (status === null) return { label: 'No subscription', variant: 'outline' };
+  if (status === 'active') return { label: 'Active', variant: 'default' };
+  if (status === 'trialing') return { label: 'Trialing', variant: 'secondary' };
+  if (PAST_DUE_STATUSES.includes(status)) return { label: 'Past due', variant: 'destructive' };
+  if (status === 'canceled') return { label: 'Canceled', variant: 'outline' };
+  return { label: status, variant: 'outline' };
 }
 
-export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPersonnelRemoved }: ActivationOverviewProps) {
+export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPersonnelRemoved, onChoosePlan, subscriptionStatus, liftedEntitlement: liftedEntitlementProp, liftedActiveCount: liftedActiveCountProp }: ActivationOverviewProps) {
   const [filter, setFilter] = useState<FilterMode>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -72,15 +74,20 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
   const [entitlement, setEntitlement] = useState<BusinessEntitlement | null>(null);
 
   useEffect(() => {
+    if (liftedEntitlementProp !== undefined) return;
     if (businessId) {
       getBusinessEntitlement(businessId).then(setEntitlement);
     }
-  }, [businessId]);
+  }, [businessId, liftedEntitlementProp]);
 
   const activeCount = useMemo(
     () => personnel.filter((p) => p.activated).length,
     [personnel]
   );
+
+  const effectiveEntitlement = liftedEntitlementProp !== undefined ? liftedEntitlementProp : entitlement;
+  const effectiveActiveCount = liftedActiveCountProp !== undefined ? liftedActiveCountProp : activeCount;
+
   const filteredPersonnel = useMemo(() => {
     let list = personnel;
     switch (filter) {
@@ -100,10 +107,15 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
     return list;
   }, [personnel, filter, searchQuery]);
 
-  const capValue = entitlement?.is_unlimited ? activeCount : (entitlement?.profile_cap ?? 25);
-  const progressPercent = capValue > 0 ? Math.min((activeCount / capValue) * 100, 100) : 0;
-  const currentTierIndex = entitlement ? TIERS.findIndex(t => t.name.toLowerCase() === entitlement.tier) : getCurrentTierIndex(activeCount);
-  const isOverCap = entitlement && !entitlement.is_unlimited && activeCount > entitlement.profile_cap;
+  const capValue = effectiveEntitlement?.is_unlimited
+    ? (typeof effectiveActiveCount === 'number' ? effectiveActiveCount : 0)
+    : (effectiveEntitlement?.profile_cap ?? 25);
+  const progressPercent = typeof effectiveActiveCount === 'number' && capValue > 0
+    ? Math.min((effectiveActiveCount / capValue) * 100, 100)
+    : 0;
+  const isOverCap = effectiveEntitlement && !effectiveEntitlement.is_unlimited && typeof effectiveActiveCount === 'number' && effectiveActiveCount > effectiveEntitlement.profile_cap;
+
+  const capDisplay = effectiveEntitlement?.is_unlimited ? '∞' : String(effectiveEntitlement?.profile_cap ?? 25);
 
   const getInitials = (name: string) =>
     name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -163,6 +175,15 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
     }
   }, [tcOpen, pdfData, pdfLoading]);
 
+  const planLabel = effectiveEntitlement
+    ? effectiveEntitlement.is_unlimited
+      ? 'Enterprise'
+      : effectiveEntitlement.tier.charAt(0).toUpperCase() + effectiveEntitlement.tier.slice(1)
+    : '—';
+
+  const statusBadge = getStatusBadgeProps(subscriptionStatus);
+  const hasKnownSubscription = typeof subscriptionStatus === 'string';
+
   return (
     <>
       <Card className="border-border/50">
@@ -171,14 +192,12 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                Active: <span className="font-semibold text-foreground">{activeCount}</span>
+                Active: <span className="font-semibold text-foreground">{effectiveActiveCount ?? '—'}</span>
                 {' | '}
-                Plan cap: <span className="font-semibold text-foreground">
-                  {entitlement?.is_unlimited ? 'Unlimited' : (entitlement?.profile_cap ?? 25)}
-                </span>
+                Plan cap: <span className="font-semibold text-foreground">{capDisplay}</span>
               </span>
               <Badge variant="secondary" className="text-xs">
-                {activeCount} billable
+                {effectiveActiveCount ?? '—'} billable
               </Badge>
             </div>
             <Progress value={progressPercent} className="h-2" />
@@ -188,7 +207,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
             <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <p className="text-sm text-amber-700 dark:text-amber-300">
-                You have more active profiles ({activeCount}) than your plan allows ({entitlement?.profile_cap}). 
+                You have more active profiles ({effectiveActiveCount}) than your plan allows ({effectiveEntitlement?.profile_cap}). 
                 New activations are blocked. Upgrade your plan or deactivate profiles.
               </p>
             </div>
@@ -307,42 +326,37 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
             </ScrollArea>
           )}
 
-          {/* Pricing Tiers */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Subscription Tiers</p>
-            <p className="text-xs text-muted-foreground">Annual plan = 2 months free (16.7% discount)</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {TIERS.map((tier, i) => {
-                const isCurrent = i === currentTierIndex;
-                return (
-                  <div
-                    key={tier.name}
-                    className={`rounded-lg border-2 p-3 text-center transition-colors ${
-                      isCurrent
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border/50 bg-muted/30'
-                    }`}
-                  >
-                    <p className={`text-sm font-semibold ${isCurrent ? 'text-primary' : 'text-foreground'}`}>
-                      {tier.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{tier.range}</p>
-                    <div className="mt-2 space-y-0.5">
-                      <p className="text-xs font-medium text-foreground">{tier.monthly} NOK/mo</p>
-                      <p className="text-[10px] text-muted-foreground">{tier.annual} NOK/yr</p>
-                    </div>
-                    {isCurrent && (
-                      <p className="text-[10px] font-medium text-primary mt-1.5">Your Current Tier</p>
-                    )}
-                  </div>
-                );
-              })}
+          {/* Current Plan Summary */}
+          <div className="rounded-lg border border-border/50 p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Current Plan</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Plan</p>
+                <Badge variant="secondary" className="mt-1 text-xs">{planLabel}</Badge>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Usage</p>
+                <p className="text-sm font-medium text-foreground mt-1">
+                  {effectiveActiveCount ?? '—'} / {capDisplay}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
+                <Badge variant={statusBadge.variant} className="mt-1 text-xs">{statusBadge.label}</Badge>
+              </div>
             </div>
+            <Button
+              variant={hasKnownSubscription ? 'outline' : 'default'}
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => onChoosePlan?.()}
+            >
+              {hasKnownSubscription ? 'Manage plan' : 'Choose plan'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Your plan sets a maximum number of active profiles. Upgrading increases this limit.
+            </p>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            Billing is based on the highest number of active profiles reached during the billing month (High-Water Mark Billing). Deactivating profiles before month-end does not reduce the invoice for that month.
-          </p>
 
           {/* Terms & Conditions */}
           <Collapsible open={tcOpen} onOpenChange={setTcOpen}>
