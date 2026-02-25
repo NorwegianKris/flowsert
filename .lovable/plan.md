@@ -1,43 +1,32 @@
 
 
-# Step 4: AI Usage Ledger — IMPLEMENTED ✅
+# Stage 0 Hardening: Tier CHECK + get_tier_profile_limit()
 
-**Classification: YELLOW** — Additive table + RLS + edge function modifications. All fail-soft.
+**Classification: YELLOW** — Additive schema guards, no data changes, no RLS changes.
 
-## What was done
+## Migration
 
-1. **Database migration applied**: `usage_ledger` table with CHECK constraint, two indexes, ENABLE + FORCE RLS, SELECT-only policy via `get_user_business_id(auth.uid())`. No INSERT policy (service-role only).
+Single SQL migration applying exactly the user-provided SQL:
 
-2. **Edge functions updated** (all 3):
-   - `extract-certificate-data`: logUsage after successful OCR extraction (`ocr_extraction`, model `google/gemini-2.5-flash`)
-   - `certificate-chat`: logUsage after successful AI stream response (`assistant_query`, model `google/gemini-2.5-flash`)
-   - `suggest-project-personnel`: logUsage after successful personnel match (`personnel_match`, model `google/gemini-3-flash-preview`)
+1. **Idempotent CHECK constraint** `entitlements_tier_check` on `public.entitlements.tier` — restricts values to `starter`, `growth`, `professional`, `enterprise`
+2. **Immutable function** `public.get_tier_profile_limit(p_tier text)` — maps tier to seat cap (25, 75, 200, 2147483647)
 
-3. **Pattern**: All use identical `logUsage` helper — fire-and-forget via `void`, never throws, uses `serviceClient` (service role key).
+## Post-migration verification
 
-4. **businessId sourcing**:
-   - `extract-certificate-data` + `suggest-project-personnel`: fail-soft `maybeSingle()` lookup from profiles
-   - `certificate-chat`: reuses existing profile/personnel objects (no extra queries)
+Four queries to confirm:
+- CHECK constraint exists and is validated
+- Function exists in `pg_proc`
+- Function returns correct values for all four tiers
 
-## Post-deploy verification queries
+## What this does NOT touch
 
-```sql
--- Quick count
-SELECT event_type, COUNT(*)
-FROM public.usage_ledger
-GROUP BY event_type
-ORDER BY event_type;
+- No data modifications
+- No RLS policy changes
+- No changes to `entitlements.profile_cap`
+- No edge function changes
+- No frontend code changes
 
--- Detail check
-SELECT event_type, model, quantity, billing_month, created_at
-FROM public.usage_ledger
-ORDER BY created_at DESC
-LIMIT 25;
-```
+## Risk
 
-## Rollback
+Zero. Both objects are additive. The CHECK constraint will fail to add only if an existing row has an invalid tier value — which would itself be a bug worth catching now.
 
-```sql
-DROP TABLE IF EXISTS public.usage_ledger CASCADE;
-```
-+ revert 3 edge function files
