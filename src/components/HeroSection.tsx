@@ -7,8 +7,8 @@ interface HeroSectionProps {
   onBookDemo: () => void;
 }
 
-type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'passport';
-const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'passport'];
+type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license';
+const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'license'];
 
 interface FallingDoc {
   x: number;
@@ -40,8 +40,10 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
   let w = 60 + Math.random() * 40;
   if (docType === 'badge') {
     w = 55 + Math.random() * 25;
+  } else if (docType === 'license') {
+    w = 80 + Math.random() * 30;
   }
-  const h = w * (1.3 + Math.random() * 0.4);
+  const h = (docType === 'license') ? w * 0.62 : w * (1.3 + Math.random() * 0.4);
   return {
     x: Math.random() * canvasW,
     y: -h - Math.random() * 200,
@@ -281,32 +283,83 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
           ctx.lineTo(shortW / 2, lineY2);
           ctx.stroke();
         } else {
-          // passport: thick title, divider, 2x3 grid
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.moveTo(left + pad, top + 10);
-          ctx.lineTo(left + d.w * 0.60, top + 10);
-          ctx.stroke();
+          // license: landscape card like a driver's license
+          const headerH = d.h * 0.18;
 
-          // divider
+          // header strip fill
+          ctx.fillStyle = 'hsla(243, 60%, 88%, 0.5)';
+          drawRoundRect(ctx, left, top, d.w, headerH, 4);
+          ctx.fill();
+          ctx.fillRect(left, top + headerH - 4, d.w, 4); // clip bottom corners
+
+          // header line
+          ctx.beginPath();
+          ctx.moveTo(left, top + headerH);
+          ctx.lineTo(left + d.w, top + headerH);
+          ctx.strokeStyle = detailColor;
           ctx.lineWidth = 1;
-          const divY = top + 20;
-          ctx.beginPath();
-          ctx.moveTo(left + pad, divY);
-          ctx.lineTo(left + d.w - pad, divY);
           ctx.stroke();
 
-          // 2 rows x 3 cols grid of small rects
+          // left photo section
+          const photoX = left + pad;
+          const photoY = top + d.h * 0.20;
+          const photoW = d.w * 0.38 - pad;
+          const photoH = d.h * 0.60;
+          drawRoundRect(ctx, photoX, photoY, photoW, photoH, 2);
+          ctx.strokeStyle = detailColor;
           ctx.lineWidth = 1.8;
-          const gridTop = divY + 6;
-          const cellW = (d.w - pad * 2 - 8) / 3;
-          const cellH = (d.h - (gridTop - top) - pad - 4) / 2;
-          for (let r = 0; r < 2; r++) {
-            for (let c = 0; c < 3; c++) {
-              const cx = left + pad + c * (cellW + 4);
-              const cy = gridTop + r * (cellH + 4);
-              ctx.strokeRect(cx, cy, cellW, cellH);
-            }
+          ctx.stroke();
+
+          // head circle inside photo
+          const headCx = photoX + photoW / 2;
+          const headR = photoW * 0.18;
+          const headCy = photoY + photoH * 0.35;
+          ctx.beginPath();
+          ctx.arc(headCx, headCy, headR, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // shoulders arc
+          ctx.beginPath();
+          ctx.arc(headCx, photoY + photoH + 4, headR * 1.4, Math.PI, 0, true);
+          ctx.stroke();
+
+          // right section - 4 lines
+          const rightX = left + d.w * 0.42;
+          const rightW = d.w - d.w * 0.42 - pad;
+          const lineWidths = [0.85, 0.60, 0.75, 0.50];
+          const lineAreaTop = top + headerH + 6;
+          const lineSpacing = (d.h * 0.45) / 4;
+
+          for (let i = 0; i < 4; i++) {
+            ctx.lineWidth = i === 0 ? 2 : 1.8;
+            const lw = rightW * lineWidths[i];
+            const ly = lineAreaTop + i * lineSpacing;
+            ctx.beginPath();
+            ctx.moveTo(rightX, ly);
+            ctx.lineTo(rightX + lw, ly);
+            ctx.stroke();
+          }
+
+          // barcode box below lines
+          ctx.lineWidth = 1.8;
+          const barcodeW = rightW * 0.45;
+          const barcodeH = d.h * 0.18;
+          const barcodeX = rightX;
+          const barcodeY = lineAreaTop + 4 * lineSpacing + 4;
+          drawRoundRect(ctx, barcodeX, barcodeY, barcodeW, barcodeH, 2);
+          ctx.stroke();
+
+          // 6 tiny vertical lines inside barcode
+          const barPad = 3;
+          const barCount = 6;
+          const barSpacing = (barcodeW - barPad * 2) / (barCount + 1);
+          for (let i = 1; i <= barCount; i++) {
+            const bx = barcodeX + barPad + i * barSpacing;
+            ctx.beginPath();
+            ctx.moveTo(bx, barcodeY + 3);
+            ctx.lineTo(bx, barcodeY + barcodeH - 3);
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
           }
         }
 
