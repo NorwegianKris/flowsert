@@ -24,8 +24,9 @@ interface FallingDoc {
 function createDoc(canvasW: number, canvasH: number): FallingDoc {
   const w = 60 + Math.random() * 40;
   const h = w * (1.3 + Math.random() * 0.4);
+  const spawnMargin = canvasW * 0.075;
   return {
-    x: Math.random() * canvasW,
+    x: spawnMargin + Math.random() * (canvasW - spawnMargin * 2),
     y: -h - Math.random() * 200,
     w,
     h,
@@ -73,10 +74,11 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
     const init = () => {
       resize();
       const rect = canvas.getBoundingClientRect();
-      const count = 78;
+      const count = Math.floor((rect.width * rect.height) / 28000);
+      const spawnMargin = rect.width * 0.075;
       docs = Array.from({ length: count }, () => {
         const d = createDoc(rect.width, rect.height);
-        d.x = Math.random() * rect.width;
+        d.x = spawnMargin + Math.random() * (rect.width - spawnMargin * 2);
         d.y = Math.random() * rect.height * 1.5 - rect.height * 0.5;
         return d;
       });
@@ -309,7 +311,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
   }, []);
 
   return (
-    <div className="relative overflow-hidden flex flex-col items-center justify-start" style={{ minHeight: 'calc(100vh - 73px)', paddingTop: '96px', paddingBottom: '64px' }}>
+    <div className="relative overflow-hidden flex flex-col items-center justify-start" style={{ minHeight: 'calc(100vh - 73px)', paddingTop: 'clamp(60px, 10vh, 120px)', paddingBottom: '64px' }}>
       {/* Canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }} />
 
@@ -322,13 +324,14 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
         }}
       />
 
-      {/* Content */}
-      <div className="relative flex flex-col items-center text-center max-w-[720px] px-6" style={{ zIndex: 2 }}>
+      {/* Hero Inner Container */}
+      <div className="relative flex flex-col items-center text-center w-full" style={{ zIndex: 2, maxWidth: '900px', margin: '0 auto', padding: '0 clamp(24px, 5vw, 80px)' }}>
         {/* Headline */}
         <h1
-          className="font-rajdhani font-bold text-foreground mb-5 leading-[1.09]"
+          className="font-rajdhani font-bold text-foreground leading-[1.09]"
           style={{
-            fontSize: 'clamp(2.5rem, 5.8vw, 4rem)',
+            fontSize: 'clamp(2rem, 4vw, 4.5rem)',
+            marginBottom: 'clamp(12px, 2vh, 24px)',
             letterSpacing: '-0.01em',
             opacity: 0,
             animation: 'fadeUp 0.65s 0.22s ease forwards',
@@ -352,9 +355,10 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
 
         {/* Subhead */}
         <p
-          className="text-muted-foreground max-w-[500px] mb-[34px]"
+          className="text-muted-foreground max-w-[500px]"
           style={{
-            fontSize: '1.05rem',
+            fontSize: 'clamp(0.95rem, 1.4vw, 1.15rem)',
+            marginBottom: 'clamp(20px, 3vh, 40px)',
             lineHeight: 1.65,
             opacity: 0,
             animation: 'fadeUp 0.65s 0.36s ease forwards',
@@ -365,14 +369,14 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
 
         {/* CTA Row */}
         <div
-          className="flex gap-3 items-center justify-center flex-wrap mb-[52px]"
-          style={{ opacity: 0, animation: 'fadeUp 0.65s 0.5s ease forwards' }}
+          className="flex gap-3 items-center justify-center flex-wrap"
+          style={{ opacity: 0, animation: 'fadeUp 0.65s 0.5s ease forwards', marginBottom: 'clamp(32px, 5vh, 60px)' }}
         >
           <button
             onClick={onGetInTouch}
             className="inline-flex items-center gap-[7px] bg-primary text-primary-foreground font-bold rounded-lg cursor-pointer border-none"
             style={{
-              fontSize: '0.92rem',
+              fontSize: 'clamp(0.85rem, 1.1vw, 1rem)',
               padding: '12px 22px',
               letterSpacing: '0.01em',
               boxShadow: '0 4px 18px hsl(243,75%,41%,0.30)',
@@ -385,7 +389,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
             onClick={onBookDemo}
             className="inline-flex items-center gap-[7px] text-foreground font-bold rounded-lg cursor-pointer backdrop-blur-[6px]"
             style={{
-              fontSize: '0.92rem',
+              fontSize: 'clamp(0.85rem, 1.1vw, 1rem)',
               padding: '11px 22px',
               letterSpacing: '0.01em',
               background: 'rgba(255,255,255,0.72)',
@@ -396,49 +400,49 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
             Book a Demo
           </button>
         </div>
-      </div>
 
-      {/* Dashboard Card */}
-      <div
-        className="relative w-full max-w-[660px] px-6"
-        style={{ zIndex: 2, opacity: 0, animation: 'fadeUp 0.8s 0.62s ease forwards' }}
-      >
+        {/* Dashboard Card */}
         <div
-          className="overflow-hidden"
-          style={{
-            background: 'rgba(255,255,255,0.82)',
-            border: '1px solid rgba(255,255,255,0.92)',
-            borderRadius: '14px',
-            backdropFilter: 'blur(14px)',
-            boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 2px 8px hsl(243,75%,41%,0.04), 0 20px 55px rgba(10,18,60,0.10)',
-          }}
+          className="relative w-full"
+          style={{ opacity: 0, animation: 'fadeUp 0.8s 0.62s ease forwards', maxWidth: 'min(660px, 88vw)' }}
         >
-          {/* Titlebar */}
-          <div className="flex items-center gap-2 px-3.5 py-[9px] border-b border-border" style={{ background: 'rgba(247,248,252,0.92)' }}>
-            <div className="flex gap-[5px]">
-              <div className="w-[10px] h-[10px] rounded-full" style={{ background: '#ff5f57' }} />
-              <div className="w-[10px] h-[10px] rounded-full" style={{ background: '#febc2e' }} />
-              <div className="w-[10px] h-[10px] rounded-full" style={{ background: '#29c840' }} />
+          <div
+            className="overflow-hidden"
+            style={{
+              background: 'rgba(255,255,255,0.82)',
+              border: '1px solid rgba(255,255,255,0.92)',
+              borderRadius: '14px',
+              backdropFilter: 'blur(14px)',
+              boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 2px 8px hsl(243,75%,41%,0.04), 0 20px 55px rgba(10,18,60,0.10)',
+            }}
+          >
+            {/* Titlebar */}
+            <div className="flex items-center gap-2 px-3.5 py-[9px] border-b border-border" style={{ background: 'rgba(247,248,252,0.92)' }}>
+              <div className="flex gap-[5px]">
+                <div className="w-[10px] h-[10px] rounded-full" style={{ background: '#ff5f57' }} />
+                <div className="w-[10px] h-[10px] rounded-full" style={{ background: '#febc2e' }} />
+                <div className="w-[10px] h-[10px] rounded-full" style={{ background: '#29c840' }} />
+              </div>
+              <span className="font-mono text-[0.68rem] text-muted-foreground ml-1">FlowSert Dashboard</span>
             </div>
-            <span className="font-mono text-[0.68rem] text-muted-foreground ml-1">FlowSert Dashboard</span>
+
+            <img src={forsideImg} alt="FlowSert Dashboard Preview" className="w-full block" />
           </div>
-
-          <img src={forsideImg} alt="FlowSert Dashboard Preview" className="w-full block" />
         </div>
-      </div>
 
-      {/* Industry Strip */}
-      <div
-        className="relative flex gap-[10px] items-center justify-center flex-wrap mt-[30px]"
-        style={{ zIndex: 2, opacity: 0, animation: 'fadeUp 0.65s 0.82s ease forwards' }}
-      >
-        <span className="font-mono text-[0.975rem] font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65">Offshore</span>
-        <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
-        <span className="font-mono text-[0.975rem] font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65">Maritime</span>
-        <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
-        <span className="font-mono text-[0.975rem] font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65">Industry</span>
-        <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
-        <span className="font-mono text-[0.975rem] font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65">Construction</span>
+        {/* Industry Strip */}
+        <div
+          className="flex gap-[10px] items-center justify-center flex-wrap mt-[30px]"
+          style={{ opacity: 0, animation: 'fadeUp 0.65s 0.82s ease forwards' }}
+        >
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Offshore</span>
+          <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Maritime</span>
+          <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Industry</span>
+          <div className="w-px h-4 bg-muted-foreground opacity-[0.28]" />
+          <span className="font-mono font-normal uppercase tracking-[0.12em] text-muted-foreground opacity-65" style={{ fontSize: 'clamp(0.7rem, 1vw, 1rem)' }}>Construction</span>
+        </div>
       </div>
     </div>
   );
