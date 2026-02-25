@@ -1,61 +1,46 @@
 
 
-# Fix Hero Scaling and Document Distribution
+# Replace Passport with License Document Type
 
-**Classification: GREEN** — Pure UI/canvas changes, single file.
+**Classification: GREEN** — Pure canvas rendering, single file.
 
 ## File: `src/components/HeroSection.tsx`
 
-### 1. Reduce content sizes (fluid typography + spacing)
+### 1. Update type system (lines 10–11)
 
-| Element | Current | New |
-|---------|---------|-----|
-| H1 font-size (line 333) | `clamp(2rem, 4vw, 4.5rem)` | `clamp(1.8rem, 3.2vw, 3.6rem)` |
-| Subhead font-size (line 360) | `clamp(0.95rem, 1.4vw, 1.15rem)` | `clamp(0.85rem, 1.1vw, 1.05rem)` |
-| Hero top padding (line 314) | `clamp(60px, 10vh, 120px)` | `clamp(48px, 7vh, 96px)` |
-| CTA→dashboard gap (line 373) | `clamp(32px, 5vh, 60px)` | `clamp(24px, 3.5vh, 48px)` |
-| Dashboard max-width (line 407) | `min(660px, 88vw)` | `min(580px, 75vw)` |
-| Industry strip font (lines 438–444) | `clamp(0.7rem, 1vw, 1rem)` | `clamp(0.6rem, 0.8vw, 0.85rem)` |
-
-### 2. Full-width document spawning
-
-Remove the `spawnMargin` logic from both `createDoc` (lines 27–29) and `init` (line 78, 81). Replace with:
-
-**`createDoc`**: `x: Math.random() * canvasW`
-
-**`init`**: `d.x = Math.random() * rect.width`
-
-### 3. Minimum-distance spawn + wider speed range
-
-Add a `spawnWithMinDistance` helper function before `createDoc`. Use it in `init` to scatter documents with a minimum distance of 120px between them (up to 30 attempts).
-
-Update speed in `createDoc` from `0.3 + Math.random() * 0.9` (range 0.3–1.2) to `0.4 + Math.random() * 1.4` (range 0.4–1.8).
-
-### 4. Smaller badge documents
-
-In `createDoc`, when `docType === 'badge'`, cap the width: `w = 55 + Math.random() * 25` and recalculate `h` accordingly.
-
-In the badge renderer (line 248), change circle radius from `d.w * 0.35` to `d.w * 0.28`.
-
-### 5. Proportional document count on ultrawide
-
-Change line 77 from:
+Replace `'passport'` with `'license'`:
 ```ts
-const count = Math.floor((rect.width * rect.height) / 28000);
+type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license';
+const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'license'];
 ```
-to:
+
+### 2. Update `createDoc` (lines 38–55)
+
+Add a `license` branch for landscape dimensions:
 ```ts
-const count = Math.max(60, Math.floor((rect.width * rect.height) / 22000));
+if (docType === 'badge') {
+  w = 55 + Math.random() * 25;
+} else if (docType === 'license') {
+  w = 80 + Math.random() * 30;
+}
+const h = (docType === 'license') ? w * 0.62 : w * (1.3 + Math.random() * 0.4);
 ```
+
+### 3. Replace passport renderer with license renderer (lines 283–311)
+
+Replace the `else` block (currently passport) with a license drawing routine:
+
+**Layout** (landscape card, wider than tall):
+
+- **Header strip**: Fill top 18% of card with `hsla(243, 60%, 88%, 0.5)`, draw a thin horizontal line at 18% from top
+
+- **Left section (38% of card width)**: Photo placeholder rectangle from top 20% to bottom 80% of card height, stroked with rounded corners (radius 2). Inside: circle head at 35% from top of box (radius = 18% of box width), shoulder arc below
+
+- **Right section (remaining width)**: 4 horizontal lines evenly spaced (widths 85%, 60%, 75%, 50% of right section width). First line at lineWidth 2 (name). Below lines: a small rounded rectangle (45% of right section width, 18% of card height) with 6 tiny evenly-spaced vertical lines inside (barcode)
+
+All strokes use the same `detailColor` as other types.
 
 ### Summary
 
-All changes in `src/components/HeroSection.tsx`. No backend impact.
-
-- 6 fluid size reductions
-- Full-width x spawning (no margin)
-- Min-distance spawn helper for even distribution
-- Wider speed variance (0.4–1.8)
-- Badge cards smaller with 28% radius
-- Higher doc count on ultrawide (divisor 22000, min 60)
+Single file change. Replace `'passport'` → `'license'` in type + array, add landscape sizing in `createDoc`, replace passport renderer with license renderer. All other document types remain untouched.
 
