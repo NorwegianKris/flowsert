@@ -1,59 +1,89 @@
 
 
-# Consistent Employee/Freelancer Badge Colors
+# Deploy: Tier CHECK Constraint + Helper Function (Tightened)
 
-The PersonnelCard in the admin dashboard is the canonical source. It uses:
-- **Employee** → `variant="default"` (indigo/primary)
-- **Freelancer** → `variant="secondary"` (dark slate)
+## Classification: YELLOW
+Touches entitlement schema. No destructive changes.
 
-Five files have inconsistent styling. Here are the fixes:
+## What this does
+Adds database-level validation preventing invalid tier names, and a single-source-of-truth function for tier profile limits. Two improvements over the previous draft:
+1. Constraint lookup scoped to table + schema (avoids rare name collisions)
+2. `search_path` set without quotes (standard form)
 
----
+## Migration SQL (single migration)
 
-## File 1: `src/components/project-timeline/PersonnelGroup.tsx` (line 56)
+```sql
+-- Step 1: Add CHECK constraint (idempotent, table-scoped)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE c.conname = 'entitlements_tier_check'
+      AND n.nspname = 'public'
+      AND t.relname = 'entitlements'
+  ) THEN
+    ALTER TABLE public.entitlements
+      ADD CONSTRAINT entitlements_tier_check
+      CHECK (tier IN ('starter', 'growth', 'professional', 'enterprise'))
+      NOT VALID;
+  END IF;
+END $$;
 
-**Problem**: Variants are reversed — freelancer uses `default`, employee uses `secondary`.
+-- Step 2: Validate
+ALTER TABLE public.entitlements
+  VALIDATE CONSTRAINT entitlements_tier_check;
 
-**Fix**: Swap to `person.category === 'freelancer' ? 'secondary' : 'default'`
+-- Step 3: Create helper function
+CREATE OR REPLACE FUNCTION public.get_tier_profile_limit(p_tier text)
+RETURNS integer
+LANGUAGE sql
+IMMUTABLE
+SECURITY DEFINER
+SET search_path TO public
+AS $$
+  SELECT CASE p_tier
+    WHEN 'starter'      THEN 25
+    WHEN 'growth'       THEN 75
+    WHEN 'professional' THEN 200
+    WHEN 'enterprise'   THEN 2147483647
+    ELSE 25
+  END;
+$$;
+```
 
----
+## Post-deploy verification
 
-## File 2: `src/components/WorkerGroupsManageList.tsx` (line 203)
+```sql
+SELECT public.get_tier_profile_limit('starter');       -- 25
+SELECT public.get_tier_profile_limit('growth');        -- 75
+SELECT public.get_tier_profile_limit('professional');  -- 200
+SELECT public.get_tier_profile_limit('enterprise');    -- 2147483647
+SELECT public.get_tier_profile_limit('invalid');       -- 25
 
-**Problem**: Uses `variant="outline"` for both categories.
+SELECT conname, convalidated
+FROM pg_constraint
+WHERE conname = 'entitlements_tier_check';
+-- expect: convalidated = true
+```
 
-**Fix**: Change to `variant={person.category === 'freelancer' ? 'secondary' : 'default'}`
+## Rollback
 
----
+```sql
+ALTER TABLE public.entitlements
+  DROP CONSTRAINT IF EXISTS entitlements_tier_check;
+DROP FUNCTION IF EXISTS public.get_tier_profile_limit(text);
+```
 
-## File 3: `src/components/DataAcknowledgementsManager.tsx` (line 157)
-
-**Problem**: Uses `variant="outline"` for both categories.
-
-**Fix**: Change to `variant={p.category === 'freelancer' ? 'secondary' : 'default'}`
-
----
-
-## File 4: `src/components/SendNotificationDialog.tsx` (line 364)
-
-**Problem**: Uses `variant="secondary"` but overrides with custom `bg-lavender-100 text-lavender-700` classes (which likely don't resolve to anything in the Tailwind config).
-
-**Fix**: Remove the custom color classes, keep `variant="secondary" className="text-xs shrink-0"`
-
----
-
-## File 5: `src/components/ExternalSharingDialog.tsx` (line 950)
-
-**Status**: Already correct — `variant="secondary"` for freelancer. No change needed.
-
----
-
-## Already consistent (no changes)
-
-- `PersonnelCard.tsx` — canonical source
-- `PersonnelPreviewSheet.tsx` — correct
-- `RecentRegistrations.tsx` — correct
+## What is NOT included
+- No trigger on `activate_personnel` — separate step
+- No code changes — schema-only
+- Strategic note acknowledged: long-term, enterprise bypass should use `is_unlimited = true` rather than relying on `2147483647`
 
 ## Risk
-UI-only. No database, RLS, auth, or edge function changes.
+- Preflight confirmed: 1 row, tier = `enterprise` — clean
+- No RLS, auth, or edge function changes
+- Additive only, fully reversible
 
