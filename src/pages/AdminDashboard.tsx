@@ -738,50 +738,43 @@ export default function AdminDashboard() {
                   ✕
                 </Button>
               </div>
-              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)] space-y-6">
-                {/* Company Card Button */}
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start gap-2 bg-card text-lg font-semibold h-auto p-4"
-                  onClick={() => {
-                    setSettingsOpen(false);
-                    setCompanyCardOpen(true);
-                  }}
-                >
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Company Card
-                </Button>
-                
-                <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">Admin Users</span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <AdminOverview />
-                  </CollapsibleContent>
-                </Collapsible>
+               <div className="p-4 overflow-y-auto h-[calc(100vh-65px)] space-y-6">
+                {/* Quick-glance header */}
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                  <span className="font-medium">{business?.name ?? 'Your Company'}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <Badge variant="outline" className="text-xs">{tierLabel}</Badge>
+                  {liftedSubscription?.status === 'trialing' && liftedSubscription.trial_end && (
+                    <>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground">
+                        Trial ends {format(new Date(liftedSubscription.trial_end), 'MMM d')}
+                      </span>
+                    </>
+                  )}
+                  {['past_due', 'unpaid'].includes(liftedSubscription?.status ?? '') && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-0.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
+                      <span className="text-xs text-destructive">Past due</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* GROUP 1: PLAN & BILLING */}
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-2 pb-1">Plan & Billing</p>
 
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">Profile Activation and Tier Overview</span>
+                      <span className="font-semibold text-lg">Plan & Usage</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="min-w-[160px] flex items-center justify-end gap-2">
+                      {getStatusBadge()}
                       <span className="text-xs text-muted-foreground">
-                        {personnel.filter(p => p.activated).length} active &mdash;
-                        {personnel.filter(p => p.activated).length >= 201
-                          ? ' Enterprise'
-                          : personnel.filter(p => p.activated).length >= 76
-                            ? ' Professional'
-                            : personnel.filter(p => p.activated).length >= 26
-                              ? ' Growth'
-                              : ' Starter'}
+                        {liftedActiveCount ?? '—'} / {capDisplay}
                       </span>
+                      {getNearCapBadge()}
                       <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                     </div>
                   </CollapsibleTrigger>
@@ -797,8 +790,71 @@ export default function AdminDashboard() {
                     />
                   </CollapsibleContent>
                 </Collapsible>
-                
-                <BillingSection businessId={profile?.business_id} />
+
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Payment & Billing</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        title="Refresh billing status"
+                        aria-label="Refresh billing status"
+                        disabled={liftedLoading}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); fetchBillingData(); }}
+                        className={`p-1 rounded hover:bg-muted disabled:opacity-50 transition-opacity ${liftedLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                      >
+                        <RefreshCw className={`h-4 w-4 text-muted-foreground ${liftedLoading ? 'animate-spin' : ''}`} />
+                      </button>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <BillingSection
+                      businessId={profile?.business_id}
+                      embedded
+                      subscription={liftedSubscription}
+                      entitlement={liftedEntitlement}
+                      activeCount={liftedActiveCount === null ? null : liftedActiveCount}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* GROUP 2: ACCESS & TEAM */}
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Access & Team</p>
+
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Team & Admins</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <AdminOverview />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Company</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="p-4">
+                      <CompanyCard isAdmin mode="inline" onClose={() => refetchBusiness()} />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* GROUP 3: COMPLIANCE CONFIGURATION */}
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Compliance Configuration</p>
 
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
@@ -817,7 +873,7 @@ export default function AdminDashboard() {
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">Standardize Locations</span>
+                      <span className="font-semibold text-lg">Locations</span>
                     </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
@@ -826,57 +882,59 @@ export default function AdminDashboard() {
                   </CollapsibleContent>
                 </Collapsible>
 
-                <DataAcknowledgementsManager
-                  personnel={personnel}
-                  businessId={profile?.business_id ?? undefined}
-                  onPersonnelClick={(person) => {
-                    setSettingsOpen(false);
-                    setSelectedPersonnel(person);
-                  }}
-                />
-                
+                {/* GROUP 4: PRIVACY & TOOLS */}
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Privacy & Tools</p>
+
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
-                      <Link2 className="h-5 w-5 text-primary" />
-                      <span className="font-semibold text-lg">Freelancer Registration Link</span>
+                      <FileText className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Privacy & Data</span>
                     </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <RegistrationLinkCard />
+                    <DataAcknowledgementsManager
+                      embedded
+                      personnel={personnel}
+                      businessId={profile?.business_id ?? undefined}
+                      onPersonnelClick={(person) => {
+                        setSettingsOpen(false);
+                        setSelectedPersonnel(person);
+                      }}
+                    />
                   </CollapsibleContent>
                 </Collapsible>
-                
-                <FeedbackList />
-              </div>
-            </div>
-          </div>
-        )}
 
-        {companyCardOpen && (
-          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-            <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-background border-l shadow-lg">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Company Card
-                </h2>
-                <Button variant="ghost" size="icon" onClick={() => { setCompanyCardOpen(false); setSettingsOpen(true); }}>
-                  <span className="sr-only">Close</span>
-                  ✕
-                </Button>
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Link2 className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Freelancer Registration</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <RegistrationLinkCard embedded />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* GROUP 5: SUPPORT */}
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Support</p>
+
+                <Collapsible open={feedbackOpen} onOpenChange={setFeedbackOpen}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Feedback</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <FeedbackList embedded open={feedbackOpen} />
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
-              <div className="p-4 overflow-y-auto h-[calc(100vh-65px)]">
-                <CompanyCard isAdmin onClose={() => {
-                  setCompanyCardOpen(false);
-                  setSettingsOpen(true);
-                  refetchBusiness();
-                }} />
-              </div>
-            </div>
-          </div>
-        )}
         </main>
       
         <ChatBot isAdmin />
