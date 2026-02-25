@@ -534,7 +534,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
             animation: 'fadeUp 0.65s 0.36s ease forwards',
           }}
         >
-          Transform your hiring and compliance operations with smart certificate management software—built for industrial SMEs.
+          Transform your hiring, project and compliance operations with smart certificate management software—built for industrial SMEs.
         </p>
 
         {/* CTA Row */}
