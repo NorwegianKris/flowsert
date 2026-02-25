@@ -1,26 +1,45 @@
 
 
-# Set Platform Owner Business to Unlimited Entitlement
+# Make Categories and Admin Users Sections Collapsible
 
-## What this does
+## What needs to change
 
-A single data update to the `entitlements` table for your business, setting it to an unlimited enterprise tier so you can continue testing and building without hitting any profile cap.
+Two sections in the Settings panel are currently rendered directly without a collapsible wrapper:
+- **AdminOverview** (line 685 in AdminDashboard.tsx) — the "Admin Users" card
+- **CategoriesSection** (line 722 in AdminDashboard.tsx) — the "Categories" card
 
-## Change
+All other settings sections (Activation Overview, Billing, Standardize Locations) already use the collapsible pattern with the standardized trigger styling.
 
-**Data update** (not a schema migration):
+## Changes
 
-Update the `entitlements` row for business `38672512-2331-4546-8bc4-de942605fce1`:
-- `tier` → `'enterprise'`
-- `is_active` → `true`
-- `is_unlimited` → `true`
-- `profile_cap` → `9999` (fallback safety value; `is_unlimited` takes precedence)
+### File: `src/pages/AdminDashboard.tsx`
 
-If no row exists yet, insert one with those values.
+**1. Wrap `<AdminOverview />` (line 685) in a Collapsible**, using the same trigger pattern as the existing sections:
+- Icon: `Shield` (already imported and used inside AdminOverview)
+- Label: "Admin Users"
+- ChevronDown with rotate-180 on open
+
+**2. Wrap `<CategoriesSection />` (line 722) in a Collapsible**:
+- Icon: `Award` (consistent with the categories concept)
+- Label: "Categories"
+- ChevronDown with rotate-180 on open
+
+Both will use the exact same trigger class: `"flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group"`
+
+### File: `src/components/AdminOverview.tsx`
+
+Remove the outer `<Card>` wrapper (the `<Card>`, `<CardHeader>`, `<CardContent>` wrappers) since the collapsible trigger in AdminDashboard will now serve as the section header. The inner content (admin list, dialogs) stays as-is.
+
+### File: `src/components/CategoriesSection.tsx`
+
+Remove the outer `<Card>` wrapper (`<Card>`, `<CardHeader>`, `<CardContent>`) since the collapsible trigger in AdminDashboard will serve as the section header. The inner `<Tabs>` content stays as-is.
+
+### Imports in AdminDashboard.tsx
+
+Add `Award` to the existing lucide-react import (line 23). `Shield` is already available via `ShieldCheck`.
 
 ## Scope
 
-- Q1 (SQL): Yes, but this is a data update, not a schema change — 🟢 safe
-- No code changes required — the UI and enforcement logic already handle the `enterprise` / `is_unlimited` state correctly
-- Your 157 active profiles will remain unaffected, and new activations will no longer be blocked
+- Purely UI layout (Q5: green, anchor optional)
+- No database, RLS, auth, or edge function changes
 
