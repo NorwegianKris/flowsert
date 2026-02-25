@@ -7,7 +7,7 @@ interface HeroSectionProps {
   onBookDemo: () => void;
 }
 
-type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license';
+type DocType = 'cert' | 'id' | 'checklist' | 'form' | 'badge' | 'license' | 'diploma';
 const DOC_TYPES: DocType[] = ['cert', 'id', 'checklist', 'form', 'badge', 'license'];
 
 interface FallingDoc {
@@ -36,14 +36,21 @@ function spawnWithMinDistance(existingDocs: FallingDoc[], canvasW: number, canva
 }
 
 function createDoc(canvasW: number, canvasH: number): FallingDoc {
-  const docType = DOC_TYPES[Math.floor(Math.random() * DOC_TYPES.length)];
-  let w = 60 + Math.random() * 40;
-  if (docType === 'badge') {
-    w = 55 + Math.random() * 25;
-  } else if (docType === 'license') {
-    w = 80 + Math.random() * 30;
+  let finalType: DocType = DOC_TYPES[Math.floor(Math.random() * DOC_TYPES.length)];
+  if (finalType === 'license') {
+    finalType = Math.random() < 0.33 ? 'diploma' : 'license';
   }
-  const h = (docType === 'license') ? w * 0.62 : w * (1.3 + Math.random() * 0.4);
+  let w = 60 + Math.random() * 40;
+  if (finalType === 'badge') {
+    w = 55 + Math.random() * 25;
+  } else if (finalType === 'license') {
+    w = 80 + Math.random() * 30;
+  } else if (finalType === 'diploma') {
+    w = 65 + Math.random() * 25;
+  }
+  const h = (finalType === 'license') ? w * 0.62
+          : (finalType === 'diploma') ? w * 1.45
+          : w * (1.3 + Math.random() * 0.4);
   return {
     x: Math.random() * canvasW,
     y: -h - Math.random() * 200,
@@ -52,7 +59,7 @@ function createDoc(canvasW: number, canvasH: number): FallingDoc {
     speed: 0.4 + Math.random() * 1.4,
     rotation: (Math.random() - 0.5) * (50 * Math.PI / 180),
     rotationSpeed: (Math.random() - 0.5) * 0.002,
-    docType,
+    docType: finalType,
   };
 }
 
@@ -270,7 +277,6 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
           ctx.beginPath();
           ctx.arc(0, cy, cr, 0, Math.PI * 2);
           ctx.stroke();
-          // 2 short centered lines below circle
           const lineY1 = cy + cr + 10;
           const lineY2 = lineY1 + 10;
           const shortW = d.w * 0.4;
@@ -281,6 +287,99 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
           ctx.beginPath();
           ctx.moveTo(-shortW / 2, lineY2);
           ctx.lineTo(shortW / 2, lineY2);
+          ctx.stroke();
+        } else if (d.docType === 'diploma') {
+          // decorative inner border
+          const inset = 5;
+          drawRoundRect(ctx, left + inset, top + inset, d.w - inset * 2, d.h - inset * 2, 3);
+          ctx.strokeStyle = 'hsla(243, 50%, 70%, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // top laurel ornament
+          const laurelY = top + inset + 10;
+          ctx.strokeStyle = 'hsla(243, 50%, 65%, 0.7)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(-8, laurelY, 8, 0, Math.PI, true);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(8, laurelY, 8, Math.PI, 0, true);
+          ctx.stroke();
+
+          // title block at 30% from top
+          ctx.strokeStyle = detailColor;
+          const titleY = top + d.h * 0.30;
+          const titleW = d.w * 0.50;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-titleW / 2, titleY);
+          ctx.lineTo(titleW / 2, titleY);
+          ctx.stroke();
+
+          // subtitle
+          const subW = d.w * 0.35;
+          const subY = titleY + 10;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(-subW / 2, subY);
+          ctx.lineTo(subW / 2, subY);
+          ctx.stroke();
+
+          // center seal at 55%
+          const sealY = top + d.h * 0.55;
+          const outerR = d.w * 0.18;
+          const innerR = d.w * 0.11;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(0, sealY, outerR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, sealY, innerR, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // body lines below seal
+          const bodyWidths = [0.80, 0.70, 0.75];
+          const bodyTop = sealY + outerR + 8;
+          const bodySpacing = (d.h * 0.15) / 3;
+          for (let i = 0; i < 3; i++) {
+            const lw = d.w * bodyWidths[i];
+            const ly = bodyTop + i * bodySpacing;
+            ctx.beginPath();
+            ctx.moveTo(-lw / 2, ly);
+            ctx.lineTo(lw / 2, ly);
+            ctx.stroke();
+          }
+
+          // signature line at 80%
+          const sigY = top + d.h * 0.80;
+          const sigW = d.w - inset * 2 - pad * 2;
+          const sigLeft = -sigW / 2;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(sigLeft, sigY);
+          ctx.lineTo(sigLeft + sigW, sigY);
+          ctx.stroke();
+          // tick marks
+          const tickH = 4;
+          ctx.beginPath();
+          ctx.moveTo(sigLeft, sigY - tickH);
+          ctx.lineTo(sigLeft, sigY + tickH);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(sigLeft + sigW, sigY - tickH);
+          ctx.lineTo(sigLeft + sigW, sigY + tickH);
+          ctx.stroke();
+
+          // bottom laurel ornament (mirrored)
+          const bLaurelY = top + d.h - inset - 10;
+          ctx.strokeStyle = 'hsla(243, 50%, 65%, 0.7)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(-8, bLaurelY, 8, 0, Math.PI, false);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(8, bLaurelY, 8, Math.PI, 0, false);
           ctx.stroke();
         } else {
           // license: landscape card like a driver's license
