@@ -1,82 +1,94 @@
 
 
-# Separate Canceled from Delinquent — Dedicated Callout
+# Replace Auth Hero with Animated Canvas Hero
 
-**Classification: GREEN** — Pure UI conditional changes in one file.
+**Classification: GREEN** — Pure UI/layout change, no database/auth/RLS involved.
 
-## File: `src/components/BillingSection.tsx`
+## Summary
 
-### Change 1 — Add `isCanceled` and update `isPortalManaged` (lines 94-95)
+Replace the current hero section (lines 504–586 in `src/pages/Auth.tsx`) with the new animated hero from the provided HTML. This includes:
 
-Replace:
-```tsx
-const isDelinquent = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(effectiveSubscription?.status ?? '');
-const isPortalManaged = hasSubscriptionRow && !isEnterprise && !isDelinquent;
+1. A falling-documents canvas animation behind the hero
+2. A radial vignette overlay for text legibility
+3. A badge pill ("Smart Compliance Platform")
+4. Headline with animated gradient shimmer on "flow"
+5. A mock dashboard card (HTML/CSS, not a screenshot image) with stats, tabs, and expiry grid
+6. Industry strip at bottom (Offshore · Maritime · Industry · Construction)
+7. Staggered fadeUp entrance animations on all elements
+
+## Approach
+
+Create a dedicated `HeroSection` component to keep `Auth.tsx` manageable. The canvas animation logic (falling translucent document rectangles) will live inside a `useEffect` with a ref to the canvas element.
+
+## Files Changed
+
+### 1. NEW — `src/components/HeroSection.tsx`
+
+Contains the entire hero block as a self-contained component. Key sections:
+
+- **Canvas animation** (`useEffect` + `useRef<HTMLCanvasElement>`) — spawns translucent rounded-rectangle "documents" that drift downward and rotate gently, matching the HTML's `#doc-canvas` logic
+- **Vignette overlay** — radial gradient div identical to `.hero-vignette`
+- **Badge** — "Smart Compliance Platform" pill with pulsing dot
+- **Headline** — Rajdhani `h1` with the `flowShimmer` CSS animation on "flow"
+- **Subhead** — muted paragraph
+- **CTA row** — "Get in Touch →" (primary) + "Book a Demo" (outline), wired to existing `navigate('/contact')` and `setDemoDialogOpen(true)` callbacks passed as props
+- **Dashboard card** — fully built in JSX/Tailwind (titlebar dots, tabs, stats bar, expiry grid with 4 colored cells) — replaces the old `<img>` screenshot
+- **Industry strip** — Offshore · Maritime · Industry · Construction with separators
+- **CSS keyframes** defined inline via a `<style>` tag or Tailwind `@keyframes` in `index.css`
+
+Props:
+```ts
+interface HeroSectionProps {
+  onGetInTouch: () => void;
+  onBookDemo: () => void;
+}
 ```
 
-With:
-```tsx
-const isDelinquent = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(effectiveSubscription?.status ?? '');
-const isCanceled = effectiveSubscription?.status === 'canceled';
-const isPortalManaged = hasSubscriptionRow && !isEnterprise && !isDelinquent && !isCanceled;
+### 2. EDIT — `src/index.css`
+
+Add two keyframe definitions used by the hero:
+
+```css
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes flowShimmer {
+  0%   { background-position: 100% center; }
+  50%  { background-position: 0% center; }
+  100% { background-position: 100% center; }
+}
 ```
 
-### Change 2 — Fix billing CTA uses `isDelinquent` directly; add canceled callout (lines 240-251)
+### 3. EDIT — `src/pages/Auth.tsx` (lines 504–586)
 
-Replace the entire "Fix billing CTA" block:
+Replace the entire `{/* Hero + Product Preview with Background */}` block with:
+
 ```tsx
-{effectiveSubscription && !effectiveSubscription.cancel_at_period_end &&
- ['past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'canceled'].includes(effectiveSubscription.status ?? '') && (
-  <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3">
-    <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
-    <span className="text-sm text-destructive">Your subscription needs attention.</span>
-    <Button size="sm" variant="destructive" onClick={handleManageBilling}
-      disabled={portalLoading} className="ml-auto">
-      {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Fix billing'}
-    </Button>
-  </div>
-)}
+<HeroSection
+  onGetInTouch={() => navigate('/contact')}
+  onBookDemo={() => setDemoDialogOpen(true)}
+/>
 ```
 
-With:
-```tsx
-{/* Fix billing CTA for delinquent statuses */}
-{effectiveSubscription && !effectiveSubscription.cancel_at_period_end && isDelinquent && (
-  <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3">
-    <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
-    <span className="text-sm text-destructive">Your subscription needs attention.</span>
-    <Button size="sm" variant="destructive" onClick={handleManageBilling}
-      disabled={portalLoading} className="ml-auto">
-      {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Fix billing'}
-    </Button>
-  </div>
-)}
+Remove now-unused imports: `heroBgPattern`, `dashboardPreview`, `ArrowRight`.
 
-{/* Canceled subscription callout */}
-{isCanceled && !isEnterprise && (
-  <div className="flex items-center gap-2 rounded-md bg-muted/50 border border-border/50 p-3">
-    <AlertTriangle className="h-4 w-4 shrink-0 text-muted-foreground" />
-    <span className="text-sm text-muted-foreground">Your subscription has been canceled. Restart it in the billing portal.</span>
-    <Button size="sm" variant="outline" onClick={handleManageBilling}
-      disabled={portalLoading} className="ml-auto">
-      {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Manage Billing'}
-    </Button>
-  </div>
-)}
-```
+## Proportions & Layout Fidelity
 
-### Updated acceptance matrix
+- The hero occupies `min-height: 100vh` (minus header) — same as current `min-h-[calc(100vh-73px)]`
+- Dashboard card maxes at `max-w-[660px]` centered, matching the HTML
+- Headline uses `clamp(2.5rem, 5.8vw, 4rem)` as specified
+- All spacing values (padding, margins, gaps) are taken verbatim from the HTML
+- Mobile: industry strip wraps naturally with `flex-wrap: wrap`
 
-| State | Plan cards | Portal callout | Canceled callout | Fix billing | Manage Billing | Enterprise callout |
-|-------|-----------|---------------|-----------------|------------|---------------|-------------------|
-| No subscription | Visible | Hidden | Hidden | Hidden | Hidden | Hidden |
-| Active/trialing | Hidden | Visible | Hidden | Hidden | Visible | Hidden |
-| Canceled | Hidden | Hidden | **Visible** | Hidden | Visible | Hidden |
-| Delinquent | Hidden | Hidden | Hidden | **Visible** | Visible | Hidden |
-| Enterprise | Hidden | Hidden | Hidden | Hidden | Hidden | Visible |
+## Canvas Animation Detail
 
-### Risk
-- No database, RLS, auth, or edge function changes
-- Two edits in one file, all conditional rendering
-- Fully reversible
+The falling documents effect renders ~18 translucent rounded rectangles drifting down at randomised speeds (0.15–0.45 px/frame), with slight rotation oscillation. Each "document" is a stroked + filled rounded rect with 2–3 horizontal "text lines" inside. Colors use the design system's indigo/border palette at low opacity. The canvas resizes on window resize via a `ResizeObserver`.
+
+## Risk
+
+- No backend, database, RLS, auth, or edge function changes
+- Fully reversible — if it doesn't look right, we revert `Auth.tsx` and delete `HeroSection.tsx`
+- The old `dashboardPreview` image asset remains in the repo (unused) — can be cleaned up later
 
