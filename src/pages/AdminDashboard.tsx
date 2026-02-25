@@ -126,6 +126,66 @@ export default function AdminDashboard() {
   
   const loading = personnelLoading || projectsLoading;
 
+  // Lifted billing data fetch
+  const fetchBillingData = useCallback(async () => {
+    if (!profile?.business_id) return;
+    setLiftedLoading(true);
+    setLiftedError(false);
+    try {
+      const [ent, subResult, countResult] = await Promise.all([
+        getBusinessEntitlement(profile.business_id),
+        supabase
+          .from('billing_subscriptions')
+          .select('status, stripe_price_id, trial_end, current_period_end, cancel_at_period_end')
+          .eq('business_id', profile.business_id)
+          .maybeSingle(),
+        supabase
+          .from('personnel')
+          .select('id', { count: 'exact', head: true })
+          .eq('business_id', profile.business_id)
+          .eq('activated', true),
+      ]);
+      setLiftedEntitlement(ent);
+      if (subResult.error) throw subResult.error;
+      setLiftedSubscription(subResult.data as BillingSubscription | null);
+      if (countResult.error) throw countResult.error;
+      setLiftedActiveCount(typeof countResult.count === 'number' ? countResult.count : null);
+    } catch (err) {
+      console.error('Billing data fetch error:', err);
+      setLiftedError(true);
+    } finally {
+      setLiftedLoading(false);
+    }
+  }, [profile?.business_id]);
+
+  useEffect(() => { fetchBillingData(); }, [fetchBillingData]);
+
+  // Derived billing helpers
+  const tierLabel = liftedEntitlement?.is_unlimited
+    ? 'Enterprise'
+    : (liftedEntitlement?.tier ?? 'starter').charAt(0).toUpperCase() + (liftedEntitlement?.tier ?? 'starter').slice(1);
+  const capDisplay = liftedEntitlement?.is_unlimited ? '∞' : String(liftedEntitlement?.profile_cap ?? 25);
+
+  const getStatusBadge = () => {
+    if (liftedError) return <Badge variant="outline" className="text-muted-foreground" title="Could not load subscription status">Unknown</Badge>;
+    if (!liftedSubscription) return <Badge variant="outline">No plan</Badge>;
+    const s = liftedSubscription.status;
+    if (s === 'active') return <Badge variant="active">Active</Badge>;
+    if (s === 'trialing') return <Badge variant="secondary">Trialing</Badge>;
+    if (['past_due', 'unpaid', 'incomplete', 'incomplete_expired'].includes(s ?? '')) return <Badge variant="destructive">Past due</Badge>;
+    if (s === 'canceled') return <Badge variant="outline">Canceled</Badge>;
+    return <Badge variant="outline">{s}</Badge>;
+  };
+
+  const getNearCapBadge = () => {
+    if (liftedEntitlement?.is_unlimited || liftedActiveCount === null) return null;
+    const cap = liftedEntitlement?.profile_cap ?? 25;
+    const threshold = liftedEntitlement?.tier === 'starter' ? 0.9 : 0.85;
+    if (liftedActiveCount >= cap) return <Badge variant="destructive" className="text-[10px]">Cap reached</Badge>;
+    if (liftedActiveCount >= threshold * cap) return <Badge variant="secondary" className="text-[10px]">Near limit</Badge>;
+    return null;
+  };
+
   // Find the admin's own personnel record
   const myProfile = useMemo(() =>
     personnel.find(p => p.userId === user?.id),
