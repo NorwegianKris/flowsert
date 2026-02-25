@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import forsideImg from '@/assets/forside.jpg';
 import { Button } from '@/components/ui/button';
 
 interface HeroSectionProps {
@@ -310,94 +311,7 @@ export default function HeroSection({ onGetInTouch, onBookDemo }: HeroSectionPro
             <span className="font-mono text-[0.68rem] text-muted-foreground ml-1">FlowSert Dashboard</span>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-border">
-            <div className="flex-1 py-[9px] text-[0.76rem] font-semibold text-center flex items-center justify-center gap-[5px] bg-primary text-primary-foreground/88">
-              👤 Personnel
-            </div>
-            <div
-              className="flex-1 py-[9px] text-[0.76rem] font-semibold text-center flex items-center justify-center gap-[5px] bg-card text-foreground"
-              style={{ boxShadow: 'inset 0 -2px 0 hsl(243,75%,41%)' }}
-            >
-              🗂 Overview
-            </div>
-            <div className="flex-1 py-[9px] text-[0.76rem] font-semibold text-center flex items-center justify-center gap-[5px] bg-primary text-primary-foreground/88">
-              📁 Projects
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="flex items-center gap-5 px-[18px] py-3 border-b border-border flex-wrap">
-            <div className="flex flex-col gap-[2px]">
-              <span className="font-rajdhani text-[1.3rem] font-bold leading-none text-foreground">393</span>
-              <span className="text-[0.62rem] font-medium text-muted-foreground">Total Certificates</span>
-            </div>
-            <div className="flex flex-col gap-[2px]">
-              <span className="font-rajdhani text-[1.3rem] font-bold leading-none text-foreground">358</span>
-              <span className="text-[0.62rem] font-medium text-muted-foreground">Valid</span>
-            </div>
-            <div className="flex flex-col gap-[2px]">
-              <span className="font-rajdhani text-[1.3rem] font-bold leading-none" style={{ color: 'hsl(14,82%,52%)' }}>26</span>
-              <span className="text-[0.62rem] font-medium text-muted-foreground">Expired</span>
-            </div>
-            <div className="ml-auto flex gap-[5px]">
-              <span
-                className="text-[0.67rem] font-semibold px-[9px] py-[3px] rounded-[20px] bg-primary text-primary-foreground border-transparent"
-              >
-                All
-              </span>
-              <span
-                className="text-[0.67rem] font-semibold px-[9px] py-[3px] rounded-[20px] border"
-                style={{ background: 'rgba(99,102,241,0.07)', color: 'hsl(243,75%,41%)', borderColor: 'rgba(99,102,241,0.14)' }}
-              >
-                Employees
-              </span>
-              <span
-                className="text-[0.67rem] font-semibold px-[9px] py-[3px] rounded-[20px] border"
-                style={{ background: 'rgba(99,102,241,0.07)', color: 'hsl(243,75%,41%)', borderColor: 'rgba(99,102,241,0.14)' }}
-              >
-                Freelancers
-              </span>
-            </div>
-          </div>
-
-          {/* Expiry label */}
-          <div className="px-[18px] pt-[10px] pb-[5px] text-[0.73rem] font-bold text-foreground flex items-baseline gap-[5px]">
-            ⏱ Expiry Timeline
-            <span className="text-[0.62rem] font-normal text-muted-foreground">Click any group or lane to view affected certificates and personnel</span>
-          </div>
-
-          {/* Expiry Grid */}
-          <div className="grid grid-cols-4 gap-[7px] px-3.5 pb-3.5 pt-[5px]">
-            {/* Overdue */}
-            <div className="rounded-lg p-[10px]" style={{ background: 'hsl(0,80%,97%)', border: '1px solid hsl(0,65%,88%)' }}>
-              <div className="text-[0.68rem] font-bold mb-[5px]" style={{ color: 'hsl(0,68%,44%)' }}>⚠ Overdue</div>
-              <div className="font-rajdhani text-[1.2rem] font-bold text-foreground mb-[1px]">26</div>
-              <div className="text-muted-foreground text-[0.61rem] leading-[1.4]">certificates<br />9 personnel affected</div>
-              <div className="mt-[6px] pt-[5px] text-muted-foreground text-[0.6rem]" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>Certificates past expiry date</div>
-            </div>
-            {/* 30 days */}
-            <div className="rounded-lg p-[10px]" style={{ background: 'hsl(30,88%,97%)', border: '1px solid hsl(30,75%,87%)' }}>
-              <div className="text-[0.68rem] font-bold mb-[5px]" style={{ color: 'hsl(25,82%,40%)' }}>🔶 Next 30 Days</div>
-              <div className="font-rajdhani text-[1.2rem] font-bold text-foreground mb-[1px]">4</div>
-              <div className="text-muted-foreground text-[0.61rem] leading-[1.4]">certificates<br />4 personnel affected</div>
-              <div className="mt-[6px] pt-[5px] text-muted-foreground text-[0.6rem]" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>Expiring within 30 days</div>
-            </div>
-            {/* 31-60 */}
-            <div className="rounded-lg p-[10px]" style={{ background: 'hsl(46,95%,97%)', border: '1px solid hsl(46,85%,86%)' }}>
-              <div className="text-[0.68rem] font-bold mb-[5px]" style={{ color: 'hsl(38,78%,38%)' }}>🔷 31–60 Days</div>
-              <div className="font-rajdhani text-[1.2rem] font-bold text-foreground mb-[1px]">5</div>
-              <div className="text-muted-foreground text-[0.61rem] leading-[1.4]">certificates<br />5 personnel affected</div>
-              <div className="mt-[6px] pt-[5px] text-muted-foreground text-[0.6rem]" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>Expiring in 31 to 60 days</div>
-            </div>
-            {/* 61-90 */}
-            <div className="rounded-lg p-[10px]" style={{ background: 'hsl(142,50%,96%)', border: '1px solid hsl(142,40%,84%)' }}>
-              <div className="text-[0.68rem] font-bold mb-[5px]" style={{ color: 'hsl(142,50%,30%)' }}>✅ 61–90 Days</div>
-              <div className="font-rajdhani text-[1.2rem] font-bold text-foreground mb-[1px]">6</div>
-              <div className="text-muted-foreground text-[0.61rem] leading-[1.4]">certificates<br />5 personnel affected</div>
-              <div className="mt-[6px] pt-[5px] text-muted-foreground text-[0.6rem]" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>Expiring in 61 to 90 days</div>
-            </div>
-          </div>
+          <img src={forsideImg} alt="FlowSert Dashboard Preview" className="w-full block" />
         </div>
       </div>
 
