@@ -1,22 +1,21 @@
 
 
-# Revert Profile to Techno Dive
+# Plan: Create Internal Remediation Note
 
-The UPDATE statement cannot be run via the read-only query tool. I need to execute this as a data modification.
+## What
 
-## What will be done
+Create a markdown file at `docs/2026-02-multi-tenant-isolation-remediation.md` documenting the P0 security fix that was just applied.
 
-Run the following SQL to revert your profile back to Techno Dive:
+## Content
 
-```sql
-UPDATE public.profiles
-SET business_id = '38672512-2331-4546-8bc4-de942605fce1'
-WHERE id = '6f4e9869-09b6-4329-8356-de6bcb7616f1';
-```
+The note will cover:
+- **Root cause:** 25 tables had PERMISSIVE "Require authentication" RLS policies with `USING (auth.uid() IS NOT NULL)`. Because these were PERMISSIVE (not RESTRICTIVE), they acted as independent grants — any authenticated user could read/write any tenant's data, bypassing business_id scoping.
+- **Tables affected:** All 25 listed.
+- **Fix:** Dropped all 25 policies via migration `20260225214207`.
+- **Verification:** Catalog query confirming 0 bad policies remain; policy coverage check; cross-tenant smoke test.
+- **Date:** 2026-02-25.
 
-This switches kmu@live.no back from FlowSert TestCo to Techno Dive AS.
+## Risk
 
-## Risk Classification
-
-GREEN — single row data update, no schema or policy changes. No anchor required.
+GREEN — documentation only, no schema/policy/code changes.
 
