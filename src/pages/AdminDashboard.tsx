@@ -70,7 +70,14 @@ export default function AdminDashboard() {
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [companyCardOpen, setCompanyCardOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // Lifted billing state
+  const [liftedSubscription, setLiftedSubscription] = useState<BillingSubscription | null>(null);
+  const [liftedEntitlement, setLiftedEntitlement] = useState<BusinessEntitlement | null>(null);
+  const [liftedActiveCount, setLiftedActiveCount] = useState<number | null>(null);
+  const [liftedLoading, setLiftedLoading] = useState(true);
+  const [liftedError, setLiftedError] = useState(false);
   const [sendNotificationOpen, setSendNotificationOpen] = useState(false);
   const [notificationsLogOpen, setNotificationsLogOpen] = useState(false);
   const [externalSharingOpen, setExternalSharingOpen] = useState(false);
