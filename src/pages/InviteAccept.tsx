@@ -103,8 +103,8 @@ export default function InviteAccept() {
 
   // Build auth URLs with double-encoded redirect
   const redirectUrl = token ? `/invite?token=${encodeURIComponent(token)}` : '/invite';
-  const loginUrl = `/auth?redirect=${encodeURIComponent(redirectUrl)}`;
-  const signupUrl = `/auth?mode=signup&redirect=${encodeURIComponent(redirectUrl)}`;
+  const loginUrl = `/?auth=1&mode=signin&redirect=${encodeURIComponent(redirectUrl)}`;
+  const signupUrl = `/?auth=1&mode=signup&redirect=${encodeURIComponent(redirectUrl)}`;
 
   if (state === 'loading') {
     return (
