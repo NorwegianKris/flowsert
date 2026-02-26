@@ -309,7 +309,12 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
                 id="edit-location"
                 existingLocations={locations}
                 value={formData.location}
-                onChange={(value) => setFormData({ ...formData, location: value })}
+onChange={(value) => setFormData(prev => ({ 
+                  ...prev, 
+                  location: value,
+                  country: '',
+                  city: ''
+                }))}
                 onStructuredSelect={(data) => {
                   setFormData(prev => ({
                     ...prev,
