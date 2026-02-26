@@ -246,8 +246,15 @@ serve(async (req) => {
       return true;
     });
 
+    const MAX_CANDIDATES = 50;
+    const cappedPersonnel = hardFilteredPersonnel.length > MAX_CANDIDATES
+      ? [...hardFilteredPersonnel].sort((a, b) => 
+          (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0)
+        ).slice(0, MAX_CANDIDATES)
+      : hardFilteredPersonnel;
+
     // Prepare personnel summary for AI
-    const personnelSummary = hardFilteredPersonnel.map((p: PersonnelData) => ({
+    const personnelSummary = cappedPersonnel.map((p: PersonnelData) => ({
       id: p.id,
       name: p.name,
       role: p.role,
@@ -341,7 +348,7 @@ Be practical and helpful. If requirements are vague, make reasonable assumptions
     const userPrompt = `Project Requirements:
 "${prompt}"
 
-Available Personnel (${personnelSummary.length} total):
+Available Personnel (${personnelSummary.length} shown, ${hardFilteredPersonnel.length} total matched):
 ${JSON.stringify(personnelSummary, null, 2)}
 
 Analyze the requirements and suggest matching personnel. Also extract any project field values from the requirements (location, work category, dates, project manager).`;
@@ -459,7 +466,7 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
     const result: SuggestionResponse = JSON.parse(toolCall.function.arguments);
     
     // Validate and filter personnel IDs to only include valid ones
-    const validPersonnelIds = new Set(hardFilteredPersonnel.map((p: PersonnelData) => p.id));
+    const validPersonnelIds = new Set(cappedPersonnel.map((p: PersonnelData) => p.id));
     result.suggestedPersonnel = result.suggestedPersonnel
       .filter(sp => validPersonnelIds.has(sp.id))
       .sort((a, b) => b.matchScore - a.matchScore);
