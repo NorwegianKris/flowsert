@@ -1,93 +1,62 @@
 
 
-# Fix `accept_invite`: Row Lock + Idempotent Update
+# Fix Auth UI: Signup Session Handling + Existing-User Messaging + Password Reset + Callback Route
 
-## Risk: RED (security-definer RPC modification)
+## Risk: YELLOW (auth UI logic + new route, no DB/RLS changes)
 
-## Migration SQL
+## Files to change
 
-```sql
-CREATE OR REPLACE FUNCTION public.accept_invite(p_token text)
- RETURNS void
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-declare
-  v_user_email text;
-  v_invite record;
-  v_personnel_id uuid;
-begin
-  if auth.uid() is null then
-    raise exception 'INVITE: Not authenticated';
-  end if;
+### 1. `src/contexts/AuthContext.tsx` (3 edits)
 
-  v_user_email := lower(auth.jwt() ->> 'email');
-  if v_user_email is null or v_user_email = '' then
-    raise exception 'INVITE: No email in session';
-  end if;
-
-  -- 1) Lock the row to prevent double-accept races
-  select * into v_invite
-  from public.invitations
-  where token = p_token
-    and status = 'pending'
-    and expires_at > now()
-  limit 1
-  for update;
-
-  if not found then
-    raise exception 'INVITE: Invalid/expired/used token';
-  end if;
-
-  if lower(v_invite.email) <> v_user_email then
-    raise exception 'INVITE: Email mismatch. Invite is for %, you are logged in as %',
-      v_invite.email, v_user_email;
-  end if;
-
-  -- Look up personnel record (NOT auth.uid())
-  select id into v_personnel_id
-  from public.personnel
-  where business_id = v_invite.business_id
-    and lower(email) = lower(v_invite.email)
-  limit 1;
-
-  if v_personnel_id is null then
-    raise exception 'INVITE: No personnel record found for invited email';
-  end if;
-
-  -- Attach user to business
-  update public.profiles
-     set business_id = v_invite.business_id
-   where id = auth.uid();
-
-  if not found then
-    raise exception 'INVITE: Profile missing for user %', auth.uid();
-  end if;
-
-  -- 2) Idempotent + state-safe update
-  update public.invitations
-     set status = 'accepted',
-         personnel_id = v_personnel_id
-   where id = v_invite.id
-     and status = 'pending'
-     and expires_at > now();
-
-  if not found then
-    raise exception 'INVITE: Invite already used or expired';
-  end if;
-end;
-$function$;
+**Line 25** — Update `signUp` return type:
+```typescript
+signUp: (...) => Promise<{ data: any; error: Error | null }>;
 ```
 
-## Changes from current function
+**Lines 153-168** — Return `data` + hardcode production redirect:
+```typescript
+const signUp = async (email, password, fullName?, inviteToken?, jobSeekerToken?, jobSeekerRole?) => {
+  const { data, error } = await supabase.auth.signUp({
+    email, password,
+    options: {
+      emailRedirectTo: 'https://app.flowsert.com/auth/callback',
+      data: { full_name: fullName, invite_token: inviteToken || undefined, job_seeker_token: jobSeekerToken || undefined, job_seeker_role: jobSeekerRole || undefined }
+    }
+  });
+  return { data, error: error as Error | null };
+};
+```
 
-1. `FOR UPDATE` on the SELECT — locks the row so two concurrent tabs can't both accept
-2. `personnel_id = v_personnel_id` (looked up from `personnel` table) replaces `personnel_id = auth.uid()` — fixes the FK violation
-3. UPDATE includes `AND status = 'pending' AND expires_at > now()` guard — prevents race/refresh from flipping an already-used or expired invite
-4. `IF NOT FOUND` after the UPDATE — raises a clear error if the guard blocked the update
+### 2. `src/pages/Auth.tsx` — Replace `handleSignUp` (lines 281-330)
 
-## No frontend changes needed
+Full branching:
+- **Error + "already registered" / "already exists" / "user already registered"** (case-insensitive) → non-destructive toast "Account already exists" + `setAuthMode('signin')`
+- **Error otherwise** → destructive toast
+- **`data?.session` exists** → update profile consent (TERMS_VERSION, PRIVACY_VERSION), toast "You are now logged in", `setAuthDialogOpen(false)`
+- **`data?.user` exists, no session** → toast "Check your email to confirm" + `setAuthMode('signin')`. **No** profile update, **no** dialog close.
+- **Fallback** → toast "Please log in or reset" + `setAuthMode('signin')`
 
-`InviteAccept.tsx` already calls `supabase.rpc('accept_invite', { p_token: token })` and handles errors correctly.
+### 3. `src/pages/Auth.tsx` — Fix `handleForgotPassword` (lines 342-344, 354-357)
+
+- Hardcode `redirectTo: 'https://app.flowsert.com/auth?type=recovery'`
+- Neutral success: `'If an account exists for this email, a reset link has been sent.'`
+
+### 4. New file: `src/pages/AuthCallback.tsx`
+
+Minimal page that handles `/auth/callback`:
+- On mount, call `supabase.auth.getSession()`
+- If session exists → `navigate('/', { replace: true })`
+- If no session → show "Email confirmed. You can now log in." with a link to `/auth`
+- Clean card UI matching the existing reset password card style
+
+### 5. `src/App.tsx` — Add route (line ~43)
+
+```tsx
+<Route path="/auth/callback" element={<AuthCallback />} />
+```
+
+## What stays the same
+- Sign-in handler, invite flow, job seeker flow, `handleResetPassword`
+- All UI/layout code beyond the handlers
+- No database migrations or RLS changes
 
