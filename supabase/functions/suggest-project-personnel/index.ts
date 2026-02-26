@@ -97,6 +97,58 @@ async function logUsage(params: {
   }
 }
 
+function extractConstraints(prompt: string): { 
+  country: string | null; 
+  roles: string[] | null;
+} {
+  const lower = prompt.toLowerCase();
+  // Country extraction
+  const countryMap: Record<string, string> = {
+    'norway': 'norway', 'norge': 'norway',
+    'united kingdom': 'united kingdom', 'uk': 'united kingdom',
+    'england': 'united kingdom', 'scotland': 'united kingdom', 'wales': 'united kingdom',
+    'spain': 'spain', 'españa': 'spain',
+    'germany': 'germany', 'deutschland': 'germany',
+    'france': 'france', 'italy': 'italy', 'italia': 'italy',
+    'sweden': 'sweden', 'sverige': 'sweden',
+    'denmark': 'denmark', 'danmark': 'denmark',
+    'netherlands': 'netherlands', 'holland': 'netherlands',
+    'portugal': 'portugal', 'ireland': 'ireland',
+    'croatia': 'croatia', 'poland': 'poland',
+    'belgium': 'belgium', 'switzerland': 'switzerland',
+    'bulgaria': 'bulgaria', 'latvia': 'latvia',
+    'lithuania': 'lithuania', 'south africa': 'south africa',
+    'cyprus': 'cyprus',
+  };
+  let country: string | null = null;
+  for (const [keyword, normalized] of Object.entries(countryMap)) {
+    if (lower.includes(keyword)) {
+      country = normalized;
+      break;
+    }
+  }
+  // Role extraction
+  const roleKeywords: Record<string, string[]> = {
+    'diver': ['Diver'],
+    'dive supervisor': ['Dive Supervisor'],
+    'supervisor': ['Dive Supervisor'],
+    'rigger': ['Rigger'],
+    'mechanic': ['Mechanic'],
+    'project manager': ['Project Manager'],
+    'project coordinator': ['Project Coordinator'],
+    'coordinator': ['Project Coordinator'],
+    'manager': ['Project Manager'],
+  };
+  let roles: string[] | null = null;
+  for (const [keyword, matchRoles] of Object.entries(roleKeywords)) {
+    if (lower.includes(keyword)) {
+      roles = matchRoles;
+      break;
+    }
+  }
+  return { country, roles };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -180,8 +232,22 @@ serve(async (req) => {
       return includeEmployees;
     });
 
+    // Deterministic pre-filter based on hard constraints
+    const { country: countryConstraint, roles: roleConstraint } = extractConstraints(prompt);
+    const hardFilteredPersonnel = filteredPersonnel.filter((p: PersonnelData) => {
+      if (countryConstraint && p.country?.toLowerCase().trim() !== countryConstraint) {
+        return false;
+      }
+      if (roleConstraint && !roleConstraint.some(r => 
+        p.role?.toLowerCase().trim() === r.toLowerCase()
+      )) {
+        return false;
+      }
+      return true;
+    });
+
     // Prepare personnel summary for AI
-    const personnelSummary = filteredPersonnel.map((p: PersonnelData) => ({
+    const personnelSummary = hardFilteredPersonnel.map((p: PersonnelData) => ({
       id: p.id,
       name: p.name,
       role: p.role,
@@ -226,17 +292,8 @@ When users ask for "100% complete", "fully complete", "complete profiles", or si
 When users ask for "mostly complete", "nearly complete", or "high completion":
 - Include personnel where profileCompletionPercentage >= 80
 
-IMPORTANT - Geographic Location Matching:
-- Each person has a structured 'country' field (lowercase, e.g. "norway", "spain", "united kingdom") AND a display 'location' string (e.g. "Bergen, Norway").
-- Always use the 'country' field for country matching — it is authoritative.
-- When a specific country is mentioned in the query, ONLY include personnel whose 'country' field exactly matches. Never use location string for country matching.
-- Norway query → country must equal "norway"
-- UK/United Kingdom query → country must equal "united kingdom"
-- Spain query → country must equal "spain"
-- Scandinavia query → country must be one of: "norway", "sweden", "denmark"
-- Europe query → include all European countries
-- Personnel with null country field: exclude from any location-specific query.
-- This is a hard rule. No exceptions based on qualifications or other factors.
+IMPORTANT - Pre-filtered Candidates:
+You will receive a pre-filtered list of candidates who already meet location and role constraints extracted from the query. Your job is to rank them by quality of match — certificates, experience, profile completeness, and any other soft criteria in the query. Do not exclude candidates based on country or role — that filtering has already been done deterministically.
 
 IMPORTANT - Nationality Matching:
 - Each personnel has a 'nationality' field (e.g., "Norwegian", "Swedish", "British")
@@ -260,10 +317,10 @@ IMPORTANT - Bio/Skills Matching:
 - Match specific skills mentioned in bio (e.g., "ROV operations", "welding", "saturation diving")
 - Bio can contain valuable context not captured in formal certificate titles
 
-IMPORTANT - Employment Type Matching:
+IMPORTANT - Employment Type Context:
 - Each personnel has an 'employmentType' field: 'employee' or 'freelancer'
-- "freelancer", "contractor", "external", "consultant" queries → match employmentType = 'freelancer'
-- "fixed", "employee", "internal", "permanent", "staff" queries → match employmentType = 'employee'
+- Employment type filtering is handled by the dashboard toggles before candidates reach you
+- You may still reference employmentType for ranking or match reasons
 
 IMPORTANT - Department Matching:
 - Personnel may have a 'department' field for organizational grouping
@@ -402,7 +459,7 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
     const result: SuggestionResponse = JSON.parse(toolCall.function.arguments);
     
     // Validate and filter personnel IDs to only include valid ones
-    const validPersonnelIds = new Set(filteredPersonnel.map((p: PersonnelData) => p.id));
+    const validPersonnelIds = new Set(hardFilteredPersonnel.map((p: PersonnelData) => p.id));
     result.suggestedPersonnel = result.suggestedPersonnel
       .filter(sp => validPersonnelIds.has(sp.id))
       .sort((a, b) => b.matchScore - a.matchScore);
