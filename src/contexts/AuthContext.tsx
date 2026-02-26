@@ -22,7 +22,7 @@ interface AuthContextType {
   businessId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName?: string, inviteToken?: string, jobSeekerToken?: string, jobSeekerRole?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, inviteToken?: string, jobSeekerToken?: string, jobSeekerRole?: string) => Promise<{ data: any; error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: boolean;
@@ -151,12 +151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName?: string, inviteToken?: string, jobSeekerToken?: string, jobSeekerRole?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: 'https://app.flowsert.com/auth/callback',
         data: { 
           full_name: fullName,
           invite_token: inviteToken || undefined,
@@ -165,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     });
-    return { error: error as Error | null };
+    return { data, error: error as Error | null };
   };
 
   const signOut = async () => {

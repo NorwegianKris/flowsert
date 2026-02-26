@@ -293,39 +293,54 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(email, password, fullName, inviteToken || undefined, jobSeekerToken || undefined, selectedRole || undefined);
+    const { data, error } = await signUp(email, password, fullName, inviteToken || undefined, jobSeekerToken || undefined, selectedRole || undefined);
     setIsLoading(false);
 
     if (error) {
-      let message = error.message;
-      if (error.message.includes('already registered')) {
-        message = 'An account with this email already exists. Please sign in instead.';
+      const msg = error.message.toLowerCase();
+      if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already registered')) {
+        toast({
+          title: 'Account already exists',
+          description: 'An account with this email already exists. Please sign in instead.',
+        });
+        setAuthMode('signin');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Sign up failed',
+          description: error.message,
+        });
       }
-      toast({
-        variant: 'destructive',
-        title: 'Sign up failed',
-        description: message,
-      });
-    } else {
-      // After successful signup, update profile with consent versions
-      // The profile is created by the trigger, so we update it right after signup
-      const currentUser = (await supabase.auth.getUser()).data.user;
-      if (currentUser) {
-        await supabase
-          .from('profiles')
-          .update({
-            terms_accepted_at: new Date().toISOString(),
-            terms_version: TERMS_VERSION,
-            privacy_version: PRIVACY_VERSION,
-          })
-          .eq('id', currentUser.id);
-      }
+    } else if (data?.session) {
+      // Auto-confirmed signup — update profile consent and close dialog
+      await supabase
+        .from('profiles')
+        .update({
+          terms_accepted_at: new Date().toISOString(),
+          terms_version: TERMS_VERSION,
+          privacy_version: PRIVACY_VERSION,
+        })
+        .eq('id', data.session.user.id);
 
       toast({
         title: 'Account created',
-        description: 'You have been signed in automatically.',
+        description: 'You are now logged in.',
       });
       setAuthDialogOpen(false);
+    } else if (data?.user) {
+      // Email confirmation required — no session yet
+      toast({
+        title: 'Account created',
+        description: 'Please check your email to confirm your account before signing in.',
+      });
+      setAuthMode('signin');
+    } else {
+      // Unexpected fallback
+      toast({
+        title: 'Sign up complete',
+        description: 'Please log in or reset your password if needed.',
+      });
+      setAuthMode('signin');
     }
   };
 
@@ -340,7 +355,7 @@ export default function Auth() {
 
     setIsLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?type=recovery`,
+      redirectTo: 'https://app.flowsert.com/auth?type=recovery',
     });
     setIsLoading(false);
 
@@ -353,7 +368,7 @@ export default function Auth() {
     } else {
       toast({
         title: 'Reset email sent',
-        description: 'Check your inbox for the password reset link.',
+        description: 'If an account exists for this email, a reset link has been sent.',
       });
       setAuthMode('signin');
     }
