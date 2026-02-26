@@ -608,10 +608,11 @@ export default function AdminDashboard() {
             </div>
             
             <AIPersonnelSuggestions
-              personnel={personnel}
+              personnel={filteredPersonnel}
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
+              includeEmployees={includeEmployees}
               includeFreelancers={includeFreelancers}
               onFilterByAI={setAiFilteredPersonnelIds}
             />

@@ -142,7 +142,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       toast.error('Please enter project requirements first');
       return;
     }
-    await getSuggestions(aiPrompt, personnel, includeFreelancers);
+    await getSuggestions(aiPrompt, personnel, includeFreelancers, includeEmployees);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
