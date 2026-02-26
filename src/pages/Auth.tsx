@@ -52,7 +52,10 @@ export default function Auth() {
   const [demoMessage, setDemoMessage] = useState('');
   const [demoSubmitting, setDemoSubmitting] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const modeParam = searchParams.get('mode');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>(
+    modeParam === 'signup' ? 'signup' : 'signin'
+  );
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -81,15 +84,28 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user && !isPasswordReset) {
-      navigate('/', { replace: true });
+      const redirect = searchParams.get('redirect');
+      const safeRedirect =
+        redirect && (redirect === '/invite' || redirect.startsWith('/invite?'))
+          ? redirect
+          : '/';
+      navigate(safeRedirect, { replace: true });
     }
-  }, [user, loading, navigate, isPasswordReset]);
+  }, [user, loading, navigate, isPasswordReset, searchParams]);
 
   useEffect(() => {
     if (isPasswordReset) {
       setResetPasswordMode(true);
     }
   }, [isPasswordReset]);
+
+  // Auto-open dialog when redirect param is present (arriving from /invite)
+  useEffect(() => {
+    const redirectParam = searchParams.get('redirect');
+    if (redirectParam && !inviteToken && !jobSeekerToken) {
+      setAuthDialogOpen(true);
+    }
+  }, [searchParams, inviteToken, jobSeekerToken]);
 
   // Auto-open dialog and fetch invitation details for invite tokens
   useEffect(() => {
@@ -250,6 +266,14 @@ export default function Auth() {
           : error.message,
       });
     } else {
+      const redirect = searchParams.get('redirect');
+      const safeRedirect =
+        redirect && (redirect === '/invite' || redirect.startsWith('/invite?'))
+          ? redirect
+          : null;
+      if (safeRedirect) {
+        navigate(safeRedirect, { replace: true });
+      }
       setAuthDialogOpen(false);
     }
   };

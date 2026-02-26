@@ -102,7 +102,6 @@ export function InviteWorkerDialog({
         .from('invitations')
         .insert({
           business_id: businessId,
-          personnel_id: selectedPersonnelId,
           email: email.toLowerCase().trim(),
           invited_by: user?.id,
         })
@@ -111,7 +110,7 @@ export function InviteWorkerDialog({
 
       if (insertError) throw insertError;
 
-      const signupUrl = `${window.location.origin}/auth?token=${data.token}`;
+      const signupUrl = `${window.location.origin}/invite?token=${data.token}`;
       setInviteLink(signupUrl);
 
       // Send invitation email

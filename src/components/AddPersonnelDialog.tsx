@@ -109,7 +109,6 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
           .from('invitations')
           .insert({
             business_id: businessId,
-            personnel_id: newPersonnel.id,
             email: formData.email.toLowerCase().trim(),
             invited_by: user?.id,
           })
@@ -120,7 +119,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
           console.error('Error creating invitation:', insertError);
           toast.error('Personnel created but invitation failed');
         } else {
-          const signupUrl = `${window.location.origin}/auth?token=${inviteData.token}`;
+          const signupUrl = `${window.location.origin}/invite?token=${inviteData.token}`;
           setInviteLink(signupUrl);
 
           // Send invitation email
