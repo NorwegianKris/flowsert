@@ -94,7 +94,6 @@ export function SendProfileInvitationDialog({
         .insert({
           email: personnel.email,
           business_id: businessId,
-          personnel_id: personnel.id,
           role: 'worker',
           invited_by: user.id,
         })
@@ -104,7 +103,7 @@ export function SendProfileInvitationDialog({
       if (inviteError) throw inviteError;
 
       // Generate the signup URL
-      const signupUrl = `${window.location.origin}/auth?token=${invitation.token}`;
+      const signupUrl = `${window.location.origin}/invite?token=${invitation.token}`;
       setInviteLink(signupUrl);
 
       // Send the invitation email

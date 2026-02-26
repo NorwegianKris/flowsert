@@ -107,7 +107,7 @@ export function InviteAdminDialog({
       }
 
       // Generate the signup URL
-      const signupUrl = `${window.location.origin}/auth?token=${invitation.token}`;
+      const signupUrl = `${window.location.origin}/invite?token=${invitation.token}`;
       setInviteLink(signupUrl);
 
       // Send email invitation

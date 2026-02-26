@@ -1837,6 +1837,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: { Args: { p_token: string }; Returns: undefined }
       activate_personnel: {
         Args: { p_category?: string; p_personnel_id: string }
         Returns: Json
@@ -1942,6 +1943,17 @@ export type Database = {
         Returns: boolean
       }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      preview_invite: {
+        Args: { p_token: string }
+        Returns: {
+          business_id: string
+          business_name: string
+          expires_at: string
+          invited_email: string
+          invited_role: string
+          status: string
+        }[]
+      }
       remove_personnel_from_project: {
         Args: { _personnel_id: string; _project_id: string }
         Returns: boolean
