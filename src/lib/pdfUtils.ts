@@ -13,30 +13,25 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export async function pdfToImage(file: File, scale: number = 2.0): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  
-  // Get the first page
   const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale });
-  
-  // Create a canvas to render the page
+
+  // Calculate optimal scale to keep longest dimension at ~1568px (Gemini optimal)
+  const baseViewport = page.getViewport({ scale: 1.0 });
+  const longestSide = Math.max(baseViewport.width, baseViewport.height);
+  const optimalScale = Math.min(scale, 1568 / longestSide);
+  const viewport = page.getViewport({ scale: optimalScale });
+
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
-  
-  if (!context) {
-    throw new Error('Could not get canvas context');
-  }
-  
+  if (!context) throw new Error('Could not get canvas context');
+
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  
-  // Render the page to the canvas
-  await page.render({
-    canvasContext: context,
-    viewport: viewport,
-  }).promise;
-  
-  // Convert canvas to base64 (remove data URI prefix)
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  await page.render({ canvasContext: context, viewport }).promise;
+
+  // JPEG at quality 0.85 — sufficient for OCR, meaningfully smaller than 0.9
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
   return dataUrl.replace(/^data:image\/jpeg;base64,/, '');
 }
 
@@ -47,15 +42,33 @@ export async function pdfToImage(file: File, scale: number = 2.0): Promise<strin
  */
 export async function imageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Remove the data URI prefix
-      const base64 = result.replace(/^data:[^;]+;base64,/, '');
-      resolve(base64);
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const longestSide = Math.max(img.width, img.height);
+
+      // Only resize if larger than Gemini optimal (1568px)
+      const scale = longestSide > 1568 ? 1568 / longestSide : 1.0;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Could not get canvas context')); return; }
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      resolve(dataUrl.replace(/^data:image\/jpeg;base64,/, ''));
     };
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image'));
+    };
+
+    img.src = objectUrl;
   });
 }
 
