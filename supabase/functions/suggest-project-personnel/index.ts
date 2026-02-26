@@ -16,6 +16,8 @@ interface PersonnelData {
   nationality: string | null;
   department: string | null;
   bio: string | null;
+  country: string | null;
+  city: string | null;
   employmentType: 'employee' | 'freelancer';
   certificates: { 
     name: string; 
@@ -188,6 +190,8 @@ serve(async (req) => {
       nationality: p.nationality,
       department: p.department,
       bio: p.bio,
+      country: p.country,
+      city: p.city,
       employmentType: p.employmentType,
       certificates: p.certificates.map(c => ({
         name: c.name,
@@ -223,17 +227,16 @@ When users ask for "mostly complete", "nearly complete", or "high completion":
 - Include personnel where profileCompletionPercentage >= 80
 
 IMPORTANT - Geographic Location Matching:
-- Location data is stored in "City, Country" format (e.g., "Bergen, Norway", "Glasgow, United Kingdom")
-- When a specific country is named in the query (e.g., "Norway", "UK", "United Kingdom"), ONLY return personnel whose location field contains that exact country name. Never expand to neighbouring or nearby countries.
-- When a broad region is named (e.g., "Europe", "Scandinavia"), then include all countries within that region.
-- Norway matches: any location containing "Norway" (e.g., "Bergen, Norway", "Oslo, Norway", "Haugesund, Norway")
-- United Kingdom matches: any location containing "United Kingdom" (e.g., "Glasgow, United Kingdom", "London, United Kingdom")
-- Scandinavia matches: locations containing "Norway", "Sweden", or "Denmark"
-- Europe matches: any European country
-- A person located in "Glasgow, United Kingdom" is NEVER a match for a "Norway" query, even if they have excellent qualifications.
-- A person located in "Bergen, Norway" is NEVER a match for a "United Kingdom" query.
-- Personnel with location "Not specified" or "Not Specified": include them only if NO specific location is mentioned in the query. If a location is specified, exclude them entirely.
-- Be strict on specific country queries. It is better to return fewer correct results than to return personnel from the wrong country.
+- Each person has a structured 'country' field (lowercase, e.g. "norway", "spain", "united kingdom") AND a display 'location' string (e.g. "Bergen, Norway").
+- Always use the 'country' field for country matching — it is authoritative.
+- When a specific country is mentioned in the query, ONLY include personnel whose 'country' field exactly matches. Never use location string for country matching.
+- Norway query → country must equal "norway"
+- UK/United Kingdom query → country must equal "united kingdom"
+- Spain query → country must equal "spain"
+- Scandinavia query → country must be one of: "norway", "sweden", "denmark"
+- Europe query → include all European countries
+- Personnel with null country field: exclude from any location-specific query.
+- This is a hard rule. No exceptions based on qualifications or other factors.
 
 IMPORTANT - Nationality Matching:
 - Each personnel has a 'nationality' field (e.g., "Norwegian", "Swedish", "British")
