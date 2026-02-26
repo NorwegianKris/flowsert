@@ -1,34 +1,55 @@
 
 
-## Changes across 5 files — COMPLETED ✅
+## Plan: Add structured country/city fields to AI personnel matching
 
-### 1. `supabase/functions/suggest-project-personnel/index.ts`
+The SQL confirms `country` is reliably populated (lowercase, e.g. "norway", "spain", "united kingdom"). This enables deterministic geographic matching instead of relying on AI to parse location strings.
 
-- ✅ Model changed to `google/gemini-2.5-flash` + `temperature: 0`
-- ✅ Geographic Location Matching prompt replaced with strict rules
-- ✅ `includeEmployees` added to request body destructuring
-- ✅ Filter logic updated: `return true` → `return includeEmployees`
-- ✅ `logUsage` model string updated
+### Changes (2 files only)
 
-### 2. `src/hooks/useSuggestPersonnel.ts`
+#### 1. `src/hooks/useSuggestPersonnel.ts`
 
-- ✅ `includeEmployees: boolean` parameter added to `getSuggestions`
-- ✅ `includeEmployees` added to request body
+**Interface** (after line 33, add):
+```
+country: string | null;
+city: string | null;
+```
 
-### 3. `src/components/AIPersonnelSuggestions.tsx`
+**Mapped object** (after line 113 `bio: truncatedBio,`, add):
+```
+country: p.country || null,
+city: p.city || null,
+```
 
-- ✅ `includeEmployees: boolean` added to props interface
-- ✅ `includeEmployees` destructured and passed to `getSuggestions`
+#### 2. `supabase/functions/suggest-project-personnel/index.ts`
 
-### 4. `src/pages/AdminDashboard.tsx`
+**PersonnelData interface** (after line 18 `bio: string | null;`, add):
+```
+country: string | null;
+city: string | null;
+```
 
-- ✅ `personnel={personnel}` → `personnel={filteredPersonnel}`
-- ✅ `includeEmployees={includeEmployees}` prop added
+**personnelSummary map** (after line 189 `bio: p.bio,`, add):
+```
+country: p.country,
+city: p.city,
+```
 
-### 5. `src/components/AddProjectDialog.tsx` (bonus fix)
-
-- ✅ `getSuggestions` call updated to pass local `includeEmployees` state
+**Replace geographic location matching section** (lines 225–236) with:
+```
+IMPORTANT - Geographic Location Matching:
+- Each person has a structured 'country' field (lowercase, e.g. "norway", "spain", "united kingdom") AND a display 'location' string (e.g. "Bergen, Norway").
+- Always use the 'country' field for country matching — it is authoritative.
+- When a specific country is mentioned in the query, ONLY include personnel whose 'country' field exactly matches. Never use location string for country matching.
+- Norway query → country must equal "norway"
+- UK/United Kingdom query → country must equal "united kingdom"
+- Spain query → country must equal "spain"
+- Scandinavia query → country must be one of: "norway", "sweden", "denmark"
+- Europe query → include all European countries
+- Personnel with null country field: exclude from any location-specific query.
+- This is a hard rule. No exceptions based on qualifications or other factors.
+```
 
 ### Risk
-- Edge function deployed ✅
-- 🔴 Anchor recommended per checklist Q2 (edge function prompt + model change)
+- 🔴 Edge function prompt change → anchor required per checklist Q2
+- Requires redeployment of `suggest-project-personnel`
+
