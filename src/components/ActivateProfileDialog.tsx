@@ -179,15 +179,21 @@ export function ActivateProfileDialog({
         </AlertDialogHeader>
 
         {capReached && (
-          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-2">
+          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium text-sm">
               <AlertTriangle className="h-4 w-4" />
               Plan Limit Reached
             </div>
             <p className="text-sm text-muted-foreground">
               You've reached the maximum number of active profiles for your current plan. 
-              Please upgrade your plan or deactivate other profiles to make room.
+              Upgrade to a higher tier for more capacity, or deactivate other profiles to make room.
             </p>
+            <a
+              href="/admin?tab=settings&section=billing"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              View Plans →
+            </a>
           </div>
         )}
 
