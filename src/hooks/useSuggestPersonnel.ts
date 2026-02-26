@@ -32,6 +32,8 @@ interface PersonnelForAI {
   nationality: string | null;
   department: string | null;
   bio: string | null;
+  country: string | null;
+  city: string | null;
   employmentType: 'employee' | 'freelancer';
   certificates: { 
     name: string; 
@@ -111,6 +113,8 @@ export function useSuggestPersonnel() {
           nationality: p.nationality || null,
           department: p.department || null,
           bio: truncatedBio,
+          country: p.country || null,
+          city: p.city || null,
           employmentType,
           certificates: p.certificates.map(c => ({
             name: c.name,
