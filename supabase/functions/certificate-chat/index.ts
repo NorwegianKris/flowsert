@@ -175,7 +175,8 @@ ${availabilitySection}`;
 function generateAdminContext(
   allPersonnel: Personnel[],
   allProjects: Project[],
-  allAvailability: AvailabilityEntry[]
+  allAvailability: AvailabilityEntry[],
+  intent: 'certificates' | 'projects' | 'availability' | 'general' = 'general'
 ): string {
   if (allPersonnel.length === 0 && allProjects.length === 0) {
     return 'No data available.';
@@ -277,10 +278,16 @@ Total Projects: ${allProjects.length} (${activeProjects.length} active, ${pendin
 Certificates Expiring Soon: ${allPersonnel.reduce((acc, p) => acc + p.certificates.filter(c => getCertificateStatus(c.expiry_date) === 'expiring').length, 0)}
 Expired Certificates: ${allPersonnel.reduce((acc, p) => acc + p.certificates.filter(c => getCertificateStatus(c.expiry_date) === 'expired').length, 0)}`;
 
-  return `${summarySection}
-${personnelSection}
-${projectsSection}
-${availabilitySection}`;
+  if (intent === 'certificates') {
+    return `${summarySection}\n${personnelSection}`;
+  }
+  if (intent === 'projects') {
+    return `${summarySection}\n${projectsSection}`;
+  }
+  if (intent === 'availability') {
+    return `${summarySection}\n${availabilitySection}`;
+  }
+  return `${summarySection}\n${personnelSection}\n${projectsSection}\n${availabilitySection}`;
 }
 
 // Fire-and-forget error event logger (never throws)
@@ -330,6 +337,20 @@ async function logUsage(params: {
   } catch (err) {
     console.error("[usage_ledger] non-fatal logging error:", err);
   }
+}
+
+function detectIntent(messages: { role: string; content: string }[]): 
+  'certificates' | 'projects' | 'availability' | 'general' {
+  const lastUserMessage = [...messages].reverse()
+    .find(m => m.role === 'user')?.content?.toLowerCase() || '';
+  
+  if (/certif|expir|bosiet|g4|renewal|qualif/i.test(lastUserMessage)) 
+    return 'certificates';
+  if (/project|assign|job|work|customer|deadline|milestone/i.test(lastUserMessage)) 
+    return 'projects';
+  if (/availab|schedule|calendar|when|date|free|busy/i.test(lastUserMessage)) 
+    return 'availability';
+  return 'general';
 }
 
 serve(async (req) => {
@@ -464,10 +485,12 @@ serve(async (req) => {
         .select('date, status, notes, personnel_id')
         .order('date', { ascending: true });
 
+      const intent = detectIntent(messages);
       contextData = generateAdminContext(
         (allPersonnel || []) as unknown as Personnel[],
         (allProjects || []) as unknown as Project[],
-        (allAvailability || []) as AvailabilityEntry[]
+        (allAvailability || []) as AvailabilityEntry[],
+        intent
       );
     } else {
       // Worker: fetch only their own data
@@ -561,6 +584,8 @@ When answering:
 
     const systemPrompt = isAdmin ? adminSystemPrompt : workerSystemPrompt;
 
+    const trimmedMessages = messages.slice(-10);
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -569,9 +594,10 @@ When answering:
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        temperature: 0,
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...trimmedMessages,
         ],
         stream: true,
       }),
