@@ -10,7 +10,7 @@ export default function SecurityPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <h1 className="text-3xl font-bold font-rajdhani text-foreground mb-2">Security</h1>
-            <p className="text-muted-foreground mb-10">Version 1.0 — Effective 1 February 2026</p>
+            <p className="text-muted-foreground mb-10">Version 1.0 — Last updated: February 2026</p>
 
             <p className="text-muted-foreground leading-relaxed mb-8">
               Protecting your data is a core priority at FlowSert. This page describes the technical and organisational measures we implement to keep your data safe.
@@ -61,6 +61,42 @@ export default function SecurityPage() {
                   <h2 className="text-lg font-semibold text-foreground mb-2">Infrastructure</h2>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     The Service is hosted on EU-based infrastructure (Frankfurt) with automatic failover and daily backups retained for 30 days. Our hosting provider maintains SOC 2 Type II and ISO 27001 certifications.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 mt-1">
+                  <Server className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-2">Data Backup &amp; Recovery</h2>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Automated daily backups are retained for 30 days and stored encrypted in the EU. Point-in-time recovery is available. Backup integrity is verified regularly through automated restoration tests.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 mt-1">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-2">Employee Security</h2>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    All team members undergo security awareness training and follow least-privilege access principles. Access to production systems is limited, logged, and requires multi-factor authentication.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 mt-1">
+                  <Eye className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-2">Vendor Management</h2>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    We assess the security posture of all sub-processors before onboarding and review them annually. Sub-processors are contractually bound by Data Processing Agreements that include Standard Contractual Clauses where required. See our <a href="/subprocessors" className="text-primary hover:underline">Sub-Processors</a> page for the current list.
                   </p>
                 </div>
               </div>

@@ -9,7 +9,7 @@ export default function Terms() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto prose prose-sm dark:prose-invert">
             <h1 className="text-3xl font-bold font-rajdhani text-foreground mb-2">Terms of Service</h1>
-            <p className="text-muted-foreground mb-8">Version 1.0 — Effective 1 February 2026</p>
+            <p className="text-muted-foreground mb-8">Version 1.0 — Last updated: February 2026</p>
 
             <h2 className="text-xl font-semibold text-foreground mt-8 mb-3">1. Introduction</h2>
             <p className="text-muted-foreground leading-relaxed">

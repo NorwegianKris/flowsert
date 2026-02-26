@@ -9,7 +9,7 @@ export default function Subprocessors() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto prose prose-sm dark:prose-invert">
             <h1 className="text-3xl font-bold font-rajdhani text-foreground mb-2">Sub-Processors</h1>
-            <p className="text-muted-foreground mb-8">Version 1.0 — Last updated 1 February 2026</p>
+            <p className="text-muted-foreground mb-8">Version 1.0 — Last updated: February 2026</p>
 
             <p className="text-muted-foreground leading-relaxed mb-6">
               FlowSert uses the following third-party sub-processors to deliver the Service. We notify Customers at least 30 days before adding a new sub-processor.
@@ -22,6 +22,7 @@ export default function Subprocessors() {
                     <th className="text-left p-3 font-semibold text-foreground border-b border-border">Sub-Processor</th>
                     <th className="text-left p-3 font-semibold text-foreground border-b border-border">Purpose</th>
                     <th className="text-left p-3 font-semibold text-foreground border-b border-border">Location</th>
+                    <th className="text-left p-3 font-semibold text-foreground border-b border-border">Transfer Basis</th>
                   </tr>
                 </thead>
                 <tbody className="text-muted-foreground">
@@ -29,26 +30,31 @@ export default function Subprocessors() {
                     <td className="p-3 font-medium">Supabase Inc.</td>
                     <td className="p-3">Database hosting, authentication, file storage, edge functions</td>
                     <td className="p-3">EU (Frankfurt)</td>
+                    <td className="p-3">EU Adequacy</td>
                   </tr>
                   <tr className="border-b border-border/50">
                     <td className="p-3 font-medium">Vercel Inc.</td>
                     <td className="p-3">Frontend hosting and CDN</td>
                     <td className="p-3">Global (EU primary)</td>
+                    <td className="p-3">SCCs</td>
                   </tr>
                   <tr className="border-b border-border/50">
                     <td className="p-3 font-medium">Resend Inc.</td>
                     <td className="p-3">Transactional email delivery</td>
-                    <td className="p-3">US (SCCs in place)</td>
+                    <td className="p-3">US</td>
+                    <td className="p-3">SCCs</td>
                   </tr>
                   <tr className="border-b border-border/50">
                     <td className="p-3 font-medium">OpenAI LLC</td>
                     <td className="p-3">AI-assisted certificate data extraction</td>
-                    <td className="p-3">US (SCCs in place)</td>
+                    <td className="p-3">US</td>
+                    <td className="p-3">SCCs</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-medium">Google LLC</td>
                     <td className="p-3">AI model inference (Gemini)</td>
-                    <td className="p-3">US/EU (SCCs in place)</td>
+                    <td className="p-3">US / EU</td>
+                    <td className="p-3">SCCs</td>
                   </tr>
                 </tbody>
               </table>
