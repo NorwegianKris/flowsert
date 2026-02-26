@@ -1,25 +1,93 @@
 
 
-# SPA Fallback Routing Fix
+# Fix `accept_invite`: Row Lock + Idempotent Update
 
-## Problem
-Deep links like `app.flowsert.com/invite?token=abc` return 404 because the hosting server doesn't know to serve `index.html` for all routes. Lovable's hosting platform uses a static file server that needs a `_redirects` file to enable SPA fallback.
+## Risk: RED (security-definer RPC modification)
 
-## Fix
-Create `public/_redirects` with a single catch-all rewrite rule. This is the standard approach for Lovable-hosted projects (same mechanism as Netlify-style hosting).
+## Migration SQL
 
-### File: `public/_redirects` (new)
+```sql
+CREATE OR REPLACE FUNCTION public.accept_invite(p_token text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_user_email text;
+  v_invite record;
+  v_personnel_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'INVITE: Not authenticated';
+  end if;
+
+  v_user_email := lower(auth.jwt() ->> 'email');
+  if v_user_email is null or v_user_email = '' then
+    raise exception 'INVITE: No email in session';
+  end if;
+
+  -- 1) Lock the row to prevent double-accept races
+  select * into v_invite
+  from public.invitations
+  where token = p_token
+    and status = 'pending'
+    and expires_at > now()
+  limit 1
+  for update;
+
+  if not found then
+    raise exception 'INVITE: Invalid/expired/used token';
+  end if;
+
+  if lower(v_invite.email) <> v_user_email then
+    raise exception 'INVITE: Email mismatch. Invite is for %, you are logged in as %',
+      v_invite.email, v_user_email;
+  end if;
+
+  -- Look up personnel record (NOT auth.uid())
+  select id into v_personnel_id
+  from public.personnel
+  where business_id = v_invite.business_id
+    and lower(email) = lower(v_invite.email)
+  limit 1;
+
+  if v_personnel_id is null then
+    raise exception 'INVITE: No personnel record found for invited email';
+  end if;
+
+  -- Attach user to business
+  update public.profiles
+     set business_id = v_invite.business_id
+   where id = auth.uid();
+
+  if not found then
+    raise exception 'INVITE: Profile missing for user %', auth.uid();
+  end if;
+
+  -- 2) Idempotent + state-safe update
+  update public.invitations
+     set status = 'accepted',
+         personnel_id = v_personnel_id
+   where id = v_invite.id
+     and status = 'pending'
+     and expires_at > now();
+
+  if not found then
+    raise exception 'INVITE: Invite already used or expired';
+  end if;
+end;
+$function$;
 ```
-/*    /index.html   200
-```
 
-This tells the server: for any path that doesn't match a static file, serve `index.html` with a 200 status (not a redirect), letting React Router handle the route client-side.
+## Changes from current function
 
-## Risk: GREEN
-Pure static hosting config. No auth, no DB, no code changes.
+1. `FOR UPDATE` on the SELECT — locks the row so two concurrent tabs can't both accept
+2. `personnel_id = v_personnel_id` (looked up from `personnel` table) replaces `personnel_id = auth.uid()` — fixes the FK violation
+3. UPDATE includes `AND status = 'pending' AND expires_at > now()` guard — prevents race/refresh from flipping an already-used or expired invite
+4. `IF NOT FOUND` after the UPDATE — raises a clear error if the guard blocked the update
 
-## Acceptance
-- `app.flowsert.com/invite?token=abc` loads InviteAccept page (shows "Invalid Invitation" for bad token — correct)
-- `app.flowsert.com/admin`, `app.flowsert.com/worker`, etc. all load correctly
-- `app.flowsert.com/` continues to work as before
+## No frontend changes needed
+
+`InviteAccept.tsx` already calls `supabase.rpc('accept_invite', { p_token: token })` and handles errors correctly.
 
