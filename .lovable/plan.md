@@ -1,48 +1,30 @@
 
 
-## Plan: Add deterministic pre-filter to suggest-project-personnel
+## Plan: Add candidate cap to suggest-project-personnel
 
-Single file change: `supabase/functions/suggest-project-personnel/index.ts`
+Single file: `supabase/functions/suggest-project-personnel/index.ts`
 
-### Change 1 — Add `extractConstraints` function (before line 100, after `logUsage`)
-
-Insert the full `extractConstraints` function as specified by the user, returning `{ country, roles }`.
-
-### Change 2 — Add hard filtering after employment type filter (after line 181)
+### Change 1 — Insert cap after hardFilteredPersonnel (after line 247)
 
 ```ts
-const { country: countryConstraint, roles: roleConstraint } = extractConstraints(prompt);
-
-const hardFilteredPersonnel = filteredPersonnel.filter((p: PersonnelData) => {
-  if (countryConstraint && p.country?.toLowerCase().trim() !== countryConstraint) {
-    return false;
-  }
-  if (roleConstraint && !roleConstraint.some(r => 
-    p.role?.toLowerCase().trim() === r.toLowerCase()
-  )) {
-    return false;
-  }
-  return true;
-});
+const MAX_CANDIDATES = 50;
+const cappedPersonnel = hardFilteredPersonnel.length > MAX_CANDIDATES
+  ? [...hardFilteredPersonnel].sort((a, b) => 
+      (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0)
+    ).slice(0, MAX_CANDIDATES)
+  : hardFilteredPersonnel;
 ```
 
-### Change 3 — Replace `filteredPersonnel` → `hardFilteredPersonnel` in two places
+### Change 2 — Line 250: `hardFilteredPersonnel` → `cappedPersonnel` in personnelSummary map
 
-- **Line 184**: `personnelSummary` map uses `hardFilteredPersonnel`
-- **Line 405**: `validPersonnelIds` set uses `hardFilteredPersonnel`
-
-### Change 4 — Update system prompt geographic + employment sections (lines 229–266)
-
-Replace the geographic location matching and employment type matching blocks with a streamlined message:
-
+### Change 3 — Line 344: Update user prompt line to:
 ```
-IMPORTANT - Pre-filtered Candidates:
-You will receive a pre-filtered list of candidates who already meet location and role constraints extracted from the query. Your job is to rank them by quality of match — certificates, experience, profile completeness, and any other soft criteria in the query. Do not exclude candidates based on country or role — that filtering has already been done deterministically.
+Available Personnel (${personnelSummary.length} shown, ${hardFilteredPersonnel.length} total matched):
 ```
 
-Keep all other prompt sections (profile completion, nationality, certificates, bio, department, strict vs flexible) unchanged.
+### Change 4 — Line 462: `hardFilteredPersonnel` → `cappedPersonnel` in validPersonnelIds set
 
 ### Risk
-- 🔴 Edge function prompt + logic change → anchor required per checklist Q2
-- Requires redeployment of `suggest-project-personnel`
+- 🔴 Edge function logic change → anchor required per checklist Q2
+- Requires redeployment
 
