@@ -74,6 +74,7 @@ export function useSuggestPersonnel() {
     prompt: string,
     personnel: Personnel[],
     includeFreelancers: boolean,
+    includeEmployees: boolean,
     documentCounts?: Map<string, number>
   ): Promise<SuggestionResult | null> => {
     if (!prompt.trim()) {
@@ -126,7 +127,8 @@ export function useSuggestPersonnel() {
         body: {
           prompt,
           personnel: personnelForAI,
-          includeFreelancers
+          includeFreelancers,
+          includeEmployees
         }
       });
 

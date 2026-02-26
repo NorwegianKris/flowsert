@@ -18,6 +18,7 @@ interface AIPersonnelSuggestionsProps {
   }) => void;
   onHighlightPersonnel: (personnelIds: string[]) => void;
   onClearHighlight: () => void;
+  includeEmployees: boolean;
   includeFreelancers: boolean;
   onFilterByAI?: (personnelIds: string[] | null) => void;
 }
@@ -27,6 +28,7 @@ export function AIPersonnelSuggestions({
   onApplyFilters,
   onHighlightPersonnel,
   onClearHighlight,
+  includeEmployees,
   includeFreelancers,
   onFilterByAI,
 }: AIPersonnelSuggestionsProps) {
@@ -63,7 +65,7 @@ export function AIPersonnelSuggestions({
       toast.error('Please enter search requirements first');
       return;
     }
-    const result = await getSuggestions(aiPrompt, personnel, includeFreelancers, documentCounts);
+    const result = await getSuggestions(aiPrompt, personnel, includeFreelancers, includeEmployees, documentCounts);
     if (result?.suggestedPersonnel && result.suggestedPersonnel.length > 0) {
       const matchedIds = result.suggestedPersonnel.map(s => s.id);
       onHighlightPersonnel(matchedIds);

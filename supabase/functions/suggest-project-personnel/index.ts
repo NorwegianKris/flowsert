@@ -156,7 +156,7 @@ serve(async (req) => {
       );
     }
 
-    const { prompt, personnel, includeFreelancers } = await req.json();
+    const { prompt, personnel, includeFreelancers, includeEmployees } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return new Response(
@@ -175,7 +175,7 @@ serve(async (req) => {
       if (p.category === 'freelancer') {
         return includeFreelancers && p.activated;
       }
-      return true;
+      return includeEmployees;
     });
 
     // Prepare personnel summary for AI
@@ -223,13 +223,17 @@ When users ask for "mostly complete", "nearly complete", or "high completion":
 - Include personnel where profileCompletionPercentage >= 80
 
 IMPORTANT - Geographic Location Matching:
-- When a region, country, or continent is mentioned (e.g., "Europe", "Scandinavia", "Norway"), include ALL personnel from locations within that region
-- Norwegian cities (Haugesund, Husøy, Stavanger, Bergen, Oslo, Trondheim, etc.) are in Norway, which is in Scandinavia, which is in Europe
-- Swedish cities (Överlida, Stockholm, Gothenburg, Malmö, Uppsala, etc.) are in Sweden, which is in Scandinavia, which is in Europe
-- Danish, Finnish cities are also in Scandinavia/Europe
-- UK cities (Liverpool, London, Manchester, Birmingham, Edinburgh, Glasgow, etc.) are in the United Kingdom, which is in Europe
-- German, French, Spanish, Italian, Polish, Dutch, Belgian, Austrian, Swiss, Portuguese, Greek, Irish cities are all in Europe
-- Be inclusive with geographic matching - if someone asks for "Europe", include ALL European locations including UK, Scandinavia, and all EU/non-EU European countries
+- Location data is stored in "City, Country" format (e.g., "Bergen, Norway", "Glasgow, United Kingdom")
+- When a specific country is named in the query (e.g., "Norway", "UK", "United Kingdom"), ONLY return personnel whose location field contains that exact country name. Never expand to neighbouring or nearby countries.
+- When a broad region is named (e.g., "Europe", "Scandinavia"), then include all countries within that region.
+- Norway matches: any location containing "Norway" (e.g., "Bergen, Norway", "Oslo, Norway", "Haugesund, Norway")
+- United Kingdom matches: any location containing "United Kingdom" (e.g., "Glasgow, United Kingdom", "London, United Kingdom")
+- Scandinavia matches: locations containing "Norway", "Sweden", or "Denmark"
+- Europe matches: any European country
+- A person located in "Glasgow, United Kingdom" is NEVER a match for a "Norway" query, even if they have excellent qualifications.
+- A person located in "Bergen, Norway" is NEVER a match for a "United Kingdom" query.
+- Personnel with location "Not specified" or "Not Specified": include them only if NO specific location is mentioned in the query. If a location is specified, exclude them entirely.
+- Be strict on specific country queries. It is better to return fewer correct results than to return personnel from the wrong country.
 
 IMPORTANT - Nationality Matching:
 - Each personnel has a 'nationality' field (e.g., "Norwegian", "Swedish", "British")
@@ -289,7 +293,8 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
+        temperature: 0,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -403,7 +408,7 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
       void logUsage({
         serviceClient, businessId,
         eventType: "personnel_match",
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
       });
     }
 
