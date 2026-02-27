@@ -4,12 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -43,23 +37,21 @@ import {
   ArrowRight,
   Check,
   Plus,
-  Users,
   FileText,
   CheckCircle2,
   AlertTriangle,
-  ChevronDown,
   Trash2,
+  Image,
+  File,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useInputtedTypes, InputtedType, useDismissInputtedType } from "@/hooks/useInputtedTypes";
+import { useUnmappedCertificates, UnmappedCertificate } from "@/hooks/useUnmappedCertificates";
 import {
   useCertificateTypes,
   useCreateCertificateType,
-  CertificateType,
 } from "@/hooks/useCertificateTypes";
 import { useCreateAlias } from "@/hooks/useCertificateAliases";
-import { useBulkUpdateCertificates } from "@/hooks/useCertificatesNeedingReview";
 import { MAX_BATCH_SIZE } from "@/components/BulkUpdateConfirmDialog";
 import { PdfViewer } from "./PdfViewer";
 import { toast } from "sonner";
@@ -71,7 +63,6 @@ interface Category {
   name: string;
 }
 
-// Helper to format date nicely
 function formatDate(dateStr: string | null) {
   if (!dateStr) return null;
   try {
@@ -81,34 +72,50 @@ function formatDate(dateStr: string | null) {
   }
 }
 
+function getFileIcon(url: string | null) {
+  if (!url) return <File className="h-4 w-4 text-muted-foreground" />;
+  if (/\.pdf$/i.test(url)) return <FileText className="h-4 w-4 text-destructive/70" />;
+  if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) return <Image className="h-4 w-4 text-primary/70" />;
+  return <File className="h-4 w-4 text-muted-foreground" />;
+}
+
 export function TypeMergingPane() {
   const { businessId } = useAuth();
   const queryClient = useQueryClient();
 
-  // Show mapped toggle
-  const [showMapped, setShowMapped] = useState(false);
+  // Left pane state
+  const [leftSearch, setLeftSearch] = useState("");
+  const [leftCategoryFilter, setLeftCategoryFilter] = useState("");
+  const [leftSortBy, setLeftSortBy] = useState<"title_raw" | "expiry_date" | "personnel_name">("title_raw");
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // Data
-  const { data: inputtedTypes = [], isLoading: loadingInputted, refetch: refetchInputted } = useInputtedTypes({ 
-    includeMapped: showMapped 
+  const { data: unmappedResult, isLoading: loadingUnmapped } = useUnmappedCertificates({
+    search: leftSearch,
+    categoryFilter: leftCategoryFilter || undefined,
+    sortBy: leftSortBy,
+    sortAsc: true,
+    limit: visibleCount,
   });
+  const unmappedCerts = unmappedResult?.data || [];
+  const totalUnmapped = unmappedResult?.total || 0;
+
   const { data: mergedTypes = [], isLoading: loadingMerged } = useCertificateTypes();
   const createTypeMutation = useCreateCertificateType();
   const createAliasMutation = useCreateAlias();
-  const bulkUpdateMutation = useBulkUpdateCertificates();
-  const dismissInputtedMutation = useDismissInputtedType();
 
-  // UI State
-  const [leftSearch, setLeftSearch] = useState("");
+  // Right pane
   const [rightSearch, setRightSearch] = useState("");
-  const [selectedInputted, setSelectedInputted] = useState<Set<string>>(new Set());
   const [selectedMerged, setSelectedMerged] = useState<string | null>(null);
-  
+
+  // Selection (certificate IDs)
+  const [selectedCerts, setSelectedCerts] = useState<Set<string>>(new Set());
+
   // Dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [dismissDialogOpen, setDismissDialogOpen] = useState(false);
-  const [typeToDelete, setTypeToDelete] = useState<InputtedType | null>(null);
+  const [certToDismiss, setCertToDismiss] = useState<UnmappedCertificate | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [newTypeName, setNewTypeName] = useState("");
   const [newTypeDescription, setNewTypeDescription] = useState("");
@@ -122,7 +129,6 @@ export function TypeMergingPane() {
   const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [loadingDocument, setLoadingDocument] = useState(false);
 
-  // Handle document viewing with secure download
   const handleViewDocument = useCallback(async (documentUrl: string, fileName: string) => {
     setViewingDocument({ url: documentUrl, fileName });
     setDocumentViewOpen(true);
@@ -130,14 +136,12 @@ export function TypeMergingPane() {
     setDocumentBlobUrl(null);
     setPdfData(null);
 
-    // Extract file path from URL
     let path = documentUrl;
     if (documentUrl.includes('certificate-documents/')) {
       const match = documentUrl.match(/certificate-documents\/(.+)/);
       if (match) path = match[1];
     }
 
-    // Download file via Supabase SDK (bypasses CORS/ad blocker issues)
     const { data, error } = await supabase.storage
       .from('certificate-documents')
       .download(path);
@@ -150,8 +154,6 @@ export function TypeMergingPane() {
 
     if (data) {
       setDocumentBlobUrl(URL.createObjectURL(data));
-      
-      // For PDFs, also prepare ArrayBuffer for PdfViewer
       if (/\.pdf$/i.test(documentUrl)) {
         const buffer = await data.arrayBuffer();
         setPdfData(buffer);
@@ -160,7 +162,7 @@ export function TypeMergingPane() {
     setLoadingDocument(false);
   }, []);
 
-  // Fetch categories for create dialog
+  // Fetch categories
   useEffect(() => {
     if (businessId) {
       supabase
@@ -169,28 +171,10 @@ export function TypeMergingPane() {
         .eq("business_id", businessId)
         .order("name")
         .then(({ data, error }) => {
-          if (!error && data) {
-            setCategories(data);
-          }
+          if (!error && data) setCategories(data);
         });
     }
   }, [businessId]);
-
-  // Filter inputted types (all are unmapped custom entries now)
-  const filteredInputted = useMemo(() => {
-    return inputtedTypes.filter((t) => {
-      // Filter by search only - all items are already unmapped
-      if (leftSearch) {
-        const query = leftSearch.toLowerCase();
-        return (
-          t.title_normalized.includes(query) ||
-          t.display_name.toLowerCase().includes(query) ||
-          t.raw_examples.some((ex) => ex.toLowerCase().includes(query))
-        );
-      }
-      return true;
-    });
-  }, [inputtedTypes, leftSearch]);
 
   // Filter merged types
   const filteredMerged = useMemo(() => {
@@ -208,99 +192,67 @@ export function TypeMergingPane() {
     });
   }, [mergedTypes, rightSearch]);
 
-  // Selected data — selection is now by title_raw
-  const selectedInputtedData = useMemo(() => {
-    return filteredInputted.filter((t) =>
-      t.raw_title_groups.some((g) => selectedInputted.has(g.title_raw))
-    );
-  }, [filteredInputted, selectedInputted]);
-
-  const totalSelectedCerts = useMemo(() => {
-    let total = 0;
-    for (const t of filteredInputted) {
-      for (const g of t.raw_title_groups) {
-        if (selectedInputted.has(g.title_raw)) {
-          total += g.count;
-        }
-      }
-    }
-    return total;
-  }, [filteredInputted, selectedInputted]);
-
   const selectedMergedData = useMemo(() => {
     return mergedTypes.find((t) => t.id === selectedMerged);
   }, [mergedTypes, selectedMerged]);
 
-  // Toggle all raw titles within an inputted type group
-  const toggleInputtedSelection = (inputted: InputtedType) => {
-    setSelectedInputted((prev) => {
+  // Selection helpers
+  const toggleCertSelection = (id: string) => {
+    setSelectedCerts((prev) => {
       const next = new Set(prev);
-      const allRaws = inputted.raw_title_groups.map((g) => g.title_raw);
-      const allSelected = allRaws.every((r) => next.has(r));
-      if (allSelected) {
-        allRaws.forEach((r) => next.delete(r));
-      } else {
-        allRaws.forEach((r) => next.add(r));
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
-  // Toggle a single raw title
-  const toggleRawTitleSelection = (titleRaw: string) => {
-    setSelectedInputted((prev) => {
-      const next = new Set(prev);
-      if (next.has(titleRaw)) {
-        next.delete(titleRaw);
-      } else {
-        next.add(titleRaw);
-      }
-      return next;
-    });
-  };
-
-  // Toggle all
   const toggleSelectAll = () => {
-    const allRaws = filteredInputted.flatMap((t) => t.raw_title_groups.map((g) => g.title_raw));
-    if (selectedInputted.size === allRaws.length && allRaws.every((r) => selectedInputted.has(r))) {
-      setSelectedInputted(new Set());
+    const allIds = unmappedCerts.map((c) => c.id);
+    if (allIds.length > 0 && allIds.every((id) => selectedCerts.has(id))) {
+      setSelectedCerts(new Set());
     } else {
-      setSelectedInputted(new Set(allRaws));
+      setSelectedCerts(new Set(allIds));
     }
   };
 
-  // Can group?
-  const canGroup = selectedInputted.size > 0 && selectedMerged !== null;
+  const canGroup = selectedCerts.size > 0 && selectedMerged !== null;
 
-  // Handle grouping
   const handleGroupIntoSelected = () => {
     if (!canGroup) return;
     setConfirmDialogOpen(true);
   };
 
-  // Handle create and group
   const handleCreateAndGroup = () => {
-    if (selectedInputted.size === 0) return;
+    if (selectedCerts.size === 0) return;
     setNewTypeName("");
     setNewTypeDescription("");
     setNewTypeCategoryId(null);
     setCreateDialogOpen(true);
   };
 
-  // Execute grouping — now iterates over selected title_raw values
+  // Execute grouping — direct ID-based updates
   const executeGrouping = async (targetTypeId: string, targetTypeName: string) => {
-    if (selectedInputted.size === 0) return;
+    if (selectedCerts.size === 0) return;
 
     setIsProcessing(true);
     try {
-      // Collect all selected title_raw values
-      const selectedRaws = Array.from(selectedInputted);
+      const selectedIds = Array.from(selectedCerts);
 
-      for (const titleRaw of selectedRaws) {
-        // Create alias for this raw title
+      // Collect unique title_normalized values from the selected certs for alias creation
+      const selectedCertData = unmappedCerts.filter((c) => selectedCerts.has(c.id));
+      const uniqueNormalized = new Map<string, string>();
+      for (const cert of selectedCertData) {
+        const norm = cert.title_normalized || cert.title_raw;
+        if (norm && !uniqueNormalized.has(norm)) {
+          uniqueNormalized.set(norm, cert.title_raw);
+        }
+      }
+
+      // Create aliases for each unique title_normalized
+      for (const [, rawExample] of uniqueNormalized) {
         try {
           await createAliasMutation.mutateAsync({
-            aliasRaw: titleRaw,
+            aliasRaw: rawExample,
             certificateTypeId: targetTypeId,
           });
         } catch (aliasError: any) {
@@ -308,58 +260,43 @@ export function TypeMergingPane() {
             console.error("Error creating alias:", aliasError);
           }
         }
+      }
 
-        // Update certificates matching this exact title_raw
-        const { data: certsToUpdate, error: fetchError } = await supabase
+      // Update certificates by ID in batches
+      const batchSize = 100;
+      for (let i = 0; i < selectedIds.length; i += batchSize) {
+        const batch = selectedIds.slice(i, i + batchSize);
+        const { error: updateError } = await supabase
           .from("certificates")
-          .select(`
-            id,
-            personnel!inner (business_id)
-          `)
-          .eq("personnel.business_id", businessId)
-          .eq("title_raw", titleRaw)
-          .is("certificate_type_id", null)
-          .is("unmapped_by", null);
+          .update({
+            certificate_type_id: targetTypeId,
+            needs_review: false,
+          })
+          .in("id", batch);
 
-        if (fetchError) throw fetchError;
-
-        if (certsToUpdate && certsToUpdate.length > 0) {
-          const ids = certsToUpdate.map((c: any) => c.id);
-          const { error: updateError } = await supabase
-            .from("certificates")
-            .update({
-              certificate_type_id: targetTypeId,
-              needs_review: false,
-            })
-            .in("id", ids);
-
-          if (updateError) throw updateError;
-        }
+        if (updateError) throw updateError;
       }
 
       toast.success(
-        `Grouped ${selectedInputted.size} inputted type${selectedInputted.size !== 1 ? "s" : ""} (${totalSelectedCerts} certificates) into "${targetTypeName}"`
+        `Assigned ${selectedIds.length} certificate${selectedIds.length !== 1 ? "s" : ""} to "${targetTypeName}"`
       );
 
-      // Reset selection
-      setSelectedInputted(new Set());
+      setSelectedCerts(new Set());
       setSelectedMerged(null);
       setConfirmDialogOpen(false);
       setCreateDialogOpen(false);
 
-      // Refresh data
-      refetchInputted();
+      queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
       queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
     } catch (error) {
       console.error("Grouping error:", error);
-      toast.error("Failed to group types");
+      toast.error("Failed to assign types");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle create new type and group
   const handleCreateTypeAndGroup = async () => {
     if (!newTypeName.trim()) {
       toast.error("Name is required");
@@ -381,7 +318,30 @@ export function TypeMergingPane() {
     }
   };
 
-  if (loadingInputted || loadingMerged) {
+  // Dismiss a single certificate
+  const handleDismissCert = async (cert: UnmappedCertificate) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("certificates")
+        .update({
+          unmapped_by: user?.id || null,
+          unmapped_at: new Date().toISOString(),
+          unmapped_reason: "Dismissed by admin",
+        })
+        .eq("id", cert.id);
+
+      if (error) throw error;
+
+      toast.success("Certificate dismissed");
+      queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
+    } catch (error) {
+      console.error("Error dismissing certificate:", error);
+      toast.error("Failed to dismiss certificate");
+    }
+  };
+
+  if (loadingUnmapped || loadingMerged) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -389,78 +349,86 @@ export function TypeMergingPane() {
     );
   }
 
-  const unmappedCount = inputtedTypes.filter((t) => !t.is_mapped).length;
-  const mappedCount = inputtedTypes.filter((t) => t.is_mapped).length;
-
   return (
     <div className="space-y-4">
       {/* Status overview */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <span>
-          {unmappedCount} unmapped type{unmappedCount !== 1 ? "s" : ""}
+          {totalUnmapped} unmapped certificate{totalUnmapped !== 1 ? "s" : ""}
         </span>
-        {showMapped && mappedCount > 0 && (
-          <>
-            <span>•</span>
-            <span>
-              {mappedCount} mapped type{mappedCount !== 1 ? "s" : ""}
-            </span>
-          </>
-        )}
         <span>•</span>
         <span>
-          {mergedTypes.filter((t) => t.is_active).length} merged type{mergedTypes.filter((t) => t.is_active).length !== 1 ? "s" : ""}
+          {mergedTypes.filter((t) => t.is_active).length} canonical type{mergedTypes.filter((t) => t.is_active).length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {/* Two-pane layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 lg:gap-0">
-        {/* Left Pane: Inputted Types */}
+        {/* Left Pane: Unmapped Certificates */}
         <div className="border rounded-lg flex flex-col h-[600px]">
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium">Inputted Types</h3>
-              <Badge variant="secondary">{filteredInputted.length}</Badge>
+              <h3 className="font-medium">Unmapped Certificates</h3>
+              <Badge variant="secondary">{totalUnmapped}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {showMapped 
-                ? "All certificate names from uploads. Mapped items show their current type."
-                : "Names entered by personnel during uploads. Select items to group them into official types."}
+              Individual certificates without an assigned type. Select to assign a canonical type.
             </p>
-            <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+
+            {/* Search */}
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search title or personnel..."
                 value={leftSearch}
-                onChange={(e) => setLeftSearch(e.target.value)}
+                onChange={(e) => { setLeftSearch(e.target.value); setVisibleCount(50); }}
                 className="pl-9 h-8"
               />
             </div>
+
+            {/* Filters row */}
             <div className="flex items-center gap-2">
-              <Switch 
-                id="show-mapped" 
-                checked={showMapped} 
-                onCheckedChange={setShowMapped}
-              />
-              <Label 
-                htmlFor="show-mapped" 
-                className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap"
+              <Select
+                value={leftCategoryFilter || "all"}
+                onValueChange={(v) => { setLeftCategoryFilter(v === "all" ? "" : v); setVisibleCount(50); }}
               >
-                Show mapped
-              </Label>
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={leftSortBy}
+                onValueChange={(v) => setLeftSortBy(v as any)}
+              >
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="title_raw">Title A-Z</SelectItem>
+                  <SelectItem value="expiry_date">Expiry Date</SelectItem>
+                  <SelectItem value="personnel_name">Personnel Name</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-            {filteredInputted.length > 0 && (
+
+            {/* Select all */}
+            {unmappedCerts.length > 0 && (
               <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={selectedInputted.size === filteredInputted.length && filteredInputted.length > 0}
+                  checked={unmappedCerts.length > 0 && unmappedCerts.every((c) => selectedCerts.has(c.id))}
                   onCheckedChange={toggleSelectAll}
                 />
                 <span className="text-xs text-muted-foreground">
-                  {selectedInputted.size > 0
-                    ? `${selectedInputted.size} selected (${totalSelectedCerts} certs)`
-                    : "Select all"}
+                  {selectedCerts.size > 0
+                    ? `${selectedCerts.size} selected`
+                    : "Select all visible"}
                 </span>
               </div>
             )}
@@ -468,157 +436,102 @@ export function TypeMergingPane() {
 
           <ScrollArea className="flex-1">
             <div className="divide-y">
-              {filteredInputted.length === 0 ? (
+              {unmappedCerts.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary opacity-70" />
                   <p className="text-sm">
-                    {leftSearch ? "No matching types found." : "All custom types are mapped!"}
+                    {leftSearch || leftCategoryFilter
+                      ? "No matching certificates found."
+                      : "All certificates are mapped!"}
                   </p>
                 </div>
               ) : (
-                filteredInputted.map((inputted) => {
-                  const allRaws = inputted.raw_title_groups.map((g) => g.title_raw);
-                  const isSelected = allRaws.length > 0 && allRaws.every((r) => selectedInputted.has(r));
-                  const isPartiallySelected = !isSelected && allRaws.some((r) => selectedInputted.has(r));
-                  
-                  // Build secondary line text
-                  const certLabel = inputted.count === 1 ? "certificate" : "certificates";
-                  const uploadedByText = inputted.personnel_count === 1 
-                    ? `Uploaded by ${inputted.personnel_names[0] || "Unknown"}`
-                    : `${inputted.personnel_count} people`;
-                  const secondaryText = `${inputted.count} ${certLabel} • ${uploadedByText}`;
-                  
-                  // Build tertiary hint
-                  let tertiaryHint: string | null = null;
-                  if (inputted.sample_expiry_date) {
-                    tertiaryHint = `Expires: ${formatDate(inputted.sample_expiry_date)}`;
-                  } else if (inputted.sample_file_name) {
-                    tertiaryHint = `File: ${inputted.sample_file_name}`;
-                  } else if (inputted.raw_examples.length > 0 && inputted.raw_examples[0] !== inputted.display_name) {
-                    tertiaryHint = `Example: "${inputted.raw_examples[0]}"`;
-                  }
-
+                unmappedCerts.map((cert) => {
+                  const isSelected = selectedCerts.has(cert.id);
                   return (
-                    <Collapsible key={inputted.title_normalized}>
-                      <div
-                        className={`transition-colors ${
-                          isSelected || isPartiallySelected ? "bg-primary/10" : "hover:bg-muted/50"
-                        }`}
-                      >
-                        {/* Main row content */}
-                        <div 
-                          className="p-3 cursor-pointer"
-                          onClick={() => toggleInputtedSelection(inputted)}
+                    <div
+                      key={cert.id}
+                      className={`p-3 cursor-pointer transition-colors ${
+                        isSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => toggleCertSelection(cert.id)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleCertSelection(cert.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5"
+                        />
+
+                        {/* File icon — clickable to view */}
+                        <button
+                          className="shrink-0 mt-0.5 hover:opacity-70"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (cert.document_url) {
+                              const fileName = decodeURIComponent(
+                                cert.document_url.split("/").pop() || "document"
+                              ).replace(/^\d+-/, "");
+                              handleViewDocument(cert.document_url, fileName);
+                            }
+                          }}
+                          title={cert.document_url ? "View document" : undefined}
+                          disabled={!cert.document_url}
                         >
-                          <div className="flex items-start gap-3">
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleInputtedSelection(inputted)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="mt-0.5"
-                            />
-                            <div className="flex-1 min-w-0">
-                              {/* Primary: Certificate name (bold) */}
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-medium text-sm">
-                                  {inputted.display_name}
-                                </span>
-                              </div>
-                              
-                              {/* Secondary: Count + who uploaded */}
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {secondaryText}
-                              </p>
-                              
-                              {/* Tertiary: Contextual hint */}
-                              {inputted.is_mapped && inputted.mapped_type_name ? (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <CheckCircle2 className="h-3 w-3 text-status-valid" />
-                                  <span className="text-xs text-status-valid">
-                                    Mapped to: {inputted.mapped_type_name}
-                                  </span>
-                                </div>
-                              ) : tertiaryHint ? (
-                                <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">
-                                  {tertiaryHint}
-                                </p>
-                              ) : null}
-                            </div>
-                            
-                            {/* Delete button */}
-                            {!inputted.is_mapped && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTypeToDelete(inputted);
-                                  setDismissDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                          {getFileIcon(cert.document_url)}
+                        </button>
+
+                        <div className="flex-1 min-w-0">
+                          {/* Personnel name */}
+                          <p className="font-medium text-sm truncate">{cert.personnel_name}</p>
+                          {/* title_raw */}
+                          <p className="text-xs text-muted-foreground truncate">{cert.title_raw}</p>
+                          {/* Category + expiry */}
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {cert.category_name && (
+                              <Badge variant="outline" className="text-[10px] py-0">
+                                {cert.category_name}
+                              </Badge>
                             )}
-                            
-                            {/* Expand chevron */}
-                            <CollapsibleTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
-                              </Button>
-                            </CollapsibleTrigger>
+                            {cert.expiry_date && (
+                              <span className="text-[11px] text-muted-foreground">
+                                Exp: {formatDate(cert.expiry_date)}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        
-                        {/* Expandable details */}
-                        <CollapsibleContent>
-                          <div className="px-3 pb-3 pt-2 pl-10 space-y-1.5 border-t border-border/50 bg-muted/20">
-                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
-                              Title Variations
-                            </p>
-                            {inputted.raw_title_groups.map((group) => {
-                              const isRawSelected = selectedInputted.has(group.title_raw);
-                              return (
-                                <div
-                                  key={group.title_raw}
-                                  className={`flex items-center gap-2 py-1 px-2 rounded-sm cursor-pointer transition-colors ${
-                                    isRawSelected ? "bg-primary/10" : "hover:bg-muted/50"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleRawTitleSelection(group.title_raw);
-                                  }}
-                                >
-                                  <Checkbox
-                                    checked={isRawSelected}
-                                    onCheckedChange={() => toggleRawTitleSelection(group.title_raw)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="h-3.5 w-3.5"
-                                  />
-                                  <span className="text-xs text-foreground flex-1 truncate">
-                                    {group.title_raw}
-                                  </span>
-                                  <Badge variant="secondary" className="text-[10px] font-normal shrink-0">
-                                    {group.count}
-                                  </Badge>
-                                  <span className="text-[10px] text-muted-foreground shrink-0">
-                                    <Users className="h-3 w-3 inline mr-0.5" />
-                                    {group.personnel_count}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </CollapsibleContent>
+
+                        {/* Dismiss */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCertToDismiss(cert);
+                            setDismissDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </Collapsible>
+                    </div>
                   );
                 })
+              )}
+
+              {/* Load more */}
+              {visibleCount < totalUnmapped && (
+                <div className="p-3 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setVisibleCount((v) => v + 50)}
+                  >
+                    Load more ({totalUnmapped - visibleCount} remaining)
+                  </Button>
+                </div>
               )}
             </div>
           </ScrollArea>
@@ -630,9 +543,9 @@ export function TypeMergingPane() {
             <Button size="icon" className="rounded-full hidden lg:flex" disabled>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            
+
             <div className="text-xs text-muted-foreground max-w-[200px]">
-              Select inputted types on the left, then group them into a merged type on the right.
+              Select certificates on the left, then assign them to a canonical type on the right.
             </div>
 
             <div className="flex flex-col gap-2 w-full">
@@ -647,13 +560,13 @@ export function TypeMergingPane() {
                 ) : (
                   <Check className="h-4 w-4 mr-2" />
                 )}
-                Group into Selected
+                Assign Type
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleCreateAndGroup}
-                disabled={selectedInputted.size === 0 || isProcessing}
+                disabled={selectedCerts.size === 0 || isProcessing}
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -661,11 +574,11 @@ export function TypeMergingPane() {
               </Button>
             </div>
 
-            {selectedInputted.size > 0 && (
+            {selectedCerts.size > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedInputted(new Set())}
+                onClick={() => setSelectedCerts(new Set())}
                 className="text-xs"
               >
                 Clear selection
@@ -674,15 +587,15 @@ export function TypeMergingPane() {
           </div>
         </div>
 
-        {/* Right Pane: Merged Types */}
+        {/* Right Pane: Canonical Types */}
         <div className="border rounded-lg flex flex-col h-[600px]">
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium">Merged Types</h3>
+              <h3 className="font-medium">Canonical Types</h3>
               <Badge variant="secondary">{filteredMerged.length}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Official standardized types. Personnel can select these during uploads. Click to select a target for grouping.
+              Official standardized types. Select a target for assignment.
             </p>
             <div className="relative pt-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -699,25 +612,22 @@ export function TypeMergingPane() {
             <div>
               {filteredMerged.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No merged types found.</p>
+                  <p className="text-sm">No canonical types found.</p>
                   <p className="text-xs mt-1">Create your first type to get started.</p>
                 </div>
               ) : (
                 (() => {
-                  // Group by category
                   const groups = new Map<string, typeof filteredMerged>();
                   filteredMerged.forEach((merged) => {
                     const cat = merged.category_name || "Uncategorized";
                     if (!groups.has(cat)) groups.set(cat, []);
                     groups.get(cat)!.push(merged);
                   });
-                  // Sort groups alphabetically, Uncategorized last
                   const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
                     if (a === "Uncategorized") return 1;
                     if (b === "Uncategorized") return -1;
                     return a.localeCompare(b);
                   });
-                  // Sort types alphabetically within each group
                   sortedKeys.forEach((key) => {
                     groups.get(key)!.sort((a, b) => a.name.localeCompare(b.name));
                   });
@@ -751,7 +661,7 @@ export function TypeMergingPane() {
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium text-sm">{merged.name}</span>
                                   <Badge variant="outline" className="text-xs text-muted-foreground">
-                                    {(merged as any).usage_count || 0} certificate{(merged as any).usage_count !== 1 ? 's' : ''}
+                                    {(merged as any).usage_count || 0} cert{(merged as any).usage_count !== 1 ? "s" : ""}
                                   </Badge>
                                 </div>
                                 {merged.description && (
@@ -777,13 +687,13 @@ export function TypeMergingPane() {
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Grouping</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  You are grouping{" "}
-                  <strong>{selectedInputted.size} inputted type{selectedInputted.size !== 1 ? "s" : ""}</strong>{" "}
-                  (<strong>{totalSelectedCerts} certificate{totalSelectedCerts !== 1 ? "s" : ""}</strong>) into:
+                  You are assigning{" "}
+                  <strong>{selectedCerts.size} certificate{selectedCerts.size !== 1 ? "s" : ""}</strong>{" "}
+                  to:
                 </p>
                 <div className="bg-muted rounded-md p-3">
                   <p className="font-medium">{selectedMergedData?.name}</p>
@@ -794,9 +704,9 @@ export function TypeMergingPane() {
                   )}
                 </div>
                 <p className="text-sm">
-                  This will update all matching certificates and create aliases for future auto-matching.
+                  This will set the type on all selected certificates and create aliases for future auto-matching.
                 </p>
-                {totalSelectedCerts > MAX_BATCH_SIZE && (
+                {selectedCerts.size > MAX_BATCH_SIZE && (
                   <div className="flex items-start gap-2 p-3 rounded-md bg-warning/10 border border-warning/30">
                     <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                     <div className="text-sm">
@@ -819,7 +729,7 @@ export function TypeMergingPane() {
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Grouping...
+                  Assigning...
                 </>
               ) : (
                 "Confirm"
@@ -833,9 +743,9 @@ export function TypeMergingPane() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Merged Type</DialogTitle>
+            <DialogTitle>Create Canonical Type</DialogTitle>
             <DialogDescription>
-              Create a new official type and group the selected inputted types into it.
+              Create a new official type and assign the selected certificates to it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -880,8 +790,7 @@ export function TypeMergingPane() {
 
             <div className="bg-muted rounded-md p-3 text-sm">
               <p className="text-muted-foreground">
-                This will group <strong>{selectedInputted.size} inputted type{selectedInputted.size !== 1 ? "s" : ""}</strong>{" "}
-                (<strong>{totalSelectedCerts} certificate{totalSelectedCerts !== 1 ? "s" : ""}</strong>) into the new type.
+                This will assign <strong>{selectedCerts.size} certificate{selectedCerts.size !== 1 ? "s" : ""}</strong> to the new type.
               </p>
             </div>
           </div>
@@ -903,56 +812,43 @@ export function TypeMergingPane() {
         </DialogContent>
       </Dialog>
 
-      {/* Dismiss Inputted Type Confirmation Dialog */}
+      {/* Dismiss Certificate Confirmation Dialog */}
       <AlertDialog open={dismissDialogOpen} onOpenChange={setDismissDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Inputted Type</AlertDialogTitle>
+            <AlertDialogTitle>Dismiss Certificate</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p>
-                  Are you sure you want to delete "{typeToDelete?.display_name}"?
+                  Dismiss "{certToDismiss?.title_raw}" from {certToDismiss?.personnel_name}?
                 </p>
                 <p className="text-sm">
-                  This will remove {typeToDelete?.count} certificate{typeToDelete?.count !== 1 ? "s" : ""} from this list.
-                  The certificates themselves will not be deleted, but they will no longer appear as unmapped types.
+                  The certificate will no longer appear in the unmapped list but will not be deleted.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={dismissInputtedMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (typeToDelete) {
-                  dismissInputtedMutation.mutate({
-                    titleNormalized: typeToDelete.title_normalized,
-                  });
+                if (certToDismiss) {
+                  handleDismissCert(certToDismiss);
                   setDismissDialogOpen(false);
-                  setTypeToDelete(null);
+                  setCertToDismiss(null);
                 }
               }}
-              disabled={dismissInputtedMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {dismissInputtedMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
+              Dismiss
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Document Viewer Dialog */}
-      <Dialog 
-        open={documentViewOpen} 
+      <Dialog
+        open={documentViewOpen}
         onOpenChange={(open) => {
           if (!open) {
             if (documentBlobUrl) URL.revokeObjectURL(documentBlobUrl);
@@ -967,10 +863,10 @@ export function TypeMergingPane() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {viewingDocument?.fileName || 'Document'}
+              {viewingDocument?.fileName || "Document"}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="mt-4">
             {loadingDocument ? (
               <div className="flex items-center justify-center py-12">
