@@ -1,12 +1,26 @@
 
 
-## Plan: Move profile completion from badge to footer text
+## Plan: Expand extractCountry and replace system prompt
 
-Single file: `src/components/PersonnelCard.tsx`
+Single file: `supabase/functions/suggest-project-personnel/index.ts`
 
-### Change 1 — Remove completion badge (lines 143-156)
-Delete the Tooltip+badge block showing the percentage in the top-right corner. Also update the remove button positioning from `right-14` to `right-2` since the badge is gone.
+### Change 1 — Replace extractCountry (lines 257-274)
 
-### Change 2 — Add completion text to footer (line 250)
-After the certificates count span, add `· {percentage}% profile complete` in matching muted text style.
+Replace the current function with the expanded version adding: Scotland, Wales, Husøy, Leirvik, Stord (Norway); Newcastle, Bristol, Leeds (UK); Seville, Bilbao (Spain); Wroclaw, Poznan (Poland); Turin, Genoa (Italy); Hrvatska, Rijeka, Dubrovnik (Croatia); Uppsala, Linköping (Sweden); plus new country blocks for Germany, Netherlands, Denmark, France, Greece, Portugal, Thailand, Philippines.
+
+### Change 2 — Replace entire system prompt (lines 297-398)
+
+Replace with the new prompt that:
+- Reframes as "offshore and subsea project staffing"
+- Adds geographic groupings (Scandinavia, Nordic, Europe)
+- Adds HUET certificate matching
+- Adds employment type synonyms (contractor, consultant, staff, permanent)
+- Adds profile completion filtering rules (complete profiles = 3+ valid certs + bio)
+- Changes ambiguous location scoring from 70% → 60%
+- Adds Step 4 credential depth bonus (+5 for 3+ valid certs, +3 for non-empty bio, capped at 100)
+- Adds Step 5 as the final summation step
+- Updates matchReasons guidance to "2-4 specific reasons"
+
+### Risk
+- 🔴 Edge function prompt change → anchor required per checklist Q2
 
