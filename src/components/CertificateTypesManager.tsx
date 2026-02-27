@@ -260,7 +260,7 @@ function TypesManageList() {
         </Button>
       </div>
 
-      {/* Types list */}
+      {/* Types list grouped by category */}
       {filteredTypes.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Award className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -270,64 +270,84 @@ function TypesManageList() {
           )}
         </div>
       ) : (
-        <div className="border rounded-lg divide-y">
-          {filteredTypes.map((type) => (
-            <div
-              key={type.id}
-              className="flex items-center justify-between p-4 hover:bg-muted/50"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{type.name}</span>
-                  {!type.is_active && (
-                    <Badge variant="secondary" className="text-xs">
-                      Archived
-                    </Badge>
-                  )}
-                  {type.category_name && (
-                    <Badge variant="outline" className="text-xs">
-                      {type.category_name}
-                    </Badge>
-                  )}
+        <div className="border rounded-lg overflow-hidden">
+          {(() => {
+            const grouped: Record<string, CertificateType[]> = {};
+            for (const type of filteredTypes) {
+              const key = type.category_name || "Uncategorized";
+              if (!grouped[key]) grouped[key] = [];
+              grouped[key].push(type);
+            }
+            const sortedKeys = Object.keys(grouped).sort((a, b) => {
+              if (a === "Uncategorized") return 1;
+              if (b === "Uncategorized") return -1;
+              return a.localeCompare(b);
+            });
+            for (const key of sortedKeys) {
+              grouped[key].sort((a, b) => a.name.localeCompare(b.name));
+            }
+            return sortedKeys.map((category) => (
+              <div key={category}>
+                <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b">
+                  {category}
                 </div>
-                {type.description && (
-                  <p className="text-sm text-muted-foreground mt-1 truncate">
-                    {type.description}
-                  </p>
-                )}
+                <div className="divide-y">
+                  {grouped[category].map((type) => (
+                    <div
+                      key={type.id}
+                      className="flex items-center justify-between p-4 hover:bg-muted/50"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{type.name}</span>
+                          {!type.is_active && (
+                            <Badge variant="secondary" className="text-xs">
+                              Archived
+                            </Badge>
+                          )}
+                        </div>
+                        {type.description && (
+                          <p className="text-sm text-muted-foreground mt-1 truncate">
+                            {type.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(type)}
+                          className="h-8 w-8"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {type.is_active ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openArchiveDialog(type)}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Archive className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRestore(type)}
+                            disabled={restoreMutation.isPending}
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openEditDialog(type)}
-                  className="h-8 w-8"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                {type.is_active ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openArchiveDialog(type)}
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRestore(type)}
-                    disabled={restoreMutation.isPending}
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       )}
 
