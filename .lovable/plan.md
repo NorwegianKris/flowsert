@@ -1,30 +1,22 @@
 
 
-## Plan: Add temperature, message cap, and intent-based context trimming to certificate-chat
+## Plan: Improve personnel search scoring in suggest-project-personnel
 
-Single file: `supabase/functions/certificate-chat/index.ts`
+Single file: `supabase/functions/suggest-project-personnel/index.ts`
 
-### Change 1 — Add `detectIntent` function before `serve()` (before line 335)
+### Change 1 — Add `extractCountry` helper + update `personnelSummary` (lines 256-277)
 
-New function that pattern-matches the last user message to return one of `'certificates' | 'projects' | 'availability' | 'general'`.
+- Insert `extractCountry` function immediately before the `personnelSummary` map (before line 257)
+- Add `confirmedCountry: extractCountry(p.location)` after the `location` field in the map
+- Remove `profileCompletionPercentage` and `profileCompletionStatus` from the map (lines 275-276)
 
-### Change 2 — Add `intent` parameter to `generateAdminContext` (line 175-283)
+### Change 2 — `temperature: 0` already present (line 364)
 
-- Add optional `intent` parameter to function signature
-- Replace the final return (line 280-283) with intent-based conditional returns that only include relevant sections
+This was added in a previous edit. No change needed.
 
-### Change 3 — Detect intent and pass to `generateAdminContext` (line 467-471)
+### Change 3 — Replace scoring instructions in system prompt (lines 288-346)
 
-```ts
-const intent = detectIntent(messages);
-contextData = generateAdminContext(..., intent);
-```
-
-### Change 4 — Trim messages and add temperature (lines 562-577)
-
-- Add `const trimmedMessages = messages.slice(-10);` before the fetch
-- Add `temperature: 0,` after the model line
-- Replace `...messages` with `...trimmedMessages`
+Remove the "Profile Completion Filtering" section (lines 288-300) and the final scoring paragraph (lines 342-346). Replace with the new geographic location matching instructions and the full multi-dimensional scoring system as specified.
 
 ### Risk
 - 🔴 Edge function logic + prompt change → anchor required per checklist Q2
