@@ -6,10 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, SlidersHorizontal } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, SlidersHorizontal, Search } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
+import { Input } from '@/components/ui/input';
 
 interface ProjectsTabProps {
   projects: Project[];
@@ -27,9 +28,21 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   const [previousOpen, setPreviousOpen] = useState(false);
   const [includePosted, setIncludePosted] = useState(true);
   const [includeRecurring, setIncludeRecurring] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   
-  // Filter projects based on toggles
-  const filteredProjects = projects.filter(p => {
+  // Filter projects based on search and toggles
+  const searchedProjects = projects.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      (p.description && p.description.toLowerCase().includes(q)) ||
+      (p.location && p.location.toLowerCase().includes(q)) ||
+      (p.projectLocationLabel && p.projectLocationLabel.toLowerCase().includes(q))
+    );
+  });
+  
+  const filteredProjects = searchedProjects.filter(p => {
     if (!includePosted && p.isPosted) return false;
     if (!includeRecurring && p.isRecurring) return false;
     return true;
@@ -53,6 +66,17 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
 
   return (
     <div className="space-y-6">
+      {/* Search Field */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search projects by name, description or location..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
       {/* Project View Filter Bar */}
       <div className="py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
         <div className="flex items-center gap-2 text-muted-foreground mb-2">
