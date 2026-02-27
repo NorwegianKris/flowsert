@@ -192,15 +192,10 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             )}
             <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
           </div>
-          {isPosted ? (
+          {isPosted && (
             <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0">
               <Megaphone className="h-3 w-3 mr-1" />
               Posted
-            </Badge>
-          ) : (
-            <Badge variant={config.variant} className="shrink-0">
-              <StatusIcon className="h-3 w-3 mr-1" />
-              {config.label}
             </Badge>
           )}
           {project.isRecurring && (
