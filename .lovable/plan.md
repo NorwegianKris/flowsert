@@ -1,20 +1,24 @@
 
 
-## Plan: Clean up remaining completion references in PersonnelCard
+## Plan: Replace pre-filter with location-intent hard filter
 
-Single file: `src/components/PersonnelCard.tsx`
+Single file: `supabase/functions/suggest-project-personnel/index.ts`
 
-### Current state
-- Changes 1 and 2 are already applied (no badge block exists; delete button is at `right-2`)
-- Line 85: `const { percentage, color } = calculateCompletion(personnel, documentCount);` still exists
-- Line 235: `{percentage}% profile complete` still references the variable
+### What changes
 
-### Actions
+**Lines 227-247** — Replace the freelancer toggle filter and the `extractConstraints`-based hard filter (`countryConstraint` / `roleConstraint`) with:
 
-1. **Remove line 85** — delete `const { percentage, color } = calculateCompletion(personnel, documentCount);`
-2. **Update line 235** — change from `{personnel.certificates.length} Certificates · {percentage}% profile complete` to just `{personnel.certificates.length} Certificates` (since percentage is no longer available)
-3. **Clean unused imports** — remove `cn` import (line 26) if unused after this change
+1. `parseLocationIntent(query)` — parses city, country, or region from the prompt string
+2. `locationMatches(personLocation, intent)` — checks if a person's location matches the parsed intent using alias maps
+3. A combined pre-filter that applies both the freelancer/employee toggle and the location hard filter
+
+The `extractConstraints` function (defined earlier in the file around lines 100-140) stays in place — it is no longer called in this block, but removing it is out of scope. The `hardFilteredPersonnel` variable is removed; the existing `filteredPersonnel` now carries both filters, and the downstream `cappedPersonnel` (line 249) will reference `filteredPersonnel` instead of `hardFilteredPersonnel`.
+
+### Line 250 reference update
+
+`hardFilteredPersonnel` → `filteredPersonnel` in the capping block (lines 249-254), since the intermediate variable is gone.
 
 ### Risk
-- Green (UI-only change)
+
+- 🔴 Edge function logic change → anchor required per checklist Q2
 
