@@ -224,34 +224,137 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Filter personnel based on freelancer toggle
-    const filteredPersonnel: PersonnelData[] = (personnel || []).filter((p: PersonnelData) => {
-      if (p.category === 'freelancer') {
-        return includeFreelancers && p.activated;
-      }
-      return includeEmployees;
-    });
+    // ── Location intent parser ─────────────────────────────────────────────────
+    // Parses free-text query for explicit location mentions.
+    // Returns null if no location intent detected — meaning no location filter applied.
+    const parseLocationIntent = (query: string): { type: 'city' | 'country' | 'region'; value: string } | null => {
+      const q = query.toLowerCase();
 
-    // Deterministic pre-filter based on hard constraints
-    const { country: countryConstraint, roles: roleConstraint } = extractConstraints(prompt);
-    const hardFilteredPersonnel = filteredPersonnel.filter((p: PersonnelData) => {
-      if (countryConstraint && p.country?.toLowerCase().trim() !== countryConstraint) {
-        return false;
+      const cities: Record<string, string> = {
+        'bergen': 'Bergen', 'oslo': 'Oslo', 'stavanger': 'Stavanger',
+        'haugesund': 'Haugesund', 'trondheim': 'Trondheim', 'kristiansand': 'Kristiansand',
+        'tromsø': 'Tromsø', 'bodø': 'Bodø', 'kopervik': 'Kopervik',
+        'aberdeen': 'Aberdeen', 'london': 'London', 'liverpool': 'Liverpool',
+        'glasgow': 'Glasgow', 'edinburgh': 'Edinburgh', 'manchester': 'Manchester',
+        'amsterdam': 'Amsterdam', 'rotterdam': 'Rotterdam',
+        'barcelona': 'Barcelona', 'madrid': 'Madrid',
+        'stockholm': 'Stockholm', 'gothenburg': 'Gothenburg',
+        'zagreb': 'Zagreb', 'split': 'Split',
+        'warsaw': 'Warsaw', 'gdansk': 'Gdansk',
+        'copenhagen': 'Copenhagen', 'esbjerg': 'Esbjerg',
+      };
+
+      const countries: Record<string, string> = {
+        'norway': 'Norway', 'norge': 'Norway',
+        'united kingdom': 'United Kingdom', 'uk': 'United Kingdom', 'england': 'United Kingdom', 'scotland': 'United Kingdom',
+        'netherlands': 'Netherlands', 'holland': 'Netherlands',
+        'spain': 'Spain', 'españa': 'Spain',
+        'sweden': 'Sweden', 'sverige': 'Sweden',
+        'poland': 'Poland', 'polska': 'Poland',
+        'italy': 'Italy', 'italia': 'Italy',
+        'croatia': 'Croatia', 'hrvatska': 'Croatia',
+        'germany': 'Germany', 'deutschland': 'Germany',
+        'denmark': 'Denmark', 'danmark': 'Denmark',
+        'france': 'France', 'portugal': 'Portugal',
+        'greece': 'Greece', 'thailand': 'Thailand',
+        'philippines': 'Philippines', 'australia': 'Australia',
+        'south africa': 'South Africa',
+      };
+
+      const regions: Record<string, string[]> = {
+        'scandinavia': ['Norway', 'Sweden', 'Denmark', 'Finland'],
+        'nordic': ['Norway', 'Sweden', 'Denmark', 'Finland', 'Iceland'],
+        'europe': ['Norway', 'United Kingdom', 'Netherlands', 'Spain', 'Sweden', 'Poland',
+                   'Italy', 'Croatia', 'Germany', 'Denmark', 'France', 'Portugal', 'Greece',
+                   'Belgium', 'Austria', 'Switzerland'],
+        'north sea': ['Norway', 'United Kingdom', 'Netherlands', 'Denmark'],
+      };
+
+      // Check cities first (most specific)
+      for (const [key, canonical] of Object.entries(cities)) {
+        if (q.includes(key)) return { type: 'city', value: canonical };
       }
-      if (roleConstraint && !roleConstraint.some(r => 
-        p.role?.toLowerCase().trim() === r.toLowerCase()
-      )) {
-        return false;
+
+      // Check countries
+      for (const [key, canonical] of Object.entries(countries)) {
+        if (q.includes(key)) return { type: 'country', value: canonical };
       }
+
+      // Check regions
+      for (const [key, canonical] of Object.entries(regions)) {
+        if (q.includes(key)) return { type: 'region', value: canonical as unknown as string };
+      }
+
+      return null;
+    };
+
+    // ── Location match checker ─────────────────────────────────────────────────
+    const locationMatches = (personLocation: string, intent: { type: string; value: string | string[] } | null): boolean => {
+      if (!intent) return true; // No location filter — include everyone
+      const loc = personLocation.toLowerCase();
+
+      if (intent.type === 'city') {
+        return loc.includes((intent.value as string).toLowerCase());
+      }
+
+      if (intent.type === 'country') {
+        const country = (intent.value as string).toLowerCase();
+        const countryAliases: Record<string, string[]> = {
+          'norway': ['norway', 'norge', 'haugesund', 'bergen', 'oslo', 'stavanger', 'kopervik', 'avaldsnes', 'kristiansand', 'trondheim', 'tromsø', 'bodø', 'husøy', 'leirvik', 'stord'],
+          'united kingdom': ['united kingdom', 'uk', 'england', 'scotland', 'wales', 'london', 'aberdeen', 'manchester', 'liverpool', 'glasgow', 'edinburgh', 'newcastle', 'bristol'],
+          'netherlands': ['netherlands', 'holland', 'amsterdam', 'rotterdam', 'the hague', 'utrecht'],
+          'spain': ['spain', 'españa', 'barcelona', 'madrid', 'valencia', 'seville', 'bilbao'],
+          'sweden': ['sweden', 'sverige', 'stockholm', 'gothenburg', 'malmö', 'överlida', 'uppsala'],
+          'poland': ['poland', 'polska', 'warsaw', 'krakow', 'gdansk', 'wroclaw'],
+          'italy': ['italy', 'italia', 'rome', 'milan', 'naples', 'turin'],
+          'croatia': ['croatia', 'hrvatska', 'zagreb', 'split', 'rijeka', 'dubrovnik'],
+          'germany': ['germany', 'deutschland', 'berlin', 'hamburg', 'munich', 'frankfurt'],
+          'denmark': ['denmark', 'danmark', 'copenhagen', 'aarhus', 'odense', 'esbjerg'],
+          'france': ['france', 'paris', 'marseille', 'lyon'],
+          'south africa': ['south africa', 'cape town', 'johannesburg', 'durban'],
+        };
+        const aliases = countryAliases[country] || [country];
+        return aliases.some(alias => loc.includes(alias));
+      }
+
+      if (intent.type === 'region') {
+        const regionCountries = intent.value as unknown as string[];
+        const allAliases = regionCountries.flatMap(c => {
+          const countryAliases: Record<string, string[]> = {
+            'Norway': ['norway', 'norge', 'haugesund', 'bergen', 'oslo', 'stavanger', 'trondheim'],
+            'United Kingdom': ['united kingdom', 'uk', 'england', 'scotland', 'london', 'aberdeen'],
+            'Sweden': ['sweden', 'sverige', 'stockholm', 'gothenburg'],
+            'Denmark': ['denmark', 'danmark', 'copenhagen'],
+            'Netherlands': ['netherlands', 'holland', 'amsterdam', 'rotterdam'],
+          };
+          return countryAliases[c] || [c.toLowerCase()];
+        });
+        return allAliases.some(alias => loc.includes(alias));
+      }
+
+      return true;
+    };
+
+    // ── Pre-filter: freelancer toggle + location ───────────────────────────────
+    const locationIntent = parseLocationIntent(prompt);
+
+    const filteredPersonnel: PersonnelData[] = (personnel || []).filter((p: PersonnelData) => {
+      // Freelancer toggle
+      if (p.category === 'freelancer') {
+        if (!includeFreelancers || !p.activated) return false;
+      }
+      if (p.category !== 'freelancer' && !includeEmployees) return false;
+      // Location hard filter — only applied when query contains explicit location
+      if (locationIntent && !locationMatches(p.location, locationIntent)) return false;
       return true;
     });
 
     const MAX_CANDIDATES = 50;
-    const cappedPersonnel = hardFilteredPersonnel.length > MAX_CANDIDATES
-      ? [...hardFilteredPersonnel].sort((a, b) => 
+    const cappedPersonnel = filteredPersonnel.length > MAX_CANDIDATES
+      ? [...filteredPersonnel].sort((a, b) => 
           (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0)
         ).slice(0, MAX_CANDIDATES)
-      : hardFilteredPersonnel;
+      : filteredPersonnel;
 
     // Prepare personnel summary for AI
     const extractCountry = (location: string): string => {
@@ -413,7 +516,7 @@ Be practical. If a query is ambiguous, make a reasonable assumption and apply it
     const userPrompt = `Project Requirements:
 "${prompt}"
 
-Available Personnel (${personnelSummary.length} shown, ${hardFilteredPersonnel.length} total matched):
+Available Personnel (${personnelSummary.length} shown, ${filteredPersonnel.length} total matched):
 ${JSON.stringify(personnelSummary, null, 2)}
 
 Analyze the requirements and suggest matching personnel. Also extract any project field values from the requirements (location, work category, dates, project manager).`;
