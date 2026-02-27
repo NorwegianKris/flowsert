@@ -23,7 +23,7 @@ import { MapPin, Mail, Phone, FileCheck, Briefcase, Trash2, Loader2, ShieldCheck
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+
 
 interface PersonnelCardProps {
   personnel: Personnel;
@@ -82,7 +82,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
   
   const overallStatus = getPersonnelOverallStatus(personnel);
   const certificateCounts = countCertificatesByStatus(personnel.certificates);
-  const { percentage, color } = calculateCompletion(personnel, documentCount);
+  
   const initials = personnel.name
     .split(' ')
     .map((n) => n[0])
@@ -232,7 +232,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <FileCheck className="h-4 w-4 text-blue-500" />
-                <span>{personnel.certificates.length} Certificates · {percentage}% profile complete</span>
+                <span>{personnel.certificates.length} Certificates</span>
               </div>
               
               <div className="flex items-center gap-3 text-xs">
