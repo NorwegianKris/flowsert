@@ -724,56 +724,77 @@ export function TypeMergingPane() {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="divide-y">
+            <div>
               {filteredMerged.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <p className="text-sm">No merged types found.</p>
                   <p className="text-xs mt-1">Create your first type to get started.</p>
                 </div>
               ) : (
-                filteredMerged.map((merged) => {
-                  const isSelected = selectedMerged === merged.id;
-                  return (
-                    <div
-                      key={merged.id}
-                      className={`p-3 cursor-pointer transition-colors ${
-                        isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => setSelectedMerged(isSelected ? null : merged.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${
-                            isSelected
-                              ? "border-primary bg-primary"
-                              : "border-muted-foreground/30"
-                          }`}
-                        >
-                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{merged.name}</span>
-                            {merged.category_name && (
-                              <Badge variant="outline" className="text-xs">
-                                {merged.category_name}
-                              </Badge>
-                            )}
-                          </div>
-                          {merged.description && (
-                            <p className="text-xs text-muted-foreground mt-1 truncate">
-                              {merged.description}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            <FileText className="h-3 w-3 inline mr-1" />
-                            {(merged as any).usage_count || 0} certificate{(merged as any).usage_count !== 1 ? 's' : ''}
-                          </p>
-                        </div>
+                (() => {
+                  // Group by category
+                  const groups = new Map<string, typeof filteredMerged>();
+                  filteredMerged.forEach((merged) => {
+                    const cat = merged.category_name || "Uncategorized";
+                    if (!groups.has(cat)) groups.set(cat, []);
+                    groups.get(cat)!.push(merged);
+                  });
+                  // Sort groups alphabetically, Uncategorized last
+                  const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+                    if (a === "Uncategorized") return 1;
+                    if (b === "Uncategorized") return -1;
+                    return a.localeCompare(b);
+                  });
+                  // Sort types alphabetically within each group
+                  sortedKeys.forEach((key) => {
+                    groups.get(key)!.sort((a, b) => a.name.localeCompare(b.name));
+                  });
+
+                  return sortedKeys.map((categoryName) => (
+                    <div key={categoryName}>
+                      <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b sticky top-0">
+                        {categoryName}
                       </div>
+                      {groups.get(categoryName)!.map((merged) => {
+                        const isSelected = selectedMerged === merged.id;
+                        return (
+                          <div
+                            key={merged.id}
+                            className={`p-3 cursor-pointer transition-colors border-b ${
+                              isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : "hover:bg-muted/50"
+                            }`}
+                            onClick={() => setSelectedMerged(isSelected ? null : merged.id)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                                  isSelected
+                                    ? "border-primary bg-primary"
+                                    : "border-muted-foreground/30"
+                                }`}
+                              >
+                                {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm">{merged.name}</span>
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    {(merged as any).usage_count || 0} certificate{(merged as any).usage_count !== 1 ? 's' : ''}
+                                  </Badge>
+                                </div>
+                                {merged.description && (
+                                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                                    {merged.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })
+                  ));
+                })()
               )}
             </div>
           </ScrollArea>
