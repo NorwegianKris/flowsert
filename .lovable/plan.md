@@ -1,67 +1,55 @@
 
 
-## Plan: Monthly AI Allowance Enforcement with 80% Warning
+## Analysis: Why the prompt needs adjustment
 
-### Migration (single SQL migration)
+The `Certificate` TypeScript interface does **not** have a `certificate_types` nested object. In `usePersonnel.ts` line 122, the canonical name is already **flattened** into `Certificate.name`:
 
-**1. ALTER entitlements** — add three cap columns:
-```sql
-ALTER TABLE public.entitlements
-  ADD COLUMN IF NOT EXISTS monthly_ocr_cap integer NOT NULL DEFAULT 50,
-  ADD COLUMN IF NOT EXISTS monthly_chat_cap integer NOT NULL DEFAULT 100,
-  ADD COLUMN IF NOT EXISTS monthly_search_cap integer NOT NULL DEFAULT 200;
+```typescript
+name: c.certificate_types?.name || c.name,  // already resolved
 ```
 
-**2. Set tier defaults** (only `starter` and `enterprise` exist currently):
-```sql
-UPDATE public.entitlements SET monthly_ocr_cap = 200, monthly_chat_cap = 500, monthly_search_cap = 1000 WHERE tier = 'starter';
-UPDATE public.entitlements SET monthly_ocr_cap = 2147483647, monthly_chat_cap = 2147483647, monthly_search_cap = 2147483647 WHERE tier = 'enterprise';
+So `c.certificate_types?.name` doesn't exist on the frontend `Certificate` type — it was resolved at fetch time. The matrix code using `c.name` already gets the canonical type name for **mapped** certificates.
+
+The **real** column explosion happens only for **unmapped** certificates (no `certificate_type_id`), where `Certificate.name` falls back to the raw DB `name` column (the filename). The better fallback is `titleRaw` (the user-typed title), but `usePersonnel.ts` never maps it.
+
+## Corrected plan — 2 files, no migration
+
+### 1. `src/hooks/usePersonnel.ts` — add `titleRaw` to certificate mapping
+
+In both `usePersonnel` (line ~120-130) and `useWorkerPersonnel` (line ~220-230), add `titleRaw` to the Certificate mapping:
+
+```typescript
+// Add after certificateTypeId line:
+titleRaw: c.title_raw || undefined,
 ```
 
-Future tiers (`growth`, `professional`) will get defaults from the column default when rows are created.
+Also add `title_raw` to the `DbCertificate` interface (around line 43).
 
-**3. SQL function** `check_ai_allowance`:
-- Receives `p_business_id uuid` and `p_event_type text` (`'ocr'`, `'chat'`, `'search'`)
-- Maps internally: `'ocr'` → counts `usage_ledger` rows where `event_type = 'ocr_extraction'`, `'chat'` → `'assistant_query'`, `'search'` → `'personnel_match'`
-- Reads the matching cap column from `entitlements`
-- Counts rows in `usage_ledger` where `created_at >= date_trunc('month', now())`
-- Returns `jsonb`: `{ allowed, used, cap }` or `{ allowed: false, reason }`
-- `SECURITY DEFINER`, `search_path = 'public'`
+### 2. `src/lib/competenceMatrixPdf.ts` — use `titleRaw` as fallback
 
-### Edge Function Changes (3 files)
+**Column collection** (lines 49-54): Replace `c.name` with `c.titleRaw || c.name` — for mapped certs, `c.name` is already the canonical name; for unmapped certs, `titleRaw` groups by user-typed title instead of filename.
 
-In each function, **after** `businessId` is resolved and **before** the AI gateway call, add the allowance check. If denied, return 429 with `{ error: 'monthly_cap_reached', detail: { used, cap } }`.
+```typescript
+const certTypeSet = new Set<string>();
+activePersonnel.forEach(p => {
+  p.certificates.forEach(c => {
+    certTypeSet.add(c.titleRaw || c.name);
+  });
+});
+```
 
-**After** the successful AI call, include `usage_remaining` in the response:
+**Cell matching** (line ~142): Same fallback logic:
 
-| Function | Event type | Response delivery |
-|---|---|---|
-| `extract-certificate-data` | `'ocr'` | Add `usage_remaining: { used, cap }` to JSON body |
-| `suggest-project-personnel` | `'search'` | Add `usage_remaining: { used, cap }` to JSON body |
-| `certificate-chat` | `'chat'` | Add `X-Usage-Used` and `X-Usage-Cap` response headers + `Access-Control-Expose-Headers` |
+```typescript
+const cert = person.certificates.find(c =>
+  (c.titleRaw || c.name) === certType
+);
+```
 
-The allowance check is **fail-open**: if the RPC errors, the function continues without blocking.
+### What this fixes
 
-For `certificate-chat`, the allowance check runs before the AI gateway call. The `used` and `cap` values are captured at that point and set as headers on the SSE response. This means the frontend can read them immediately when the response starts streaming.
+- **Mapped certificates**: No change — `c.name` already contains the canonical type name
+- **Unmapped certificates**: Groups by user-typed title instead of filename, collapsing duplicates
 
-### Frontend Changes (3 files)
-
-**`src/components/SmartCertificateUpload.tsx`** (in `processFile`):
-- In the catch block, detect 429 responses with `error === 'monthly_cap_reached'` and show a destructive toast with upgrade message
-- After success, read `usage_remaining` from the response; if `used/cap >= 0.8`, show amber toast
-
-**`src/components/ChatBot.tsx`** (in `sendAiMessage`, lines ~290-338):
-- In the `!response.ok` branch (line 290), parse error JSON; if status is 429 and `error === 'monthly_cap_reached'`, show specific toast instead of generic error
-- **Immediately after** `if (!response.ok)` passes (before entering the stream reader loop), read `X-Usage-Used` and `X-Usage-Cap` from `response.headers`; if ratio >= 0.8, show amber toast. This fires when the stream **starts**, not after it completes.
-
-**`src/hooks/useSuggestPersonnel.ts`**:
-- In the existing `data.error` handler, add specific check for `'monthly_cap_reached'`
-- After success, read `data.usage_remaining`; if ratio >= 0.8, show amber toast
-
-**Amber toast format**: `"You've used X% of your monthly [OCR/Chat/Search] allowance. Upgrade your plan to avoid interruption."`
-
-### Risk Classification
-- **RED** — schema migration, SECURITY DEFINER function, edge function changes
-- Rollback: `ALTER TABLE DROP COLUMN` for caps, `DROP FUNCTION` for helper, revert edge functions
-- Fail-safe: RPC errors do not block AI calls
+### Risk: GREEN — purely UI/PDF, no schema, no RLS, no edge functions
 
