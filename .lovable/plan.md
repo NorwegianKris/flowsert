@@ -1,41 +1,74 @@
 
 
-## TypeMergingPane Fixes
+## Left Pane Overhaul: Flat Certificate List
 
-**Risk: 🟢 GREEN** — UI rendering changes only. No schema or data changes.
+**Risk: 🟢 GREEN** — UI rendering + hook data shape change. No schema changes.
 
-### Fix 1: Left pane expanded view — show title_raw sub-groups instead of individual certificates
+### Change 1: New hook `useUnmappedCertificates`
 
-**Current**: Expanded view shows up to 5 individual certificate rows with personnel name, file link, and expiry date. With 103 certificates in "Diving", this is unmanageable.
+**File:** `src/hooks/useUnmappedCertificates.ts` (new file)
 
-**Target**: Show distinct `title_raw` values as a sub-list with counts. Each sub-item gets its own checkbox for independent selection.
+Create a dedicated hook that returns individual unmapped certificates (not grouped), with pagination support:
 
-**Implementation**:
+- Query `certificates` with join on `personnel!inner` filtering by `business_id`, `certificate_type_id IS NULL`, `unmapped_by IS NULL`, `title_raw IS NOT NULL`
+- Also join `certificate_categories` via `category_id` for category name
+- Return flat array of `{ id, title_raw, title_normalized, personnel_name, personnel_id, expiry_date, document_url, category_id, category_name, created_at }`
+- Accept params: `search?: string`, `categoryFilter?: string`, `sortBy?: 'title_raw' | 'expiry_date' | 'personnel_name'`, `sortAsc?: boolean`, `limit?: number`
+- Use `.range(0, limit - 1)` for pagination; expose a `total` count via `{ count: 'exact', head: false }`
+- Export `UnmappedCertificate` interface
 
-1. **`src/hooks/useInputtedTypes.ts`**: Add a `raw_title_groups` field to the `InputtedType` interface containing `{ title_raw: string; count: number; personnel_count: number }[]` — built during the existing grouping loop by counting per `title_raw` within each `title_normalized` group. Remove the `certificates` array (no longer needed in expanded view).
+### Change 2: Rewrite left pane in TypeMergingPane
 
-2. **`src/components/TypeMergingPane.tsx` — selection model**: Change `selectedInputted` from `Set<string>` (title_normalized keys) to `Set<string>` (title_raw keys). The top-level row checkbox selects/deselects all its raw sub-items. Each sub-item checkbox toggles independently.
+**File:** `src/components/TypeMergingPane.tsx`
 
-3. **`src/components/TypeMergingPane.tsx` — expanded UI (lines 565-643)**: Replace the "Included Certificates" section with a list of `raw_title_groups` entries. Each entry shows: checkbox + title_raw text + count badge (e.g. "103"). Remove all individual file link, personnel name, and expiry date rendering.
+**State changes:**
+- Replace `useInputtedTypes` with `useUnmappedCertificates`
+- `selectedInputted: Set<string>` now holds certificate IDs (not title_raw)
+- Add state: `leftCategoryFilter`, `leftSortBy`, `visibleCount` (starts at 50)
 
-4. **`src/components/TypeMergingPane.tsx` — executeGrouping (lines 267-348)**: Update to iterate over selected `title_raw` values. For each, query certificates matching that exact `title_raw` (not `title_normalized`) and update them. Create alias using the raw value.
+**Header area (lines ~420-467):**
+- Counter: "X unmapped certificates" (total from hook)
+- Search box (searches title_raw + personnel name — passed to hook)
+- Category filter dropdown (populated from existing `categories` state, passed to hook)
+- Sort dropdown: "Title A-Z", "Expiry Date", "Personnel Name"
+- Select all checkbox + selection count
 
-5. **`src/components/TypeMergingPane.tsx` — selectedInputtedData and totalSelectedCerts memos**: Derive from the new selection model, summing counts from matching `raw_title_groups` entries across all inputted types.
+**List rows (lines ~469-624):**
+- Replace Collapsible/grouped rendering with flat rows
+- Each row: Checkbox | Personnel name (bold) | title_raw | category badge (if category_id) | expiry date | file type icon (FileText for PDF, Image for jpg/png, File for other)
+- No expand/collapse needed
+- "Load more" button at bottom when `visibleCount < totalCount`, increments by 50
 
-### Fix 2: Right pane — database has 8 active types, not 64
+**Selection & mapping (executeGrouping, lines ~291-360):**
+- Iterate selected certificate IDs directly
+- For each unique `title_normalized` among selected certs, create alias → target type
+- Update all selected certificate IDs: set `certificate_type_id`, clear `needs_review`
+- This is simpler than before — direct ID-based updates, no title_raw matching needed
 
-Database query confirms there are exactly **8 active certificate_types** for this business. The code is correct — `filteredMerged` shows all active types with no usage-count filter. The "64" figure may refer to the number of distinct inputted types (unmapped raw entries), not canonical types.
+**Dismiss flow:**
+- Dismiss button per row marks that single certificate as unmapped
+- Bulk dismiss: select multiple → dismiss all selected
 
-No code change needed for Fix 2. The right pane already has a `ScrollArea` wrapping the list, which will handle scrolling when more types are added.
+**Confirmation dialog (lines ~777-830):**
+- Update text: "X certificates" instead of "X inputted types"
+
+**Create dialog (lines ~832-904):**
+- Same update: show certificate count not type count
+
+### Change 3: Remove `useInputtedTypes` import
+
+The hook itself stays (may be used elsewhere) but TypeMergingPane no longer imports it. Remove `useDismissInputtedType` import too — dismiss will work directly on certificate IDs.
 
 ### Files modified
 | File | Change |
 |---|---|
-| `src/hooks/useInputtedTypes.ts` | Add `raw_title_groups` to InputtedType, remove `certificates` array |
-| `src/components/TypeMergingPane.tsx` | Selection model → title_raw, expanded view → raw sub-groups, executeGrouping → filter by title_raw |
+| `src/hooks/useUnmappedCertificates.ts` | New hook: flat paginated unmapped certificate list |
+| `src/components/TypeMergingPane.tsx` | Complete left pane rewrite: flat list, filters, sort, ID-based selection |
 
 ### What does NOT change
-- Right pane: radio select, category grouping, all interaction — untouched
-- Center action area: "Group into Selected", "Create & Group" buttons — untouched
-- All dialogs — untouched
+- Right pane: category-grouped merged types, radio select — untouched
+- Center action area: button labels change to "Assign Type" but logic flow identical
+- Create & Group dialog — unchanged except count text
+- Document viewer dialog — kept but simplified (click file icon to view)
+- No schema changes, no hook deletions
 
