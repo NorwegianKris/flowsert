@@ -41,31 +41,8 @@ interface PersonnelForAI {
     category: string | null;
     issuingAuthority: string | null;
   }[];
-  profileCompletionPercentage: number;
-  profileCompletionStatus: 'complete' | 'high' | 'medium' | 'low';
 }
 
-// Calculate profile completion percentage (must match PersonnelCard and ProfileCompletionIndicator logic)
-function calculateProfileCompletion(p: Personnel, documentCount: number): { percentage: number; status: 'complete' | 'high' | 'medium' | 'low' } {
-  const checks = [
-    !!p.name && p.name.trim().length > 0,
-    !!p.role && p.role.trim().length > 0,
-    !!p.nationality,
-    !!p.gender,
-    !!p.phone && p.phone.trim().length > 0,
-    !!p.email && p.email.trim().length > 0,
-    !!p.location && p.location.trim().length > 0 && p.location !== 'Not specified',
-    p.certificates.length > 0,
-    documentCount > 0,
-  ];
-  const percentage = Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  let status: 'complete' | 'high' | 'medium' | 'low';
-  if (percentage === 100) status = 'complete';
-  else if (percentage >= 80) status = 'high';
-  else if (percentage >= 50) status = 'medium';
-  else status = 'low';
-  return { percentage, status };
-}
 
 export function useSuggestPersonnel() {
   const [loading, setLoading] = useState(false);
@@ -89,9 +66,6 @@ export function useSuggestPersonnel() {
     try {
       // Prepare personnel data (exclude sensitive fields, include completion info)
       const personnelForAI: PersonnelForAI[] = personnel.map(p => {
-        const docCount = documentCounts?.get(p.id) || 0;
-        const { percentage, status } = calculateProfileCompletion(p, docCount);
-        
         // Determine employment type based on category
         let employmentType: 'employee' | 'freelancer' = 'employee';
         if (p.category === 'freelancer') {
@@ -122,8 +96,6 @@ export function useSuggestPersonnel() {
             category: c.category || null,
             issuingAuthority: c.issuingAuthority || null
           })),
-          profileCompletionPercentage: percentage,
-          profileCompletionStatus: status
         };
       });
 
@@ -160,6 +132,8 @@ export function useSuggestPersonnel() {
       }
 
       const result = data as SuggestionResult;
+      // Remove any results the AI returned with 0% confidence — these are not matches
+      result.suggestedPersonnel = result.suggestedPersonnel.filter(p => p.matchScore > 0);
       setSuggestions(result);
       return result;
 

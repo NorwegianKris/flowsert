@@ -506,6 +506,7 @@ CRITICAL:
 - The credential depth bonus (+5 for certs, +3 for bio) is the only way profile richness affects the score, and only by a small margin.
 - Never penalise a candidate for missing data on dimensions the query did not ask about.
 - confirmedCountry is authoritative — if it says Norway, the person is in Norway, full stop.
+- Never return a person with a matchScore of 0. If a person does not meet enough of the queried criteria to score above 0, exclude them from the response entirely. A returned result implies a meaningful match.
 
 For each person, return:
 - matchScore (0-100) calculated using the system above
