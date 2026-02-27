@@ -1624,12 +1624,16 @@ export type Database = {
           image_url: string | null
           include_countries: string[] | null
           is_posted: boolean
+          is_recurring: boolean
           location: string | null
           name: string
           project_country: string | null
           project_location_label: string | null
           project_manager: string | null
           project_number: string | null
+          recurring_interval_days: number | null
+          recurring_interval_label: string | null
+          recurring_next_date: string | null
           start_date: string
           status: string
           updated_at: string
@@ -1648,12 +1652,16 @@ export type Database = {
           image_url?: string | null
           include_countries?: string[] | null
           is_posted?: boolean
+          is_recurring?: boolean
           location?: string | null
           name: string
           project_country?: string | null
           project_location_label?: string | null
           project_manager?: string | null
           project_number?: string | null
+          recurring_interval_days?: number | null
+          recurring_interval_label?: string | null
+          recurring_next_date?: string | null
           start_date: string
           status?: string
           updated_at?: string
@@ -1672,12 +1680,16 @@ export type Database = {
           image_url?: string | null
           include_countries?: string[] | null
           is_posted?: boolean
+          is_recurring?: boolean
           location?: string | null
           name?: string
           project_country?: string | null
           project_location_label?: string | null
           project_manager?: string | null
           project_number?: string | null
+          recurring_interval_days?: number | null
+          recurring_interval_label?: string | null
+          recurring_next_date?: string | null
           start_date?: string
           status?: string
           updated_at?: string

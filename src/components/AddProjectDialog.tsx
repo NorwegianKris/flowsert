@@ -14,7 +14,7 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe, Repeat } from 'lucide-react';
 import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,6 +71,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [includeEmployees, setIncludeEmployees] = useState(true);
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringIntervalDays, setRecurringIntervalDays] = useState<number>(14);
+  const [recurringIntervalLabel, setRecurringIntervalLabel] = useState('14 days');
+  const [customInterval, setCustomInterval] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Search & filter state
@@ -182,6 +186,12 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       visibilityMode,
       includeCountries: includeCountries.length > 0 ? includeCountries : undefined,
       excludeCountries: excludeCountries.length > 0 ? excludeCountries : undefined,
+      isRecurring,
+      recurringIntervalDays: isRecurring ? recurringIntervalDays : undefined,
+      recurringIntervalLabel: isRecurring ? recurringIntervalLabel : undefined,
+      recurringNextDate: isRecurring
+        ? new Date(Date.now() + recurringIntervalDays * 86400000).toISOString()
+        : undefined,
     };
 
     const createdProject = await onProjectAdded(newProject);
@@ -260,6 +270,10 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAvailabilityDateRange(undefined);
     setSortOption('recent');
     setUploading(false);
+    setIsRecurring(false);
+    setRecurringIntervalDays(14);
+    setRecurringIntervalLabel('14 days');
+    setCustomInterval(false);
     clearSuggestions();
   };
 
@@ -768,6 +782,81 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   }}
                 />
               )}
+            </div>
+
+            {/* Recurring project */}
+            <div className="flex items-start gap-3 pt-3 border-t border-border/40">
+              <Switch
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+                className="mt-0.5"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-teal-500" />
+                  <span className="text-sm font-medium">Recurring project?</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  For shift-based or periodic work that repeats on a regular schedule
+                </p>
+
+                {isRecurring && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-muted-foreground">Repeat every:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[7, 14, 21, 28].map(days => (
+                        <button
+                          key={days}
+                          type="button"
+                          onClick={() => {
+                            setRecurringIntervalDays(days);
+                            setRecurringIntervalLabel(`${days} days`);
+                            setCustomInterval(false);
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            recurringIntervalDays === days && !customInterval
+                              ? 'bg-teal-500/20 border-teal-500/50 text-teal-700 dark:text-teal-300'
+                              : 'border-border/50 text-muted-foreground hover:border-teal-500/30 hover:text-teal-600'
+                          }`}
+                        >
+                          {days} days
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setCustomInterval(true)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                          customInterval
+                            ? 'bg-teal-500/20 border-teal-500/50 text-teal-700 dark:text-teal-300'
+                            : 'border-border/50 text-muted-foreground hover:border-teal-500/30'
+                        }`}
+                      >
+                        Custom
+                      </button>
+                    </div>
+
+                    {customInterval && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={recurringIntervalDays}
+                          onChange={e => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val > 0) {
+                              setRecurringIntervalDays(val);
+                              setRecurringIntervalLabel(`${val} days`);
+                            }
+                          }}
+                          className="w-20 px-2 py-1 text-sm border border-border rounded-md bg-background"
+                        />
+                        <span className="text-xs text-muted-foreground">days between recurrences</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
