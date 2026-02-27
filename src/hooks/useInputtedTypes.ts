@@ -3,15 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-export interface CertificateDetail {
-  id: string;
-  title_raw: string | null;
-  personnel_name: string;
-  personnel_id: string;
-  upload_date: string;
-  expiry_date: string | null;
-  file_name: string | null;
-  document_url: string | null;
+export interface RawTitleGroup {
+  title_raw: string;
+  count: number;
+  personnel_count: number;
 }
 
 export interface InputtedType {
@@ -28,7 +23,7 @@ export interface InputtedType {
   latest_upload_date: string | null;
   sample_expiry_date: string | null;
   sample_file_name: string | null;
-  certificates: CertificateDetail[];
+  raw_title_groups: RawTitleGroup[];
 }
 
 /**
@@ -93,7 +88,7 @@ export function useInputtedTypes(options?: { includeMapped?: boolean }) {
         latest_upload_date: string | null;
         sample_expiry_date: string | null;
         sample_file_name: string | null;
-        certificates: CertificateDetail[];
+        raw_title_counts: Map<string, { count: number; personnel_ids: Set<string> }>;
       }>();
 
       (certificates || []).forEach((cert: any) => {
@@ -118,7 +113,7 @@ export function useInputtedTypes(options?: { includeMapped?: boolean }) {
             latest_upload_date: cert.created_at,
             sample_expiry_date: cert.expiry_date,
             sample_file_name: fileName,
-            certificates: [],
+            raw_title_counts: new Map(),
           });
         }
 
@@ -153,19 +148,14 @@ export function useInputtedTypes(options?: { includeMapped?: boolean }) {
           group.sample_file_name = fileName;
         }
 
-        // Add certificate details (limit to first 10 for performance)
-        if (group.certificates.length < 10) {
-          group.certificates.push({
-            id: cert.id,
-            title_raw: cert.title_raw,
-            personnel_name: personnelName,
-            personnel_id: cert.personnel_id,
-            upload_date: cert.created_at,
-            expiry_date: cert.expiry_date,
-            file_name: fileName,
-            document_url: cert.document_url,
-          });
+        // Track raw title counts
+        const rawTitle = cert.title_raw || normalized;
+        if (!group.raw_title_counts.has(rawTitle)) {
+          group.raw_title_counts.set(rawTitle, { count: 0, personnel_ids: new Set() });
         }
+        const rawGroup = group.raw_title_counts.get(rawTitle)!;
+        rawGroup.count++;
+        if (cert.personnel_id) rawGroup.personnel_ids.add(cert.personnel_id);
       });
 
       // Convert to array
@@ -185,7 +175,13 @@ export function useInputtedTypes(options?: { includeMapped?: boolean }) {
           latest_upload_date: data.latest_upload_date,
           sample_expiry_date: data.sample_expiry_date,
           sample_file_name: data.sample_file_name,
-          certificates: data.certificates,
+          raw_title_groups: Array.from(data.raw_title_counts.entries())
+            .map(([title_raw, info]) => ({
+              title_raw,
+              count: info.count,
+              personnel_count: info.personnel_ids.size,
+            }))
+            .sort((a, b) => b.count - a.count),
         }))
         .sort((a, b) => b.count - a.count);
 
