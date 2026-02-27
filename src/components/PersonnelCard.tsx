@@ -140,26 +140,11 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
         }`}
         onClick={onClick}
       >
-        {/* Completion percentage badge - top right */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className={cn(
-              "absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-semibold z-10",
-              color
-            )}>
-              {percentage}%
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Profile {percentage}% complete
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Remove button - visible on hover, positioned left of percentage */}
+        {/* Remove button - visible on hover */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-14 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
+          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 z-10"
           onClick={handleRemoveClick}
           title="Remove personnel"
         >
@@ -247,7 +232,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <FileCheck className="h-4 w-4 text-blue-500" />
-                <span>{personnel.certificates.length} Certificates</span>
+                <span>{personnel.certificates.length} Certificates · {percentage}% profile complete</span>
               </div>
               
               <div className="flex items-center gap-3 text-xs">
