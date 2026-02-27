@@ -49,7 +49,7 @@ export async function generateCompetenceMatrixPdf(options: CompetenceMatrixOptio
   // Collect unique certificate types, sorted alphabetically
   const certTypeSet = new Set<string>();
   activePersonnel.forEach(p => {
-    p.certificates.forEach(c => certTypeSet.add(c.name));
+    p.certificates.forEach(c => certTypeSet.add(c.titleRaw || c.name));
   });
   const certTypes = Array.from(certTypeSet).sort((a, b) => a.localeCompare(b));
 
@@ -139,7 +139,7 @@ export async function generateCompetenceMatrixPdf(options: CompetenceMatrixOptio
     const batchTableBody = sortedPersonnel.map((person, pIdx) => {
       const row = [...personFixedCells[pIdx]];
       batchCertTypes.forEach(certType => {
-        const cert = person.certificates.find(c => c.name === certType);
+        const cert = person.certificates.find(c => (c.titleRaw || c.name) === certType);
         if (!cert) {
           row.push(NOT_HELD_SYMBOL);
         } else {
