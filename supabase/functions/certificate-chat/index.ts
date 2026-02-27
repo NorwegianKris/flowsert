@@ -584,6 +584,38 @@ When answering:
 
     const systemPrompt = isAdmin ? adminSystemPrompt : workerSystemPrompt;
 
+    // Monthly AI allowance check (fail-open)
+    let usageUsed = 0;
+    let usageCap = 0;
+    if (businessId) {
+      try {
+        const { data: allowance } = await serviceClient.rpc('check_ai_allowance', {
+          p_business_id: businessId,
+          p_event_type: 'chat'
+        });
+        if (allowance && !allowance.allowed) {
+          await writeErrorEvent(serviceClient, {
+            actor_user_id: userId as string,
+            source: 'edge',
+            event_type: 'chat.monthly_cap',
+            severity: 'warn',
+            message: 'Monthly Chat cap reached',
+            metadata: { used: allowance.used, cap: allowance.cap },
+          });
+          return new Response(
+            JSON.stringify({ error: 'monthly_cap_reached', detail: { used: allowance.used, cap: allowance.cap } }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (allowance) {
+          usageUsed = allowance.used ?? 0;
+          usageCap = allowance.cap ?? 0;
+        }
+      } catch (err) {
+        console.error("[check_ai_allowance] non-fatal error:", err);
+      }
+    }
+
     const trimmedMessages = messages.slice(-10);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -657,7 +689,13 @@ When answering:
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-Usage-Used": String(usageUsed + 1),
+        "X-Usage-Cap": String(usageCap),
+        "Access-Control-Expose-Headers": "X-Usage-Used, X-Usage-Cap",
+      },
     });
   } catch (error) {
     console.error("Certificate chat error:", error);

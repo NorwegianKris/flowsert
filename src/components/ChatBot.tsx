@@ -289,9 +289,21 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 429 && errorData.error === 'monthly_cap_reached') {
+          toast({ variant: 'destructive', title: 'Monthly Limit Reached', description: "You've reached your monthly Chat limit. Upgrade your plan to continue." });
+          return;
+        }
         throw new Error(errorData.error || 'Failed to get response');
       }
       if (!response.body) throw new Error('No response body');
+
+      // Check 80% usage warning from headers (fires immediately on stream start)
+      const usageUsed = parseInt(response.headers.get('X-Usage-Used') || '0', 10);
+      const usageCap = parseInt(response.headers.get('X-Usage-Cap') || '0', 10);
+      if (usageCap > 0 && usageUsed / usageCap >= 0.8) {
+        const pct = Math.round((usageUsed / usageCap) * 100);
+        toast({ title: 'Usage Warning', description: `You've used ${pct}% of your monthly Chat allowance. Upgrade your plan to avoid interruption.` });
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

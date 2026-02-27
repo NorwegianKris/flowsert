@@ -669,6 +669,9 @@ export type Database = {
           business_id: string
           is_active: boolean
           is_unlimited: boolean
+          monthly_chat_cap: number
+          monthly_ocr_cap: number
+          monthly_search_cap: number
           profile_cap: number
           tier: string
           updated_at: string
@@ -677,6 +680,9 @@ export type Database = {
           business_id: string
           is_active?: boolean
           is_unlimited?: boolean
+          monthly_chat_cap?: number
+          monthly_ocr_cap?: number
+          monthly_search_cap?: number
           profile_cap?: number
           tier?: string
           updated_at?: string
@@ -685,6 +691,9 @@ export type Database = {
           business_id?: string
           is_active?: boolean
           is_unlimited?: boolean
+          monthly_chat_cap?: number
+          monthly_ocr_cap?: number
+          monthly_search_cap?: number
           profile_cap?: number
           tier?: string
           updated_at?: string
@@ -1881,6 +1890,10 @@ export type Database = {
       can_worker_see_posted_project: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      check_ai_allowance: {
+        Args: { p_business_id: string; p_event_type: string }
+        Returns: Json
       }
       deactivate_personnel: { Args: { p_personnel_id: string }; Returns: Json }
       enforce_rate_limit: {
