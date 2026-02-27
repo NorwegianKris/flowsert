@@ -48,8 +48,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   ChevronDown,
-  Calendar,
-  ExternalLink,
   Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -210,27 +208,52 @@ export function TypeMergingPane() {
     });
   }, [mergedTypes, rightSearch]);
 
-  // Selected data
+  // Selected data — selection is now by title_raw
   const selectedInputtedData = useMemo(() => {
-    return filteredInputted.filter((t) => selectedInputted.has(t.title_normalized));
+    return filteredInputted.filter((t) =>
+      t.raw_title_groups.some((g) => selectedInputted.has(g.title_raw))
+    );
   }, [filteredInputted, selectedInputted]);
 
   const totalSelectedCerts = useMemo(() => {
-    return selectedInputtedData.reduce((sum, t) => sum + t.count, 0);
-  }, [selectedInputtedData]);
+    let total = 0;
+    for (const t of filteredInputted) {
+      for (const g of t.raw_title_groups) {
+        if (selectedInputted.has(g.title_raw)) {
+          total += g.count;
+        }
+      }
+    }
+    return total;
+  }, [filteredInputted, selectedInputted]);
 
   const selectedMergedData = useMemo(() => {
     return mergedTypes.find((t) => t.id === selectedMerged);
   }, [mergedTypes, selectedMerged]);
 
-  // Toggle inputted type selection
-  const toggleInputtedSelection = (titleNormalized: string) => {
+  // Toggle all raw titles within an inputted type group
+  const toggleInputtedSelection = (inputted: InputtedType) => {
     setSelectedInputted((prev) => {
       const next = new Set(prev);
-      if (next.has(titleNormalized)) {
-        next.delete(titleNormalized);
+      const allRaws = inputted.raw_title_groups.map((g) => g.title_raw);
+      const allSelected = allRaws.every((r) => next.has(r));
+      if (allSelected) {
+        allRaws.forEach((r) => next.delete(r));
       } else {
-        next.add(titleNormalized);
+        allRaws.forEach((r) => next.add(r));
+      }
+      return next;
+    });
+  };
+
+  // Toggle a single raw title
+  const toggleRawTitleSelection = (titleRaw: string) => {
+    setSelectedInputted((prev) => {
+      const next = new Set(prev);
+      if (next.has(titleRaw)) {
+        next.delete(titleRaw);
+      } else {
+        next.add(titleRaw);
       }
       return next;
     });
@@ -238,10 +261,11 @@ export function TypeMergingPane() {
 
   // Toggle all
   const toggleSelectAll = () => {
-    if (selectedInputted.size === filteredInputted.length) {
+    const allRaws = filteredInputted.flatMap((t) => t.raw_title_groups.map((g) => g.title_raw));
+    if (selectedInputted.size === allRaws.length && allRaws.every((r) => selectedInputted.has(r))) {
       setSelectedInputted(new Set());
     } else {
-      setSelectedInputted(new Set(filteredInputted.map((t) => t.title_normalized)));
+      setSelectedInputted(new Set(allRaws));
     }
   };
 
@@ -263,65 +287,53 @@ export function TypeMergingPane() {
     setCreateDialogOpen(true);
   };
 
-  // Execute grouping
+  // Execute grouping — now iterates over selected title_raw values
   const executeGrouping = async (targetTypeId: string, targetTypeName: string) => {
-    if (selectedInputtedData.length === 0) return;
+    if (selectedInputted.size === 0) return;
 
     setIsProcessing(true);
     try {
-      for (const inputted of selectedInputtedData) {
-        // Create alias for this normalized title
+      // Collect all selected title_raw values
+      const selectedRaws = Array.from(selectedInputted);
+
+      for (const titleRaw of selectedRaws) {
+        // Create alias for this raw title
         try {
           await createAliasMutation.mutateAsync({
-            aliasRaw: inputted.raw_examples[0] || inputted.title_normalized,
+            aliasRaw: titleRaw,
             certificateTypeId: targetTypeId,
           });
         } catch (aliasError: any) {
-          // Ignore duplicate alias error
           if (aliasError.code !== "23505") {
             console.error("Error creating alias:", aliasError);
           }
         }
 
-        // Bulk update certificates with this title_normalized
-        const totalCount = inputted.count;
-        const needsBatching = totalCount > MAX_BATCH_SIZE;
+        // Update certificates matching this exact title_raw
+        const { data: certsToUpdate, error: fetchError } = await supabase
+          .from("certificates")
+          .select(`
+            id,
+            personnel!inner (business_id)
+          `)
+          .eq("personnel.business_id", businessId)
+          .eq("title_raw", titleRaw)
+          .is("certificate_type_id", null)
+          .is("unmapped_by", null);
 
-        if (needsBatching) {
-          const batchCount = Math.ceil(totalCount / MAX_BATCH_SIZE);
-          for (let i = 0; i < batchCount; i++) {
-            await bulkUpdateMutation.mutateAsync({
-              titleNormalized: inputted.title_normalized,
-              certificateTypeId: targetTypeId,
-              limit: MAX_BATCH_SIZE,
-            });
-          }
-        } else {
-          // Direct update for all certificates
-          const { data: certsToUpdate, error: fetchError } = await supabase
+        if (fetchError) throw fetchError;
+
+        if (certsToUpdate && certsToUpdate.length > 0) {
+          const ids = certsToUpdate.map((c: any) => c.id);
+          const { error: updateError } = await supabase
             .from("certificates")
-            .select(`
-              id,
-              personnel!inner (business_id)
-            `)
-            .eq("personnel.business_id", businessId)
-            .eq("title_normalized", inputted.title_normalized)
-            .is("unmapped_by", null);
+            .update({
+              certificate_type_id: targetTypeId,
+              needs_review: false,
+            })
+            .in("id", ids);
 
-          if (fetchError) throw fetchError;
-
-          if (certsToUpdate && certsToUpdate.length > 0) {
-            const ids = certsToUpdate.map((c: any) => c.id);
-            const { error: updateError } = await supabase
-              .from("certificates")
-              .update({
-                certificate_type_id: targetTypeId,
-                needs_review: false,
-              })
-              .in("id", ids);
-
-            if (updateError) throw updateError;
-          }
+          if (updateError) throw updateError;
         }
       }
 
@@ -465,7 +477,9 @@ export function TypeMergingPane() {
                 </div>
               ) : (
                 filteredInputted.map((inputted) => {
-                  const isSelected = selectedInputted.has(inputted.title_normalized);
+                  const allRaws = inputted.raw_title_groups.map((g) => g.title_raw);
+                  const isSelected = allRaws.length > 0 && allRaws.every((r) => selectedInputted.has(r));
+                  const isPartiallySelected = !isSelected && allRaws.some((r) => selectedInputted.has(r));
                   
                   // Build secondary line text
                   const certLabel = inputted.count === 1 ? "certificate" : "certificates";
@@ -488,18 +502,18 @@ export function TypeMergingPane() {
                     <Collapsible key={inputted.title_normalized}>
                       <div
                         className={`transition-colors ${
-                          isSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                          isSelected || isPartiallySelected ? "bg-primary/10" : "hover:bg-muted/50"
                         }`}
                       >
                         {/* Main row content */}
                         <div 
                           className="p-3 cursor-pointer"
-                          onClick={() => toggleInputtedSelection(inputted.title_normalized)}
+                          onClick={() => toggleInputtedSelection(inputted)}
                         >
                           <div className="flex items-start gap-3">
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => toggleInputtedSelection(inputted.title_normalized)}
+                              onCheckedChange={() => toggleInputtedSelection(inputted)}
                               onClick={(e) => e.stopPropagation()}
                               className="mt-0.5"
                             />
@@ -563,84 +577,42 @@ export function TypeMergingPane() {
                         
                         {/* Expandable details */}
                         <CollapsibleContent>
-                          <div className="px-3 pb-3 pt-0 pl-10 space-y-3 border-t border-border/50 bg-muted/20">
-                            {/* Raw title variations */}
-                            {inputted.raw_examples.length > 1 && (
-                              <div>
-                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
-                                  Name Variations
-                                </p>
-                                <div className="flex flex-wrap gap-1">
-                                  {inputted.raw_examples.map((example, idx) => (
-                                    <Badge key={idx} variant="secondary" className="text-[10px] font-normal">
-                                      {example}
-                                    </Badge>
-                                  ))}
-                                  {inputted.raw_examples.length >= 5 && (
-                                    <span className="text-[10px] text-muted-foreground self-center">
-                                      +more
-                                    </span>
-                                  )}
+                          <div className="px-3 pb-3 pt-2 pl-10 space-y-1.5 border-t border-border/50 bg-muted/20">
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                              Title Variations
+                            </p>
+                            {inputted.raw_title_groups.map((group) => {
+                              const isRawSelected = selectedInputted.has(group.title_raw);
+                              return (
+                                <div
+                                  key={group.title_raw}
+                                  className={`flex items-center gap-2 py-1 px-2 rounded-sm cursor-pointer transition-colors ${
+                                    isRawSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleRawTitleSelection(group.title_raw);
+                                  }}
+                                >
+                                  <Checkbox
+                                    checked={isRawSelected}
+                                    onCheckedChange={() => toggleRawTitleSelection(group.title_raw)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                  <span className="text-xs text-foreground flex-1 truncate">
+                                    {group.title_raw}
+                                  </span>
+                                  <Badge variant="secondary" className="text-[10px] font-normal shrink-0">
+                                    {group.count}
+                                  </Badge>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                    <Users className="h-3 w-3 inline mr-0.5" />
+                                    {group.personnel_count}
+                                  </span>
                                 </div>
-                              </div>
-                            )}
-                            
-                            {/* Included certificates */}
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
-                                Included Certificates
-                              </p>
-                              <div className="space-y-1.5">
-                                {inputted.certificates.slice(0, 5).map((cert) => (
-                                  <div 
-                                    key={cert.id} 
-                                    className="flex items-center gap-2 text-xs text-muted-foreground"
-                                  >
-                                    <span className="font-medium text-foreground truncate max-w-[120px]">
-                                      {cert.personnel_name}
-                                    </span>
-                                    <span className="text-muted-foreground/50">—</span>
-                                    {cert.file_name ? (
-                                      cert.document_url ? (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleViewDocument(cert.document_url!, cert.file_name || 'Document');
-                                          }}
-                                          className="truncate max-w-[140px] text-primary hover:underline flex items-center gap-1 text-left"
-                                        >
-                                          {cert.file_name}
-                                          <ExternalLink className="h-3 w-3 shrink-0" />
-                                        </button>
-                                      ) : (
-                                        <span className="truncate max-w-[140px]">{cert.file_name}</span>
-                                      )
-                                    ) : (
-                                      <span className="italic">No file</span>
-                                    )}
-                                    {cert.expiry_date && (
-                                      <>
-                                        <span className="text-muted-foreground/50">—</span>
-                                        <span className="shrink-0 flex items-center gap-1">
-                                          <Calendar className="h-3 w-3" />
-                                          {formatDate(cert.expiry_date)}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                ))}
-                                {inputted.certificates.length > 5 && (
-                                  <p className="text-[10px] text-muted-foreground">
-                                    +{inputted.certificates.length - 5} more certificates
-                                  </p>
-                                )}
-                                {inputted.count > inputted.certificates.length && (
-                                  <p className="text-[10px] text-muted-foreground italic">
-                                    Showing {inputted.certificates.length} of {inputted.count} total
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                              );
+                            })}
                           </div>
                         </CollapsibleContent>
                       </div>
