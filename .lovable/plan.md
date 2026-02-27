@@ -1,26 +1,20 @@
 
 
-## Plan: Expand extractCountry and replace system prompt
+## Plan: Clean up remaining completion references in PersonnelCard
 
-Single file: `supabase/functions/suggest-project-personnel/index.ts`
+Single file: `src/components/PersonnelCard.tsx`
 
-### Change 1 — Replace extractCountry (lines 257-274)
+### Current state
+- Changes 1 and 2 are already applied (no badge block exists; delete button is at `right-2`)
+- Line 85: `const { percentage, color } = calculateCompletion(personnel, documentCount);` still exists
+- Line 235: `{percentage}% profile complete` still references the variable
 
-Replace the current function with the expanded version adding: Scotland, Wales, Husøy, Leirvik, Stord (Norway); Newcastle, Bristol, Leeds (UK); Seville, Bilbao (Spain); Wroclaw, Poznan (Poland); Turin, Genoa (Italy); Hrvatska, Rijeka, Dubrovnik (Croatia); Uppsala, Linköping (Sweden); plus new country blocks for Germany, Netherlands, Denmark, France, Greece, Portugal, Thailand, Philippines.
+### Actions
 
-### Change 2 — Replace entire system prompt (lines 297-398)
-
-Replace with the new prompt that:
-- Reframes as "offshore and subsea project staffing"
-- Adds geographic groupings (Scandinavia, Nordic, Europe)
-- Adds HUET certificate matching
-- Adds employment type synonyms (contractor, consultant, staff, permanent)
-- Adds profile completion filtering rules (complete profiles = 3+ valid certs + bio)
-- Changes ambiguous location scoring from 70% → 60%
-- Adds Step 4 credential depth bonus (+5 for 3+ valid certs, +3 for non-empty bio, capped at 100)
-- Adds Step 5 as the final summation step
-- Updates matchReasons guidance to "2-4 specific reasons"
+1. **Remove line 85** — delete `const { percentage, color } = calculateCompletion(personnel, documentCount);`
+2. **Update line 235** — change from `{personnel.certificates.length} Certificates · {percentage}% profile complete` to just `{personnel.certificates.length} Certificates` (since percentage is no longer available)
+3. **Clean unused imports** — remove `cn` import (line 26) if unused after this change
 
 ### Risk
-- 🔴 Edge function prompt change → anchor required per checklist Q2
+- Green (UI-only change)
 
