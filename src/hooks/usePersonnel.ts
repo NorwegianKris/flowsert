@@ -49,6 +49,7 @@ interface DbCertificate {
   certificate_categories: { name: string } | null;
   certificate_type_id: string | null;
   certificate_types: { name: string } | null;
+  title_raw: string | null;
 }
 
 export function usePersonnel() {
@@ -127,6 +128,7 @@ export function usePersonnel() {
             documentUrl: c.document_url || undefined,
             category: c.certificate_categories?.name || undefined,
             certificateTypeId: c.certificate_type_id || undefined,
+            titleRaw: c.title_raw || undefined,
           })),
       }));
 
@@ -233,6 +235,7 @@ export function useWorkerPersonnel() {
           documentUrl: c.document_url || undefined,
           category: c.certificate_categories?.name || undefined,
           certificateTypeId: c.certificate_type_id || undefined,
+          titleRaw: c.title_raw || undefined,
         })),
       };
 
