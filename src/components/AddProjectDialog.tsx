@@ -746,42 +746,6 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   rows={3}
                   required
                 />
-              </div>
-
-              {/* Post Project Toggle */}
-              <div className="flex items-center gap-4 p-3 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="postProject"
-                    checked={isPosted}
-                    onCheckedChange={setIsPosted}
-                  />
-                  <Label htmlFor="postProject" className="text-sm cursor-pointer font-medium">
-                    Post project?
-                  </Label>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Posted projects notify workers within the system about available opportunities
-                </p>
-              </div>
-              {isPosted && (
-                <ProjectVisibilityControls
-                  projectCountry={projectCountry}
-                  projectLocationLabel={projectLocationLabel}
-                  visibilityMode={visibilityMode}
-                  includeCountries={includeCountries}
-                  excludeCountries={excludeCountries}
-                  onProjectLocationChange={(country, label) => {
-                    setProjectCountry(country);
-                    setProjectLocationLabel(label);
-                  }}
-                  onChange={(data) => {
-                    setVisibilityMode(data.visibilityMode);
-                    setIncludeCountries(data.includeCountries);
-                    setExcludeCountries(data.excludeCountries);
-                  }}
-                />
-              )}
             </div>
 
             {/* Recurring project */}
@@ -857,6 +821,42 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   </div>
                 )}
               </div>
+            </div>
+
+              {/* Post Project Toggle */}
+              <div className="flex items-center gap-4 p-3 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="postProject"
+                    checked={isPosted}
+                    onCheckedChange={setIsPosted}
+                  />
+                  <Label htmlFor="postProject" className="text-sm cursor-pointer font-medium">
+                    Post project?
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Posted projects notify workers within the system about available opportunities
+                </p>
+              </div>
+              {isPosted && (
+                <ProjectVisibilityControls
+                  projectCountry={projectCountry}
+                  projectLocationLabel={projectLocationLabel}
+                  visibilityMode={visibilityMode}
+                  includeCountries={includeCountries}
+                  excludeCountries={excludeCountries}
+                  onProjectLocationChange={(country, label) => {
+                    setProjectCountry(country);
+                    setProjectLocationLabel(label);
+                  }}
+                  onChange={(data) => {
+                    setVisibilityMode(data.visibilityMode);
+                    setIncludeCountries(data.includeCountries);
+                    setExcludeCountries(data.excludeCountries);
+                  }}
+                />
+              )}
             </div>
           </div>
 
