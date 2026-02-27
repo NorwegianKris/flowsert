@@ -1,24 +1,27 @@
 
 
-## Plan: Replace pre-filter with location-intent hard filter
+## Plan: Remove unused completion fields and filter zero-score results
 
-Single file: `supabase/functions/suggest-project-personnel/index.ts`
+### Change 1 — `src/hooks/useSuggestPersonnel.ts`
 
-### What changes
+**Remove `calculateProfileCompletion` function** (lines 48-68) and its call (lines 92-93).
 
-**Lines 227-247** — Replace the freelancer toggle filter and the `extractConstraints`-based hard filter (`countryConstraint` / `roleConstraint`) with:
+**Remove `profileCompletionPercentage` and `profileCompletionStatus`** from `PersonnelForAI` interface (lines 44-45) and from the returned object (lines 125-126).
 
-1. `parseLocationIntent(query)` — parses city, country, or region from the prompt string
-2. `locationMatches(personLocation, intent)` — checks if a person's location matches the parsed intent using alias maps
-3. A combined pre-filter that applies both the freelancer/employee toggle and the location hard filter
+### Change 2 — `src/hooks/useSuggestPersonnel.ts`
 
-The `extractConstraints` function (defined earlier in the file around lines 100-140) stays in place — it is no longer called in this block, but removing it is out of scope. The `hardFilteredPersonnel` variable is removed; the existing `filteredPersonnel` now carries both filters, and the downstream `cappedPersonnel` (line 249) will reference `filteredPersonnel` instead of `hardFilteredPersonnel`.
+After line 162 (`const result = data as SuggestionResult;`), add:
+```typescript
+result.suggestedPersonnel = result.suggestedPersonnel.filter(p => p.matchScore > 0);
+```
 
-### Line 250 reference update
+### Change 3 — `supabase/functions/suggest-project-personnel/index.ts`
 
-`hardFilteredPersonnel` → `filteredPersonnel` in the capping block (lines 249-254), since the intermediate variable is gone.
+After line 508 (`- confirmedCountry is authoritative...`), add:
+```
+- Never return a person with a matchScore of 0. If a person does not meet enough of the queried criteria to score above 0, exclude them from the response entirely. A returned result implies a meaningful match.
+```
 
 ### Risk
-
-- 🔴 Edge function logic change → anchor required per checklist Q2
+- 🔴 Edge function prompt change → anchor required (Q2)
 
