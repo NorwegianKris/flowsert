@@ -1,18 +1,19 @@
 
 
-## Rename Certificate Categories
+## Insert 56 canonical certificate types
 
-**Risk: 🟢 GREEN** — Data update only, no schema changes.
+**Risk: 🔴 RED** — Schema-adjacent data insert touching `certificate_types` table used by compliance outputs.
 
-These are simple renames of existing certificate category records for business `38672512-...`. The migration tool will execute the UPDATE statements.
+### What happens
+- A DO block inserts up to 56 new certificate type rows across 9 categories for business `38672512-...`
+- `ON CONFLICT (business_id, name) DO NOTHING` safely skips any of the 8 existing types that match by name
+- No schema changes, no code changes — purely data
 
-### Changes
-| Current Name | New Name |
-|---|---|
-| Health and Medical | Medical & Health |
-| Hydraulic & Subsea | Hydraulic |
-| Technical & Specialist | Equipment & Operations |
+### Verification plan
+After insert, run:
+1. `SELECT COUNT(*) FROM certificate_types WHERE business_id = '...' AND is_active = true` → expected ~64
+2. Breakdown by category name
 
 ### Implementation
-Run a single migration with three UPDATE statements against `certificate_categories`. No code changes needed — the UI reads category names dynamically.
+Single migration containing the user's exact SQL block.
 
