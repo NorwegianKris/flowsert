@@ -1,10 +1,18 @@
 
 
-## Fix: Remove sticky category headers in right pane
+## Rename Certificate Categories
 
-**File:** `src/components/TypeMergingPane.tsx`, line 637
+**Risk: 🟢 GREEN** — Data update only, no schema changes.
 
-Remove `sticky top-0` from the category header class so it scrolls normally with the rest of the list.
+These are simple renames of existing certificate category records for business `38672512-...`. The migration tool will execute the UPDATE statements.
 
-**Change:** `sticky top-0` → removed from the className string.
+### Changes
+| Current Name | New Name |
+|---|---|
+| Health and Medical | Medical & Health |
+| Hydraulic & Subsea | Hydraulic |
+| Technical & Specialist | Equipment & Operations |
+
+### Implementation
+Run a single migration with three UPDATE statements against `certificate_categories`. No code changes needed — the UI reads category names dynamically.
 
