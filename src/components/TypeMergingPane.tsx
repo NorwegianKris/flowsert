@@ -634,7 +634,7 @@ export function TypeMergingPane() {
 
                   return sortedKeys.map((categoryName) => (
                     <div key={categoryName}>
-                      <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b sticky top-0">
+                      <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b">
                         {categoryName}
                       </div>
                       {groups.get(categoryName)!.map((merged) => {
