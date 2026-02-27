@@ -63,7 +63,23 @@ export function SmartCertificateUpload({
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      // Check for monthly cap reached (edge function returns 429 with error field)
+      if (data?.error === 'monthly_cap_reached') {
+        toast.error("You've reached your monthly OCR limit. Upgrade your plan to continue.");
+        throw new Error('monthly_cap_reached');
+      }
+      throw error;
+    }
+
+    // Check 80% usage warning
+    if (data.usage_remaining) {
+      const { used, cap } = data.usage_remaining;
+      if (cap > 0 && used / cap >= 0.8) {
+        const pct = Math.round((used / cap) * 100);
+        toast.warning(`You've used ${pct}% of your monthly OCR allowance. Upgrade your plan to avoid interruption.`);
+      }
+    }
 
     // Find matched category ID if there's a match
     let matchedCategoryId: string | null = null;

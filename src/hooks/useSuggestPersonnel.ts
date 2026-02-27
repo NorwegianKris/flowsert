@@ -113,7 +113,13 @@ export function useSuggestPersonnel() {
       }
 
       if (data.error) {
-        if (data.error.includes('Rate limit')) {
+        if (data.error === 'monthly_cap_reached') {
+          toast({
+            variant: 'destructive',
+            title: 'Monthly Limit Reached',
+            description: "You've reached your monthly Search limit. Upgrade your plan to continue."
+          });
+        } else if (data.error.includes('Rate limit')) {
           toast({
             variant: 'destructive',
             title: 'Rate Limited',
@@ -129,6 +135,18 @@ export function useSuggestPersonnel() {
           throw new Error(data.error);
         }
         return null;
+      }
+
+      // Check 80% usage warning
+      if (data.usage_remaining) {
+        const { used, cap } = data.usage_remaining;
+        if (cap > 0 && used / cap >= 0.8) {
+          const pct = Math.round((used / cap) * 100);
+          toast({
+            title: 'Usage Warning',
+            description: `You've used ${pct}% of your monthly Search allowance. Upgrade your plan to avoid interruption.`
+          });
+        }
       }
 
       const result = data as SuggestionResult;

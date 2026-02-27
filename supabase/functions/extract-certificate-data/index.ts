@@ -142,6 +142,38 @@ serve(async (req) => {
       );
     }
 
+    // Monthly AI allowance check (fail-open)
+    let usageUsed = 0;
+    let usageCap = 0;
+    if (businessId) {
+      try {
+        const { data: allowance } = await serviceClient.rpc('check_ai_allowance', {
+          p_business_id: businessId,
+          p_event_type: 'ocr'
+        });
+        if (allowance && !allowance.allowed) {
+          await writeErrorEvent(serviceClient, {
+            actor_user_id: userId as string,
+            source: 'edge',
+            event_type: 'extract.monthly_cap',
+            severity: 'warn',
+            message: 'Monthly OCR cap reached',
+            metadata: { used: allowance.used, cap: allowance.cap },
+          });
+          return new Response(
+            JSON.stringify({ error: 'monthly_cap_reached', detail: { used: allowance.used, cap: allowance.cap } }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (allowance) {
+          usageUsed = allowance.used ?? 0;
+          usageCap = allowance.cap ?? 0;
+        }
+      } catch (err) {
+        console.error("[check_ai_allowance] non-fatal error:", err);
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -404,7 +436,7 @@ Return the extracted data using the extract_certificate_data function.`;
     }
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ ...result, usage_remaining: { used: usageUsed + 1, cap: usageCap } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
