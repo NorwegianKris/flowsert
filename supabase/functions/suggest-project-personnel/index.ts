@@ -254,11 +254,31 @@ serve(async (req) => {
       : hardFilteredPersonnel;
 
     // Prepare personnel summary for AI
+    const extractCountry = (location: string): string => {
+      const loc = location.toLowerCase();
+      if (loc.includes('norway') || loc.includes('norge') ||
+          ['haugesund','bergen','oslo','stavanger','kopervik','avaldsnes','kristiansand','trondheim','tromsø','bodø'].some(c => loc.includes(c))) return 'Norway';
+      if (loc.includes('united kingdom') || loc.includes('uk') || loc.includes('england') ||
+          ['london','aberdeen','manchester','liverpool','glasgow','edinburgh'].some(c => loc.includes(c))) return 'United Kingdom';
+      if (loc.includes('spain') || loc.includes('españa') ||
+          ['barcelona','madrid','valencia'].some(c => loc.includes(c))) return 'Spain';
+      if (loc.includes('poland') || loc.includes('polska') ||
+          ['warsaw','krakow','gdansk'].some(c => loc.includes(c))) return 'Poland';
+      if (loc.includes('italy') || loc.includes('italia') ||
+          ['rome','milan','naples'].some(c => loc.includes(c))) return 'Italy';
+      if (loc.includes('croatia') || ['zagreb','split'].some(c => loc.includes(c))) return 'Croatia';
+      if (loc.includes('sweden') || loc.includes('sverige') ||
+          ['stockholm','gothenburg','malmö','överlida'].some(c => loc.includes(c))) return 'Sweden';
+      if (loc.includes('not specified') || loc === '') return 'Unknown';
+      return location;
+    };
+
     const personnelSummary = cappedPersonnel.map((p: PersonnelData) => ({
       id: p.id,
       name: p.name,
       role: p.role,
       location: p.location,
+      confirmedCountry: extractCountry(p.location),
       category: p.category || "unknown",
       nationality: p.nationality,
       department: p.department,
@@ -272,8 +292,6 @@ serve(async (req) => {
         issuingAuthority: c.issuingAuthority,
         valid: !c.expiryDate || new Date(c.expiryDate) > new Date()
       })),
-      profileCompletionPercentage: p.profileCompletionPercentage,
-      profileCompletionStatus: p.profileCompletionStatus
     }));
 
     const systemPrompt = `You are an expert personnel matching assistant for project staffing. Your task is to analyze project requirements and suggest the best matching personnel from the available pool.
@@ -285,19 +303,9 @@ When analyzing requirements:
 4. Match personnel roles to the work category
 5. Rank personnel by how well they match the requirements
 
-IMPORTANT - Profile Completion Filtering:
-Each personnel has a profileCompletionPercentage (0-100) and profileCompletionStatus ('complete', 'high', 'medium', 'low'):
-- 'complete' = 100% profile completion (all required fields filled)
-- 'high' = 80-99% profile completion
-- 'medium' = 50-79% profile completion  
-- 'low' = below 50% profile completion
-
-When users ask for "100% complete", "fully complete", "complete profiles", or similar:
-- ONLY include personnel where profileCompletionStatus is 'complete' (exactly 100%)
-- This is a strict filter - do not include 99% or below
-
-When users ask for "mostly complete", "nearly complete", or "high completion":
-- Include personnel where profileCompletionPercentage >= 80
+IMPORTANT - Geographic Location Matching:
+- Each person has a "confirmedCountry" field — use this as the authoritative country, not the raw location string
+- If confirmedCountry = "Norway", this person IS in Norway. Score them accordingly.
 
 IMPORTANT - Pre-filtered Candidates:
 You will receive a pre-filtered list of candidates who already meet location and role constraints extracted from the query. Your job is to rank them by quality of match — certificates, experience, profile completeness, and any other soft criteria in the query. Do not exclude candidates based on country or role — that filtering has already been done deterministically.
@@ -339,9 +347,53 @@ IMPORTANT - Strict vs Flexible Matching:
 - Keywords "NOT", "except", "exclude", "without" → exclude matching personnel
 - Default to flexible matching unless strict keywords are used
 
+SCORING SYSTEM — apply this to every query:
+
+Step 1 — Identify which dimensions the query actually asks about:
+  - LOCATION: query mentions a country, city, or region
+  - ROLE: query mentions a job title or function
+  - CERTIFICATES: query mentions specific qualifications
+  - AVAILABILITY: query mentions dates or timing
+  - EMPLOYMENT TYPE: query mentions freelancer/employee
+  - EXPERIENCE/SKILLS: query mentions specific skills, years of experience, or specialisations
+
+Step 2 — Weight only the dimensions present in the query. Ignore everything else.
+  Examples:
+  "find people in Norway" → Location: 100 points. Nothing else counts.
+  "find divers in Norway with valid BOSIET" → Location: 30pts, Role: 40pts, Certificate: 30pts
+  "find experienced saturation divers available in July" → Role: 40pts, Skills: 30pts, Availability: 30pts
+
+Step 3 — Score each person only against the active dimensions:
+  LOCATION scoring:
+    - confirmedCountry matches requested country → full location points
+    - Ambiguous but plausible → 70% of location points
+
+  ROLE scoring:
+    - Exact role match → full role points
+    - Related role (e.g. Dive Supervisor for "divers") → 70% of role points
+    - Unrelated role → 0 role points
+
+  CERTIFICATE scoring:
+    - Valid certificate present → full cert points
+    - Certificate present but expired → 40% of cert points
+    - Certificate absent → 0 cert points
+
+  EXPERIENCE/SKILLS scoring:
+    - Explicitly mentioned in bio or role → full points
+    - Implied by role or certificates → 60% of points
+    - Not evident → 0 points
+
+Step 4 — Sum the weighted dimension scores for the final 0-100 score.
+
+CRITICAL RULES:
+- profileCompletionPercentage is NEVER a scoring input and has been excluded from the data you receive. Do not invent a proxy for it.
+- A query asking for only one dimension means all other dimensions are worth 0 points. Do not penalise people for missing information that was never asked for.
+- Scores must meaningfully differentiate candidates: perfect match = 90-100, strong match = 75-89, partial match = 50-74, weak match = below 50. Do not cluster everyone at the same percentage.
+- Use confirmedCountry as the authoritative country signal.
+
 For each suggested personnel, provide:
-- A match score (0-100) based on how well they fit ALL criteria
-- Clear, specific reasons explaining why they're a good match (reference actual data from their profile)
+- A match score (0-100) calculated using the system above
+- Clear, specific reasons referencing actual data from their profile that explain the score
 
 Be practical and helpful. If requirements are vague, make reasonable assumptions and explain them.`;
 
