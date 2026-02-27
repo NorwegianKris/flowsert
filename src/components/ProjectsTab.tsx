@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, SlidersHorizontal } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
@@ -54,39 +54,38 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   return (
     <div className="space-y-6">
       {/* Project View Filter Bar */}
-      {(postedProjectsCount > 0 || recurringProjectsCount > 0) && (
-        <div className="flex flex-wrap items-center gap-6 py-3 px-4 bg-muted/50 rounded-lg border border-border/50">
-          <span className="text-sm font-medium text-foreground">Project View</span>
-          {postedProjectsCount > 0 && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="includePosted"
-                checked={includePosted}
-                onCheckedChange={setIncludePosted}
-              />
-              <Label htmlFor="includePosted" className="text-sm cursor-pointer flex items-center gap-1.5">
-                <Megaphone className="h-3.5 w-3.5" />
-                Show posted projects
-              </Label>
-              <Badge variant="secondary">{postedProjectsCount}</Badge>
-            </div>
-          )}
-          {recurringProjectsCount > 0 && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="includeRecurring"
-                checked={includeRecurring}
-                onCheckedChange={setIncludeRecurring}
-              />
-              <Label htmlFor="includeRecurring" className="text-sm cursor-pointer flex items-center gap-1.5">
-                <Repeat className="h-3.5 w-3.5" />
-                Show recurring projects
-              </Label>
-              <Badge variant="secondary">{recurringProjectsCount}</Badge>
-            </div>
-          )}
+      <div className="py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
+        <div className="flex items-center gap-2 text-muted-foreground mb-2">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Project view:</span>
         </div>
-      )}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="includePosted"
+              checked={includePosted}
+              onCheckedChange={setIncludePosted}
+            />
+            <Label htmlFor="includePosted" className="text-sm cursor-pointer flex items-center gap-1.5">
+              <Megaphone className="h-3.5 w-3.5" />
+              Show posted projects
+            </Label>
+            <Badge variant="secondary">{postedProjectsCount}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="includeRecurring"
+              checked={includeRecurring}
+              onCheckedChange={setIncludeRecurring}
+            />
+            <Label htmlFor="includeRecurring" className="text-sm cursor-pointer flex items-center gap-1.5">
+              <Repeat className="h-3.5 w-3.5" />
+              Show recurring projects
+            </Label>
+            <Badge variant="secondary">{recurringProjectsCount}</Badge>
+          </div>
+        </div>
+      </div>
 
       <div>
         <div className="flex items-center gap-2 mb-4">
