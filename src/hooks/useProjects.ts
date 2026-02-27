@@ -31,6 +31,10 @@ export interface Project {
   visibilityMode?: 'same_country' | 'all';
   includeCountries?: string[];
   excludeCountries?: string[];
+  isRecurring?: boolean;
+  recurringIntervalDays?: number;
+  recurringIntervalLabel?: string;
+  recurringNextDate?: string;
 }
 
 interface DbProject {
@@ -56,6 +60,10 @@ interface DbProject {
   visibility_mode: string;
   include_countries: string[] | null;
   exclude_countries: string[] | null;
+  is_recurring: boolean;
+  recurring_interval_days: number | null;
+  recurring_interval_label: string | null;
+  recurring_next_date: string | null;
 }
 
 interface DbCalendarItem {
@@ -204,6 +212,10 @@ export function useProjects() {
         visibilityMode: (p.visibility_mode as 'same_country' | 'all') || 'same_country',
         includeCountries: p.include_countries || undefined,
         excludeCountries: p.exclude_countries || undefined,
+        isRecurring: p.is_recurring,
+        recurringIntervalDays: p.recurring_interval_days || undefined,
+        recurringIntervalLabel: p.recurring_interval_label || undefined,
+        recurringNextDate: p.recurring_next_date || undefined,
         calendarItems: (calendarItemsData || [])
           .filter((item: DbCalendarItem) => projectIds.has(item.project_id) && item.project_id === p.id)
           .map((item: DbCalendarItem) => ({
@@ -258,6 +270,10 @@ export function useProjects() {
           visibility_mode: project.visibilityMode || 'same_country',
           include_countries: project.includeCountries ? dedup(project.includeCountries) : null,
           exclude_countries: project.excludeCountries ? dedup(project.excludeCountries) : null,
+          is_recurring: project.isRecurring || false,
+          recurring_interval_days: project.isRecurring ? (project.recurringIntervalDays || null) : null,
+          recurring_interval_label: project.isRecurring ? (project.recurringIntervalLabel || null) : null,
+          recurring_next_date: project.isRecurring ? (project.recurringNextDate || null) : null,
         })
         .select()
         .single();
@@ -284,6 +300,10 @@ export function useProjects() {
         visibilityMode: (data.visibility_mode as 'same_country' | 'all') || 'same_country',
         includeCountries: data.include_countries || undefined,
         excludeCountries: data.exclude_countries || undefined,
+        isRecurring: data.is_recurring,
+        recurringIntervalDays: data.recurring_interval_days || undefined,
+        recurringIntervalLabel: data.recurring_interval_label || undefined,
+        recurringNextDate: data.recurring_next_date || undefined,
         calendarItems: [],
       };
 
@@ -331,6 +351,10 @@ export function useProjects() {
           visibility_mode: project.visibilityMode || 'same_country',
           include_countries: project.includeCountries ? dedup(project.includeCountries) : null,
           exclude_countries: project.excludeCountries ? dedup(project.excludeCountries) : null,
+          is_recurring: project.isRecurring || false,
+          recurring_interval_days: project.isRecurring ? (project.recurringIntervalDays || null) : null,
+          recurring_interval_label: project.isRecurring ? (project.recurringIntervalLabel || null) : null,
+          recurring_next_date: project.isRecurring ? (project.recurringNextDate || null) : null,
         })
         .eq('id', project.id);
 

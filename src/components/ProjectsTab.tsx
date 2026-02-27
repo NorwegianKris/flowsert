@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
@@ -26,15 +26,19 @@ const statusConfig = {
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
   const [previousOpen, setPreviousOpen] = useState(false);
   const [includePosted, setIncludePosted] = useState(true);
+  const [includeRecurring, setIncludeRecurring] = useState(true);
   
-  // Filter projects based on posted toggle
-  const filteredProjects = includePosted 
-    ? projects 
-    : projects.filter(p => !p.isPosted);
+  // Filter projects based on toggles
+  const filteredProjects = projects.filter(p => {
+    if (!includePosted && p.isPosted) return false;
+    if (!includeRecurring && p.isRecurring) return false;
+    return true;
+  });
   
   const activeProjects = filteredProjects.filter((p) => p.status === 'active' || p.status === 'pending');
   const completedProjects = filteredProjects.filter((p) => p.status === 'completed');
   const postedProjectsCount = projects.filter(p => p.isPosted).length;
+  const recurringProjectsCount = projects.filter(p => p.isRecurring).length;
 
   const getPersonnelById = (id: string) => personnel.find((p) => p.id === id);
 
@@ -49,24 +53,38 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
 
   return (
     <div className="space-y-6">
-      {/* Posted Projects Toggle */}
-      {postedProjectsCount > 0 && (
-        <div className="flex items-center gap-6 py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Megaphone className="h-4 w-4" />
-            <span className="text-sm font-medium">Posted Projects:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="includePosted"
-              checked={includePosted}
-              onCheckedChange={setIncludePosted}
-            />
-            <Label htmlFor="includePosted" className="text-sm cursor-pointer">
-              Show posted projects
-            </Label>
-            <Badge variant="secondary" className="ml-2">{postedProjectsCount}</Badge>
-          </div>
+      {/* Project View Filter Bar */}
+      {(postedProjectsCount > 0 || recurringProjectsCount > 0) && (
+        <div className="flex flex-wrap items-center gap-6 py-3 px-4 bg-muted/50 rounded-lg border border-border/50">
+          <span className="text-sm font-medium text-foreground">Project View</span>
+          {postedProjectsCount > 0 && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includePosted"
+                checked={includePosted}
+                onCheckedChange={setIncludePosted}
+              />
+              <Label htmlFor="includePosted" className="text-sm cursor-pointer flex items-center gap-1.5">
+                <Megaphone className="h-3.5 w-3.5" />
+                Show posted projects
+              </Label>
+              <Badge variant="secondary">{postedProjectsCount}</Badge>
+            </div>
+          )}
+          {recurringProjectsCount > 0 && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includeRecurring"
+                checked={includeRecurring}
+                onCheckedChange={setIncludeRecurring}
+              />
+              <Label htmlFor="includeRecurring" className="text-sm cursor-pointer flex items-center gap-1.5">
+                <Repeat className="h-3.5 w-3.5" />
+                Show recurring projects
+              </Label>
+              <Badge variant="secondary">{recurringProjectsCount}</Badge>
+            </div>
+          )}
         </div>
       )}
 
@@ -184,6 +202,12 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             <Badge variant={config.variant} className="shrink-0">
               <StatusIcon className="h-3 w-3 mr-1" />
               {config.label}
+            </Badge>
+          )}
+          {project.isRecurring && (
+            <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50 shrink-0">
+              <Repeat className="h-3 w-3 mr-1" />
+              Every {project.recurringIntervalLabel || `${project.recurringIntervalDays} days`}
             </Badge>
           )}
         </div>
