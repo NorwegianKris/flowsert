@@ -8,6 +8,7 @@ export interface UnmappedCertificate {
   title_normalized: string | null;
   personnel_name: string;
   personnel_id: string;
+  personnel_role: string | null;
   expiry_date: string | null;
   document_url: string | null;
   category_id: string | null;
@@ -68,7 +69,7 @@ export function useUnmappedCertificates(params: UseUnmappedCertificatesParams = 
           category_id,
           created_at,
           certificate_categories ( name ),
-          personnel!inner ( name, business_id )
+          personnel!inner ( name, business_id, role )
         `)
         .eq("personnel.business_id", businessId)
         .is("certificate_type_id", null)
@@ -106,6 +107,7 @@ export function useUnmappedCertificates(params: UseUnmappedCertificatesParams = 
         title_normalized: cert.title_normalized,
         personnel_name: cert.personnel?.name || "Unknown",
         personnel_id: cert.personnel_id,
+        personnel_role: cert.personnel?.role || null,
         expiry_date: cert.expiry_date,
         document_url: cert.document_url,
         category_id: cert.category_id,

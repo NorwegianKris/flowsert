@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +38,7 @@ import {
   Loader2,
   Search,
   ArrowRight,
+  ArrowLeft,
   Check,
   Plus,
   FileText,
@@ -45,6 +49,8 @@ import {
   File,
   Sparkles,
   X,
+  ChevronRight,
+  Maximize2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -90,6 +96,45 @@ function getFileIcon(url: string | null) {
   if (/\.pdf$/i.test(url)) return <FileText className="h-4 w-4 text-destructive/70" />;
   if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) return <Image className="h-4 w-4 text-primary/70" />;
   return <File className="h-4 w-4 text-muted-foreground" />;
+}
+
+function getConfidencePillClass(confidence: string) {
+  switch (confidence) {
+    case "high":
+      return "bg-chart-2/15 text-chart-2 border-chart-2/30";
+    case "medium":
+      return "bg-chart-4/15 text-chart-4 border-chart-4/30";
+    case "low":
+      return "bg-muted text-muted-foreground border-muted-foreground/30";
+    default:
+      return "bg-primary/15 text-primary border-primary/30";
+  }
+}
+
+function getConfidenceBarColor(confidence: string) {
+  switch (confidence) {
+    case "high":
+      return "bg-chart-2";
+    case "medium":
+      return "bg-chart-4";
+    case "low":
+      return "bg-muted-foreground/40";
+    default:
+      return "bg-primary";
+  }
+}
+
+function getConfidencePercent(confidence: string) {
+  switch (confidence) {
+    case "high":
+      return 90;
+    case "medium":
+      return 60;
+    case "low":
+      return 30;
+    default:
+      return 50;
+  }
 }
 
 export function TypeMergingPane() {
@@ -150,17 +195,41 @@ export function TypeMergingPane() {
   const [skippedCerts, setSkippedCerts] = useState<Set<string>>(new Set());
   const [fadingCerts, setFadingCerts] = useState<Set<string>>(new Set());
 
-  const hasSuggestions = aiSuggestions.size > 0;
-  const suggestionsCount = Array.from(aiSuggestions.values()).filter(
-    (s) => !skippedCerts.has(s.certificate_id)
-  ).length;
+  // ─── Review Panel State ─────────────────────────────────────
+  const [reviewView, setReviewView] = useState<"list" | "detail">("list");
+  const [detailCertId, setDetailCertId] = useState<string | null>(null);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideSearch, setOverrideSearch] = useState("");
+  const [overrideTypeId, setOverrideTypeId] = useState<string | null>(null);
+  const [acceptedCount, setAcceptedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
 
-  const highConfSuggestions = Array.from(aiSuggestions.values()).filter(
-    (s) => s.confidence === "high" && s.suggested_type_id && !skippedCerts.has(s.certificate_id)
+  // Detail document preview
+  const [detailPreviewBlobUrl, setDetailPreviewBlobUrl] = useState<string | null>(null);
+  const [detailPreviewLoading, setDetailPreviewLoading] = useState(false);
+  const [detailPreviewError, setDetailPreviewError] = useState(false);
+  const detailPreviewDocUrl = useRef<string | null>(null);
+
+  const hasSuggestions = aiSuggestions.size > 0;
+
+  // Active (non-skipped) suggestions list
+  const activeSuggestions = useMemo(() => {
+    return Array.from(aiSuggestions.values()).filter(
+      (s) => !skippedCerts.has(s.certificate_id)
+    );
+  }, [aiSuggestions, skippedCerts]);
+
+  const suggestionsCount = activeSuggestions.length;
+
+  const highConfSuggestions = activeSuggestions.filter(
+    (s) => s.confidence === "high" && s.suggested_type_id
   );
-  const mediumConfSuggestions = Array.from(aiSuggestions.values()).filter(
-    (s) => s.confidence === "medium" && s.suggested_type_id && !skippedCerts.has(s.certificate_id)
+  const mediumConfSuggestions = activeSuggestions.filter(
+    (s) => s.confidence === "medium" && s.suggested_type_id
   );
+
+  // Review complete state
+  const reviewComplete = hasSuggestions && suggestionsCount === 0;
 
   const handleViewDocument = useCallback(async (documentUrl: string, fileName: string) => {
     setViewingDocument({ url: documentUrl, fileName });
@@ -195,6 +264,40 @@ export function TypeMergingPane() {
     setLoadingDocument(false);
   }, []);
 
+  // Load detail preview inline
+  const loadDetailPreview = useCallback(async (documentUrl: string) => {
+    if (detailPreviewDocUrl.current === documentUrl && detailPreviewBlobUrl) return;
+
+    // Cleanup previous
+    if (detailPreviewBlobUrl) URL.revokeObjectURL(detailPreviewBlobUrl);
+    detailPreviewDocUrl.current = documentUrl;
+    setDetailPreviewBlobUrl(null);
+    setDetailPreviewLoading(true);
+    setDetailPreviewError(false);
+
+    let path = documentUrl;
+    if (documentUrl.includes('certificate-documents/')) {
+      const match = documentUrl.match(/certificate-documents\/(.+)/);
+      if (match) path = match[1];
+    }
+
+    const { data, error } = await supabase.storage
+      .from('certificate-documents')
+      .download(path);
+
+    if (error) {
+      console.error('Error loading detail preview:', error);
+      setDetailPreviewLoading(false);
+      setDetailPreviewError(true);
+      return;
+    }
+
+    if (data) {
+      setDetailPreviewBlobUrl(URL.createObjectURL(data));
+    }
+    setDetailPreviewLoading(false);
+  }, [detailPreviewBlobUrl]);
+
   // Fetch categories
   useEffect(() => {
     if (businessId) {
@@ -224,6 +327,19 @@ export function TypeMergingPane() {
       return true;
     });
   }, [mergedTypes, rightSearch]);
+
+  // Override filtered types
+  const overrideFilteredTypes = useMemo(() => {
+    const active = mergedTypes.filter((t) => t.is_active);
+    if (!overrideSearch) return active;
+    const q = overrideSearch.toLowerCase();
+    return active.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.description?.toLowerCase().includes(q) ||
+        t.category_name?.toLowerCase().includes(q)
+    );
+  }, [mergedTypes, overrideSearch]);
 
   const selectedMergedData = useMemo(() => {
     return mergedTypes.find((t) => t.id === selectedMerged);
@@ -271,7 +387,6 @@ export function TypeMergingPane() {
     try {
       const selectedIds = Array.from(selectedCerts);
 
-      // Collect unique title_normalized values from the selected certs for alias creation
       const selectedCertData = unmappedCerts.filter((c) => selectedCerts.has(c.id));
       const uniqueNormalized = new Map<string, string>();
       for (const cert of selectedCertData) {
@@ -281,7 +396,6 @@ export function TypeMergingPane() {
         }
       }
 
-      // Create aliases for each unique title_normalized
       for (const [, rawExample] of uniqueNormalized) {
         try {
           await createAliasMutation.mutateAsync({
@@ -295,7 +409,6 @@ export function TypeMergingPane() {
         }
       }
 
-      // Update certificates by ID in batches
       const batchSize = 100;
       for (let i = 0; i < selectedIds.length; i += batchSize) {
         const batch = selectedIds.slice(i, i + batchSize);
@@ -378,14 +491,17 @@ export function TypeMergingPane() {
   const handleAISuggest = async () => {
     if (aiLoading) return;
     if (Date.now() < aiButtonDisabledUntil.current) return;
-    aiButtonDisabledUntil.current = Date.now() + 2000; // debounce
+    aiButtonDisabledUntil.current = Date.now() + 2000;
 
     setAiLoading(true);
     setSkippedCerts(new Set());
     setAiCertCount(totalUnmapped);
+    setAcceptedCount(0);
+    setSkippedCount(0);
+    setReviewView("list");
+    setDetailCertId(null);
 
     try {
-      // Fetch ALL unmapped certs (up to 1000) for AI analysis
       const { data: allUnmapped, error: fetchError } = await supabase
         .from("certificates")
         .select(`
@@ -409,7 +525,6 @@ export function TypeMergingPane() {
 
       setAiCertCount(allUnmapped.length);
 
-      // Build payload — no personnel names
       const certsPayload = allUnmapped.map((c: any) => ({
         id: c.id,
         title_raw: c.title_raw,
@@ -419,7 +534,6 @@ export function TypeMergingPane() {
         personnel_role: c.personnel?.role || null,
       }));
 
-      // Build canonical types payload
       const activeTypes = mergedTypes.filter((t) => t.is_active);
       const canonicalPayload = activeTypes.map((t) => ({
         id: t.id,
@@ -492,45 +606,54 @@ export function TypeMergingPane() {
   const handleClearSuggestions = () => {
     setAiSuggestions(new Map());
     setSkippedCerts(new Set());
+    setReviewView("list");
+    setDetailCertId(null);
+    setAcceptedCount(0);
+    setSkippedCount(0);
   };
 
   const handleSkipSuggestion = (certId: string) => {
     setFadingCerts((prev) => new Set(prev).add(certId));
     setTimeout(() => {
       setSkippedCerts((prev) => new Set(prev).add(certId));
+      setSkippedCount((c) => c + 1);
       setFadingCerts((prev) => {
         const next = new Set(prev);
         next.delete(certId);
         return next;
       });
+      // If in detail view, go back to list
+      if (detailCertId === certId) {
+        setDetailCertId(null);
+        setReviewView("list");
+      }
     }, 300);
   };
 
   // Accept a single AI suggestion
-  const handleAcceptSuggestion = async (suggestion: AISuggestion) => {
+  const handleAcceptSuggestion = async (suggestion: AISuggestion, overrideId?: string) => {
+    const targetTypeId = overrideId || suggestion.suggested_type_id;
     const cert = unmappedCerts.find((c) => c.id === suggestion.certificate_id);
-    if (!suggestion.suggested_type_id || !cert) return;
+    if (!targetTypeId || !cert) return;
 
     try {
-      // Update certificate
       const { error: updateError } = await supabase
         .from("certificates")
         .update({
-          certificate_type_id: suggestion.suggested_type_id,
+          certificate_type_id: targetTypeId,
           needs_review: false,
         })
         .eq("id", suggestion.certificate_id);
 
       if (updateError) throw updateError;
 
-      // Create alias (system-created with confidence score)
       const confidenceScore = suggestion.confidence === "high" ? 85 : 70;
       const rawTitle = cert.title_raw;
       if (rawTitle) {
         try {
           await createAliasMutation.mutateAsync({
             aliasRaw: rawTitle,
-            certificateTypeId: suggestion.suggested_type_id,
+            certificateTypeId: targetTypeId,
             createdBy: "system",
             confidence: confidenceScore,
           });
@@ -539,8 +662,8 @@ export function TypeMergingPane() {
         }
       }
 
-      // Fade out
       setFadingCerts((prev) => new Set(prev).add(suggestion.certificate_id));
+      setAcceptedCount((c) => c + 1);
       setTimeout(() => {
         setAiSuggestions((prev) => {
           const next = new Map(prev);
@@ -557,7 +680,13 @@ export function TypeMergingPane() {
         queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
       }, 300);
 
-      const typeName = mergedTypes.find((t) => t.id === suggestion.suggested_type_id)?.name || "type";
+      // Return to list if in detail view
+      if (detailCertId === suggestion.certificate_id) {
+        setDetailCertId(null);
+        setReviewView("list");
+      }
+
+      const typeName = mergedTypes.find((t) => t.id === targetTypeId)?.name || "type";
       toast.success(`Assigned to "${typeName}"`);
     } catch (error) {
       console.error("Accept suggestion error:", error);
@@ -572,7 +701,6 @@ export function TypeMergingPane() {
     if (!cert) return;
 
     try {
-      // Look up category
       let categoryId: string | undefined;
       if (suggestion.suggested_new_type_category) {
         const matchedCat = categories.find(
@@ -586,7 +714,6 @@ export function TypeMergingPane() {
         category_id: categoryId,
       });
 
-      // Update certificate
       const { error: updateError } = await supabase
         .from("certificates")
         .update({
@@ -597,7 +724,6 @@ export function TypeMergingPane() {
 
       if (updateError) throw updateError;
 
-      // Create alias
       const rawTitle = cert.title_raw;
       if (rawTitle) {
         try {
@@ -613,6 +739,7 @@ export function TypeMergingPane() {
       }
 
       setFadingCerts((prev) => new Set(prev).add(suggestion.certificate_id));
+      setAcceptedCount((c) => c + 1);
       setTimeout(() => {
         setAiSuggestions((prev) => {
           const next = new Map(prev);
@@ -629,6 +756,11 @@ export function TypeMergingPane() {
         queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
         queryClient.invalidateQueries({ queryKey: ["certificate-types"] });
       }, 300);
+
+      if (detailCertId === suggestion.certificate_id) {
+        setDetailCertId(null);
+        setReviewView("list");
+      }
 
       toast.success(`New type "${suggestion.suggested_new_type_name}" created and assigned`);
     } catch (error) {
@@ -655,10 +787,8 @@ export function TypeMergingPane() {
     let successCount = 0;
 
     try {
-      // Batch update certificates
       const certIds = toAccept.map((s) => s.certificate_id);
 
-      // Group by target type for batch updates
       const byType = new Map<string, AISuggestion[]>();
       for (const s of toAccept) {
         const list = byType.get(s.suggested_type_id!) || [];
@@ -669,7 +799,6 @@ export function TypeMergingPane() {
       for (const [typeId, suggestions] of byType) {
         const ids = suggestions.map((s) => s.certificate_id);
 
-        // Batch update in groups of 100
         for (let i = 0; i < ids.length; i += 100) {
           const batch = ids.slice(i, i + 100);
           const { error } = await supabase
@@ -684,7 +813,6 @@ export function TypeMergingPane() {
           successCount += batch.length;
         }
 
-        // Create aliases for each unique title
         const processedTitles = new Set<string>();
         for (const s of suggestions) {
           const cert = unmappedCerts.find((c) => c.id === s.certificate_id);
@@ -707,12 +835,12 @@ export function TypeMergingPane() {
         }
       }
 
-      // Remove accepted from suggestions
       setAiSuggestions((prev) => {
         const next = new Map(prev);
         for (const id of certIds) next.delete(id);
         return next;
       });
+      setAcceptedCount((c) => c + successCount);
 
       queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
@@ -725,6 +853,33 @@ export function TypeMergingPane() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Open detail view
+  const openDetail = (certId: string) => {
+    setDetailCertId(certId);
+    setReviewView("detail");
+    setOverrideOpen(false);
+    setOverrideSearch("");
+    setOverrideTypeId(null);
+
+    // Load document preview
+    const cert = unmappedCerts.find((c) => c.id === certId);
+    if (cert?.document_url) {
+      loadDetailPreview(cert.document_url);
+    } else {
+      setDetailPreviewBlobUrl(null);
+      setDetailPreviewLoading(false);
+      setDetailPreviewError(false);
+      detailPreviewDocUrl.current = null;
+    }
+  };
+
+  const backToList = () => {
+    setReviewView("list");
+    setDetailCertId(null);
+    setOverrideOpen(false);
+    setOverrideTypeId(null);
   };
 
   if (loadingUnmapped || loadingMerged) {
@@ -741,71 +896,60 @@ export function TypeMergingPane() {
     return aiSuggestions.get(certId);
   };
 
-  // Suggestion strip styles
-  const getConfidenceStyles = (confidence: string) => {
-    switch (confidence) {
-      case "high":
-        return "border-l-4 border-l-chart-2 bg-chart-2/10";
-      case "medium":
-        return "border-l-4 border-l-chart-4 bg-chart-4/10";
-      case "low":
-        return "border-l-4 border-l-muted-foreground/30 bg-muted/30";
-      default:
-        return "border-l-4 border-l-primary bg-primary/5";
+  // Detail view data
+  const detailCert = detailCertId ? unmappedCerts.find((c) => c.id === detailCertId) : null;
+  const detailSuggestion = detailCertId ? getSuggestion(detailCertId) : null;
+  const detailIndex = detailCertId ? activeSuggestions.findIndex((s) => s.certificate_id === detailCertId) : -1;
+
+  // ─── Render: Review Panel (Middle Column) ──────────────────
+
+  const renderSuggestionsList = () => {
+    if (reviewComplete) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-4 p-6 text-center">
+          <CheckCircle2 className="h-10 w-10 text-chart-2" />
+          <div>
+            <h3 className="font-semibold text-lg">Review complete</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {acceptedCount} accepted · {skippedCount} skipped
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={handleAISuggest}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            Run AI Suggest again
+          </Button>
+        </div>
+      );
     }
-  };
 
-  const getConfidenceTextColor = (confidence: string) => {
-    switch (confidence) {
-      case "high":
-        return "text-chart-2";
-      case "medium":
-        return "text-chart-4";
-      case "low":
-        return "text-muted-foreground";
-      default:
-        return "text-primary";
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Status overview */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-        <span>
-          {totalUnmapped} unmapped certificate{totalUnmapped !== 1 ? "s" : ""}
-        </span>
-        <span>•</span>
-        <span>
-          {mergedTypes.filter((t) => t.is_active).length} canonical type{mergedTypes.filter((t) => t.is_active).length !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {/* AI Bulk Action Bar */}
-      {hasSuggestions && (
-        <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-chart-2/10 border border-chart-2/30 text-sm">
-          <Sparkles className="h-4 w-4 text-chart-2 shrink-0" />
-          <span className="font-medium text-chart-2">
-            {suggestionsCount} suggestion{suggestionsCount !== 1 ? "s" : ""} ready
-          </span>
-          <div className="flex items-center gap-2 ml-auto">
+    return (
+      <div className="flex flex-col h-full">
+        {/* Bulk bar */}
+        <div className="p-3 border-b bg-muted/30 space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-chart-2 shrink-0" />
+            <span className="font-medium text-sm">
+              {suggestionsCount} suggestion{suggestionsCount !== 1 ? "s" : ""} ready
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             {highConfSuggestions.length > 0 && (
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs border-chart-2/30"
+                className="h-7 text-xs"
                 onClick={() => handleBulkAccept(["high"])}
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
-                Accept high ({highConfSuggestions.length})
+                Accept all high ({highConfSuggestions.length})
               </Button>
             )}
             {(highConfSuggestions.length > 0 || mediumConfSuggestions.length > 0) && (
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs border-chart-2/30"
+                className="h-7 text-xs"
                 onClick={() => handleBulkAccept(["high", "medium"])}
                 disabled={isProcessing}
               >
@@ -823,10 +967,333 @@ export function TypeMergingPane() {
             </Button>
           </div>
         </div>
-      )}
 
-      {/* Two-pane layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 lg:gap-0">
+        {/* Scrollable list */}
+        <ScrollArea className="flex-1">
+          <div className="divide-y">
+            {activeSuggestions.map((suggestion) => {
+              const cert = unmappedCerts.find((c) => c.id === suggestion.certificate_id);
+              if (!cert) return null;
+              const isFading = fadingCerts.has(suggestion.certificate_id);
+              const isLow = suggestion.confidence === "low";
+              const suggestedTypeName = suggestion.suggested_type_id
+                ? mergedTypes.find((t) => t.id === suggestion.suggested_type_id)?.name || "Unknown"
+                : suggestion.suggested_new_type_name
+                  ? `Create: ${suggestion.suggested_new_type_name}`
+                  : "Uncertain";
+
+              return (
+                <div
+                  key={suggestion.certificate_id}
+                  className={`p-3 cursor-pointer transition-all duration-300 hover:bg-muted/50 ${
+                    isFading ? "opacity-0 max-h-0 overflow-hidden" : "opacity-100"
+                  } ${isLow ? "text-muted-foreground" : ""}`}
+                  onClick={() => openDetail(suggestion.certificate_id)}
+                >
+                  {/* Row 1: Personnel name + confidence pill */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`font-medium text-sm truncate ${isLow ? "text-muted-foreground" : ""}`}>
+                      {cert.personnel_name}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] px-1.5 py-0 shrink-0 uppercase font-semibold ${getConfidencePillClass(suggestion.confidence)}`}
+                    >
+                      {suggestion.confidence}
+                    </Badge>
+                  </div>
+                  {/* Row 2: title_raw */}
+                  <p className="text-xs mt-0.5 truncate">{cert.title_raw}</p>
+                  {/* Row 3: Suggested type */}
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    → {suggestedTypeName}
+                  </p>
+                  {/* Row 4: Category + expiry + arrow */}
+                  <div className="flex items-center gap-2 mt-1">
+                    {cert.category_name && (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        {cert.category_name}
+                      </Badge>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      {cert.expiry_date ? `Exp: ${formatDate(cert.expiry_date)}` : "No expiry"}
+                    </span>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </div>
+    );
+  };
+
+  const renderDetailView = () => {
+    if (!detailCert || !detailSuggestion) return null;
+
+    const isLow = detailSuggestion.confidence === "low";
+    const isNew = !detailSuggestion.suggested_type_id && !!detailSuggestion.suggested_new_type_name;
+    const suggestedTypeName = detailSuggestion.suggested_type_id
+      ? mergedTypes.find((t) => t.id === detailSuggestion.suggested_type_id)?.name || "Unknown"
+      : detailSuggestion.suggested_new_type_name || "Uncertain";
+    const suggestedCategory = detailSuggestion.suggested_type_id
+      ? mergedTypes.find((t) => t.id === detailSuggestion.suggested_type_id)?.category_name
+      : detailSuggestion.suggested_new_type_category;
+
+    const isPdf = detailCert.document_url && /\.pdf$/i.test(detailCert.document_url);
+    const isImage = detailCert.document_url && /\.(jpg|jpeg|png|gif|webp)$/i.test(detailCert.document_url);
+
+    // Override grouped types
+    const overrideGroups = new Map<string, typeof overrideFilteredTypes>();
+    overrideFilteredTypes.forEach((t) => {
+      const cat = t.category_name || "Uncategorized";
+      if (!overrideGroups.has(cat)) overrideGroups.set(cat, []);
+      overrideGroups.get(cat)!.push(t);
+    });
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header: Back + counter */}
+        <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={backToList}>
+            <ArrowLeft className="h-3 w-3" />
+            Back to suggestions
+          </Button>
+          {detailIndex >= 0 && (
+            <span className="text-xs text-muted-foreground">
+              {detailIndex + 1} of {activeSuggestions.length}
+            </span>
+          )}
+        </div>
+
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            {/* Document preview */}
+            {detailCert.document_url && (
+              <div className="relative rounded-lg border bg-muted/20 overflow-hidden">
+                {detailPreviewLoading ? (
+                  <Skeleton className="w-full h-[200px]" />
+                ) : detailPreviewError ? (
+                  <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                    <FileText className="h-8 w-8 mb-2 opacity-40" />
+                    <p className="text-xs">Preview unavailable</p>
+                  </div>
+                ) : detailPreviewBlobUrl && isPdf ? (
+                  <iframe
+                    src={`${detailPreviewBlobUrl}#page=1`}
+                    className="w-full h-[200px] pointer-events-none"
+                    title="Document preview"
+                  />
+                ) : detailPreviewBlobUrl && isImage ? (
+                  <img
+                    src={detailPreviewBlobUrl}
+                    alt="Certificate document"
+                    className="w-full max-h-[200px] object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                    <FileText className="h-8 w-8 mb-2 opacity-40" />
+                    <p className="text-xs">Preview unavailable</p>
+                  </div>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-2 right-2 h-7 text-xs gap-1"
+                  onClick={() => {
+                    if (detailCert.document_url) {
+                      const fileName = decodeURIComponent(
+                        detailCert.document_url.split("/").pop() || "document"
+                      ).replace(/^\d+-/, "");
+                      handleViewDocument(detailCert.document_url, fileName);
+                    }
+                  }}
+                >
+                  <Maximize2 className="h-3 w-3" />
+                  Open full
+                </Button>
+              </div>
+            )}
+
+            {/* Personnel info */}
+            <div>
+              <p className="font-semibold text-sm">{detailCert.personnel_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {[detailCert.personnel_role, detailCert.category_name].filter(Boolean).join(" · ") || "No role"}
+              </p>
+            </div>
+
+            {/* Certificate info */}
+            <div>
+              <p className="text-sm font-medium">{detailCert.title_raw}</p>
+              <div className="flex items-center gap-2 mt-1">
+                {detailCert.category_name && (
+                  <Badge variant="outline" className="text-[10px] py-0">
+                    {detailCert.category_name}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {detailCert.expiry_date ? `Exp: ${formatDate(detailCert.expiry_date)}` : "No expiry"}
+                </span>
+              </div>
+            </div>
+
+            {/* AI Suggestion card */}
+            <Card>
+              <CardContent className="p-3 space-y-2">
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">AI Suggestion</p>
+                <p className="font-medium text-sm">{suggestedTypeName}</p>
+                {suggestedCategory && (
+                  <Badge variant="outline" className="text-[10px] py-0">
+                    {suggestedCategory}
+                  </Badge>
+                )}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${getConfidenceBarColor(detailSuggestion.confidence)}`}
+                      style={{ width: `${getConfidencePercent(detailSuggestion.confidence)}%` }}
+                    />
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] px-1.5 py-0 uppercase font-semibold ${getConfidencePillClass(detailSuggestion.confidence)}`}
+                  >
+                    {detailSuggestion.confidence}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground italic">"{detailSuggestion.reasoning}"</p>
+              </CardContent>
+            </Card>
+
+            {/* Override dropdown */}
+            <div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs w-full justify-start gap-1"
+                onClick={() => {
+                  setOverrideOpen(!overrideOpen);
+                  setOverrideSearch("");
+                  setOverrideTypeId(null);
+                }}
+              >
+                <ChevronRight className={`h-3 w-3 transition-transform ${overrideOpen ? "rotate-90" : ""}`} />
+                Override suggestion
+              </Button>
+
+              {overrideOpen && (
+                <div className="mt-2 border rounded-lg overflow-hidden">
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <Input
+                        placeholder="Search types..."
+                        value={overrideSearch}
+                        onChange={(e) => setOverrideSearch(e.target.value)}
+                        className="pl-7 h-7 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <ScrollArea className="max-h-[200px]">
+                    {Array.from(overrideGroups.entries())
+                      .sort(([a], [b]) => {
+                        if (a === "Uncategorized") return 1;
+                        if (b === "Uncategorized") return -1;
+                        return a.localeCompare(b);
+                      })
+                      .map(([catName, types]) => (
+                        <div key={catName}>
+                          <div className="text-[10px] uppercase font-semibold text-muted-foreground bg-muted/50 px-2 py-1">
+                            {catName}
+                          </div>
+                          {types.map((t) => (
+                            <div
+                              key={t.id}
+                              className={`px-2 py-1.5 text-xs cursor-pointer hover:bg-muted/50 flex items-center gap-2 ${
+                                overrideTypeId === t.id ? "bg-primary/10" : ""
+                              }`}
+                              onClick={() => setOverrideTypeId(t.id)}
+                            >
+                              {overrideTypeId === t.id && <Check className="h-3 w-3 text-primary shrink-0" />}
+                              <span className="truncate">{t.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+
+        {/* Action buttons */}
+        <div className="p-3 border-t bg-muted/30 flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => handleSkipSuggestion(detailCert.id)}
+          >
+            <X className="h-4 w-4 mr-1" />
+            Skip
+          </Button>
+          {!isLow && !isNew && (
+            <Button
+              size="sm"
+              className="flex-1"
+              onClick={() => handleAcceptSuggestion(detailSuggestion, overrideTypeId || undefined)}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              {overrideTypeId ? "Accept override" : "Accept"}
+            </Button>
+          )}
+          {isNew && (
+            <Button
+              size="sm"
+              className="flex-1"
+              onClick={() => handleCreateAndAssignSuggestion(detailSuggestion)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Create & Assign
+            </Button>
+          )}
+          {overrideTypeId && isLow && (
+            <Button
+              size="sm"
+              className="flex-1"
+              onClick={() => handleAcceptSuggestion(detailSuggestion, overrideTypeId)}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Accept override
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Status overview */}
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <span>
+          {totalUnmapped} unmapped certificate{totalUnmapped !== 1 ? "s" : ""}
+        </span>
+        <span>•</span>
+        <span>
+          {mergedTypes.filter((t) => t.is_active).length} canonical type{mergedTypes.filter((t) => t.is_active).length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Three-column layout */}
+      <div className={`grid grid-cols-1 lg:gap-0 gap-4 ${
+        hasSuggestions && !aiLoading
+          ? "lg:grid-cols-[1fr,minmax(320px,380px),1fr]"
+          : "lg:grid-cols-[1fr,auto,1fr]"
+      }`}>
         {/* Left Pane: Unmapped Certificates */}
         <div className="border rounded-lg flex flex-col h-[600px]">
           <div className="p-3 border-b bg-muted/30 space-y-2">
@@ -882,7 +1349,7 @@ export function TypeMergingPane() {
             </div>
 
             {/* Select all */}
-            {unmappedCerts.length > 0 && (
+            {unmappedCerts.length > 0 && !hasSuggestions && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={unmappedCerts.length > 0 && unmappedCerts.every((c) => selectedCerts.has(c.id))}
@@ -911,7 +1378,6 @@ export function TypeMergingPane() {
               ) : (
                 unmappedCerts.map((cert) => {
                   const isSelected = selectedCerts.has(cert.id);
-                  const suggestion = getSuggestion(cert.id);
                   const isFading = fadingCerts.has(cert.id);
 
                   return (
@@ -923,15 +1389,17 @@ export function TypeMergingPane() {
                         className={`p-3 cursor-pointer transition-colors ${
                           isSelected ? "bg-primary/10" : "hover:bg-muted/50"
                         }`}
-                        onClick={() => toggleCertSelection(cert.id)}
+                        onClick={() => !hasSuggestions && toggleCertSelection(cert.id)}
                       >
                         <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleCertSelection(cert.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-0.5"
-                          />
+                          {!hasSuggestions && (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleCertSelection(cert.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-0.5"
+                            />
+                          )}
 
                           {/* File icon — clickable to view */}
                           <button
@@ -972,86 +1440,22 @@ export function TypeMergingPane() {
                           </div>
 
                           {/* Dismiss */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCertToDismiss(cert);
-                              setDismissDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {!hasSuggestions && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCertToDismiss(cert);
+                                setDismissDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-
-                      {/* AI Suggestion Strip */}
-                      {suggestion && (
-                          <div
-                          className={`px-3 py-2 ${getConfidenceStyles(
-                            suggestion.suggested_type_id 
-                              ? suggestion.confidence 
-                              : suggestion.suggested_new_type_name ? "new" : suggestion.confidence
-                          )} transition-all duration-300`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Sparkles className={`h-3 w-3 shrink-0 ${getConfidenceTextColor(
-                              suggestion.suggested_type_id ? suggestion.confidence : "new"
-                            )}`} />
-                            <span className={`text-xs font-medium ${getConfidenceTextColor(
-                              suggestion.suggested_type_id ? suggestion.confidence : "new"
-                            )}`}>
-                              {suggestion.suggested_type_id
-                                ? mergedTypes.find((t) => t.id === suggestion.suggested_type_id)?.name || "Unknown"
-                                : suggestion.suggested_new_type_name
-                                  ? `Create: ${suggestion.suggested_new_type_name}`
-                                  : "Uncertain"}
-                            </span>
-                            <span className="text-[10px] italic text-muted-foreground">
-                              {suggestion.reasoning}
-                            </span>
-
-                            <div className="flex items-center gap-1 ml-auto">
-                              {suggestion.suggested_type_id && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 text-[11px] px-2"
-                                  onClick={() => handleAcceptSuggestion(suggestion)}
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Accept
-                                </Button>
-                              )}
-                              {!suggestion.suggested_type_id && suggestion.suggested_new_type_name && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 text-[11px] px-2"
-                                  onClick={() => handleCreateAndAssignSuggestion(suggestion)}
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Create & Assign
-                                </Button>
-                              )}
-                              {(suggestion.confidence === "medium" || suggestion.confidence === "low" || !suggestion.suggested_type_id) && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 text-[11px] px-2 text-muted-foreground"
-                                  onClick={() => handleSkipSuggestion(cert.id)}
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  Skip
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })
@@ -1073,83 +1477,106 @@ export function TypeMergingPane() {
           </ScrollArea>
         </div>
 
-        {/* Center: Action Area */}
-        <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0">
-          {aiLoading ? (
-            <div className="flex flex-col items-center gap-3 text-center">
-              <div className="relative">
-                <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+        {/* Center: Action Area or Review Panel */}
+        {hasSuggestions && !aiLoading ? (
+          <div className="border rounded-lg flex flex-col h-[600px] overflow-hidden">
+            <div className="relative flex-1 overflow-hidden">
+              {/* List view */}
+              <div
+                className={`absolute inset-0 transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                  reviewView === "list" ? "translate-x-0" : "-translate-x-full"
+                }`}
+              >
+                {renderSuggestionsList()}
               </div>
-              <div className="text-xs text-muted-foreground max-w-[200px]">
-                Analysing {aiCertCount} certificate{aiCertCount !== 1 ? "s" : ""}...
+              {/* Detail view */}
+              <div
+                className={`absolute inset-0 transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                  reviewView === "detail" ? "translate-x-0" : "translate-x-full"
+                }`}
+              >
+                {reviewView === "detail" && renderDetailView()}
               </div>
-              <p className="text-[10px] text-muted-foreground">This may take 10–30 seconds</p>
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4 text-center">
-              {/* AI Suggest button */}
-              {totalUnmapped > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAISuggest}
-                  disabled={aiLoading}
-                  className="w-full"
-                  title="Uses AI to analyse each certificate and suggest the best canonical type"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  AI Suggest
-                </Button>
-              )}
-
-              <Button size="icon" className="rounded-full hidden lg:flex" disabled>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-
-              <div className="text-xs text-muted-foreground max-w-[200px]">
-                Select certificates on the left, then assign them to a canonical type on the right.
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0">
+            {aiLoading ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="relative">
+                  <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                </div>
+                <div className="text-xs text-muted-foreground max-w-[200px]">
+                  Analysing {aiCertCount} certificate{aiCertCount !== 1 ? "s" : ""}...
+                </div>
+                <p className="text-[10px] text-muted-foreground">This may take 10–30 seconds</p>
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 text-center">
+                {/* AI Suggest button */}
+                {totalUnmapped > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAISuggest}
+                    disabled={aiLoading}
+                    className="w-full"
+                    title="Uses AI to analyse each certificate and suggest the best canonical type"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    AI Suggest
+                  </Button>
+                )}
 
-              <div className="flex flex-col gap-2 w-full">
-                <Button
-                  size="sm"
-                  onClick={handleGroupIntoSelected}
-                  disabled={!canGroup || isProcessing}
-                  className="w-full"
-                >
-                  {isProcessing ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Check className="h-4 w-4 mr-2" />
-                  )}
-                  Assign Type
+                <Button size="icon" className="rounded-full hidden lg:flex" disabled>
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCreateAndGroup}
-                  disabled={selectedCerts.size === 0 || isProcessing}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create & Group
-                </Button>
+
+                <div className="text-xs text-muted-foreground max-w-[200px]">
+                  Select certificates on the left, then assign them to a canonical type on the right.
+                </div>
+
+                <div className="flex flex-col gap-2 w-full">
+                  <Button
+                    size="sm"
+                    onClick={handleGroupIntoSelected}
+                    disabled={!canGroup || isProcessing}
+                    className="w-full"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-2" />
+                    )}
+                    Assign Type
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCreateAndGroup}
+                    disabled={selectedCerts.size === 0 || isProcessing}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create & Group
+                  </Button>
+                </div>
+
+                {selectedCerts.size > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCerts(new Set())}
+                    className="text-xs"
+                  >
+                    Clear selection
+                  </Button>
+                )}
               </div>
-
-              {selectedCerts.size > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedCerts(new Set())}
-                  className="text-xs"
-                >
-                  Clear selection
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Right Pane: Canonical Types */}
         <div className="border rounded-lg flex flex-col h-[600px]">
