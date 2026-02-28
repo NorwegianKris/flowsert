@@ -19,6 +19,8 @@ import { Check, ChevronsUpDown, Sparkles, Plus, ChevronDown, ChevronUp } from "l
 import { cn } from "@/lib/utils";
 import { useCertificateTypes, CertificateType } from "@/hooks/useCertificateTypes";
 import { stringSimilarity } from "@/lib/stringUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { normalizeCertificateTitle } from "@/lib/certificateNormalization";
 
 interface OcrHint {
   extractedName: string;
@@ -47,6 +49,8 @@ interface CertificateTypeSelectorProps {
   ocrHint?: OcrHint | null;
   /** Show fallback free text input with "Can't find your type?" toggle */
   showFallbackInput?: boolean;
+  /** Business ID for alias lookup */
+  businessId?: string;
 }
 
 export function CertificateTypeSelector({
@@ -65,6 +69,7 @@ export function CertificateTypeSelector({
   onFreeTextChange,
   ocrHint,
   showFallbackInput = false,
+  businessId,
 }: CertificateTypeSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -92,53 +97,75 @@ export function CertificateTypeSelector({
     return types;
   }, [types, categoryFilter, showAllCategories]);
 
-  // OCR auto-match logic
+  // OCR auto-match logic — alias lookup first, fuzzy fallback
   useEffect(() => {
     if (!ocrHint || !ocrHint.extractedName || ocrAutoApplied.current || types.length === 0) return;
     if (value) return; // Already has a value selected
 
-    const typesToScore = filteredTypes.length > 0 ? filteredTypes : types;
-    const scores = typesToScore
-      .map((t) => ({
-        id: t.id,
-        name: t.name,
-        score: stringSimilarity(ocrHint.extractedName, t.name),
-      }))
-      .sort((a, b) => b.score - a.score);
-
-    const best = scores[0];
-    const second = scores[1];
     const confidence = ocrHint.confidence;
 
-    if (confidence >= 85) {
-      // High confidence tier
-      if (best && best.score > 0.7) {
-        const isClearWinner = !second || (best.score - second.score >= 0.15);
-        if (isClearWinner) {
-          // Auto-select
-          onChange(best.id, best.name);
-          setOcrAutoSelected(true);
-          ocrAutoApplied.current = true;
-        } else {
-          // Ambiguous - pre-fill search
-          setSearchValue(ocrHint.extractedName);
-          ocrAutoApplied.current = true;
-        }
-      } else {
-        // No good match - pre-fill search
-        setSearchValue(ocrHint.extractedName);
-        ocrAutoApplied.current = true;
-      }
-    } else if (confidence >= 60) {
-      // Medium confidence - pre-fill search
-      setSearchValue(ocrHint.extractedName);
-      ocrAutoApplied.current = true;
-    } else {
-      // Low confidence - show hint text
+    if (confidence < 60) {
+      // Low confidence - show hint text only
       setLowConfidenceHint(ocrHint.extractedName);
       ocrAutoApplied.current = true;
+      return;
     }
-  }, [ocrHint, types, filteredTypes, value, onChange]);
+
+    // Attempt alias lookup, then fuzzy fallback
+    const doLookup = async () => {
+      ocrAutoApplied.current = true;
+
+      // Step 1: Alias lookup (requires businessId)
+      if (businessId) {
+        const normalized = normalizeCertificateTitle(ocrHint.extractedName);
+        if (normalized) {
+          const { data } = await supabase
+            .from('certificate_aliases')
+            .select('certificate_type_id')
+            .eq('business_id', businessId)
+            .eq('alias_normalized', normalized)
+            .maybeSingle();
+
+          if (data?.certificate_type_id) {
+            const matchedType = types.find(t => t.id === data.certificate_type_id);
+            if (matchedType) {
+              onChange(matchedType.id, matchedType.name);
+              setOcrAutoSelected(true);
+              return;
+            }
+          }
+        }
+      }
+
+      // Step 2: Fuzzy fallback
+      const typesToScore = filteredTypes.length > 0 ? filteredTypes : types;
+      const scores = typesToScore
+        .map((t) => ({
+          id: t.id,
+          name: t.name,
+          score: stringSimilarity(ocrHint.extractedName, t.name),
+        }))
+        .sort((a, b) => b.score - a.score);
+
+      const best = scores[0];
+      const second = scores[1];
+
+      if (confidence >= 85 && best && best.score > 0.7) {
+        const isClearWinner = !second || (best.score - second.score >= 0.15);
+        if (isClearWinner) {
+          onChange(best.id, best.name);
+          setOcrAutoSelected(true);
+        } else {
+          setSearchValue(ocrHint.extractedName);
+        }
+      } else {
+        // Medium confidence or no good fuzzy match — pre-fill search
+        setSearchValue(ocrHint.extractedName);
+      }
+    };
+
+    doLookup();
+  }, [ocrHint, types, filteredTypes, value, onChange, businessId]);
 
   // Group types by category
   const groupedTypes = useMemo(() => {

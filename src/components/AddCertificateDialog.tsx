@@ -230,17 +230,26 @@ export function AddCertificateDialog({
     // Fire-and-forget geocoding for plain text place of issue
     if (extractedData.placeOfIssue) {
       const certId = newCert.id;
-      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(extractedData.placeOfIssue)}&format=json&limit=1`, {
+      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(extractedData.placeOfIssue)}&format=json&addressdetails=1&featuretype=city&limit=3`, {
         headers: { 'User-Agent': 'FlowSert/1.0' }
       })
         .then(r => r.json())
         .then(results => {
-          if (results?.[0]?.display_name) {
-            setCertificates(prev => prev.map(c =>
-              c.id === certId
-                ? { ...c, placeOfIssue: results[0].display_name }
-                : c
-            ));
+          if (results?.length > 0) {
+            // Find best city-level match
+            const cityResult = results.find((r: any) => r.address?.city || r.address?.town) || results[0];
+            const addr = cityResult.address || {};
+            const cityName = addr.city || addr.town || addr.village || addr.state;
+            const country = addr.country;
+            
+            if (cityName && country) {
+              setCertificates(prev => prev.map(c =>
+                c.id === certId
+                  ? { ...c, placeOfIssue: `${cityName}, ${country}` }
+                  : c
+              ));
+            }
+            // If no city/country extracted, keep the original plain text
           }
         })
         .catch(() => { /* keep plain text fallback */ });
@@ -744,6 +753,7 @@ export function AddCertificateDialog({
                                 )}
                               </Label>
                               <CertificateTypeSelector
+                                businessId={businessId || undefined}
                                 value={cert.certificateTypeId || null}
                                 onChange={(typeId, typeName) => {
                                   handleFieldChange(cert.id, 'certificateTypeId', typeId);
