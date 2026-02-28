@@ -449,6 +449,13 @@ Return the extracted data using the extract_certificate_data function.`;
       });
     }
 
+    console.log('EXTRACTION_RESULT:', JSON.stringify({
+      certificateName: extractedData.certificateName,
+      suggestedTypeName: extractedData.suggestedTypeName,
+      classificationConfidence: extractedData.classificationConfidence,
+      confidence: result.confidence
+    }));
+
     return new Response(
       JSON.stringify({ ...result, usage_remaining: { used: usageUsed + 1, cap: usageCap } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
