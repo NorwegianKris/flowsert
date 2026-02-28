@@ -21,6 +21,8 @@ export interface CertificateAlias {
 export interface CreateAliasInput {
   aliasRaw: string;
   certificateTypeId: string;
+  createdBy?: "system" | "admin";
+  confidence?: number;
 }
 
 /**
@@ -132,7 +134,8 @@ export function useCreateAlias() {
           alias_normalized: normalizedTitle,
           alias_raw_example: input.aliasRaw,
           certificate_type_id: input.certificateTypeId,
-          created_by: "admin",
+          created_by: input.createdBy ?? "admin",
+          confidence: input.confidence ?? 100,
           last_seen_at: new Date().toISOString(),
         })
         .select()
