@@ -236,15 +236,21 @@ serve(async (req) => {
     }
 
     // Batch processing — 50 certificates per call
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 25;
     const batches: any[][] = [];
     for (let i = 0; i < certificates.length; i += BATCH_SIZE) {
       batches.push(certificates.slice(i, i + BATCH_SIZE));
     }
 
     const allResults: any[] = [];
+    const START_TIME = Date.now();
+    const MAX_DURATION_MS = 50000; // 50s — safely under Supabase 60s default
 
     for (const batch of batches) {
+      if (Date.now() - START_TIME > MAX_DURATION_MS) {
+        console.warn(`Time budget reached — returning ${allResults.length} partial results`);
+        break;
+      }
       try {
         const response = await fetch(GATEWAY_URL, {
           method: "POST",
@@ -262,7 +268,7 @@ serve(async (req) => {
               },
             ],
             temperature: 0,
-            max_tokens: 4000,
+            max_tokens: 16000,
           }),
         });
 
@@ -313,13 +319,35 @@ serve(async (req) => {
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content || "";
 
-        // Strip markdown fences if present
-        const clean = text
-          .replace(/```json\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-        const parsed = JSON.parse(clean);
-        allResults.push(...parsed);
+        // Defensive JSON parsing with salvage
+        let parsed: any[] = [];
+        try {
+          const clean = text
+            .replace(/```json\n?/g, "")
+            .replace(/```\n?/g, "")
+            .trim();
+          parsed = JSON.parse(clean);
+        } catch (e) {
+          // Attempt to salvage partial results from truncated response
+          try {
+            const lastComplete = text.lastIndexOf('},');
+            if (lastComplete > 0) {
+              const salvaged = text.substring(0, lastComplete + 1)
+                .replace(/```json\n?/g, "")
+                .trim();
+              const attemptFix = salvaged.startsWith('[')
+                ? salvaged + ']'
+                : '[' + salvaged + ']';
+              parsed = JSON.parse(attemptFix);
+              console.warn(`Salvaged ${parsed.length} results from truncated batch`);
+            } else {
+              console.error('Batch unrecoverable, skipping:', (e as Error).message);
+            }
+          } catch (salvageError) {
+            console.error('Salvage failed, skipping batch:', (salvageError as Error).message);
+          }
+        }
+        if (parsed.length > 0) allResults.push(...parsed);
       } catch (batchError) {
         console.error("Batch classification error:", batchError);
         // fail-open: continue to next batch
@@ -334,7 +362,12 @@ serve(async (req) => {
       model: "google/gemini-2.5-flash",
     });
 
-    return new Response(JSON.stringify({ suggestions: allResults }), {
+    return new Response(JSON.stringify({
+      suggestions: allResults,
+      partial: allResults.length < certificates.length,
+      processed: allResults.length,
+      total: certificates.length,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

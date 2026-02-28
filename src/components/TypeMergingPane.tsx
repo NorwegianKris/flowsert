@@ -194,6 +194,7 @@ export function TypeMergingPane() {
   const aiButtonDisabledUntil = useRef<number>(0);
   const [skippedCerts, setSkippedCerts] = useState<Set<string>>(new Set());
   const [fadingCerts, setFadingCerts] = useState<Set<string>>(new Set());
+  const [aiPartialInfo, setAiPartialInfo] = useState<{partial: boolean; processed: number; total: number} | null>(null);
 
   // ─── Review Panel State ─────────────────────────────────────
   const [reviewView, setReviewView] = useState<"list" | "detail">("list");
@@ -602,6 +603,12 @@ export function TypeMergingPane() {
       const result = await response.json();
       const suggestions: AISuggestion[] = result.suggestions || [];
 
+      if (result.partial) {
+        setAiPartialInfo({ partial: true, processed: result.processed, total: result.total });
+      } else {
+        setAiPartialInfo(null);
+      }
+
       const map = new Map<string, AISuggestion>();
       for (const s of suggestions) {
         map.set(s.certificate_id, s);
@@ -624,6 +631,7 @@ export function TypeMergingPane() {
   const handleClearSuggestions = () => {
     setAiSuggestions(new Map());
     setSkippedCerts(new Set());
+    setAiPartialInfo(null);
     setReviewView("list");
     setDetailCertId(null);
     setAcceptedCount(0);
@@ -950,6 +958,12 @@ export function TypeMergingPane() {
               {suggestionsCount} suggestion{suggestionsCount !== 1 ? "s" : ""} ready
             </span>
           </div>
+        {aiPartialInfo?.partial && (
+          <div className="px-3 py-2 bg-destructive/10 border rounded text-xs text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Showing {aiPartialInfo.processed} of {aiPartialInfo.total} suggestions — run AI Suggest again for remaining certificates.
+          </div>
+        )}
           <div className="flex items-center gap-2 flex-wrap">
             {highConfSuggestions.length > 0 && (
               <Button
