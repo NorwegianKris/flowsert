@@ -76,6 +76,9 @@ interface CertificateEntry {
   issuerAliasAutoMatched?: boolean;
   // Manual upload flag
   isManualEntry?: boolean;
+  // OCR extraction data for type selector
+  ocrExtractedName?: string;
+  ocrConfidence?: number;
 }
 
 interface CertificateCategory {
@@ -201,6 +204,9 @@ export function AddCertificateDialog({
         issuingAuthority: extractedData.issuingAuthority ? getConfidence(result.status) : undefined,
       } : undefined,
       certificateTypeFreeText: '', // For free text certificate type
+      titleRaw: extractedData.certificateName || fileName,
+      ocrExtractedName: extractedData.certificateName || '',
+      ocrConfidence: result.confidence,
     };
 
     // Auto-set issuer if matched
@@ -260,17 +266,16 @@ export function AddCertificateDialog({
   const handleSubmit = async () => {
     // Validate certificates - only require name and date of issue
     const validCerts = certificates.filter(c => {
-      const hasName = c.name?.trim();
+      const hasType = c.certificateTypeId || c.certificateTypeFreeText?.trim();
       const hasDateOfIssue = c.dateOfIssue?.trim();
       
-      // Basic required fields
-      if (!hasName || !hasDateOfIssue) return false;
+      if (!hasType || !hasDateOfIssue) return false;
       
       return true;
     });
 
     if (validCerts.length === 0) {
-      toast.error('Please fill in at least the Certificate Name and Date of Issue for each certificate');
+      toast.error('Please select or enter a certificate type and date of issue for each certificate');
       return;
     }
 
@@ -288,7 +293,7 @@ export function AddCertificateDialog({
       for (const cert of validCerts) {
         // Determine title_raw based on how type was specified
         // This ensures title_raw stores the CERTIFICATE TYPE, not the filename
-        let titleRaw: string | null = null;
+        let titleRaw: string | null = cert.titleRaw || null;
         if (cert.certificateTypeFreeText?.trim()) {
           // User typed free text - store exactly what they typed
           titleRaw = cert.certificateTypeFreeText.trim();
@@ -296,7 +301,7 @@ export function AddCertificateDialog({
           // User selected from dropdown - store the type name
           titleRaw = cert.certificateTypeName;
         }
-        // If neither, title_raw stays null - no type was specified
+        // If neither, title_raw falls back to OCR extraction or null
         
         const titleNormalized = titleRaw ? normalizeCertificateTitle(titleRaw) : null;
         
@@ -309,7 +314,7 @@ export function AddCertificateDialog({
           .from('certificates')
           .insert({
             personnel_id: personnelId,
-            name: cert.name,
+            name: cert.certificateTypeName || cert.certificateTypeFreeText || cert.name,
             date_of_issue: cert.dateOfIssue,
             expiry_date: cert.expiryDate || null,
             place_of_issue: cert.placeOfIssue || '',
@@ -437,7 +442,7 @@ export function AddCertificateDialog({
   };
 
   const processedCount = certificates.length;
-  const readyCount = certificates.filter(c => c.name && c.dateOfIssue).length;
+  const readyCount = certificates.filter(c => (c.certificateTypeId || c.certificateTypeFreeText?.trim()) && c.dateOfIssue).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -533,7 +538,7 @@ export function AddCertificateDialog({
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">
-                            {cert.name || 'Unnamed Certificate'}
+                            {cert.certificateTypeName || cert.certificateTypeFreeText || cert.name || 'Unnamed Certificate'}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
                             {cert.isManualEntry ? (
@@ -573,17 +578,7 @@ export function AddCertificateDialog({
                       {expandedCertId === cert.id && (
                         <div className="px-3 pb-3 pt-0 space-y-3 border-t">
                           <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* Certificate Name */}
-                            <div className="sm:col-span-2 space-y-1">
-                              <Label className="text-xs text-muted-foreground">
-                                Certificate Name *
-                              </Label>
-                              <Input
-                                value={cert.name}
-                                onChange={(e) => handleFieldChange(cert.id, 'name', e.target.value)}
-                                placeholder="Certificate name"
-                              />
-                            </div>
+                            {/* Certificate Name field removed — name is derived from type selection */}
 
                             {/* Category Selection */}
                             <div className="sm:col-span-2 space-y-1">
@@ -732,7 +727,9 @@ export function AddCertificateDialog({
                                 required={isAdminOrManager}
                                 autoMatched={cert.aliasAutoMatched}
                                 placeholder={isAdminOrManager ? "Select certificate type..." : "Optional: Select type..."}
-                                allowFreeText={true}
+                                categoryFilter={cert.categoryId}
+                                ocrHint={cert.ocrExtractedName ? { extractedName: cert.ocrExtractedName, confidence: cert.ocrConfidence || 0 } : null}
+                                showFallbackInput={true}
                                 freeTextValue={cert.certificateTypeFreeText || ''}
                                 onFreeTextChange={(text) => {
                                   handleFieldChange(cert.id, 'certificateTypeFreeText', text);
