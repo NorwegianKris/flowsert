@@ -495,14 +495,14 @@ export function TypeMergingPane() {
 
     setAiLoading(true);
     setSkippedCerts(new Set());
-    setAiCertCount(totalUnmapped);
+    setAiCertCount(0);
     setAcceptedCount(0);
     setSkippedCount(0);
     setReviewView("list");
     setDetailCertId(null);
 
     try {
-      const { data: allUnmapped, error: fetchError } = await supabase
+      let query = supabase
         .from("certificates")
         .select(`
           id, title_raw, expiry_date, place_of_issue, category_id,
@@ -512,20 +512,38 @@ export function TypeMergingPane() {
         .eq("personnel.business_id", businessId!)
         .is("certificate_type_id", null)
         .is("unmapped_by", null)
-        .not("title_raw", "is", null)
-        .limit(1000);
+        .not("title_raw", "is", null);
+
+      if (leftCategoryFilter) {
+        query = query.eq("category_id", leftCategoryFilter);
+      }
+
+      query = query.limit(1000);
+
+      const { data: allUnmapped, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      if (!allUnmapped || allUnmapped.length === 0) {
+      // Apply client-side search filter (matching useUnmappedCertificates behavior)
+      let filtered = allUnmapped || [];
+      if (leftSearch) {
+        const q = leftSearch.toLowerCase();
+        filtered = filtered.filter(
+          (c: any) =>
+            (c.title_raw || "").toLowerCase().includes(q) ||
+            (c.personnel?.name || "").toLowerCase().includes(q)
+        );
+      }
+
+      if (filtered.length === 0) {
         toast.info("No unmapped certificates to analyse");
         setAiLoading(false);
         return;
       }
 
-      setAiCertCount(allUnmapped.length);
+      setAiCertCount(filtered.length);
 
-      const certsPayload = allUnmapped.map((c: any) => ({
+      const certsPayload = filtered.map((c: any) => ({
         id: c.id,
         title_raw: c.title_raw,
         category_name: c.certificate_categories?.name || null,
@@ -1289,9 +1307,9 @@ export function TypeMergingPane() {
       </div>
 
       {/* Three-column layout */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-0">
+      <div className="flex flex-col lg:flex-row lg:gap-0 gap-4 overflow-hidden">
         {/* Left Pane: Unmapped Certificates */}
-        <div className="border rounded-lg flex flex-col h-[600px]" style={{ flex: "0 0 35%" }}>
+        <div className="border rounded-lg flex flex-col h-[600px] min-w-0" style={{ flex: "0 0 35%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Unmapped Certificates</h3>
@@ -1575,7 +1593,7 @@ export function TypeMergingPane() {
         )}
 
         {/* Right Pane: Canonical Types */}
-        <div className="border rounded-lg flex flex-col h-[600px]" style={{ flex: "0 0 37%" }}>
+        <div className="border rounded-lg flex flex-col h-[600px] min-w-0 overflow-hidden" style={{ flex: "0 0 37%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Canonical Types</h3>
