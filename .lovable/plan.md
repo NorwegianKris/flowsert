@@ -1,28 +1,89 @@
 
 
-## Two Fixes in TypeMergingPane
+## Fix suggest-certificate-types for Production Scale
 
-**Risk: GREEN** — Pure UI + query filter logic. No schema changes.
+**Risk: 🔴 anchor required** — Edge function + config.toml changes.
 
-### Fix 1 — Column proportions in all states
+### Fix 1 — Add config.toml entry
 
-Looking at the code, all three column divs already have the correct `style={{ flex: "0 0 X%" }}` props. The likely issue is the parent container has `gap-4 lg:gap-0` — the `gap-4` may be causing overflow on some viewports or the `flex-col` fallback is interfering. 
+Append to `supabase/config.toml` after line 16:
+```toml
+[functions.suggest-certificate-types]
+verify_jwt = false
+```
 
-**Change**: Remove `gap-4` from the flex container (line 1292) and ensure `lg:gap-0` is the only gap behavior. Also add `overflow-hidden` to prevent any flex overflow from compressing columns:
+### Fix 2 — Increase max_tokens, reduce batch size
 
-Line 1292: `"flex flex-col lg:flex-row gap-4 lg:gap-0"` → `"flex flex-col lg:flex-row lg:gap-0 gap-4"` and add `min-w-0` to each column div to prevent flex shrink overflow. Actually the real fix: add `min-w-0 overflow-hidden` to the right pane div so its content can't force the flex to compress.
+In `supabase/functions/suggest-certificate-types/index.ts`:
+- Line 239: `BATCH_SIZE = 50` → `BATCH_SIZE = 25`
+- Line 265: `max_tokens: 4000` → `max_tokens: 16000`
 
-### Fix 2 — AI Suggest uses filtered certificates
+### Fix 3 — Defensive JSON parsing with salvage
 
-Lines 505-516: The `handleAISuggest` function queries supabase directly for ALL unmapped certificates, ignoring the `leftSearch` and `leftCategoryFilter` state.
+Replace lines 316-322 (the current `JSON.parse` block) with the salvage pattern: try `JSON.parse(clean)`, on failure find last complete object via `lastIndexOf('},')`, truncate and close the array, re-parse. Log warnings for salvaged batches, errors for unrecoverable ones. Push results with `if (parsed.length > 0) allResults.push(...parsed)`.
 
-**Change**: Apply the same filters the hook uses:
-- If `leftCategoryFilter` is set, add `.eq("category_id", leftCategoryFilter)` to the query
-- If `leftSearch` is set, add `.or(`title_raw.ilike.%${leftSearch}%`)` — and do client-side personnel name filtering on the result (matching the hook's behavior)
-- Update `setAiCertCount` to reflect the filtered count, not totalUnmapped
+### Fix 4 — Time budget guard
 
-This ensures the certificates sent to the AI match exactly what the user sees in the left pane.
+Before the `for (const batch of batches)` loop (line 247), add:
+```typescript
+const START_TIME = Date.now();
+const MAX_DURATION_MS = 50000;
+```
+At top of loop body:
+```typescript
+if (Date.now() - START_TIME > MAX_DURATION_MS) {
+  console.warn(`Time budget reached — returning ${allResults.length} partial results`);
+  break;
+}
+```
+
+### Fix 5 — Return partial metadata
+
+Replace line 337 success response with:
+```typescript
+return new Response(JSON.stringify({
+  suggestions: allResults,
+  partial: allResults.length < certificates.length,
+  processed: allResults.length,
+  total: certificates.length,
+}), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+```
+
+Also add `partial`/`processed`/`total` fields to 429 and 402 error responses.
+
+### Fix 6 — Frontend partial results notice
+
+In `src/components/TypeMergingPane.tsx`:
+
+1. Add state variable `aiPartialInfo` (line ~196):
+```typescript
+const [aiPartialInfo, setAiPartialInfo] = useState<{partial: boolean; processed: number; total: number} | null>(null);
+```
+
+2. After `const result = await response.json()` (line 602), extract partial metadata:
+```typescript
+if (result.partial) {
+  setAiPartialInfo({ partial: true, processed: result.processed, total: result.total });
+} else {
+  setAiPartialInfo(null);
+}
+```
+
+3. In `renderSuggestionsList` (line 946, after the bulk bar div), add:
+```typescript
+{aiPartialInfo?.partial && (
+  <div className="px-3 py-2 bg-amber-50 border-b text-xs text-amber-800 flex items-center gap-2">
+    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+    Showing {aiPartialInfo.processed} of {aiPartialInfo.total} suggestions — run AI Suggest again for remaining certificates.
+  </div>
+)}
+```
+
+4. Clear `aiPartialInfo` in `handleClearSuggestions`.
 
 ### Files changed
-- `src/components/TypeMergingPane.tsx` — both fixes
+
+- `supabase/config.toml` — add function entry
+- `supabase/functions/suggest-certificate-types/index.ts` — fixes 2–5
+- `src/components/TypeMergingPane.tsx` — fix 6
 
