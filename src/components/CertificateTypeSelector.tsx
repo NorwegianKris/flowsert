@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Command,
   CommandEmpty,
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Check, ChevronsUpDown, Sparkles, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Sparkles, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCertificateTypes, CertificateType } from "@/hooks/useCertificateTypes";
 
@@ -29,6 +29,8 @@ interface CertificateTypeSelectorProps {
   className?: string;
   allowCreate?: boolean;
   onCreateNew?: (name: string) => void;
+  /** Filter types to a specific category_id */
+  categoryFilter?: string | null;
   /** Allow free text input alongside dropdown selection */
   allowFreeText?: boolean;
   /** Current free text value when not using dropdown */
@@ -47,17 +49,32 @@ export function CertificateTypeSelector({
   className,
   allowCreate = false,
   onCreateNew,
+  categoryFilter,
   allowFreeText = false,
   freeTextValue = "",
   onFreeTextChange,
 }: CertificateTypeSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const { data: types = [], isLoading } = useCertificateTypes();
+
+  // Reset toggle when categoryFilter changes
+  useEffect(() => {
+    setShowAllCategories(false);
+  }, [categoryFilter]);
 
   const selectedType = useMemo(() => {
     return types.find((t) => t.id === value);
   }, [types, value]);
+
+  // Filter types by category if needed
+  const filteredTypes = useMemo(() => {
+    if (categoryFilter && !showAllCategories) {
+      return types.filter((t) => t.category_id === categoryFilter);
+    }
+    return types;
+  }, [types, categoryFilter, showAllCategories]);
 
   // Group types by category
   const groupedTypes = useMemo(() => {
@@ -65,7 +82,7 @@ export function CertificateTypeSelector({
       Uncategorized: [],
     };
 
-    types.forEach((type) => {
+    filteredTypes.forEach((type) => {
       const category = type.category_name || "Uncategorized";
       if (!grouped[category]) {
         grouped[category] = [];
@@ -86,7 +103,7 @@ export function CertificateTypeSelector({
       category: key,
       types: grouped[key],
     }));
-  }, [types]);
+  }, [filteredTypes]);
 
   // Check if search value matches any existing type
   const searchMatchesExisting = useMemo(() => {
@@ -219,6 +236,25 @@ export function CertificateTypeSelector({
                       </CommandGroup>
                     ))}
 
+                    {categoryFilter && (
+                      <div
+                        className="flex items-center justify-center gap-1 px-2 py-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowAllCategories((prev) => !prev)}
+                      >
+                        {showAllCategories ? (
+                          <>
+                            <ChevronUp className="h-3 w-3" />
+                            Show selected category only
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3" />
+                            Show all categories
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     {allowCreate && !searchMatchesExisting && searchValue.trim() && (
                       <CommandGroup heading="Create new">
                         <CommandItem onSelect={handleCreateNew}>
@@ -346,6 +382,25 @@ export function CertificateTypeSelector({
                 ))}
               </CommandGroup>
             ))}
+
+            {categoryFilter && (
+              <div
+                className="flex items-center justify-center gap-1 px-2 py-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setShowAllCategories((prev) => !prev)}
+              >
+                {showAllCategories ? (
+                  <>
+                    <ChevronUp className="h-3 w-3" />
+                    Show selected category only
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    Show all categories
+                  </>
+                )}
+              </div>
+            )}
 
             {allowCreate && !searchMatchesExisting && searchValue.trim() && (
               <CommandGroup heading="Create new">
