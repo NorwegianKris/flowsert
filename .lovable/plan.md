@@ -1,42 +1,47 @@
 
 
-## Update Fuzzy Auto-Select Thresholds in CertificateTypeSelector
+## Upload Field Redesign — Implementation
 
-**Risk: 🟢 anchor optional** — UI logic change only.
+**Risk: 🟡 anchor recommended** — changes certificate type assignment logic and validation.
 
-### Context
-The OCR auto-select fuzzy matching logic has not been implemented yet — it's part of the pending Upload Field Redesign. This plan specifies the exact thresholds and "clear winner" logic to use when that code is written.
+### Confirmed: `stringSimilarity` exists
+`src/lib/stringUtils.ts` already exports `stringSimilarity(a, b): number` (0-1 scale, Levenshtein-based). No new file needed.
 
-### Changes — `src/components/CertificateTypeSelector.tsx`
+### File 1: `src/components/CertificateTypeSelector.tsx`
 
-When the `ocrHint` prop is added (as part of the Upload Field Redesign), the high-confidence (>=0.85) auto-select logic must use this algorithm:
+**Full rewrite.** Key changes:
 
-1. Score all filtered types against `ocrHint.extractedName` using `stringSimilarity` from `src/lib/stringUtils.ts`
-2. Sort by score descending
-3. **Auto-select** only if:
-   - Best match score > **0.7** (not 0.5)
-   - AND either there is only one match above 0.7, or the gap between 1st and 2nd best scores is >= **0.15**
-4. **Fall back to search pre-fill** if:
-   - Best match scores > 0.7 but the 2nd-best is within 0.15 of it (ambiguous match)
-   - Set `searchValue` to `ocrHint.extractedName` so user sees both close matches and picks one
-5. If best match <= 0.7, no auto-select, no pre-fill from this tier — the medium/low confidence tiers handle it
+1. **New props:** `ocrHint?: { extractedName: string; confidence: number } | null`, `showFallbackInput?: boolean`
+2. **New state:** `showFreeTextInput` (boolean), `ocrAutoApplied` (ref)
+3. **Import** `stringSimilarity` from `@/lib/stringUtils`
+4. **`useEffect`** on `ocrHint`/`filteredTypes`/`value`:
+   - **>=85:** Score all types, auto-select if best > 0.7 AND gap >= 0.15; else pre-fill search
+   - **60-84:** Pre-fill `searchValue` with extracted name
+   - **<60:** Set flag for hint text render
+5. **Enhanced `CommandItem`:** Type name (semibold) + category badge + description
+6. **`showFallbackInput` render path:** Dropdown first → "Can't find your certificate type?" link → reveals `Input` + "Back to dropdown" link
+7. **Teal "AI suggested" badge** on trigger when OCR auto-selected
+8. **Low-confidence hint** below trigger: "AI extracted: [name] — please select the correct type"
+9. **Keep** existing `allowFreeText` path for backward compat
+10. **Keep** "Show all categories" toggle
 
-```text
-Pseudocode:
-  scores = filteredTypes.map(t => ({ id, name, score: stringSimilarity(extracted, t.name) }))
-  scores.sort(desc by score)
-  best = scores[0], second = scores[1]
+### File 2: `src/components/AddCertificateDialog.tsx`
 
-  if best.score > 0.7:
-    if !second OR (best.score - second.score >= 0.15):
-      → auto-select best (clear winner)
-    else:
-      → pre-fill search with extractedName (ambiguous, let user choose)
-  else:
-    → no action from high-confidence tier
-```
+1. **Interface** (~line 46-79): Add `ocrExtractedName?: string; ocrConfidence?: number;` to `CertificateEntry`
+2. **Delete lines 577-586:** Remove "Certificate Name *" label + Input entirely
+3. **Header display** (line 536): `{cert.certificateTypeName || cert.certificateTypeFreeText || cert.name || 'Unnamed Certificate'}`
+4. **`handleExtractionComplete`** (~line 174-220): Add `titleRaw`, `ocrExtractedName`, `ocrConfidence` to `newCert`
+5. **Validation** (lines 262-269): Require `certificateTypeId || certificateTypeFreeText` + `dateOfIssue`
+6. **`readyCount`** (line 440): Match new validation
+7. **`handleSubmit` name derivation** (~line 310): `derivedName = cert.certificateTypeName || cert.certificateTypeFreeText || cert.name || fileName`
+8. **`titleRaw` in submit** (~line 291): Fall back to `cert.titleRaw` from OCR
+9. **Selector props** (lines 722-745): Replace `allowFreeText` with `showFallbackInput={true}`, add `categoryFilter={cert.categoryId}`, add `ocrHint`
 
-This ensures we never auto-select when two types like "BOSIET" and "BOSIET with CA-EBS" both score similarly against an OCR extraction.
+### Post-deployment verification (3.2U.pdf upload)
+1. OCR bar shows "Extracted (95%) — Certificate of Proficiency"
+2. CertificateTypeSelector either auto-selects with teal "AI suggested" badge (if clear winner) or pre-fills search
+3. "Certificate Name *" free text field is gone from dialog
 
-### No code changes now
-This is a specification constraint for the upcoming implementation. No files are modified in this plan.
+### Not changed
+Date fields, expiry, place of issue, issuing authority, file upload, OCR edge function, save logic, multi-file handling, schema, IssuerTypeSelector.
+
