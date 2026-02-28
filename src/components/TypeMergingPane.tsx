@@ -101,13 +101,13 @@ function getFileIcon(url: string | null) {
 function getConfidencePillClass(confidence: string) {
   switch (confidence) {
     case "high":
-      return "bg-chart-2/15 text-chart-2 border-chart-2/30";
+      return "bg-teal-600 text-white border-teal-600";
     case "medium":
-      return "bg-chart-4/15 text-chart-4 border-chart-4/30";
+      return "bg-amber-500 text-white border-amber-500";
     case "low":
-      return "bg-muted text-muted-foreground border-muted-foreground/30";
+      return "bg-gray-400 text-white border-gray-400";
     default:
-      return "bg-primary/15 text-primary border-primary/30";
+      return "bg-primary text-primary-foreground border-primary";
   }
 }
 
@@ -923,7 +923,7 @@ export function TypeMergingPane() {
     }
 
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Bulk bar */}
         <div className="p-3 border-b bg-muted/30 space-y-2">
           <div className="flex items-center gap-2">
@@ -1289,13 +1289,9 @@ export function TypeMergingPane() {
       </div>
 
       {/* Three-column layout */}
-      <div className={`grid grid-cols-1 lg:gap-0 gap-4 ${
-        hasSuggestions && !aiLoading
-          ? "lg:grid-cols-[1fr,minmax(320px,380px),1fr]"
-          : "lg:grid-cols-[1fr,auto,1fr]"
-      }`}>
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-0">
         {/* Left Pane: Unmapped Certificates */}
-        <div className="border rounded-lg flex flex-col h-[600px]">
+        <div className="border rounded-lg flex flex-col h-[600px]" style={{ flex: "0 0 35%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Unmapped Certificates</h3>
@@ -1479,7 +1475,7 @@ export function TypeMergingPane() {
 
         {/* Center: Action Area or Review Panel */}
         {hasSuggestions && !aiLoading ? (
-          <div className="border rounded-lg flex flex-col h-[600px] overflow-hidden">
+          <div className="border rounded-lg flex flex-col h-[600px] overflow-hidden" style={{ flex: "0 0 28%" }}>
             <div className="relative flex-1 overflow-hidden">
               {/* List view */}
               <div
@@ -1500,7 +1496,7 @@ export function TypeMergingPane() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0">
+          <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0" style={{ flex: "0 0 28%" }}>
             {aiLoading ? (
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className="relative">
@@ -1579,7 +1575,7 @@ export function TypeMergingPane() {
         )}
 
         {/* Right Pane: Canonical Types */}
-        <div className="border rounded-lg flex flex-col h-[600px]">
+        <div className="border rounded-lg flex flex-col h-[600px]" style={{ flex: "0 0 37%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Canonical Types</h3>
@@ -1656,7 +1652,7 @@ export function TypeMergingPane() {
                                   </Badge>
                                 </div>
                                 {merged.description && (
-                                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                                  <p className="text-xs text-muted-foreground mt-1 whitespace-normal">
                                     {merged.description}
                                   </p>
                                 )}
