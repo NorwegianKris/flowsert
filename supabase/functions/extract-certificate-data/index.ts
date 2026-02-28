@@ -21,6 +21,8 @@ interface ExtractedData {
   issuingAuthority: string | null;
   matchedCategory: string | null;
   matchedIssuer: string | null;
+  suggestedTypeName: string | null;
+  classificationConfidence: number;
 }
 
 interface ExtractionResponse {
@@ -199,6 +201,7 @@ IMPORTANT RULES:
 4. Certificate names should be the official title (e.g., "BOSIET", "First Aid Certificate", "Crane Operator License")
 5. Place of issue is typically a country or city
 6. Issuing authority is the organization that issued the certificate (e.g., "DNV", "Falck Safety Services", "Red Cross")
+7. IMPORTANT: Also classify the certificate into its canonical industry-standard type name. Use ALL available signals: document title, issuing authority, logos, expiry period, qualification level, and any other context clues. Examples of canonical type names: "BOSIET with CA-EBS", "CSWIP 3.2U Diver Inspector", "Offshore Diving Medical (DMAC 11)", "Basic Offshore Safety Induction & Emergency Training", "HUET with CA-EBS", "First Aid at Work". Return null for suggestedTypeName if you are genuinely uncertain about the certificate type.
 
 ${existingCategories.length > 0 ? `
 Known certificate categories in this system: ${existingCategories.join(", ")}
@@ -280,6 +283,15 @@ Return the extracted data using the extract_certificate_data function.`;
                     type: "string",
                     description: "If issuing authority matches a known issuer, include the issuer name",
                     nullable: true,
+                  },
+                  suggestedTypeName: {
+                    type: "string",
+                    description: "The canonical industry-standard certificate type name (e.g. 'BOSIET with CA-EBS', 'CSWIP 3.2U Diver Inspector'). Null if genuinely uncertain.",
+                    nullable: true,
+                  },
+                  classificationConfidence: {
+                    type: "number",
+                    description: "0-100 confidence in suggestedTypeName. 90+ = certain, 70-89 = likely, 50-69 = possible, below 50 = uncertain.",
                   },
                   imageQuality: {
                     type: "string",
@@ -369,6 +381,8 @@ Return the extracted data using the extract_certificate_data function.`;
       issuingAuthority: extractedRaw.issuingAuthority || null,
       matchedCategory: extractedRaw.matchedCategory || null,
       matchedIssuer: extractedRaw.matchedIssuer || null,
+      suggestedTypeName: extractedRaw.suggestedTypeName || null,
+      classificationConfidence: extractedRaw.classificationConfidence || 0,
     };
 
     // Count extracted fields (excluding matchedCategory as it's optional)
@@ -455,6 +469,8 @@ Return the extracted data using the extract_certificate_data function.`;
           issuingAuthority: null,
           matchedCategory: null,
           matchedIssuer: null,
+          suggestedTypeName: null,
+          classificationConfidence: 0,
         },
         fieldsExtracted: 0,
         issues: ["An error occurred during extraction"],

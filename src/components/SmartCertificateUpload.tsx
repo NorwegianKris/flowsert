@@ -46,6 +46,8 @@ export function SmartCertificateUpload({
           matchedCategoryId: null,
           matchedIssuer: null,
           matchedIssuerId: null,
+          suggestedTypeName: null,
+          classificationConfidence: 0,
         },
         fieldsExtracted: 0,
         issues: [`File type "${file.type || 'unknown'}" cannot be scanned. Please enter details manually.`],
