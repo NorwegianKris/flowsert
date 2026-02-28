@@ -177,6 +177,16 @@ export function AddCertificateDialog({
   const handleExtractionComplete = (result: ExtractionResult, file: File) => {
     const { extractedData } = result;
 
+    console.log('FRONTEND_OCR:', JSON.stringify({
+      certificateName: extractedData?.certificateName,
+      suggestedTypeName: extractedData?.suggestedTypeName,
+      classificationConfidence: extractedData?.classificationConfidence,
+      ocrHintPassed: extractedData?.suggestedTypeName ? {
+        extractedName: extractedData.suggestedTypeName,
+        confidence: extractedData.classificationConfidence
+      } : null
+    }));
+
     const getConfidence = (status: string): 'high' | 'medium' | 'low' => {
       if (result.status === 'green') return 'high';
       if (result.status === 'amber') return 'medium';
