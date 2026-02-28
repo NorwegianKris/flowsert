@@ -205,8 +205,8 @@ export function AddCertificateDialog({
       } : undefined,
       certificateTypeFreeText: '', // For free text certificate type
       titleRaw: extractedData.certificateName || fileName,
-      ocrExtractedName: extractedData.certificateName || '',
-      ocrConfidence: result.confidence,
+      ocrExtractedName: extractedData.suggestedTypeName || extractedData.certificateName || '',
+      ocrConfidence: extractedData.classificationConfidence || result.confidence,
     };
 
     // Auto-set issuer if matched
@@ -215,6 +215,25 @@ export function AddCertificateDialog({
       newCert.issuerTypeName = extractedData.matchedIssuer;
       newCert.issuingAuthority = extractedData.matchedIssuer;
       newCert.issuerAliasAutoMatched = true;
+    }
+
+    // Fire-and-forget geocoding for plain text place of issue
+    if (extractedData.placeOfIssue) {
+      const certId = newCert.id;
+      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(extractedData.placeOfIssue)}&format=json&limit=1`, {
+        headers: { 'User-Agent': 'FlowSert/1.0' }
+      })
+        .then(r => r.json())
+        .then(results => {
+          if (results?.[0]?.display_name) {
+            setCertificates(prev => prev.map(c =>
+              c.id === certId
+                ? { ...c, placeOfIssue: results[0].display_name }
+                : c
+            ));
+          }
+        })
+        .catch(() => { /* keep plain text fallback */ });
     }
 
     setCertificates(prev => [...prev, newCert]);

@@ -12,6 +12,8 @@ export interface ExtractedCertificateData {
   matchedCategoryId: string | null; // Matched category ID if found
   matchedIssuer: string | null;     // Matched issuer name if found
   matchedIssuerId: string | null;   // Matched issuer ID if found
+  suggestedTypeName: string | null; // AI-suggested canonical certificate type name
+  classificationConfidence: number; // 0-100 confidence in suggestedTypeName
 }
 
 export interface ExtractionResult {
