@@ -40,4 +40,3 @@ This ensures we never auto-select when two types like "BOSIET" and "BOSIET with 
 
 ### No code changes now
 This is a specification constraint for the upcoming implementation. No files are modified in this plan.
-
