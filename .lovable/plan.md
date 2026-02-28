@@ -1,19 +1,24 @@
 
 
-## Insert 56 canonical certificate types
+## Tech Debt: Refactor `useCreateAlias` hook
 
-**Risk: 🔴 RED** — Schema-adjacent data insert touching `certificate_types` table used by compliance outputs.
+**Priority**: Low — complete before second customer onboards.
 
-### What happens
-- A DO block inserts up to 56 new certificate type rows across 9 categories for business `38672512-...`
-- `ON CONFLICT (business_id, name) DO NOTHING` safely skips any of the 8 existing types that match by name
-- No schema changes, no code changes — purely data
+### Current state
+`useCreateAlias` in `src/hooks/useCertificateAliases.ts` (line 135) hardcodes `created_by: "admin"`. The upcoming AI certificate classification feature will bypass this hook entirely, using a direct Supabase insert with `created_by: "system"` and a confidence score (85 for high, 70 for medium). This creates two divergent code paths for alias creation.
 
-### Verification plan
-After insert, run:
-1. `SELECT COUNT(*) FROM certificate_types WHERE business_id = '...' AND is_active = true` → expected ~64
-2. Breakdown by category name
+### Refactor
 
-### Implementation
-Single migration containing the user's exact SQL block.
+1. **Extend `CreateAliasInput` interface** to accept optional `createdBy` (default `"admin"`) and optional `confidence` (default `100`) parameters.
+
+2. **Update `useCreateAlias` mutation** to use `input.createdBy ?? "admin"` and `input.confidence ?? 100` in the insert call instead of hardcoded values.
+
+3. **Migrate AI accept flow** (in `TypeMergingPane.tsx`, once built) to use the refactored hook instead of direct Supabase insert. Pass `createdBy: "system"` and `confidence: 85` or `70`.
+
+### Files changed
+- `src/hooks/useCertificateAliases.ts` — extend interface + update insert logic
+- `src/components/TypeMergingPane.tsx` — replace direct insert with hook call (after AI classification feature is built)
+
+### Risk: GREEN
+Pure refactor. No schema changes. No new sub-processors. No access control changes. Existing admin alias creation behaviour unchanged (defaults preserve current values).
 
