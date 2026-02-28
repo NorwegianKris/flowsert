@@ -1,48 +1,28 @@
 
 
-## Four Fixes in TypeMergingPane
+## Two Fixes in TypeMergingPane
 
-**Risk: GREEN** — Pure UI styling. No schema, no edge functions, no access control.
+**Risk: GREEN** — Pure UI + query filter logic. No schema changes.
 
-### Fix 1 — Suggestions list must scroll fully
+### Fix 1 — Column proportions in all states
 
-The `ScrollArea` at line 972 uses `className="flex-1"` but without height constraints it won't scroll. The parent `renderSuggestionsList` div (line 926) needs `overflow-hidden` and the absolute container at line 1485 needs `h-full overflow-hidden` so the flex layout constrains properly.
+Looking at the code, all three column divs already have the correct `style={{ flex: "0 0 X%" }}` props. The likely issue is the parent container has `gap-4 lg:gap-0` — the `gap-4` may be causing overflow on some viewports or the `flex-col` fallback is interfering. 
 
-**Changes:**
-- Line 926: `"flex flex-col h-full"` → `"flex flex-col h-full overflow-hidden"`
-- Line 1489: Add `h-full overflow-hidden` to the list view absolute div's children wrapper
+**Change**: Remove `gap-4` from the flex container (line 1292) and ensure `lg:gap-0` is the only gap behavior. Also add `overflow-hidden` to prevent any flex overflow from compressing columns:
 
-### Fix 2 — Solid confidence pills
+Line 1292: `"flex flex-col lg:flex-row gap-4 lg:gap-0"` → `"flex flex-col lg:flex-row lg:gap-0 gap-4"` and add `min-w-0` to each column div to prevent flex shrink overflow. Actually the real fix: add `min-w-0 overflow-hidden` to the right pane div so its content can't force the flex to compress.
 
-Update `getConfidencePillClass` (lines 101-112):
-- `high`: `"bg-teal-600 text-white border-teal-600"`
-- `medium`: `"bg-amber-500 text-white border-amber-500"`
-- `low`: `"bg-gray-400 text-white border-gray-400"`
-- default: `"bg-primary text-primary-foreground border-primary"`
+### Fix 2 — AI Suggest uses filtered certificates
 
-### Fix 3 — Column proportions via flex
+Lines 505-516: The `handleAISuggest` function queries supabase directly for ALL unmapped certificates, ignoring the `leftSearch` and `leftCategoryFilter` state.
 
-Replace grid layout (lines 1292-1296) with flex:
-```
-<div className="flex flex-col lg:flex-row gap-4 lg:gap-0">
-```
-- Left pane (line 1298): add `style={{ flex: "0 0 35%" }}`
-- Middle column (lines 1482, 1503): add `style={{ flex: "0 0 28%" }}`
-- Right pane (line 1582): add `style={{ flex: "0 0 37%" }}`
+**Change**: Apply the same filters the hook uses:
+- If `leftCategoryFilter` is set, add `.eq("category_id", leftCategoryFilter)` to the query
+- If `leftSearch` is set, add `.or(`title_raw.ilike.%${leftSearch}%`)` — and do client-side personnel name filtering on the result (matching the hook's behavior)
+- Update `setAiCertCount` to reflect the filtered count, not totalUnmapped
 
-Remove `truncate` from right pane type name (line 1653) and description (line 1659). Add `whitespace-normal` to allow wrapping.
-
-### Fix 4 — Consistent suggestion row padding and pill alignment
-
-Already mostly correct at lines 986-1004. Ensure:
-- Each suggestion row has `p-3` (already set line 988)
-- Line 994: `justify-between` is already on the top row div — confirmed correct
-- The confidence Badge (lines 998-1003) has `shrink-0` — confirmed correct
-- Personnel name span (line 995) has `truncate` to prevent it pushing the pill off — confirmed correct
-
-No changes needed for Fix 4, the layout is already correct per the code.
+This ensures the certificates sent to the AI match exactly what the user sees in the left pane.
 
 ### Files changed
-
-- `src/components/TypeMergingPane.tsx` — fixes 1-3
+- `src/components/TypeMergingPane.tsx` — both fixes
 
