@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -608,7 +608,7 @@ export function AISuggestDialog({
                         </Button>
                       </div>
                     )}
-                    <ScrollArea className="max-h-[300px]">
+                    <div className="max-h-[400px] overflow-y-auto">
                       <div className="divide-y">
                         {suggestionRows.map((row, idx) => (
                           <div
@@ -673,7 +673,7 @@ export function AISuggestDialog({
                           </div>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               )}
@@ -689,7 +689,7 @@ export function AISuggestDialog({
                     </span>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <ScrollArea className="max-h-[200px]">
+                    <div className="max-h-[400px] overflow-y-auto">
                       <div className="divide-y">
                         {noMatchRows.map((row) => (
                           <div key={row.cert.id} className="p-3 space-y-1">
@@ -701,7 +701,7 @@ export function AISuggestDialog({
                           </div>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               )}
