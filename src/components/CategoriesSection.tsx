@@ -14,9 +14,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 
 interface CategoriesSectionProps {
   defaultTab?: string;
+  defaultSubTab?: string;
 }
 
-export function CategoriesSection({ defaultTab }: CategoriesSectionProps) {
+export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSectionProps) {
   return (
     <div className="p-4">
       <p className="text-sm text-muted-foreground mb-4">
@@ -85,7 +86,7 @@ export function CategoriesSection({ defaultTab }: CategoriesSectionProps) {
           </TabsContent>
           
           <TabsContent value="certificates">
-            <Tabs defaultValue="categories" className="w-full">
+            <Tabs defaultValue={defaultSubTab || "categories"} className="w-full">
               <div className="flex items-center gap-4 mb-4">
                 <TabsList>
                   <TabsTrigger value="categories">Categories</TabsTrigger>

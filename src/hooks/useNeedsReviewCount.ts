@@ -19,7 +19,9 @@ export function useNeedsReviewCount() {
       const { count: reviewCount, error } = await supabase
         .from('certificates')
         .select('id, personnel!inner(business_id)', { count: 'exact', head: true })
-        .eq('needs_review', true)
+        .is('certificate_type_id', null)
+        .is('unmapped_by', null)
+        .not('title_raw', 'is', null)
         .eq('personnel.business_id', businessId);
 
       if (error) throw error;
