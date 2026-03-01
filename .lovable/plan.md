@@ -1,49 +1,44 @@
 
 
-## Part 1 — Verify Upload Geocoding
+## Plan: Add "Normalize Country Names" Step to Location Tool
 
-**Status: Already working.** Lines 230–256 of `AddCertificateDialog.tsx` show that when OCR extracts a `placeOfIssue`, a fire-and-forget Nominatim call normalizes it to "City, Country" format and updates the form state before the user saves. The field is also rendered as a `GeoLocationInput` (line 676) so the admin can correct it manually. The geocoding runs async but the user must review and click Save, giving it time to resolve. No changes needed.
+**Risk**: 🟢 Pure UI + string mapping. No schema/RLS/auth changes.
 
----
+### What changes
 
-## Part 2 — "Normalize Certificate Locations" Tool
+**File: `src/components/CertificateLocationNormalizationTool.tsx`** — MODIFY
 
-**Risk**: 🟢 UI-only tool. No schema changes. Updates `certificates.place_of_issue` (existing column) and appends to `rescan_previous_data` JSONB. No RLS/auth changes.
+Add a country normalization section that appears after the city normalization results (or independently via a separate button). This is a hardcoded lookup — no API calls.
 
-### New file: `src/components/CertificateLocationNormalizationTool.tsx`
+**New state:**
+- `countryMappings: LocationMapping[]` — country-only matches found
+- `countryApplying: boolean`
+- `showCountryResults: boolean`
 
-A Collapsible section placed inside the existing Settings > Locations `CollapsibleContent`, below the existing `LocationStandardizationTool`. Follows the Re-scan tool pattern exactly.
+**Country map** — a `Record<string, string>` keyed by lowercase variant:
+```
+"norway","norge" → "Norway"
+"uk","united kingdom" → "United Kingdom"
+"netherlands","the netherlands" → "Netherlands"
+"spain","españa" → "Spain"
+... (all entries from the user's list)
+```
 
-**State machine:**
-1. **Idle** — Shows count of unique raw `place_of_issue` values across all certificates in the business. Button: "Normalize locations"
-2. **Confirm** — AlertDialog: "This will standardize place of issue for X certificates across Y unique locations. Original data will be saved for rollback. Continue?"
-3. **Processing** — Determinate progress bar: "Normalizing X of Y unique locations..." + Stop button
-4. **Review** — Summary cards + expandable before/after lists with reject (X) buttons + "Apply All" button
-5. **Applying** — Progress while batch-updating certificates
+**"Normalize country names" button:**
+- Shown when: city normalization is idle (no processing/applying), OR after city results are applied/dismissed
+- On click: queries all certificates with non-null `place_of_issue` for the business, groups by unique value, checks each against the country map (case-insensitive lookup, no comma = country-only), builds `countryMappings` for values that differ from the canonical form
+- Instant — no progress bar needed since it's pure string matching with no API calls
 
-**Data flow:**
-1. Query all certificates with non-null, non-empty `place_of_issue` joined through `personnel` (for `business_id` filtering)
-2. Group by unique `place_of_issue` values, counting certificates per value
-3. Skip values already in "City, Country" format (contains comma, both parts non-empty)
-4. For each unique raw value, call Nominatim API with **1000ms delay** between calls
-5. Present results for admin review — each mapping shows: old value → new value (X certificates affected), with an X button to reject individual mappings
-6. "Apply All" updates certificates in batch (one UPDATE per unique old value), appending `{ place_of_issue_original: oldValue }` to existing `rescan_previous_data` JSONB
+**Results display** — same pattern as city normalization:
+- Summary: "X country names normalized (Y certificates)"
+- Expandable before/after list with reject (X) buttons
+- "Apply All" button using same rollback pattern (save old value to `rescan_previous_data.place_of_issue_original`)
 
-**Skip logic:**
-- `isStandardized()` check: contains a comma and both parts are non-empty strings
-- NULL or empty values
-- Values that Nominatim can't resolve → shown in "Failed" list
-
-**Nominatim call** — uses the same Nominatim endpoint as the existing geocoding in `AddCertificateDialog` (line 233), with `User-Agent: FlowSert/1.0` and 1000ms delay between calls.
-
-### Modify: `src/pages/AdminDashboard.tsx`
-
-Import and render `CertificateLocationNormalizationTool` inside the Locations collapsible section (line 918–920), below `LocationStandardizationTool`.
+**Placement**: Below the city normalization results section, separated by a subtle divider. If city normalization hasn't been run, the country button still appears as a standalone action.
 
 ### Files changed
 
 | File | Action |
 |---|---|
-| `src/components/CertificateLocationNormalizationTool.tsx` | CREATE — new tool component |
-| `src/pages/AdminDashboard.tsx` | MODIFY — add import and render in Locations section |
+| `src/components/CertificateLocationNormalizationTool.tsx` | MODIFY — add country mapping logic and UI section |
 
