@@ -48,6 +48,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { CompanyCard } from '@/components/CompanyCard';
 import { SendNotificationDialog } from '@/components/SendNotificationDialog';
+import { CertificateCategoryOnboarding } from '@/components/CertificateCategoryOnboarding';
 import { NotificationsLog } from '@/components/NotificationsLog';
 import { ExternalSharingDialog } from '@/components/ExternalSharingDialog';
 import { getBusinessEntitlement, type BusinessEntitlement } from '@/lib/entitlements';
@@ -504,7 +505,8 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${dashboardBgPattern})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <DashboardHeader onMyProfileClick={handleMyProfileClick} hasLinkedProfile={!!myProfile} />
-      
+      {profile?.business_id && <CertificateCategoryOnboarding businessId={profile.business_id} onComplete={() => {}} />}
+
       <main className="w-full max-w-[1320px] mx-auto canvas-padding py-6 space-y-6 bg-background shadow-lg min-h-[calc(100vh-80px)]">
         {/* Business Header */}
         {business && (
