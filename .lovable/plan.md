@@ -1,40 +1,48 @@
 
 
-## Fix: Suppress Duplicate Alias Toast During AI Suggest Approval
+## Fix: Distinguish "Remaining" from "Failed" in AI Suggest Results
 
-**Problem**: The `useCreateAlias` hook's `onError` callback shows a toast for duplicate alias errors (code 23505) before the AISuggestDialog's catch block can suppress it.
+**Problem**: `failedCount` is computed as `filtered.length - suggestions.length`, which lumps together certificates not reached (due to batch limit) with actual processing errors. Both show as red "Failed".
 
-**Root cause**: Line 155-161 in `src/hooks/useCertificateAliases.ts` — the `onError` handler unconditionally toasts on 23505.
+**Root cause** (line 358): When the edge function processes 100 of 247, it returns ~100 suggestions. The remaining 147 are counted as "failed" even though they were never attempted.
 
-**Risk**: 🟢 UI-only — no data model, no backend changes.
+### Changes — single file: `src/components/AISuggestDialog.tsx`
 
-### Change: `src/hooks/useCertificateAliases.ts`
+#### 1. Replace `failedCount` state with two separate counts
 
-In the `useCreateAlias` hook's `onError` callback (lines 155-161), silently ignore duplicate alias errors instead of showing a toast. Only show the toast for non-duplicate errors. This makes the hook safe for both manual "Teach the System" use (where the admin already sees context) and automated AI Suggest flows.
+Replace the single `failedCount` state (line 134) with:
+- `remainingCount` — certificates not reached due to batch limit (neutral)
+- `actualFailedCount` — certificates attempted but errored (red)
 
-```typescript
-// Before:
-onError: (error: any) => {
-  if (error.code === "23505") {
-    toast.error("An alias with this name already exists");
-  } else {
-    toast.error("Failed to create alias");
-  }
-},
+#### 2. Compute the two counts correctly (line ~358)
 
-// After:
-onError: (error: any) => {
-  if (error.code === "23505") {
-    // Silently skip — alias already exists, no action needed
-    return;
-  }
-  toast.error("Failed to create alias");
-},
-```
+When `result.partial` is true:
+- `remaining = filtered.length - result.processed` (not attempted)
+- `actualFailed = result.processed - suggestions.length` (attempted, no result)
 
-### Files changed
+When not partial:
+- `remaining = 0`
+- `actualFailed = filtered.length - suggestions.length`
 
-| File | Action |
-|---|---|
-| `src/hooks/useCertificateAliases.ts` | MODIFY — suppress 23505 toast in `onError` |
+#### 3. Update summary stat cards (lines 585–602)
+
+Replace the single red "Failed" card with:
+- **"X remaining"** — always show, neutral grey/blue styling (`bg-muted/50`), only if count > 0
+- **"X failed"** — red styling (`bg-destructive/10`), only if count > 0
+
+Keep 4-column grid but conditionally show cards.
+
+#### 4. Update partial banner (lines 604–608)
+
+Change from `"Processed X of Y — run again for remaining"` to:
+`"Processed X of Y. Z remaining — run again to continue."`
+
+Use neutral blue/muted styling instead of `bg-destructive/10`.
+
+#### 5. Update bottom failed message (lines 906–914)
+
+- If `remainingCount > 0`: Show `"X certificates not yet processed — run again to continue."` in neutral styling.
+- If `actualFailedCount > 0`: Show `"X certificates failed"` in red, only when > 0.
+
+#### 6. Update `resetState` to clear both new state vars.
 
