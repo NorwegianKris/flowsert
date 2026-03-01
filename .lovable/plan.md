@@ -1,48 +1,47 @@
 
 
-## Fix: Distinguish "Remaining" from "Failed" in AI Suggest Results
+## Real-Time Progress During AI Suggest Analysis
 
-**Problem**: `failedCount` is computed as `filtered.length - suggestions.length`, which lumps together certificates not reached (due to batch limit) with actual processing errors. Both show as red "Failed".
+### Problem
 
-**Root cause** (line 358): When the edge function processes 100 of 247, it returns ~100 suggestions. The remaining 147 are counted as "failed" even though they were never attempted.
+The current processing phase sends **all certificates in a single API call** to the edge function, which processes them internally in batches of 25. The client has no visibility into progress — it shows an indeterminate progress bar and static text until the entire response returns.
 
-### Changes — single file: `src/components/AISuggestDialog.tsx`
+The user's assumption that processing is "sequential with 500ms delay" does not apply here — that pattern is used in the re-scan tool, not this dialog.
 
-#### 1. Replace `failedCount` state with two separate counts
+### Approach
 
-Replace the single `failedCount` state (line 134) with:
-- `remainingCount` — certificates not reached due to batch limit (neutral)
-- `actualFailedCount` — certificates attempted but errored (red)
+Split the **client-side** call into multiple smaller API calls (batches of 25, matching the server's internal batch size). Each batch call completes and returns results, allowing the UI to update progress after each batch. The edge function itself is **not changed**.
 
-#### 2. Compute the two counts correctly (line ~358)
+### Changes — `src/components/AISuggestDialog.tsx`
 
-When `result.partial` is true:
-- `remaining = filtered.length - result.processed` (not attempted)
-- `actualFailed = result.processed - suggestions.length` (attempted, no result)
+#### 1. Add `processedCount` state
 
-When not partial:
-- `remaining = 0`
-- `actualFailed = filtered.length - suggestions.length`
+New state variable to track how many certificates have been processed so far, updated after each batch call resolves.
 
-#### 3. Update summary stat cards (lines 585–602)
+#### 2. Refactor `handleStart` to loop over client-side batches
 
-Replace the single red "Failed" card with:
-- **"X remaining"** — always show, neutral grey/blue styling (`bg-muted/50`), only if count > 0
-- **"X failed"** — red styling (`bg-destructive/10`), only if count > 0
+Instead of sending all `certsPayload` in one call, chunk into groups of 25 and call the edge function once per chunk. After each call:
+- Increment `processedCount` by the batch size
+- Update `progressText` to `"Processing X of Y certificates..."`
+- Update progress bar value to `(processedCount / totalCount) * 100`
+- Check `abortRef.current` between batches for stop support
+- Accumulate suggestions from all batch responses
 
-Keep 4-column grid but conditionally show cards.
+#### 3. Update processing phase UI (lines 578–590)
 
-#### 4. Update partial banner (lines 604–608)
+- Progress bar: change `value={undefined}` to `value={(processedCount / certCount) * 100}` — deterministic fill
+- Text above bar: `"Processing {processedCount} of {certCount} certificates..."`
+- Text below bar: `"{certCount - processedCount} certificates remaining..."`
 
-Change from `"Processed X of Y — run again for remaining"` to:
-`"Processed X of Y. Z remaining — run again to continue."`
+#### 4. Merge partial results
 
-Use neutral blue/muted styling instead of `bg-destructive/10`.
+After all batches complete (or abort), merge accumulated suggestions and compute `remainingCount` / `actualFailedCount` the same way as today.
 
-#### 5. Update bottom failed message (lines 906–914)
+#### 5. Reset `processedCount` in `resetState`
 
-- If `remainingCount > 0`: Show `"X certificates not yet processed — run again to continue."` in neutral styling.
-- If `actualFailedCount > 0`: Show `"X certificates failed"` in red, only when > 0.
+### Files changed
 
-#### 6. Update `resetState` to clear both new state vars.
+| File | Action |
+|---|---|
+| `src/components/AISuggestDialog.tsx` | MODIFY |
 
