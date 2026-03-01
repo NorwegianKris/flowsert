@@ -9,6 +9,7 @@ import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
 import { IssuerTypesManager } from '@/components/IssuerTypesManager';
 import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
+import { TaxonomySeedingTool } from '@/components/TaxonomySeedingTool';
 import { Award, FileText, Users, Building2, ChevronDown, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -86,6 +87,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
           </TabsContent>
           
           <TabsContent value="certificates">
+            <TaxonomySeedingTool />
             <Tabs defaultValue={defaultSubTab || "categories"} className="w-full">
               <div className="flex items-center gap-4 mb-4">
                 <TabsList>
