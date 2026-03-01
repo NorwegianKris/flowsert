@@ -1,30 +1,20 @@
 
 
-## Plan: Fix Needs Review count and deep-link depth
+## Plan: Auto-scroll to Unmapped Certificates after deep-link
 
-### Issue 1: Wrong count
+### Approach
+Add a `useEffect` in `AdminDashboard.tsx` that fires when `settingsDeepLink === 'review-queue'` and the settings panel is open. After a 300ms delay (to let the collapsible animation finish), it finds the "Unmapped Certificates" heading element inside `TypeMergingPane` and calls `scrollIntoView({ behavior: 'smooth', block: 'start' })`.
 
-**`src/hooks/useNeedsReviewCount.ts`** — Change the query from `.eq('needs_review', true)` to `.is('certificate_type_id', null).is('unmapped_by', null).not('title_raw', 'is', null)`. This matches the exact filter logic in `useUnmappedCertificates.ts` (lines 47-49), so the dashboard number will always match the 424 shown in the Types tab.
+### Changes
 
-### Issue 2: Deep-link not deep enough
+**`src/components/TypeMergingPane.tsx`** — Add a `data-testid="unmapped-certificates-section"` (or `id`) attribute to the outer container of the unmapped certificates pane (the `<div>` at ~line 1326) so it can be targeted for scrolling.
 
-**`src/components/CategoriesSection.tsx`** — Add a `defaultSubTab?: string` prop. Pass it to the certificates sub-tabs `<Tabs>` as `defaultValue={defaultSubTab || "categories"}` so it can open directly on "types".
-
-**`src/pages/AdminDashboard.tsx`** — On line 893, also pass `defaultSubTab="types"` when `settingsDeepLink === 'review-queue'`:
-```
-<CategoriesSection 
-  defaultTab={settingsDeepLink === 'review-queue' ? 'certificates' : undefined}
-  defaultSubTab={settingsDeepLink === 'review-queue' ? 'types' : undefined}
-/>
-```
+**`src/pages/AdminDashboard.tsx`** — Add a `useEffect` that watches `settingsDeepLink` and `settingsOpen`. When both indicate a review-queue deep-link is active, set a 300ms `setTimeout`, then query `document.querySelector('[data-testid="unmapped-certificates-section"]')` and call `.scrollIntoView({ behavior: 'smooth', block: 'start' })`. Clean up the timeout on unmount/change.
 
 ### Files changed
-- `src/hooks/useNeedsReviewCount.ts` — query filter change (3 lines)
-- `src/components/CategoriesSection.tsx` — add `defaultSubTab` prop + wire it (2 lines)
-- `src/pages/AdminDashboard.tsx` — pass `defaultSubTab` prop (1 line)
+- `src/components/TypeMergingPane.tsx` — add `data-testid` attribute (1 line)
+- `src/pages/AdminDashboard.tsx` — add `useEffect` for auto-scroll (~8 lines)
 
 ### Not changed
-- Card visual design, grid layout, other stat cards
-- `CertificateReviewQueue` component
-- Database schema
+- Visual design, grid layout, other components, schema
 
