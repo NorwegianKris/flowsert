@@ -129,7 +129,7 @@ export default function AdminDashboard() {
   const [workerGroupFilters, setWorkerGroupFilters] = useState<string[]>([]);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
-  const { count: needsReviewCount } = useNeedsReviewCount();
+  const { count: needsReviewCount, refetch: refetchNeedsReview } = useNeedsReviewCount();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
   const { business, refetch: refetchBusiness } = useBusinessInfo();
@@ -762,7 +762,7 @@ export default function AdminDashboard() {
             <div className="fixed inset-y-0 right-0 w-full max-w-5xl bg-background border-l shadow-lg">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-lg font-semibold">Settings</h2>
-                <Button variant="ghost" size="icon" onClick={() => { setSettingsOpen(false); setSettingsDeepLink(null); }}>
+                <Button variant="ghost" size="icon" onClick={() => { setSettingsOpen(false); setSettingsDeepLink(null); refetchNeedsReview(); refetch(); }}>
                   <span className="sr-only">Close</span>
                   ✕
                 </Button>

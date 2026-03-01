@@ -48,7 +48,7 @@ interface DbCertificate {
   category_id: string | null;
   certificate_categories: { name: string } | null;
   certificate_type_id: string | null;
-  certificate_types: { name: string } | null;
+  certificate_types: { name: string; certificate_categories: { name: string } | null } | null;
   title_raw: string | null;
 }
 
@@ -69,7 +69,7 @@ export function usePersonnel() {
       // Fetch personnel and certificates in parallel (no waterfall)
       const [personnelResult, certificatesResult] = await Promise.all([
         supabase.from('personnel').select('*'),
-        supabase.from('certificates').select('*, certificate_categories(name), certificate_types(name)')
+        supabase.from('certificates').select('*, certificate_categories(name), certificate_types(name, certificate_categories(name))')
       ]);
 
       if (personnelResult.error) throw personnelResult.error;
@@ -126,7 +126,7 @@ export function usePersonnel() {
             placeOfIssue: c.place_of_issue,
             issuingAuthority: c.issuing_authority || undefined,
             documentUrl: c.document_url || undefined,
-            category: c.certificate_categories?.name || undefined,
+            category: c.certificate_types?.certificate_categories?.name || c.certificate_categories?.name || undefined,
             certificateTypeId: c.certificate_type_id || undefined,
             titleRaw: c.title_raw || undefined,
           })),
@@ -187,7 +187,7 @@ export function useWorkerPersonnel() {
       // Fetch certificates with category and type
       const { data: certificatesData, error: certError } = await supabase
         .from('certificates')
-        .select('*, certificate_categories(name), certificate_types(name)')
+        .select('*, certificate_categories(name), certificate_types(name, certificate_categories(name))')
         .eq('personnel_id', p.id);
 
       if (certError) throw certError;
@@ -233,7 +233,7 @@ export function useWorkerPersonnel() {
           placeOfIssue: c.place_of_issue,
           issuingAuthority: c.issuing_authority || undefined,
           documentUrl: c.document_url || undefined,
-          category: c.certificate_categories?.name || undefined,
+          category: c.certificate_types?.certificate_categories?.name || c.certificate_categories?.name || undefined,
           certificateTypeId: c.certificate_type_id || undefined,
           titleRaw: c.title_raw || undefined,
         })),
