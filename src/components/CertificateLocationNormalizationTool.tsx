@@ -23,6 +23,8 @@ interface LocationMapping {
   certCount: number;
   certIds: string[];
   rejected?: boolean;
+  lat?: number;
+  lon?: number;
 }
 
 const COUNTRY_VARIANTS: Record<string, string> = {
@@ -52,7 +54,13 @@ function isStandardized(value: string): boolean {
   return parts.length >= 2 && parts[0].length > 0 && parts[1].length > 0;
 }
 
-async function geocodeWithNominatim(query: string): Promise<string | null> {
+interface GeocodingResult {
+  displayName: string;
+  lat: number;
+  lon: number;
+}
+
+async function geocodeWithNominatim(query: string): Promise<GeocodingResult | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=en`;
     const response = await fetch(url, {
@@ -64,12 +72,14 @@ async function geocodeWithNominatim(query: string): Promise<string | null> {
 
     const result = data[0];
     const displayName: string = result.display_name || '';
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
     // Extract city and country from display_name parts
     const parts = displayName.split(',').map((p: string) => p.trim());
     if (parts.length >= 2) {
       const city = parts[0];
       const country = parts[parts.length - 1];
-      return `${city}, ${country}`;
+      return { displayName: `${city}, ${country}`, lat, lon };
     }
     return null;
   } catch {
@@ -200,16 +210,18 @@ export function CertificateLocationNormalizationTool() {
 
         const { value, certIds } = toProcess[i];
 
-        const normalized = await geocodeWithNominatim(value);
+        const result = await geocodeWithNominatim(value);
 
-        if (normalized && normalized !== value) {
+        if (result && result.displayName !== value) {
           resultMappings.push({
             oldValue: value,
-            newValue: normalized,
+            newValue: result.displayName,
             certCount: certIds.length,
             certIds,
+            lat: result.lat,
+            lon: result.lon,
           });
-        } else if (!normalized) {
+        } else if (!result) {
           failed.push(value);
         } else {
           // normalized === value, already clean
@@ -272,12 +284,18 @@ export function CertificateLocationNormalizationTool() {
             place_of_issue_original: mapping.oldValue,
           };
 
+          const updatePayload: Record<string, unknown> = {
+            place_of_issue: mapping.newValue,
+            rescan_previous_data: updatedPreviousData,
+          };
+          if (mapping.lat != null && mapping.lon != null) {
+            updatePayload.place_of_issue_lat = mapping.lat;
+            updatePayload.place_of_issue_lon = mapping.lon;
+          }
+
           const { error } = await supabase
             .from('certificates')
-            .update({
-              place_of_issue: mapping.newValue,
-              rescan_previous_data: updatedPreviousData,
-            })
+            .update(updatePayload)
             .eq('id', certId);
 
           if (error) {
