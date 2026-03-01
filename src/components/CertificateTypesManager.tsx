@@ -53,6 +53,7 @@ import {
   CertificateType,
 } from "@/hooks/useCertificateTypes";
 import { TypeMergingPane } from "@/components/TypeMergingPane";
+import { RescanCertificatesTool } from "@/components/RescanCertificatesTool";
 
 interface Category {
   id: string;
@@ -67,6 +68,8 @@ export function CertificateTypesManager() {
 
   return (
     <div className="space-y-4" data-scroll-target="unmapped-certificates">
+      <RescanCertificatesTool />
+      
       {/* View selector */}
       <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "merge" | "manage")}>
         <TabsList>
