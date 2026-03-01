@@ -74,6 +74,17 @@ export default function AdminDashboard() {
   const [settingsDeepLink, setSettingsDeepLink] = useState<'review-queue' | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
+  // Auto-scroll to unmapped certificates when deep-linking from Needs Review card
+  useEffect(() => {
+    if (settingsOpen && settingsDeepLink === 'review-queue') {
+      const timeout = setTimeout(() => {
+        document.querySelector('[data-testid="unmapped-certificates-section"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+      return () => clearTimeout(timeout);
+    }
+  }, [settingsOpen, settingsDeepLink]);
+
   // Lifted billing state
   const [liftedSubscription, setLiftedSubscription] = useState<BillingSubscription | null>(null);
   const [liftedEntitlement, setLiftedEntitlement] = useState<BusinessEntitlement | null>(null);
