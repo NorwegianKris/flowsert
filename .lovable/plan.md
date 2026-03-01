@@ -1,45 +1,54 @@
 
 
-## Two Fixes: Alias Lookup + Geocoding Precision
+## Plan: Surface "Needs Review" Stat Card on Admin Dashboard
 
-**Risk: 🔴 anchor required** — changes data access pattern (alias lookup from Supabase in component).
+### Overview
+Add a 5th stat card to the dashboard showing the count of certificates needing review, with a click handler that deep-links into the correct Settings panel section.
 
-### Fix 1: Replace fuzzy matching with alias lookup in CertificateTypeSelector
+### Deep-linking feasibility
+Deep-linking is **feasible** with modest changes. The current structure:
+- `AdminDashboard` → `settingsOpen` state (boolean) → renders Settings panel
+- Settings panel → `Collapsible` for "Categories" (currently uncontrolled, defaults closed)
+- Inside → `CategoriesSection` → `Tabs defaultValue="workers"` (uncontrolled)
+- Inside "certificates" tab → another nested `Tabs` containing Types/Aliases/Issuers
 
-**File: `src/components/CertificateTypeSelector.tsx`**
+To deep-link, we need to:
+1. Add a controlled `defaultOpen` prop to the Categories `Collapsible` in AdminDashboard
+2. Add a controlled `defaultTab` prop to `CategoriesSection` so it can open on "certificates" instead of "workers"
+3. Both are simple prop additions — no restructuring needed
 
-1. **Add `businessId` prop** to `CertificateTypeSelectorProps` interface (line 28): `businessId?: string`
-2. **Add import** for `supabase` client and `normalizeCertificateTitle` from certificateNormalization
-3. **Remove** `stringSimilarity` import (line 21) — no longer needed
-4. **Replace OCR useEffect** (lines 96-141): Convert to async alias lookup:
-   - When `ocrHint` provided and `confidence >= 60` and `businessId` is set:
-     - Normalize using `normalizeCertificateTitle(ocrHint.extractedName)`
-     - Query `certificate_aliases` table: `.eq('business_id', businessId).eq('alias_normalized', normalized).maybeSingle()`
-     - If alias found → find matching type in `types` array → auto-select via `onChange(matchedType.id, matchedType.name)`, set `ocrAutoSelected`
-     - If no alias found → **fall back to existing fuzzy logic** (keep stringSimilarity as secondary fallback, don't remove import)
-   - If `confidence < 60` → show low confidence hint (existing behavior)
+### Changes
 
-**File: `src/components/AddCertificateDialog.tsx`**
+**1. `src/hooks/useNeedsReviewCount.ts` — New hook**
+- Query `certificates` table counting rows where `needs_review = true`, joined through `personnel` to scope by business
+- Returns `{ count: number, loading: boolean }`
+- Refetches when personnel data changes
 
-5. **Pass `businessId` prop** to `CertificateTypeSelector` at line 746:
-   ```tsx
-   <CertificateTypeSelector
-     businessId={businessId}
-     ...existing props
-   />
-   ```
+**2. `src/components/DashboardStats.tsx` — Add 5th card**
+- New props: `needsReviewCount: number`, `onNeedsReviewClick?: () => void`
+- Add a clickable card after the existing 4 with `FileSearch` icon, amber color scheme (`bg-amber-500/10`, `text-amber-500`)
+- When count is 0: swap to green `CheckCircle` icon
+- Grid: change `lg:grid-cols-4` to `lg:grid-cols-5`, keep `sm:grid-cols-2` so the 5th card wraps naturally on tablets (3+2 or 2+2+1 depending on breakpoint)
 
-### Fix 2: Geocoding precision — city-level only
+**3. `src/components/CategoriesSection.tsx` — Accept optional `defaultTab` prop**
+- Add prop `defaultTab?: string` (defaults to `"workers"`)
+- Pass it to the outer `Tabs` component's `defaultValue`
+- No other changes to this component
 
-**File: `src/components/AddCertificateDialog.tsx`**
+**4. `src/pages/AdminDashboard.tsx` — Wire it up**
+- Import and call `useNeedsReviewCount`
+- Add state: `settingsDeepLink` (e.g., `'review-queue' | null`)
+- Click handler on the stat card: sets `settingsOpen(true)` AND `settingsDeepLink('review-queue')`
+- When rendering the Categories `Collapsible`: pass `defaultOpen={settingsDeepLink === 'review-queue'}` 
+- When rendering `CategoriesSection`: pass `defaultTab={settingsDeepLink === 'review-queue' ? 'certificates' : undefined}`
+- Clear `settingsDeepLink` when settings panel closes
 
-6. **Update Nominatim fetch** (lines 233-246):
-   - Change URL params: `&addressdetails=1&featuretype=city&limit=3`
-   - From results, find best city-level match by checking `address.city` or `address.town`
-   - Format output as `"{city/town}, {country}"` instead of raw `display_name`
-   - If no city-level match found, keep original plain text
+### Grid responsiveness detail
+Current grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`. Updated to `grid-cols-1 sm:grid-cols-2 lg:grid-cols-5`. On medium screens (sm), the 5th card stacks to a third row (2+2+1), which is clean. On large screens, all 5 sit in one row. No cramping risk.
 
-### Files changed
-- `src/components/CertificateTypeSelector.tsx` — alias lookup + businessId prop
-- `src/components/AddCertificateDialog.tsx` — pass businessId + geocoding fix
+### What is NOT changed
+- `CertificateReviewQueue` component — untouched
+- Settings panel layout/navigation — untouched (just prop additions)
+- Existing 4 stat cards — untouched
+- Database schema — no migrations
 
