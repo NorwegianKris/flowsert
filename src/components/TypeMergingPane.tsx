@@ -1308,7 +1308,7 @@ export function TypeMergingPane() {
   };
 
   return (
-    <div className="space-y-4">
+    <div data-testid="unmapped-certificates-section" className="space-y-4">
       {/* Status overview */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <span>
@@ -1323,7 +1323,7 @@ export function TypeMergingPane() {
       {/* Three-column layout */}
       <div className="flex flex-col lg:flex-row lg:gap-0 gap-4 overflow-hidden">
         {/* Left Pane: Unmapped Certificates */}
-        <div data-testid="unmapped-certificates-section" className="border rounded-lg flex flex-col h-[600px] min-w-0" style={{ flex: "0 0 35%" }}>
+        <div className="border rounded-lg flex flex-col h-[600px] min-w-0" style={{ flex: "0 0 35%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Unmapped Certificates</h3>
