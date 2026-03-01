@@ -1,20 +1,22 @@
 
 
-## Plan: Auto-scroll to Unmapped Certificates after deep-link
+## Plan: Move scroll target to the outer TypeMergingPane container
 
-### Approach
-Add a `useEffect` in `AdminDashboard.tsx` that fires when `settingsDeepLink === 'review-queue'` and the settings panel is open. After a 300ms delay (to let the collapsible animation finish), it finds the "Unmapped Certificates" heading element inside `TypeMergingPane` and calls `scrollIntoView({ behavior: 'smooth', block: 'start' })`.
+The `data-testid="unmapped-certificates-section"` attribute is currently on the inner "Left Pane: Unmapped Certificates" `div` (line 1326 of `TypeMergingPane.tsx`), which sits inside the three-column layout. This is too deep — the scroll lands partway through the section.
 
-### Changes
+### Change
 
-**`src/components/TypeMergingPane.tsx`** — Add a `data-testid="unmapped-certificates-section"` (or `id`) attribute to the outer container of the unmapped certificates pane (the `<div>` at ~line 1326) so it can be targeted for scrolling.
+**`src/components/TypeMergingPane.tsx`**
+- Remove `data-testid="unmapped-certificates-section"` from line 1326 (the inner left pane div)
+- Add `data-testid="unmapped-certificates-section"` to line 1311 (the outer `<div className="space-y-4">` that wraps the stats line and the three-column layout)
 
-**`src/pages/AdminDashboard.tsx`** — Add a `useEffect` that watches `settingsDeepLink` and `settingsOpen`. When both indicate a review-queue deep-link is active, set a 300ms `setTimeout`, then query `document.querySelector('[data-testid="unmapped-certificates-section"]')` and call `.scrollIntoView({ behavior: 'smooth', block: 'start' })`. Clean up the timeout on unmount/change.
+This moves the scroll anchor up so `scrollIntoView` targets the container that includes the "424 unmapped certificates • 55 canonical types" stats line and the full two-column layout below it.
+
+**No changes to `AdminDashboard.tsx`** — the `useEffect` and `scrollIntoView` call remain identical since they query the same `data-testid`.
 
 ### Files changed
-- `src/components/TypeMergingPane.tsx` — add `data-testid` attribute (1 line)
-- `src/pages/AdminDashboard.tsx` — add `useEffect` for auto-scroll (~8 lines)
+- `src/components/TypeMergingPane.tsx` — move attribute from line 1326 to line 1311 (2 lines)
 
 ### Not changed
-- Visual design, grid layout, other components, schema
+- AdminDashboard scroll logic, visual design, grid layout, any other component
 
