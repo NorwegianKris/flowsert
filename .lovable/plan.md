@@ -1,47 +1,35 @@
 
 
-## Real-Time Progress During AI Suggest Analysis
+## Fix: Cap Match Scores at 100%
 
-### Problem
+**Problem**: The AI model (Gemini) sometimes returns `matchScore` values above 100 despite the system prompt instructing a 0–100 range. The credential depth bonus (+5/+3) can push scores over 100 when the model doesn't enforce the cap itself.
 
-The current processing phase sends **all certificates in a single API call** to the edge function, which processes them internally in batches of 25. The client has no visibility into progress — it shows an indeterminate progress bar and static text until the entire response returns.
+**Root cause**: Line 671–673 — the edge function filters and sorts AI results but never clamps the score.
 
-The user's assumption that processing is "sequential with 500ms delay" does not apply here — that pattern is used in the re-scan tool, not this dialog.
+**Risk**: 🟢 UI-only display fix. No schema, no RLS, no auth changes.
 
-### Approach
+### Change: `supabase/functions/suggest-project-personnel/index.ts`
 
-Split the **client-side** call into multiple smaller API calls (batches of 25, matching the server's internal batch size). Each batch call completes and returns results, allowing the UI to update progress after each batch. The edge function itself is **not changed**.
+At lines 671–673, after filtering valid personnel IDs, add `Math.min(sp.matchScore, 100)` to clamp scores:
 
-### Changes — `src/components/AISuggestDialog.tsx`
+```typescript
+// Before:
+result.suggestedPersonnel = result.suggestedPersonnel
+  .filter(sp => validPersonnelIds.has(sp.id))
+  .sort((a, b) => b.matchScore - a.matchScore);
 
-#### 1. Add `processedCount` state
+// After:
+result.suggestedPersonnel = result.suggestedPersonnel
+  .filter(sp => validPersonnelIds.has(sp.id))
+  .map(sp => ({ ...sp, matchScore: Math.min(sp.matchScore, 100) }))
+  .sort((a, b) => b.matchScore - a.matchScore);
+```
 
-New state variable to track how many certificates have been processed so far, updated after each batch call resolves.
-
-#### 2. Refactor `handleStart` to loop over client-side batches
-
-Instead of sending all `certsPayload` in one call, chunk into groups of 25 and call the edge function once per chunk. After each call:
-- Increment `processedCount` by the batch size
-- Update `progressText` to `"Processing X of Y certificates..."`
-- Update progress bar value to `(processedCount / totalCount) * 100`
-- Check `abortRef.current` between batches for stop support
-- Accumulate suggestions from all batch responses
-
-#### 3. Update processing phase UI (lines 578–590)
-
-- Progress bar: change `value={undefined}` to `value={(processedCount / certCount) * 100}` — deterministic fill
-- Text above bar: `"Processing {processedCount} of {certCount} certificates..."`
-- Text below bar: `"{certCount - processedCount} certificates remaining..."`
-
-#### 4. Merge partial results
-
-After all batches complete (or abort), merge accumulated suggestions and compute `remainingCount` / `actualFailedCount` the same way as today.
-
-#### 5. Reset `processedCount` in `resetState`
+Single line addition. Ranking order is preserved since clamping only affects values above 100.
 
 ### Files changed
 
 | File | Action |
 |---|---|
-| `src/components/AISuggestDialog.tsx` | MODIFY |
+| `supabase/functions/suggest-project-personnel/index.ts` | MODIFY — add `.map()` to clamp matchScore |
 
