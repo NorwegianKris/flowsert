@@ -134,6 +134,7 @@ export function AISuggestDialog({
   const [remainingCount, setRemainingCount] = useState(0);
   const [actualFailedCount, setActualFailedCount] = useState(0);
   const [partialInfo, setPartialInfo] = useState<{ processed: number; total: number } | null>(null);
+  const [processedCount, setProcessedCount] = useState(0);
 
   // Expandable sections
   const [existingTypesOpen, setExistingTypesOpen] = useState(true);
@@ -174,6 +175,7 @@ export function AISuggestDialog({
     setRemainingCount(0);
     setActualFailedCount(0);
     setPartialInfo(null);
+    setProcessedCount(0);
     setExistingTypesOpen(true);
     setNewTypesOpen(true);
     setNoMatchOpen(false);
@@ -238,8 +240,10 @@ export function AISuggestDialog({
         return;
       }
 
-      setCertCount(filtered.length);
-      setProgressText(`Analyzing ${filtered.length} certificates...`);
+      const totalCount = filtered.length;
+      setCertCount(totalCount);
+      setProcessedCount(0);
+      setProgressText(`Processing 0 of ${totalCount} certificates...`);
 
       if (abortRef.current) { setPhase("confirming"); setProcessing(false); return; }
 
@@ -268,49 +272,86 @@ export function AISuggestDialog({
       const { data: session } = await supabase.auth.getSession();
       const accessToken = session?.session?.access_token;
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-certificate-types`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            certificates: certsPayload,
-            canonicalTypes: canonicalPayload,
-          }),
-        }
-      );
+      // ── Client-side batching: 25 per call ──
+      const BATCH_SIZE = 25;
+      const allSuggestions: AISuggestion[] = [];
+      let totalProcessedByServer = 0;
+      let wasAborted = false;
 
-      if (abortRef.current) { setPhase("confirming"); setProcessing(false); return; }
+      for (let i = 0; i < certsPayload.length; i += BATCH_SIZE) {
+        if (abortRef.current) { wasAborted = true; break; }
 
-      if (response.status === 429) {
-        const body = await response.json().catch(() => ({}));
-        if (body.error === "monthly_cap_reached") {
-          toast.error("Monthly AI allowance reached");
-        } else {
-          toast.error("Rate limit exceeded — please try again shortly");
+        const batch = certsPayload.slice(i, i + BATCH_SIZE);
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-certificate-types`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              certificates: batch,
+              canonicalTypes: canonicalPayload,
+            }),
+          }
+        );
+
+        if (abortRef.current) { wasAborted = true; break; }
+
+        if (response.status === 429) {
+          const body = await response.json().catch(() => ({}));
+          if (body.error === "monthly_cap_reached") {
+            toast.error("Monthly AI allowance reached");
+          } else {
+            toast.error("Rate limit exceeded — please try again shortly");
+          }
+          // Keep partial results collected so far
+          wasAborted = true;
+          break;
         }
+
+        if (response.status === 402) {
+          toast.error("AI usage limit reached. Please contact support.");
+          wasAborted = true;
+          break;
+        }
+
+        if (!response.ok) {
+          console.error(`Batch ${i / BATCH_SIZE + 1} failed (${response.status}), skipping`);
+          // Count as processed but failed
+          totalProcessedByServer += batch.length;
+          const newProcessed = Math.min(i + BATCH_SIZE, certsPayload.length);
+          setProcessedCount(newProcessed);
+          setProgressText(`Processing ${newProcessed} of ${totalCount} certificates...`);
+          continue;
+        }
+
+        const result = await response.json();
+        const batchSuggestions: AISuggestion[] = result.suggestions || [];
+        allSuggestions.push(...batchSuggestions);
+        totalProcessedByServer += result.processed || batch.length;
+
+        const newProcessed = Math.min(i + BATCH_SIZE, certsPayload.length);
+        setProcessedCount(newProcessed);
+        setProgressText(`Processing ${newProcessed} of ${totalCount} certificates...`);
+      }
+
+      // If aborted early with no results, go back
+      if (wasAborted && allSuggestions.length === 0) {
         setPhase("confirming");
         setProcessing(false);
         return;
       }
 
-      if (response.status === 402) {
-        toast.error("AI usage limit reached. Please contact support.");
-        setPhase("confirming");
-        setProcessing(false);
-        return;
-      }
+      const suggestions = allSuggestions;
+      const actualProcessed = wasAborted
+        ? totalProcessedByServer
+        : certsPayload.length;
 
-      if (!response.ok) throw new Error(`Classification failed (${response.status})`);
-
-      const result = await response.json();
-      const suggestions: AISuggestion[] = result.suggestions || [];
-
-      if (result.partial) {
-        setPartialInfo({ processed: result.processed, total: result.total });
+      if (actualProcessed < totalCount || wasAborted) {
+        setPartialInfo({ processed: actualProcessed, total: totalCount });
       }
 
       // Build result rows
@@ -357,15 +398,8 @@ export function AISuggestDialog({
         }
       }
 
-      let remaining = 0;
-      let actualFailed = 0;
-      if (result.partial) {
-        remaining = filtered.length - (result.processed || filtered.length);
-        actualFailed = (result.processed || filtered.length) - suggestions.length;
-      } else {
-        remaining = 0;
-        actualFailed = filtered.length - suggestions.length;
-      }
+      let remaining = totalCount - actualProcessed;
+      let actualFailed = actualProcessed - suggestions.length;
 
       setSuggestionRows(matched);
       setNoMatchRows(noMatch);
@@ -581,9 +615,13 @@ export function AISuggestDialog({
               <div className="flex flex-col items-center gap-4 text-center">
                 <Sparkles className="h-8 w-8 text-primary animate-pulse" />
                 <div className="w-full max-w-sm space-y-2">
-                  <p className="text-sm font-medium">{progressText}</p>
-                  <Progress value={undefined} className="h-2" />
-                  <p className="text-xs text-muted-foreground">This may take 10–60 seconds</p>
+                  <p className="text-sm font-medium">
+                    Processing {processedCount} of {certCount} certificates...
+                  </p>
+                  <Progress value={certCount > 0 ? (processedCount / certCount) * 100 : 0} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {certCount - processedCount} certificates remaining...
+                  </p>
                 </div>
               </div>
             </div>
