@@ -1,44 +1,47 @@
 
 
-## Plan: Add "Normalize Country Names" Step to Location Tool
+## Plan: Add Lat/Lon Columns and Store Coordinates on Geocoding
 
-**Risk**: 🟢 Pure UI + string mapping. No schema/RLS/auth changes.
+**Risk**: 🔴 Migration adds columns to `certificates` table → anchor required.
 
-### What changes
+### 1. Database Migration
 
-**File: `src/components/CertificateLocationNormalizationTool.tsx`** — MODIFY
+Add two nullable columns to `certificates`:
 
-Add a country normalization section that appears after the city normalization results (or independently via a separate button). This is a hardcoded lookup — no API calls.
-
-**New state:**
-- `countryMappings: LocationMapping[]` — country-only matches found
-- `countryApplying: boolean`
-- `showCountryResults: boolean`
-
-**Country map** — a `Record<string, string>` keyed by lowercase variant:
-```
-"norway","norge" → "Norway"
-"uk","united kingdom" → "United Kingdom"
-"netherlands","the netherlands" → "Netherlands"
-"spain","españa" → "Spain"
-... (all entries from the user's list)
+```sql
+ALTER TABLE public.certificates
+  ADD COLUMN place_of_issue_lat double precision,
+  ADD COLUMN place_of_issue_lon double precision;
 ```
 
-**"Normalize country names" button:**
-- Shown when: city normalization is idle (no processing/applying), OR after city results are applied/dismissed
-- On click: queries all certificates with non-null `place_of_issue` for the business, groups by unique value, checks each against the country map (case-insensitive lookup, no comma = country-only), builds `countryMappings` for values that differ from the canonical form
-- Instant — no progress bar needed since it's pure string matching with no API calls
+GREEN migration — additive only, no data changes, no RLS impact.
 
-**Results display** — same pattern as city normalization:
-- Summary: "X country names normalized (Y certificates)"
-- Expandable before/after list with reject (X) buttons
-- "Apply All" button using same rollback pattern (save old value to `rescan_previous_data.place_of_issue_original`)
+### 2. Update `geocodeWithNominatim` return type
 
-**Placement**: Below the city normalization results section, separated by a subtle divider. If city normalization hasn't been run, the country button still appears as a standalone action.
+**File: `src/components/CertificateLocationNormalizationTool.tsx`**
+
+- Change return type from `string | null` to `{ displayName: string; lat: number; lon: number } | null`
+- Extract `lat` and `lon` from Nominatim response (already present in the JSON)
+- Update `LocationMapping` interface to include `lat` and `lon` fields
+- In the processing loop, store lat/lon in the mapping alongside the display name
+- In `handleApplyAll`, include `place_of_issue_lat` and `place_of_issue_lon` in the certificate update alongside `place_of_issue`
+- In `handleApplyCountries`, no lat/lon (country-only normalization uses a hardcoded map, not Nominatim)
+
+### 3. Update upload geocoding
+
+**File: `src/components/AddCertificateDialog.tsx`**
+
+- In the Nominatim fire-and-forget block (lines 233–256), extract `lat` and `lon` from `cityResult`
+- Store them in the certificate form state (add `placeOfIssueLat` / `placeOfIssueLon` fields to the local cert state)
+- When the certificate is saved to the database, include `place_of_issue_lat` and `place_of_issue_lon` in the insert payload
+
+This requires checking the save handler to see where the INSERT happens.
 
 ### Files changed
 
 | File | Action |
 |---|---|
-| `src/components/CertificateLocationNormalizationTool.tsx` | MODIFY — add country mapping logic and UI section |
+| Migration | ADD `place_of_issue_lat`, `place_of_issue_lon` to `certificates` |
+| `src/components/CertificateLocationNormalizationTool.tsx` | Return and store lat/lon from Nominatim |
+| `src/components/AddCertificateDialog.tsx` | Store lat/lon on upload geocoding |
 
