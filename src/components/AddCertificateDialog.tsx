@@ -243,9 +243,16 @@ export function AddCertificateDialog({
             const country = addr.country;
             
             if (cityName && country) {
+              const lat = parseFloat(cityResult.lat);
+              const lon = parseFloat(cityResult.lon);
               setCertificates(prev => prev.map(c =>
                 c.id === certId
-                  ? { ...c, placeOfIssue: `${cityName}, ${country}` }
+                  ? {
+                      ...c,
+                      placeOfIssue: `${cityName}, ${country}`,
+                      placeOfIssueLat: isNaN(lat) ? undefined : lat,
+                      placeOfIssueLon: isNaN(lon) ? undefined : lon,
+                    }
                   : c
               ));
             }
@@ -348,9 +355,7 @@ export function AddCertificateDialog({
           needsReview = !cert.aliasAutoMatched;
         }
         
-        const { data: insertedCert, error: insertError } = await supabase
-          .from('certificates')
-          .insert({
+        const insertPayload: Record<string, unknown> = {
             personnel_id: personnelId,
             name: cert.certificateTypeName || cert.certificateTypeFreeText || cert.name,
             date_of_issue: cert.dateOfIssue,
@@ -363,7 +368,19 @@ export function AddCertificateDialog({
             certificate_type_id: cert.certificateTypeId || null,
             issuer_type_id: cert.issuerTypeId || null,
             needs_review: needsReview,
-          })
+          };
+
+        // Include coordinates if available from geocoding
+        if ((cert as any).placeOfIssueLat != null) {
+          insertPayload.place_of_issue_lat = (cert as any).placeOfIssueLat;
+        }
+        if ((cert as any).placeOfIssueLon != null) {
+          insertPayload.place_of_issue_lon = (cert as any).placeOfIssueLon;
+        }
+
+        const { data: insertedCert, error: insertError } = await supabase
+          .from('certificates')
+          .insert(insertPayload as any)
           .select()
           .single();
 
