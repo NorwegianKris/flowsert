@@ -1,61 +1,40 @@
 
 
-## Split AI Suggest Results into Existing vs New Type Sections
+## Fix: Suppress Duplicate Alias Toast During AI Suggest Approval
 
-**Risk**: 🟢 UI-only — no backend, no data model, no access control changes.
+**Problem**: The `useCreateAlias` hook's `onError` callback shows a toast for duplicate alias errors (code 23505) before the AISuggestDialog's catch block can suppress it.
 
-### Current State
+**Root cause**: Line 155-161 in `src/hooks/useCertificateAliases.ts` — the `onError` handler unconditionally toasts on 23505.
 
-All suggestions (existing type matches and new type proposals) are mixed in one "suggestions ready" list. Both have similar-looking buttons, and "Approve All" can accidentally batch-approve new type creation.
+**Risk**: 🟢 UI-only — no data model, no backend changes.
 
-### Changes — single file: `src/components/AISuggestDialog.tsx`
+### Change: `src/hooks/useCertificateAliases.ts`
 
-#### 1. Split suggestion rows into two lists
+In the `useCreateAlias` hook's `onError` callback (lines 155-161), silently ignore duplicate alias errors instead of showing a toast. Only show the toast for non-duplicate errors. This makes the hook safe for both manual "Teach the System" use (where the admin already sees context) and automated AI Suggest flows.
 
-After building `matched` array (line ~289), partition into:
-- `existingTypeRows` — where `isNewType === false` (has `suggested_type_id`)
-- `newTypeRows` — where `isNewType === true` (has `suggested_new_type_name`)
+```typescript
+// Before:
+onError: (error: any) => {
+  if (error.code === "23505") {
+    toast.error("An alias with this name already exists");
+  } else {
+    toast.error("Failed to create alias");
+  }
+},
 
-Sort both by confidence: high → medium → low.
-
-Add separate state arrays and collapsible sections for each.
-
-#### 2. "Matched to existing types" section
-
-Same UX as current: Approve / Reject per row, plus "Approve All" batch button. Only this section gets batch approval.
-
-#### 3. "New types suggested" section
-
-Visually distinct:
-- Amber/warning background (`bg-amber-50 dark:bg-amber-950/20`)
-- `AlertTriangle` icon in the section header
-- No "Approve All" button
-
-Each row gets:
-- **Category dropdown** — pre-filled with AI's suggested category. Uses a `Select` component populated from the `categories` prop. Admin can change before creating.
-- **"Assign to existing type" dropdown** — a `Select` letting the admin pick an existing canonical type instead of creating a new one. When selected, the row switches from "Create & Approve" to just "Approve" (assigns to the chosen existing type).
-- **"Create & Approve"** and **"Reject"** buttons (individual only, no batch).
-
-#### 4. State additions
-
-- `newTypeRows` — separate `SuggestionRow[]` state
-- `newTypeCategoryOverrides` — `Record<string, string>` mapping cert ID → overridden category ID
-- `newTypeExistingOverrides` — `Record<string, string>` mapping cert ID → chosen existing type ID (when admin picks "Assign to existing type" instead)
-- `newTypesOpen` — collapsible open state
-
-#### 5. Approve handler updates
-
-When approving a new-type row:
-- Check if admin overrode with existing type (`newTypeExistingOverrides`). If so, assign to that type instead of creating.
-- Otherwise, create new type using `newTypeCategoryOverrides[certId]` if set, else fall back to AI-suggested category matching.
-
-#### 6. Summary stats grid
-
-Update from 3 columns to show: "Existing matches (X)" | "New types (X)" | "No match (X)" | "Failed (X)" — or keep 3 columns but update labels to reflect the split.
+// After:
+onError: (error: any) => {
+  if (error.code === "23505") {
+    // Silently skip — alias already exists, no action needed
+    return;
+  }
+  toast.error("Failed to create alias");
+},
+```
 
 ### Files changed
 
 | File | Action |
 |---|---|
-| `src/components/AISuggestDialog.tsx` | MODIFY |
+| `src/hooks/useCertificateAliases.ts` | MODIFY — suppress 23505 toast in `onError` |
 
