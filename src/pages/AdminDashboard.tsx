@@ -16,6 +16,7 @@ import { CategoriesSection } from '@/components/CategoriesSection';
 import { BillingSection, BillingSubscription } from '@/components/BillingSection';
 import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsManager';
 import { LocationStandardizationTool } from '@/components/LocationStandardizationTool';
+import { CertificateLocationNormalizationTool } from '@/components/CertificateLocationNormalizationTool';
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
@@ -917,6 +918,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <LocationStandardizationTool />
+                    <CertificateLocationNormalizationTool />
                   </CollapsibleContent>
                 </Collapsible>
 
