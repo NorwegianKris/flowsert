@@ -1,55 +1,45 @@
 
 
-## Plan: "Teach the System" — Taxonomy Seeding Tool
+## Plan: Document Thumbnails in the Triage Queue
 
-### New file: `src/components/TaxonomySeedingTool.tsx`
+### Overview
+Add thumbnail previews to the CertificateReviewQueue table. This requires two changes: extending the data hook to fetch `document_url`, and updating the component to render thumbnails.
 
-A self-contained component that renders inside the Certificates tab as a collapsible card above the Categories/Types/Issuers sub-tabs.
+### Edit: `src/hooks/useCertificatesNeedingReview.ts`
 
-**Structure:**
-- Collapsible wrapper (collapsed by default) with a Sparkles icon and "Teach the System" heading
-- Drag-and-drop upload zone (same visual pattern as UploadZone: dashed border, sparkle icon, accepts PDF/JPEG/PNG/WebP/GIF, max 20 files)
-- Processing list showing each file's status with spinners, green "Already known" badges, amber "New type suggested" badges, or red error badges
-- Summary section after processing: stats line + approval UI for each suggestion (category dropdown, Approve/Dismiss buttons, Approve All)
+1. Add `document_url` to the SELECT query (line 41-52) alongside the existing fields
+2. Add `document_url` to the `UnmappedCertificate` interface
+3. In the grouping logic, collect the first `document_url` found per group into a new field `sample_document_url` on `ReviewGroup`
+4. Update the `ReviewGroup` interface to include `sample_document_url: string | null`
 
-**Processing flow per file:**
-1. Convert via `fileToBase64Image()` from `pdfUtils.ts`
-2. Call `supabase.functions.invoke('extract-certificate-data')` with base64 + existing categories/issuers (same as SmartCertificateUpload)
-3. Take `suggestedTypeName` from result
-4. Normalize via `normalizeCertificateTitle()` and query `certificate_aliases` for exact match
-5. If no alias match, run `findSimilarMatches()` from `stringUtils.ts` with **threshold 0.85** against existing `certificate_types` names
-6. Match found → "Already known"; no match → add to suggestions list
-7. 500ms delay between API calls (same throttling pattern as SmartCertificateUpload)
+### Edit: `src/components/CertificateReviewQueue.tsx`
 
-**Approve action:**
-- Insert new `certificate_types` row via `useCreateCertificateType` hook
-- Create alias via `useCreateAlias` hook (createdBy: 'admin', confidence: 100)
-- No `certificates` table writes
+**Table header (line 344-358):**
+- Insert a new `<TableHead>` for thumbnails as the FIRST column (before checkbox), width ~50px
 
-**Props:** `existingCategories: { id: string; name: string }[]` — passed from CategoriesSection
+**Table rows (line 367-435):**
+- Insert a new `<TableCell>` as the first cell containing a thumbnail:
+  - If `document_url` ends with `.pdf` → show a `FileText` icon (lucide) styled as a 40x40 placeholder
+  - If image extension (jpg/jpeg/png/webp/gif) or no extension → render an `<img>` tag at 40x40 with `object-cover`, rounded corners
+  - On click → open the full document URL via `getCertificateDocumentUrl()` from `storageUtils.ts` in a new tab
+  - On image error → fall back to a grey `FileText` icon placeholder
+  - If `document_url` is null → show grey `ImageOff` icon placeholder
 
-**Hooks consumed (not modified):**
-- `useCreateCertificateType` from `useCertificateTypes.ts`
-- `useCreateAlias` from `useCertificateAliases.ts`
-- `useCertificateTypes` from `useCertificateTypes.ts` (for fuzzy matching against existing types)
-- `useCertificateAliases` (for alias lookup)
-- `useAuth` for businessId
+**Expanded row (line 436-504):**
+- In the expanded content area, add a "Document Preview" section showing a larger thumbnail (~120px wide) using the same logic
+- Update `colSpan` from 7 to 8 to account for the new column
 
-### Edit: `src/components/CategoriesSection.tsx`
+**Imports:**
+- Add `ImageOff` from lucide-react
+- Import `getCertificateDocumentUrl` from `@/lib/storageUtils`
 
-Inside the `certificates` TabsContent (line 88), insert the `TaxonomySeedingTool` component **above** the inner `<Tabs>` (line 89). Wrapped in its own Collapsible, collapsed by default.
-
-- Import `TaxonomySeedingTool`
-- Render before the inner Tabs: `<TaxonomySeedingTool existingCategories={categories} />` — categories fetched inline via the same pattern used in `CertificateCategoriesInner`
-- The component fetches its own categories internally via `useCertificateCategories` hook, so no prop drilling needed — simplify to no props
+### Technical details
+- Signed URLs are needed since the `certificate-documents` bucket is private; use `getCertificateDocumentUrl()` which handles path extraction and signed URL generation
+- The thumbnail `<img>` uses the signed URL; since these are loaded lazily per-row, no batch pre-fetching is needed — a simple `useState` + `useEffect` per thumbnail suffices, or a small inline component
+- To keep things clean, create a small `CertificateThumbnail` sub-component inside the file that handles: signed URL fetching on mount, loading state, error fallback, and click-to-open
+- No database changes, no schema changes, no new tables
 
 ### Files touched
-- **New:** `src/components/TaxonomySeedingTool.tsx`
-- **Edit:** `src/components/CategoriesSection.tsx` (add import + render, ~3 lines)
-
-### What stays untouched
-- `SmartCertificateUpload`, `AddCertificateDialog` — no changes
-- `extract-certificate-data` edge function — reused as-is
-- `certificates` table — no inserts, no schema changes
-- All existing hooks — consumed only
+- **Edit:** `src/hooks/useCertificatesNeedingReview.ts` (add `document_url` to query + grouping)
+- **Edit:** `src/components/CertificateReviewQueue.tsx` (add thumbnail column + expanded preview)
 
