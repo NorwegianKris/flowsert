@@ -105,7 +105,8 @@ export function TaxonomySeedingTool() {
 
         if (error) throw error;
 
-        const suggestedTypeName = data?.suggestedTypeName || data?.certificateName || '';
+        const extracted = data?.extractedData;
+        const suggestedTypeName = extracted?.suggestedTypeName || extracted?.certificateName || '';
         if (!suggestedTypeName) {
           setFiles(prev => prev.map(f => f.id === item.id ? {
             ...f, status: 'error', errorMessage: 'Could not extract certificate name',
@@ -142,7 +143,7 @@ export function TaxonomySeedingTool() {
             } : f));
           } else {
             // New type suggested
-            const suggestedCat = data?.suggestedCategory || '';
+            const suggestedCat = extracted?.matchedCategory || '';
             const matchedCat = (categories || []).find(
               c => c.name.toLowerCase() === suggestedCat.toLowerCase()
             );
@@ -171,9 +172,10 @@ export function TaxonomySeedingTool() {
           }
         }
       } catch (err: any) {
-        console.error('Error processing file:', err);
+        console.error(`[TaxonomySeeding] Error processing "${item.file.name}":`, err);
+        const msg = err?.message || err?.msg || (typeof err === 'string' ? err : 'Processing failed');
         setFiles(prev => prev.map(f => f.id === item.id ? {
-          ...f, status: 'error', errorMessage: err.message || 'Processing failed',
+          ...f, status: 'error', errorMessage: msg,
         } : f));
       }
 
@@ -318,7 +320,12 @@ export function TaxonomySeedingTool() {
               <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
                 {files.map(f => (
                   <div key={f.id} className="flex items-center justify-between p-2 text-sm gap-2">
-                    <span className="truncate flex-1 min-w-0">{f.file.name}</span>
+                    <div className="truncate flex-1 min-w-0">
+                      <span className="truncate">{f.file.name}</span>
+                      {f.status === 'error' && f.errorMessage && (
+                        <p className="text-xs text-destructive mt-0.5 truncate">Failed: {f.errorMessage}</p>
+                      )}
+                    </div>
                     {f.status === 'pending' && (
                       <Badge variant="secondary" className="shrink-0">Pending</Badge>
                     )}
