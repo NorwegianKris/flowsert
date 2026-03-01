@@ -154,10 +154,10 @@ export function useCreateAlias() {
     },
     onError: (error: any) => {
       if (error.code === "23505") {
-        toast.error("An alias with this name already exists");
-      } else {
-        toast.error("Failed to create alias");
+        // Silently skip — alias already exists, no action needed
+        return;
       }
+      toast.error("Failed to create alias");
     },
   });
 }
