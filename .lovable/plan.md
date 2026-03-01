@@ -1,134 +1,49 @@
 
 
-## Implementation Plan: Six Fixes for Certificate Taxonomy & UI
+## Part 1 — Verify Upload Geocoding
 
-**Risk**: Fix 1 & 6 touch data resolution (🟡 anchor recommended). Fix 2/3/4/5 are UI-only (🟢).
-
----
-
-### Fix 1 — Category Resolution via Type Chain
-
-**File: `src/hooks/usePersonnel.ts`**
-
-1. Update `DbCertificate` interface (line 51): change `certificate_types` to include nested category:
-   ```typescript
-   certificate_types: { name: string; certificate_categories: { name: string } | null } | null;
-   ```
-
-2. Update both Supabase queries to join through `certificate_types` to `certificate_categories`:
-   - Line 72: `certificate_types(name, certificate_categories(name))`
-   - Line 190: same
-
-3. Update category resolution in both mapping blocks:
-   - Line 129 and line 236: 
-   ```typescript
-   category: c.certificate_types?.certificate_categories?.name || c.certificate_categories?.name || undefined,
-   ```
+**Status: Already working.** Lines 230–256 of `AddCertificateDialog.tsx` show that when OCR extracts a `placeOfIssue`, a fire-and-forget Nominatim call normalizes it to "City, Country" format and updates the form state before the user saves. The field is also rendered as a `GeoLocationInput` (line 676) so the admin can correct it manually. The geocoding runs async but the user must review and click Save, giving it time to resolve. No changes needed.
 
 ---
 
-### Fix 2 — Dashboard Refresh on Settings Close
+## Part 2 — "Normalize Certificate Locations" Tool
 
-**File: `src/pages/AdminDashboard.tsx`**
+**Risk**: 🟢 UI-only tool. No schema changes. Updates `certificates.place_of_issue` (existing column) and appends to `rescan_previous_data` JSONB. No RLS/auth changes.
 
-1. Line 132: destructure `refetch` from `useNeedsReviewCount`:
-   ```typescript
-   const { count: needsReviewCount, refetch: refetchNeedsReview } = useNeedsReviewCount();
-   ```
+### New file: `src/components/CertificateLocationNormalizationTool.tsx`
 
-2. Line 765: add `refetchNeedsReview()` and `refetch()` to the settings close handler:
-   ```typescript
-   onClick={() => { setSettingsOpen(false); setSettingsDeepLink(null); refetchNeedsReview(); refetch(); }}
-   ```
+A Collapsible section placed inside the existing Settings > Locations `CollapsibleContent`, below the existing `LocationStandardizationTool`. Follows the Re-scan tool pattern exactly.
 
----
+**State machine:**
+1. **Idle** — Shows count of unique raw `place_of_issue` values across all certificates in the business. Button: "Normalize locations"
+2. **Confirm** — AlertDialog: "This will standardize place of issue for X certificates across Y unique locations. Original data will be saved for rollback. Continue?"
+3. **Processing** — Determinate progress bar: "Normalizing X of Y unique locations..." + Stop button
+4. **Review** — Summary cards + expandable before/after lists with reject (X) buttons + "Apply All" button
+5. **Applying** — Progress while batch-updating certificates
 
-### Fix 3 — Unmapped Count Invalidation
+**Data flow:**
+1. Query all certificates with non-null, non-empty `place_of_issue` joined through `personnel` (for `business_id` filtering)
+2. Group by unique `place_of_issue` values, counting certificates per value
+3. Skip values already in "City, Country" format (contains comma, both parts non-empty)
+4. For each unique raw value, call Nominatim API with **1000ms delay** between calls
+5. Present results for admin review — each mapping shows: old value → new value (X certificates affected), with an X button to reject individual mappings
+6. "Apply All" updates certificates in batch (one UPDATE per unique old value), appending `{ place_of_issue_original: oldValue }` to existing `rescan_previous_data` JSONB
 
-**File: `src/components/AISuggestDialog.tsx`**
+**Skip logic:**
+- `isStandardized()` check: contains a comma and both parts are non-empty strings
+- NULL or empty values
+- Values that Nominatim can't resolve → shown in "Failed" list
 
-1. Line 162-167: add `certificates-needing-review` and `needs-review-count` to `invalidateAll`:
-   ```typescript
-   queryClient.invalidateQueries({ queryKey: ["certificates-needing-review"] });
-   ```
+**Nominatim call** — uses the same Nominatim endpoint as the existing geocoding in `AddCertificateDialog` (line 233), with `User-Agent: FlowSert/1.0` and 1000ms delay between calls.
 
-**File: `src/hooks/useNeedsReviewCount.ts`** — convert to React Query so it responds to invalidation:
-- Replace `useState`/`useEffect` with `useQuery` using key `["needs-review-count", businessId]`.
-- Return `{ count: data ?? 0, loading: isLoading, refetch }`.
+### Modify: `src/pages/AdminDashboard.tsx`
 
----
-
-### Fix 4 — "Create & Approve All" Button
-
-**File: `src/components/AISuggestDialog.tsx`**
-
-1. Add state: `newTypeBulkProcessing` (boolean), `newTypeBulkConfirmOpen` (boolean).
-
-2. Compute `allNewTypesHaveCategory`: every pending new type row (not overridden to existing, not approved/rejected) has a category selected via override or AI match.
-
-3. Add a confirmation AlertDialog: "This will create X new certificate types. Continue?"
-
-4. Add "Create & Approve All" button in the "New types suggested" `CollapsibleContent`, above the list (mirroring the existing types section pattern at lines 686-705). Enabled only when `allNewTypesHaveCategory && pendingNew.length > 0`.
-
-5. Handler: loop through `pendingNew`, call `handleApprove` for each sequentially. Set `newTypeBulkProcessing` during.
-
----
-
-### Fix 5 — Mobile Camera Capture
-
-**File: `src/components/certificate-upload/UploadZone.tsx`**
-- Add `capture="environment"` to both `<input>` elements (lines 57 and 88).
-
-**File: `src/components/TaxonomySeedingTool.tsx`**
-- Add `capture="environment"` to the file input (line 266).
-
----
-
-### Fix 6 — Propagate `category_id` on Type Assignment
-
-**File: `src/components/AISuggestDialog.tsx`** — in `handleApprove` (lines 445-484):
-
-1. New type path (line 447): add `category_id` to the certificate update:
-   ```typescript
-   .update({ certificate_type_id: newType.id, category_id: categoryId || null, needs_review: false })
-   ```
-
-2. Existing type path (line 466-469): look up the type's `category_id` from `mergedTypes` and include it:
-   ```typescript
-   const matchedType = mergedTypes.find(t => t.id === typeId);
-   .update({ certificate_type_id: typeId, category_id: matchedType?.category_id || null, needs_review: false })
-   ```
-
-3. Bulk approve `handleApproveAll` (line 534): same — look up type's `category_id` and include in batch update.
-
-**File: `src/hooks/useCertificatesNeedingReview.ts`** — `useBulkUpdateCertificates` (line 148):
-
-1. Accept `categoryId` in mutation params:
-   ```typescript
-   { titleNormalized: string; certificateTypeId: string; categoryId?: string | null; limit?: number }
-   ```
-
-2. Include in update payload (line 188):
-   ```typescript
-   .update({ certificate_type_id: certificateTypeId, category_id: categoryId ?? null, needs_review: false })
-   ```
-
-**File: `src/components/CertificateReviewQueue.tsx`** — callers of `useBulkUpdateCertificates` need to pass the type's `category_id`. Find where the mutation is called and add the `categoryId` param from the selected type.
-
-**RescanCertificatesTool** — already sets `category_id` (lines 215, 230). No change needed.
-
----
+Import and render `CertificateLocationNormalizationTool` inside the Locations collapsible section (line 918–920), below `LocationStandardizationTool`.
 
 ### Files changed
 
-| File | Fixes |
+| File | Action |
 |---|---|
-| `src/hooks/usePersonnel.ts` | 1 |
-| `src/pages/AdminDashboard.tsx` | 2 |
-| `src/components/AISuggestDialog.tsx` | 3, 4, 6 |
-| `src/hooks/useNeedsReviewCount.ts` | 3 |
-| `src/hooks/useCertificatesNeedingReview.ts` | 6 |
-| `src/components/CertificateReviewQueue.tsx` | 6 |
-| `src/components/certificate-upload/UploadZone.tsx` | 5 |
-| `src/components/TaxonomySeedingTool.tsx` | 5 |
+| `src/components/CertificateLocationNormalizationTool.tsx` | CREATE — new tool component |
+| `src/pages/AdminDashboard.tsx` | MODIFY — add import and render in Locations section |
 
