@@ -183,10 +183,9 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
         <Table>
           <TableHeader>
             <TableRow className="bg-primary hover:bg-primary">
-              <TableHead className="font-semibold text-white">Certificate</TableHead>
+              <TableHead className="font-semibold text-white">Certificate Type</TableHead>
               <TableHead className="font-semibold text-white">Status</TableHead>
               <TableHead className="font-semibold text-white">Category</TableHead>
-              <TableHead className="font-semibold text-white">Type</TableHead>
               <TableHead className="font-semibold text-white">Issuing Authority</TableHead>
               <TableHead className="font-semibold text-white">Date of Issue</TableHead>
               <TableHead className="font-semibold text-white">Expiry Date</TableHead>
@@ -206,10 +205,14 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                   onClick={() => setSelectedCertificate(cert)}
                 >
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium">{cert.name}</span>
-                    </div>
+                    {cert.titleRaw ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
+                        <Award className="h-3 w-3" />
+                        {cert.titleRaw}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Untyped</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-0.5">
@@ -227,16 +230,6 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground italic">Uncategorized</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {cert.titleRaw ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
-                        <Award className="h-3 w-3" />
-                        {cert.titleRaw}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">Untyped</span>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
