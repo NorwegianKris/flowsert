@@ -12,6 +12,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -164,6 +174,8 @@ export function AISuggestDialog({
     queryClient.invalidateQueries({ queryKey: ["certificates"] });
     queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
     queryClient.invalidateQueries({ queryKey: ["certificate-types"] });
+    queryClient.invalidateQueries({ queryKey: ["certificates-needing-review"] });
+    queryClient.invalidateQueries({ queryKey: ["needs-review-count"] });
   }, [queryClient]);
 
   const resetState = useCallback(() => {
@@ -444,7 +456,7 @@ export function AISuggestDialog({
 
         const { error } = await supabase
           .from("certificates")
-          .update({ certificate_type_id: newType.id, needs_review: false })
+          .update({ certificate_type_id: newType.id, category_id: categoryId || null, needs_review: false })
           .eq("id", row.cert.id);
         if (error) throw error;
 
@@ -463,9 +475,10 @@ export function AISuggestDialog({
       } else {
         // Assign existing type (either original suggestion or admin override)
         const typeId = existingOverride || row.suggestion.suggested_type_id!;
+        const matchedType = mergedTypes.find((t) => t.id === typeId);
         const { error } = await supabase
           .from("certificates")
-          .update({ certificate_type_id: typeId, needs_review: false })
+          .update({ certificate_type_id: typeId, category_id: matchedType?.category_id || null, needs_review: false })
           .eq("id", row.cert.id);
         if (error) throw error;
 
@@ -507,6 +520,9 @@ export function AISuggestDialog({
 
   // ─── Approve All (existing types only) ────────────────────────
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  // ─── Create & Approve All (new types) ─────────────────────────
+  const [newTypeBulkProcessing, setNewTypeBulkProcessing] = useState(false);
+  const [newTypeBulkConfirmOpen, setNewTypeBulkConfirmOpen] = useState(false);
 
   const handleApproveAll = async () => {
     const pending = existingTypeRows.filter((r) => !r.approved && !r.rejected && r.suggestion.suggested_type_id);
@@ -530,9 +546,10 @@ export function AISuggestDialog({
         const ids = rows.map((r) => r.cert.id);
         for (let i = 0; i < ids.length; i += 100) {
           const batch = ids.slice(i, i + 100);
+          const matchedType = mergedTypes.find((t) => t.id === typeId);
           const { error } = await supabase
             .from("certificates")
-            .update({ certificate_type_id: typeId, needs_review: false })
+            .update({ certificate_type_id: typeId, category_id: matchedType?.category_id || null, needs_review: false })
             .in("id", batch);
           if (error) {
             console.error("Batch update error:", error);
@@ -579,7 +596,40 @@ export function AISuggestDialog({
   const pendingNew = newTypeRows.filter((r) => !r.approved && !r.rejected);
   const approvedAll = suggestionRows.filter((r) => r.approved);
 
+  // Check if all pending new types have a category selected
+  const allNewTypesHaveCategory = pendingNew.length > 0 && pendingNew.every((row) => {
+    const existingOverride = newTypeExistingOverrides[row.cert.id];
+    if (existingOverride) return true; // overridden to existing type — no category needed
+    const categoryOverride = newTypeCategoryOverrides[row.cert.id];
+    if (categoryOverride) return true;
+    const matchedCat = categories.find(
+      (c) => c.name.toLowerCase() === (row.suggestion.suggested_new_type_category || "").toLowerCase()
+    );
+    return !!matchedCat;
+  });
+
+  // ─── Handle Create & Approve All (new types) ─────────────────
+  const handleApproveAllNewTypes = async () => {
+    setNewTypeBulkConfirmOpen(false);
+    setNewTypeBulkProcessing(true);
+    let successCount = 0;
+
+    try {
+      for (const row of pendingNew) {
+        await handleApprove(row);
+        successCount++;
+      }
+      toast.success(`Created & approved ${successCount} new type${successCount !== 1 ? "s" : ""}`);
+    } catch (error) {
+      console.error("Bulk new type approve error:", error);
+      toast.error("Some approvals failed");
+    } finally {
+      setNewTypeBulkProcessing(false);
+    }
+  };
+
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
@@ -786,6 +836,29 @@ export function AISuggestDialog({
                     </span>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
+                    {/* Create & Approve All bar — new types */}
+                    {pendingNew.length > 0 && (
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
+                        <span className="text-xs text-muted-foreground">
+                          {pendingNew.length} pending review
+                          {!allNewTypesHaveCategory && " — select categories to enable bulk action"}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => setNewTypeBulkConfirmOpen(true)}
+                          disabled={!allNewTypesHaveCategory || newTypeBulkProcessing}
+                        >
+                          {newTypeBulkProcessing ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <Check className="h-3 w-3 mr-1" />
+                          )}
+                          Create & Approve All ({pendingNew.length})
+                        </Button>
+                      </div>
+                    )}
                     <div className="max-h-[400px] overflow-y-auto">
                       <div className="divide-y divide-amber-200 dark:divide-amber-800">
                         {newTypeRows.map((row) => {
@@ -1016,5 +1089,24 @@ export function AISuggestDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+      {/* Confirmation dialog for Create & Approve All */}
+      <AlertDialog open={newTypeBulkConfirmOpen} onOpenChange={setNewTypeBulkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create & Approve All New Types</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create {pendingNew.length} new certificate type{pendingNew.length !== 1 ? "s" : ""} and assign them to the corresponding certificates. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApproveAllNewTypes}>
+              Create {pendingNew.length} type{pendingNew.length !== 1 ? "s" : ""}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

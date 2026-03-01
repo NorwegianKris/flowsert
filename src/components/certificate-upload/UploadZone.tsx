@@ -57,6 +57,7 @@ export function UploadZone({
           ref={fileInputRef}
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+          capture="environment"
           multiple
           className="hidden"
           onChange={handleInputChange}
@@ -88,6 +89,7 @@ export function UploadZone({
         ref={fileInputRef}
         type="file"
         accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+        capture="environment"
         multiple
         className="hidden"
         onChange={handleInputChange}

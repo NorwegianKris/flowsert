@@ -1,21 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function useNeedsReviewCount() {
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const { user, businessId } = useAuth();
 
-  const fetchCount = async () => {
-    if (!user || !businessId) {
-      setCount(0);
-      setLoading(false);
-      return;
-    }
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['needs-review-count', businessId],
+    queryFn: async () => {
+      if (!user || !businessId) return 0;
 
-    try {
-      // Count certificates needing review, scoped to the business via personnel join
       const { count: reviewCount, error } = await supabase
         .from('certificates')
         .select('id, personnel!inner(business_id)', { count: 'exact', head: true })
@@ -24,19 +18,14 @@ export function useNeedsReviewCount() {
         .not('title_raw', 'is', null)
         .eq('personnel.business_id', businessId);
 
-      if (error) throw error;
-      setCount(reviewCount ?? 0);
-    } catch (error) {
-      console.error('Error fetching needs review count:', error);
-      setCount(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (error) {
+        console.error('Error fetching needs review count:', error);
+        return 0;
+      }
+      return reviewCount ?? 0;
+    },
+    enabled: !!user && !!businessId,
+  });
 
-  useEffect(() => {
-    fetchCount();
-  }, [user, businessId]);
-
-  return { count, loading, refetch: fetchCount };
+  return { count: data ?? 0, loading: isLoading, refetch };
 }

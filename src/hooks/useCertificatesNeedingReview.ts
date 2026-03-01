@@ -148,10 +148,12 @@ export function useBulkUpdateCertificates() {
     mutationFn: async ({
       titleNormalized,
       certificateTypeId,
+      categoryId,
       limit,
     }: {
       titleNormalized: string;
       certificateTypeId: string;
+      categoryId?: string | null;
       limit?: number;
     }) => {
       if (!businessId) throw new Error("No business ID");
@@ -187,6 +189,7 @@ export function useBulkUpdateCertificates() {
         .from("certificates")
         .update({
           certificate_type_id: certificateTypeId,
+          category_id: categoryId ?? null,
           needs_review: false,
         })
         .in("id", ids);

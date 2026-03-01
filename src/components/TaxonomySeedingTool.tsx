@@ -267,6 +267,7 @@ export function TaxonomySeedingTool() {
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                capture="environment"
                 multiple
                 className="hidden"
                 onChange={(e) => {

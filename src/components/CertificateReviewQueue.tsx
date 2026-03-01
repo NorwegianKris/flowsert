@@ -245,6 +245,10 @@ export function CertificateReviewQueue() {
   const handleConfirmBulkUpdate = async () => {
     if (!selectedTypeId || selectedGroupsData.length === 0) return;
 
+    // Look up the selected type's category_id
+    const selectedType = types.find((t: any) => t.id === selectedTypeId);
+    const categoryId = selectedType?.category_id || null;
+
     try {
       for (const group of selectedGroupsData) {
         const totalCount = group.count;
@@ -256,6 +260,7 @@ export function CertificateReviewQueue() {
             await bulkUpdateMutation.mutateAsync({
               titleNormalized: group.title_normalized,
               certificateTypeId: selectedTypeId,
+              categoryId,
               limit: MAX_BATCH_SIZE,
             });
           }
@@ -263,6 +268,7 @@ export function CertificateReviewQueue() {
           await bulkUpdateMutation.mutateAsync({
             titleNormalized: group.title_normalized,
             certificateTypeId: selectedTypeId,
+            categoryId,
           });
         }
 
