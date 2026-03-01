@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ import {
   Merge,
   Calendar,
   FileText,
+  ImageOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,8 +39,103 @@ import { CertificateTypeSelector } from "@/components/CertificateTypeSelector";
 import { BulkUpdateConfirmDialog, MAX_BATCH_SIZE } from "@/components/BulkUpdateConfirmDialog";
 import { MarkUnmappedDialog } from "@/components/MarkUnmappedDialog";
 import { toDisplayTitle } from "@/lib/certificateNormalization";
+import { getCertificateDocumentUrl } from "@/lib/storageUtils";
 import { toast } from "sonner";
 import { format } from "date-fns";
+
+// Thumbnail sub-component that handles signed URL fetching
+function CertificateThumbnail({
+  documentUrl,
+  size = 40,
+}: {
+  documentUrl: string | null;
+  size?: number;
+}) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const isPdf = documentUrl?.toLowerCase().endsWith(".pdf");
+  const isImage = !isPdf && documentUrl != null;
+
+  useEffect(() => {
+    if (!documentUrl || isPdf) return;
+    let cancelled = false;
+    setLoading(true);
+    getCertificateDocumentUrl(documentUrl).then((url) => {
+      if (!cancelled) {
+        setSignedUrl(url);
+        setLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [documentUrl, isPdf]);
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!documentUrl) return;
+    const url = await getCertificateDocumentUrl(documentUrl);
+    if (url) window.open(url, "_blank");
+  };
+
+  if (!documentUrl) {
+    return (
+      <div
+        className="flex items-center justify-center rounded bg-muted"
+        style={{ width: size, height: size }}
+      >
+        <ImageOff className="h-4 w-4 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isPdf) {
+    return (
+      <button
+        onClick={handleClick}
+        className="flex items-center justify-center rounded bg-muted hover:bg-muted/80 transition-colors cursor-pointer"
+        style={{ width: size, height: size }}
+        title="Open PDF"
+      >
+        <FileText className="h-5 w-5 text-muted-foreground" />
+      </button>
+    );
+  }
+
+  if (loading || !signedUrl) {
+    return (
+      <div
+        className="flex items-center justify-center rounded bg-muted animate-pulse"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  if (imgError) {
+    return (
+      <button
+        onClick={handleClick}
+        className="flex items-center justify-center rounded bg-muted hover:bg-muted/80 transition-colors cursor-pointer"
+        style={{ width: size, height: size }}
+        title="Open document"
+      >
+        <FileText className="h-5 w-5 text-muted-foreground" />
+      </button>
+    );
+  }
+
+  return (
+    <button onClick={handleClick} className="cursor-pointer" title="Open document">
+      <img
+        src={signedUrl}
+        alt="Certificate"
+        className="rounded object-cover"
+        style={{ width: size, height: size }}
+        onError={() => setImgError(true)}
+      />
+    </button>
+  );
+}
 
 // Extended group with additional details from certificates
 interface ExtendedReviewGroup extends ReviewGroup {
@@ -342,13 +438,14 @@ export function CertificateReviewQueue() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-[50px]">
+                    <TableHead className="w-[50px] p-2">
                       <Checkbox
                         checked={selectedGroups.size === filteredGroups.length && filteredGroups.length > 0}
                         onCheckedChange={toggleSelectAll}
                         aria-label="Select all"
                       />
                     </TableHead>
+                    <TableHead className="w-[50px] p-1"></TableHead>
                     <TableHead className="w-[40px]"></TableHead>
                     <TableHead>Normalized Title</TableHead>
                     <TableHead className="w-[80px] text-center">Count</TableHead>
@@ -372,6 +469,9 @@ export function CertificateReviewQueue() {
                               isSelected ? "bg-primary/5" : "hover:bg-muted/50"
                             }`}
                           >
+                            <TableCell onClick={(e) => e.stopPropagation()} className="p-1">
+                              <CertificateThumbnail documentUrl={group.sample_document_url} size={40} />
+                            </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Checkbox
                                 checked={isSelected}
@@ -435,8 +535,18 @@ export function CertificateReviewQueue() {
                           </TableRow>
                           <CollapsibleContent asChild>
                             <TableRow className="bg-muted/30 hover:bg-muted/30">
-                              <TableCell colSpan={7} className="p-0">
+                              <TableCell colSpan={8} className="p-0">
                                 <div className="px-6 py-4 space-y-4">
+                                  {/* Document Preview */}
+                                  {group.sample_document_url && (
+                                    <div>
+                                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Document Preview
+                                      </h4>
+                                      <CertificateThumbnail documentUrl={group.sample_document_url} size={120} />
+                                    </div>
+                                  )}
                                   {/* Personnel Names */}
                                   <div>
                                     <h4 className="text-sm font-medium mb-2 flex items-center gap-2">

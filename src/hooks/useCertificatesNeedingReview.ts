@@ -10,6 +10,7 @@ export interface ReviewGroup {
   has_worker_selected_type: boolean;
   worker_selected_type_ids: string[];
   example_personnel_names: string[];
+  sample_document_url: string | null;
 }
 
 export interface UnmappedCertificate {
@@ -20,6 +21,7 @@ export interface UnmappedCertificate {
   certificate_type_id: string | null;
   personnel_id: string;
   personnel_name: string;
+  document_url: string | null;
   created_at: string;
 }
 
@@ -45,6 +47,7 @@ export function useCertificatesNeedingReview() {
           title_normalized,
           certificate_type_id,
           personnel_id,
+          document_url,
           created_at,
           personnel!inner (
             business_id,
@@ -75,6 +78,7 @@ export function useCertificatesNeedingReview() {
             certificate_type_id: cert.certificate_type_id,
             personnel_id: cert.personnel_id,
             personnel_name: cert.personnel?.name || "Unknown",
+            document_url: cert.document_url,
             created_at: cert.created_at,
           });
         } else {
@@ -91,6 +95,7 @@ export function useCertificatesNeedingReview() {
         raw_examples: Set<string>;
         worker_selected_type_ids: Set<string>;
         personnel_names: Set<string>;
+        sample_document_url: string | null;
       }>();
 
       validCerts.forEach((cert) => {
@@ -101,6 +106,7 @@ export function useCertificatesNeedingReview() {
             raw_examples: new Set(),
             worker_selected_type_ids: new Set(),
             personnel_names: new Set(),
+            sample_document_url: null,
           });
         }
 
@@ -109,6 +115,7 @@ export function useCertificatesNeedingReview() {
         if (cert.title_raw) group.raw_examples.add(cert.title_raw);
         if (cert.certificate_type_id) group.worker_selected_type_ids.add(cert.certificate_type_id);
         group.personnel_names.add(cert.personnel_name);
+        if (!group.sample_document_url && cert.document_url) group.sample_document_url = cert.document_url;
       });
 
       // Convert to array and sort by count descending
@@ -120,6 +127,7 @@ export function useCertificatesNeedingReview() {
           has_worker_selected_type: data.worker_selected_type_ids.size > 0,
           worker_selected_type_ids: Array.from(data.worker_selected_type_ids),
           example_personnel_names: Array.from(data.personnel_names).slice(0, 3),
+          sample_document_url: data.sample_document_url,
         }))
         .sort((a, b) => b.count - a.count);
 
