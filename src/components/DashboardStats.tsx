@@ -25,21 +25,21 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
 
   const stats = [
     {
-      label: 'All Valid',
+      label: 'All Valid Profiles',
       value: personnelByStatus.valid,
       icon: CheckCircle,
       iconBg: 'bg-[hsl(var(--status-valid))]/10',
       iconColor: 'text-[hsl(var(--status-valid))]',
     },
     {
-      label: 'Expiring Soon',
+      label: 'Profiles Expiring Soon',
       value: personnelByStatus.expiring,
       icon: AlertTriangle,
       iconBg: 'bg-[hsl(var(--status-warning))]/10',
       iconColor: 'text-[hsl(var(--status-warning))]',
     },
     {
-      label: 'Has Expired',
+      label: 'Profiles Expired',
       value: personnelByStatus.expired,
       icon: XCircle,
       iconBg: 'bg-destructive/10',
@@ -101,7 +101,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{needsReviewCount}</p>
-            <p className="text-xs text-muted-foreground">Needs Review</p>
+            <p className="text-xs text-muted-foreground">Certificates to Review</p>
           </div>
         </CardContent>
       </Card>
