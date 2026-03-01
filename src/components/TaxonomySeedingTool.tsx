@@ -245,7 +245,7 @@ export function TaxonomySeedingTool() {
 
   return (
     <Collapsible className="mb-6">
-      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary cursor-pointer w-full py-2">
+      <CollapsibleTrigger onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 text-sm font-medium hover:text-primary cursor-pointer w-full py-2">
         <Sparkles className="h-4 w-4 text-primary" />
         <span>Teach the System</span>
         <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
