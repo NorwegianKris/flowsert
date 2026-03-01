@@ -78,7 +78,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (settingsOpen && settingsDeepLink === 'review-queue') {
       const timeout = setTimeout(() => {
-        document.querySelector('[data-testid="unmapped-certificates-section"]')
+        document.querySelector('[data-scroll-target="unmapped-certificates"]')
           ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 300);
       return () => clearTimeout(timeout);

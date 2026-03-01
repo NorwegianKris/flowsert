@@ -66,7 +66,7 @@ export function CertificateTypesManager() {
   const [activeView, setActiveView] = useState<"merge" | "manage">("merge");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-scroll-target="unmapped-certificates">
       {/* View selector */}
       <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "merge" | "manage")}>
         <TabsList>
