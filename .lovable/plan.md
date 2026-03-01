@@ -1,22 +1,33 @@
 
+## Plan: Retarget deep-link scroll to the actual unmapped content container
 
-## Plan: Move scroll target to the outer TypeMergingPane container
+### What I’ll change
 
-The `data-testid="unmapped-certificates-section"` attribute is currently on the inner "Left Pane: Unmapped Certificates" `div` (line 1326 of `TypeMergingPane.tsx`), which sits inside the three-column layout. This is too deep — the scroll lands partway through the section.
+1. **`src/components/CertificateTypesManager.tsx`**
+   - Add `data-scroll-target="unmapped-certificates"` to the top container in `CertificateTypesManager` (the wrapper that contains:
+     - the **Group Types / Manage Types** toggle, and
+     - the merge pane with the **“424 unmapped certificates • 55 canonical types”** line and layout).
 
-### Change
+2. **`src/pages/AdminDashboard.tsx`**
+   - Update the deep-link scroll selector from:
+     - `document.querySelector('[data-testid="unmapped-certificates-section"]')`
+   - to:
+     - `document.querySelector('[data-scroll-target="unmapped-certificates"]')`
+   - Keep the existing `setTimeout(300)` and `scrollIntoView({ behavior: 'smooth', block: 'start' })` logic unchanged.
 
-**`src/components/TypeMergingPane.tsx`**
-- Remove `data-testid="unmapped-certificates-section"` from line 1326 (the inner left pane div)
-- Add `data-testid="unmapped-certificates-section"` to line 1311 (the outer `<div className="space-y-4">` that wraps the stats line and the three-column layout)
+### Why this fixes it
 
-This moves the scroll anchor up so `scrollIntoView` targets the container that includes the "424 unmapped certificates • 55 canonical types" stats line and the full two-column layout below it.
+- The current target is inside/around the Types content but not the exact wrapper you want.
+- Targeting the `CertificateTypesManager` wrapper aligns the scroll anchor to the section that starts at the **toggle + stats line + unmapped layout**, so the viewport lands lower (past the Categories/Types tab strip) and at the intended content start.
 
-**No changes to `AdminDashboard.tsx`** — the `useEffect` and `scrollIntoView` call remain identical since they query the same `data-testid`.
+### Scope control
 
-### Files changed
-- `src/components/TypeMergingPane.tsx` — move attribute from line 1326 to line 1311 (2 lines)
+- No visual/design changes.
+- No query/count changes.
+- No changes to tabs behavior beyond scroll target selection.
+- No database/backend/schema changes.
 
-### Not changed
-- AdminDashboard scroll logic, visual design, grid layout, any other component
+### Files touched
 
+- `src/components/CertificateTypesManager.tsx` (add one attribute)
+- `src/pages/AdminDashboard.tsx` (change one selector string)
