@@ -183,6 +183,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useCertificateTypes } from '@/hooks/useCertificateTypes';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -204,6 +206,12 @@ function CertificateCategoriesInner() {
   const { businessId } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { data: certificateTypes } = useCertificateTypes({ includeInactive: false });
+
+  const getTypeCount = (categoryId: string) => {
+    if (!certificateTypes) return 0;
+    return certificateTypes.filter(t => t.category_id === categoryId).length;
+  };
   const [newCategoryName, setNewCategoryName] = useState('');
   const [adding, setAdding] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -311,7 +319,17 @@ function CertificateCategoriesInner() {
           <div className="border rounded-lg divide-y">
             {categories.map((category) => (
               <div key={category.id} className="flex items-center justify-between p-3 hover:bg-muted/50">
-                <span className="font-medium">{category.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{category.name}</span>
+                  {(() => {
+                    const count = getTypeCount(category.id);
+                    return (
+                      <Badge variant={count > 0 ? "secondary" : "outline"} className={count === 0 ? "text-muted-foreground" : ""}>
+                        {count} {count === 1 ? 'type' : 'types'}
+                      </Badge>
+                    );
+                  })()}
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
