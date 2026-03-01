@@ -451,6 +451,7 @@ export type Database = {
           needs_review: boolean
           personnel_id: string
           place_of_issue: string
+          rescan_previous_data: Json | null
           title_normalized: string | null
           title_raw: string | null
           unmapped_at: string | null
@@ -473,6 +474,7 @@ export type Database = {
           needs_review?: boolean
           personnel_id: string
           place_of_issue: string
+          rescan_previous_data?: Json | null
           title_normalized?: string | null
           title_raw?: string | null
           unmapped_at?: string | null
@@ -495,6 +497,7 @@ export type Database = {
           needs_review?: boolean
           personnel_id?: string
           place_of_issue?: string
+          rescan_previous_data?: Json | null
           title_normalized?: string | null
           title_raw?: string | null
           unmapped_at?: string | null
