@@ -131,7 +131,8 @@ export function AISuggestDialog({
   // Results
   const [suggestionRows, setSuggestionRows] = useState<SuggestionRow[]>([]);
   const [noMatchRows, setNoMatchRows] = useState<{ cert: UnmappedCertificate; suggestion: AISuggestion }[]>([]);
-  const [failedCount, setFailedCount] = useState(0);
+  const [remainingCount, setRemainingCount] = useState(0);
+  const [actualFailedCount, setActualFailedCount] = useState(0);
   const [partialInfo, setPartialInfo] = useState<{ processed: number; total: number } | null>(null);
 
   // Expandable sections
@@ -170,7 +171,8 @@ export function AISuggestDialog({
     setProgressText("");
     setSuggestionRows([]);
     setNoMatchRows([]);
-    setFailedCount(0);
+    setRemainingCount(0);
+    setActualFailedCount(0);
     setPartialInfo(null);
     setExistingTypesOpen(true);
     setNewTypesOpen(true);
@@ -355,11 +357,20 @@ export function AISuggestDialog({
         }
       }
 
-      const failCount = filtered.length - suggestions.length;
+      let remaining = 0;
+      let actualFailed = 0;
+      if (result.partial) {
+        remaining = filtered.length - (result.processed || filtered.length);
+        actualFailed = (result.processed || filtered.length) - suggestions.length;
+      } else {
+        remaining = 0;
+        actualFailed = filtered.length - suggestions.length;
+      }
 
       setSuggestionRows(matched);
       setNoMatchRows(noMatch);
-      setFailedCount(failCount > 0 ? failCount : 0);
+      setRemainingCount(remaining > 0 ? remaining : 0);
+      setActualFailedCount(actualFailed > 0 ? actualFailed : 0);
       setPhase("results");
     } catch (error) {
       console.error("AI suggest error:", error);
@@ -582,7 +593,7 @@ export function AISuggestDialog({
           {phase === "results" && (
             <div className="space-y-3">
               {/* Summary stats */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2">
                 <div className="bg-muted/50 rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold">{existingTypeRows.length}</p>
                   <p className="text-xs text-muted-foreground">Existing matches</p>
@@ -595,16 +606,25 @@ export function AISuggestDialog({
                   <p className="text-2xl font-bold">{noMatchRows.length}</p>
                   <p className="text-xs text-muted-foreground">No match</p>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold">{failedCount}</p>
-                  <p className="text-xs text-muted-foreground">Failed</p>
-                </div>
+                {remainingCount > 0 && (
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold">{remainingCount}</p>
+                    <p className="text-xs text-muted-foreground">Remaining</p>
+                  </div>
+                )}
+                {actualFailedCount > 0 && (
+                  <div className="bg-destructive/10 rounded-lg p-3 text-center border border-destructive/20">
+                    <p className="text-2xl font-bold text-destructive">{actualFailedCount}</p>
+                    <p className="text-xs text-destructive/80">Failed</p>
+                  </div>
+                )}
               </div>
 
               {partialInfo && (
-                <div className="flex items-center gap-2 p-3 bg-destructive/10 border rounded text-xs text-destructive">
+                <div className="flex items-center gap-2 p-3 bg-muted/50 border rounded text-xs text-muted-foreground">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  Processed {partialInfo.processed} of {partialInfo.total} — run again for remaining.
+                  Processed {partialInfo.processed} of {partialInfo.total}.{" "}
+                  {remainingCount > 0 ? `${remainingCount} remaining — run again to continue.` : ""}
                 </div>
               )}
 
@@ -903,12 +923,20 @@ export function AISuggestDialog({
                 </Collapsible>
               )}
 
-              {/* ─── Failed ────────────────────────────────────── */}
-              {failedCount > 0 && (
+              {/* ─── Remaining / Failed ─────────────────────── */}
+              {remainingCount > 0 && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {remainingCount} certificate{remainingCount !== 1 ? "s" : ""} not yet processed — run again to continue.
+                  </span>
+                </div>
+              )}
+              {actualFailedCount > 0 && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10">
                   <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <span className="text-sm">
-                    {failedCount} certificate{failedCount !== 1 ? "s" : ""} failed to process
+                  <span className="text-sm text-destructive">
+                    {actualFailedCount} certificate{actualFailedCount !== 1 ? "s" : ""} failed to process
                   </span>
                 </div>
               )}
