@@ -1,13 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Personnel } from '@/types';
 import { getPersonnelOverallStatus } from '@/lib/certificateUtils';
-import { Users, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Users, CheckCircle, AlertTriangle, XCircle, FileSearch } from 'lucide-react';
 
 interface DashboardStatsProps {
   personnel: Personnel[];
+  needsReviewCount?: number;
+  onNeedsReviewClick?: () => void;
 }
 
-export function DashboardStats({ personnel }: DashboardStatsProps) {
+export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewClick }: DashboardStatsProps) {
   // Split counts: Employees = category='employee', Freelancers = category='freelancer'
   const employeeCount = personnel.filter(p => p.category === 'employee').length;
   const freelancerCount = personnel.filter(p => p.category === 'freelancer').length;
@@ -45,8 +47,12 @@ export function DashboardStats({ personnel }: DashboardStatsProps) {
     },
   ];
 
+  const reviewIcon = needsReviewCount === 0 ? CheckCircle : FileSearch;
+  const reviewIconBg = needsReviewCount === 0 ? 'bg-[hsl(var(--status-valid))]/10' : 'bg-amber-500/10';
+  const reviewIconColor = needsReviewCount === 0 ? 'text-[hsl(var(--status-valid))]' : 'text-amber-500';
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {/* Personnel & Freelancers combined card */}
       <Card className="border-border/50">
         <CardContent className="p-4 flex items-center gap-3">
@@ -79,6 +85,26 @@ export function DashboardStats({ personnel }: DashboardStatsProps) {
           </CardContent>
         </Card>
       ))}
+
+      {/* Needs Review card */}
+      <Card
+        className={`border-border/50 ${onNeedsReviewClick ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''}`}
+        onClick={onNeedsReviewClick}
+      >
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className={`p-2.5 rounded-lg ${reviewIconBg}`}>
+            {reviewIcon === CheckCircle ? (
+              <CheckCircle className={`h-5 w-5 ${reviewIconColor}`} />
+            ) : (
+              <FileSearch className={`h-5 w-5 ${reviewIconColor}`} />
+            )}
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">{needsReviewCount}</p>
+            <p className="text-xs text-muted-foreground">Needs Review</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

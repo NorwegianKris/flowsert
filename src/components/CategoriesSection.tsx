@@ -12,13 +12,17 @@ import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
 import { Award, FileText, Users, Building2, ChevronDown, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-export function CategoriesSection() {
+interface CategoriesSectionProps {
+  defaultTab?: string;
+}
+
+export function CategoriesSection({ defaultTab }: CategoriesSectionProps) {
   return (
     <div className="p-4">
       <p className="text-sm text-muted-foreground mb-4">
         Manage the categories used throughout your organization for workers, departments, certificates, and documents.
       </p>
-        <Tabs defaultValue="workers" className="w-full">
+        <Tabs defaultValue={defaultTab || "workers"} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="workers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />

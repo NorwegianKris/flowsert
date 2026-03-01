@@ -32,6 +32,7 @@ import { usePersonnelGroupFilter } from '@/hooks/usePersonnelGroupFilter';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
 import { FreelancerFilters } from '@/components/FreelancerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
+import { useNeedsReviewCount } from '@/hooks/useNeedsReviewCount';
 import { useProjects, Project } from '@/hooks/useProjects';
 import { usePersonnelAvailability } from '@/hooks/usePersonnelAvailability';
 import { useBusinessInfo } from '@/hooks/useBusinessInfo';
@@ -70,6 +71,7 @@ export default function AdminDashboard() {
   const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
   const [addProjectOpen, setAddProjectOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsDeepLink, setSettingsDeepLink] = useState<'review-queue' | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Lifted billing state
@@ -115,6 +117,7 @@ export default function AdminDashboard() {
   const [workerGroupFilters, setWorkerGroupFilters] = useState<string[]>([]);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
+  const { count: needsReviewCount } = useNeedsReviewCount();
   const { projects, loading: projectsLoading, addProject, updateProject, addCalendarItem } = useProjects();
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
   const { business, refetch: refetchBusiness } = useBusinessInfo();
@@ -565,7 +568,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <DashboardStats personnel={personnel} />
+        <DashboardStats
+          personnel={personnel}
+          needsReviewCount={needsReviewCount}
+          onNeedsReviewClick={() => {
+            setSettingsOpen(true);
+            setSettingsDeepLink('review-queue');
+          }}
+        />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 p-1.5 h-12">
@@ -739,7 +749,7 @@ export default function AdminDashboard() {
             <div className="fixed inset-y-0 right-0 w-full max-w-5xl bg-background border-l shadow-lg">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-lg font-semibold">Settings</h2>
-                <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(false)}>
+                <Button variant="ghost" size="icon" onClick={() => { setSettingsOpen(false); setSettingsDeepLink(null); }}>
                   <span className="sr-only">Close</span>
                   ✕
                 </Button>
@@ -871,7 +881,7 @@ export default function AdminDashboard() {
                 {/* GROUP 3: COMPLIANCE CONFIGURATION */}
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Compliance Configuration</p>
 
-                <Collapsible>
+                <Collapsible defaultOpen={settingsDeepLink === 'review-queue'}>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center gap-2">
                       <Award className="h-5 w-5 text-primary" />
@@ -880,7 +890,7 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <CategoriesSection />
+                    <CategoriesSection defaultTab={settingsDeepLink === 'review-queue' ? 'certificates' : undefined} />
                   </CollapsibleContent>
                 </Collapsible>
 
