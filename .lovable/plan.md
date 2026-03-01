@@ -1,73 +1,33 @@
 
 
-## Re-scan Existing Certificates Tool
+## Add Detail Lists to Re-scan Summary
 
-**Risk Classification: 🔴 RED** — modifies existing certificate data, adds a schema column.
+**Change**: Single file edit — `src/components/RescanCertificatesTool.tsx`
 
-### 1. Database Migration
+### What to add
 
-Add a nullable `rescan_previous_data` JSONB column to the `certificates` table:
+1. **New interface** `RescanDetailItem` to track per-certificate results: `{ certId, personnelName, oldTitle, newTitle, matchedTypeName? }`
 
-```sql
-ALTER TABLE public.certificates
-ADD COLUMN rescan_previous_data jsonb DEFAULT NULL;
-```
+2. **New state** arrays: `matchedDetails` and `cleanedDetails` (both `RescanDetailItem[]`), reset when processing starts.
 
-Classification: GREEN (additive, nullable column, no data change).
+3. **During processing loop**: After each successful update, push the detail item into the appropriate array. Need to also fetch personnel name — add `personnel:personnel!inner(name)` to the initial certificates query (join personnel table to get the name alongside each cert).
 
-### 2. New Component: `RescanCertificatesTool.tsx`
+4. **In the summary section**: Replace the static `<span>` lines for matched/cleaned with `Collapsible` wrappers:
+   - Clicking "4 auto-matched to types" expands a list showing each row as: `Personnel Name: "old title" → "new title" (matched to: Type Name)`
+   - Clicking "8 cleaned (need manual review)" expands a list showing: `Personnel Name: "old title" → "new title"`
+   - Each row uses `→` arrow and muted styling for the old title, regular for the new title.
 
-Create `src/components/RescanCertificatesTool.tsx`, placed in the `CertificateTypesManager` near the "Group Types" / "Manage Types" tabs area.
+### Technical details
 
-**Flow:**
-1. Admin clicks "Re-scan unmapped certificates"
-2. Confirmation `AlertDialog`: "This will re-scan 412 certificates through AI. This may take several minutes. Continue?"
-3. On confirm, query all certificates where `certificate_type_id IS NULL AND document_url IS NOT NULL`
-4. For each certificate sequentially (500ms delay):
-   - Download the document from `certificate-documents` bucket using `supabase.storage.from('certificate-documents').download(path)` (extract path from full URL)
-   - Convert blob to File, then call `fileToBase64Image()` from `@/lib/pdfUtils`
-   - Invoke `extract-certificate-data` edge function (reuse existing)
-   - Run `suggestedTypeName` through alias lookup (`certificate_aliases` table, normalized match) then fuzzy matching (`findSimilarMatches` at 0.85 threshold) against existing certificate types — same logic as `TaxonomySeedingTool`
-   - Before updating, save old values into `rescan_previous_data` JSONB: `{ title_raw, title_normalized, category_id, issuing_authority, date_of_issue, expiry_date, place_of_issue, rescanned_at }`
-   - Update certificate with clean OCR data: `title_raw`, `title_normalized` (via `normalizeCertificateTitle`), `issuing_authority`, `date_of_issue`, `expiry_date`, `place_of_issue`
-   - If type match found: also set `certificate_type_id`, `category_id` (from matched type), `needs_review = false`
-   - If no match: leave `certificate_type_id` NULL, title is now clean
+- The certificates query already selects `personnel_id`. Change the query to join personnel: `.select('id, name, title_raw, ..., personnel_id, personnel!inner(name)')` — this gives us `cert.personnel.name`.
+- Store detail items in `useRef` arrays (alongside the stats ref pattern) to avoid re-renders during processing, then copy to state when done.
+- No database changes, no new files.
 
-**UI during processing:**
-- Progress bar (`Progress` component) showing "Processing X of Y certificates..."
-- "Stop" button that sets a ref flag to abort the loop
-- Disable the "Re-scan" button while processing
-
-**Summary on completion:**
-- "X auto-matched to types. Y updated with clean titles (need manual review). Z failed (no document or OCR error)."
-
-### 3. Integration Point
-
-In `CertificateTypesManager.tsx`, add the `RescanCertificatesTool` component above the tabs (near the unmapped certificates section). It renders as a collapsible section similar to `TaxonomySeedingTool`.
-
-### 4. Key Reuse
-
-- `fileToBase64Image` from `@/lib/pdfUtils` — handles PDF→image and image→base64
-- `normalizeCertificateTitle` from `@/lib/certificateNormalization`
-- `findSimilarMatches` from `@/lib/stringUtils`
-- `useCertificateTypes` hook for existing types list
-- `useCertificateCategories` hook for categories
-- `extract-certificate-data` edge function (no changes)
-- Storage path extraction pattern from `storageUtils.ts`
-
-### 5. Files Changed
+### Files changed
 
 | File | Action |
 |---|---|
-| `certificates` table | ADD `rescan_previous_data jsonb` column (migration) |
-| `src/components/RescanCertificatesTool.tsx` | CREATE — new component |
-| `src/components/CertificateTypesManager.tsx` | MODIFY — import and render `RescanCertificatesTool` |
+| `src/components/RescanCertificatesTool.tsx` | MODIFY — add detail tracking + expandable lists |
 
-### 6. What Is NOT Changed
-
-- Upload flow, `SmartCertificateUpload`
-- `TaxonomySeedingTool`
-- `CertificateReviewQueue`
-- `extract-certificate-data` edge function
-- No new certificate types created — match only
+Risk: 🟢 UI-only, no data model or access control changes.
 
