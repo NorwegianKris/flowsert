@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { RefreshCw, Loader2, CheckCircle2, AlertTriangle, XCircle, ChevronDown, Square } from 'lucide-react';
+import { RefreshCw, Loader2, CheckCircle2, AlertTriangle, XCircle, ChevronDown, Square, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -27,6 +27,14 @@ interface RescanResult {
   failed: number;
 }
 
+interface RescanDetailItem {
+  certId: string;
+  personnelName: string;
+  oldTitle: string;
+  newTitle: string;
+  matchedTypeName?: string;
+}
+
 export function RescanCertificatesTool() {
   const { businessId } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -35,7 +43,11 @@ export function RescanCertificatesTool() {
   const [current, setCurrent] = useState(0);
   const [total, setTotal] = useState(0);
   const [result, setResult] = useState<RescanResult | null>(null);
+  const [matchedDetails, setMatchedDetails] = useState<RescanDetailItem[]>([]);
+  const [cleanedDetails, setCleanedDetails] = useState<RescanDetailItem[]>([]);
   const abortRef = useRef(false);
+  const matchedRef = useRef<RescanDetailItem[]>([]);
+  const cleanedRef = useRef<RescanDetailItem[]>([]);
 
   const { data: certificateTypes } = useCertificateTypes();
 
@@ -67,15 +79,19 @@ export function RescanCertificatesTool() {
     setProcessing(true);
     setCurrent(0);
     setResult(null);
+    setMatchedDetails([]);
+    setCleanedDetails([]);
+    matchedRef.current = [];
+    cleanedRef.current = [];
     abortRef.current = false;
 
     const stats: RescanResult = { matched: 0, cleanedOnly: 0, failed: 0 };
 
     try {
-      // Fetch all unmapped certificates with documents
+      // Fetch all unmapped certificates with documents, joining personnel for name
       const { data: certs, error } = await supabase
         .from('certificates')
-        .select('id, name, title_raw, title_normalized, category_id, issuing_authority, date_of_issue, expiry_date, place_of_issue, document_url, personnel_id')
+        .select('id, name, title_raw, title_normalized, category_id, issuing_authority, date_of_issue, expiry_date, place_of_issue, document_url, personnel_id, personnel!inner(name)')
         .is('certificate_type_id', null)
         .not('document_url', 'is', null);
 
@@ -98,9 +114,15 @@ export function RescanCertificatesTool() {
       (aliases || []).forEach(a => aliasMap.set(a.alias_normalized, a.certificate_type_id));
 
       const typeNames = (certificateTypes || []).filter(t => t.is_active).map(t => t.name);
-      const typeMap = new Map<string, { id: string; category_id: string | null }>();
+      const typeMap = new Map<string, { id: string; category_id: string | null; name: string }>();
       (certificateTypes || []).filter(t => t.is_active).forEach(t => {
-        typeMap.set(t.name.toLowerCase(), { id: t.id, category_id: t.category_id });
+        typeMap.set(t.name.toLowerCase(), { id: t.id, category_id: t.category_id, name: t.name });
+      });
+
+      // Build a reverse lookup from type id to type name
+      const typeIdToName = new Map<string, string>();
+      (certificateTypes || []).filter(t => t.is_active).forEach(t => {
+        typeIdToName.set(t.id, t.name);
       });
 
       // Fetch existing categories for OCR context
@@ -113,8 +135,11 @@ export function RescanCertificatesTool() {
       for (let i = 0; i < certs.length; i++) {
         if (abortRef.current) break;
 
-        const cert = certs[i];
+        const cert = certs[i] as any;
         setCurrent(i + 1);
+
+        const personnelName = cert.personnel?.name || 'Unknown';
+        const oldTitle = cert.title_raw || cert.name || '';
 
         try {
           // Download document from storage
@@ -180,6 +205,7 @@ export function RescanCertificatesTool() {
 
           // Try alias lookup first
           let matched = false;
+          let matchedTypeName: string | undefined;
           if (newTitleNormalized) {
             const aliasTypeId = aliasMap.get(newTitleNormalized);
             if (aliasTypeId) {
@@ -189,6 +215,7 @@ export function RescanCertificatesTool() {
                 updatePayload.category_id = matchedType.category_id || cert.category_id;
                 updatePayload.needs_review = false;
                 matched = true;
+                matchedTypeName = matchedType.name;
               }
             }
           }
@@ -203,6 +230,7 @@ export function RescanCertificatesTool() {
                 updatePayload.category_id = typeInfo.category_id || cert.category_id;
                 updatePayload.needs_review = false;
                 matched = true;
+                matchedTypeName = typeInfo.name;
               }
             }
           }
@@ -217,8 +245,21 @@ export function RescanCertificatesTool() {
             stats.failed++;
           } else if (matched) {
             stats.matched++;
+            matchedRef.current.push({
+              certId: cert.id,
+              personnelName,
+              oldTitle,
+              newTitle: newTitleRaw || '',
+              matchedTypeName,
+            });
           } else {
             stats.cleanedOnly++;
+            cleanedRef.current.push({
+              certId: cert.id,
+              personnelName,
+              oldTitle,
+              newTitle: newTitleRaw || '',
+            });
           }
         } catch (err) {
           console.error(`[Rescan] Error processing cert ${cert.id}:`, err);
@@ -236,6 +277,8 @@ export function RescanCertificatesTool() {
     }
 
     setResult(stats);
+    setMatchedDetails([...matchedRef.current]);
+    setCleanedDetails([...cleanedRef.current]);
     setProcessing(false);
 
     if (abortRef.current) {
@@ -284,29 +327,58 @@ export function RescanCertificatesTool() {
             </div>
           )}
 
-          {/* Result summary */}
+          {/* Result summary with expandable details */}
           {result && !processing && (
             <div className="space-y-2">
-              <div className="flex flex-wrap gap-3 text-sm">
-                {result.matched > 0 && (
-                  <span className="flex items-center gap-1 text-primary">
+              {result.matched > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
                     <CheckCircle2 className="h-4 w-4" />
                     {result.matched} auto-matched to types
-                  </span>
-                )}
-                {result.cleanedOnly > 0 && (
-                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <ChevronDown className="h-3 w-3 ml-1 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 ml-5 space-y-1">
+                    {matchedDetails.map((item) => (
+                      <div key={item.certId} className="text-xs border-b border-border/50 pb-1 last:border-0">
+                        <span className="font-medium">{item.personnelName}</span>
+                        <span className="text-muted-foreground">: </span>
+                        <span className="text-muted-foreground line-through">{item.oldTitle || '(no title)'}</span>
+                        <ArrowRight className="inline h-3 w-3 mx-1 text-muted-foreground" />
+                        <span>{item.newTitle}</span>
+                        {item.matchedTypeName && (
+                          <span className="text-primary ml-1">(→ {item.matchedTypeName})</span>
+                        )}
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+              {result.cleanedOnly > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:underline cursor-pointer">
                     <AlertTriangle className="h-4 w-4" />
                     {result.cleanedOnly} cleaned (need manual review)
-                  </span>
-                )}
-                {result.failed > 0 && (
-                  <span className="flex items-center gap-1 text-destructive">
-                    <XCircle className="h-4 w-4" />
-                    {result.failed} failed
-                  </span>
-                )}
-              </div>
+                    <ChevronDown className="h-3 w-3 ml-1 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 ml-5 space-y-1">
+                    {cleanedDetails.map((item) => (
+                      <div key={item.certId} className="text-xs border-b border-border/50 pb-1 last:border-0">
+                        <span className="font-medium">{item.personnelName}</span>
+                        <span className="text-muted-foreground">: </span>
+                        <span className="text-muted-foreground line-through">{item.oldTitle || '(no title)'}</span>
+                        <ArrowRight className="inline h-3 w-3 mx-1 text-muted-foreground" />
+                        <span>{item.newTitle}</span>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+              {result.failed > 0 && (
+                <span className="flex items-center gap-1 text-sm text-destructive">
+                  <XCircle className="h-4 w-4" />
+                  {result.failed} failed
+                </span>
+              )}
             </div>
           )}
 
