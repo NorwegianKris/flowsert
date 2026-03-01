@@ -25,6 +25,27 @@ interface LocationMapping {
   rejected?: boolean;
 }
 
+const COUNTRY_VARIANTS: Record<string, string> = {
+  'norway': 'Norway', 'norge': 'Norway',
+  'uk': 'United Kingdom', 'united kingdom': 'United Kingdom',
+  'netherlands': 'Netherlands', 'the netherlands': 'Netherlands',
+  'italy': 'Italy',
+  'australia': 'Australia',
+  'spain': 'Spain', 'españa': 'Spain',
+  'france': 'France',
+  'denmark': 'Denmark',
+  'sweden': 'Sweden',
+  'ireland': 'Ireland',
+  'malta': 'Malta',
+  'panama': 'Panama',
+  'qatar': 'Qatar',
+  'cyprus': 'Cyprus',
+  'latvia': 'Latvia',
+  'greece': 'Greece',
+  'poland': 'Poland',
+  'south africa': 'South Africa',
+};
+
 function isStandardized(value: string): boolean {
   if (!value.includes(',')) return false;
   const parts = value.split(',').map(p => p.trim());
@@ -70,7 +91,10 @@ export function CertificateLocationNormalizationTool() {
   const [failedLocations, setFailedLocations] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const abortRef = useRef(false);
-
+  const [countryMappings, setCountryMappings] = useState<LocationMapping[]>([]);
+  const [countryApplying, setCountryApplying] = useState(false);
+  const [showCountryResults, setShowCountryResults] = useState(false);
+  const [countryOnlyCount, setCountryOnlyCount] = useState(0);
   // Fetch unique location count on mount
   useEffect(() => {
     if (!businessId) return;
@@ -86,12 +110,19 @@ export function CertificateLocationNormalizationTool() {
 
       const uniqueValues = new Set<string>();
       const needsNormalization: string[] = [];
+      let countryOnly = 0;
+      const seenCountryVariants = new Set<string>();
       data.forEach((c: any) => {
         const val = c.place_of_issue?.trim();
         if (val) {
           uniqueValues.add(val);
           if (!isStandardized(val)) {
             needsNormalization.push(val);
+            // Check if it's a country-only variant
+            const lower = val.toLowerCase();
+            if (!val.includes(',') && COUNTRY_VARIANTS[lower] && COUNTRY_VARIANTS[lower] !== val) {
+              seenCountryVariants.add(val);
+            }
           }
         }
       });
@@ -99,9 +130,10 @@ export function CertificateLocationNormalizationTool() {
       const uniqueNeedingNorm = new Set(needsNormalization);
       setUniqueLocationCount(uniqueNeedingNorm.size);
       setTotalCertCount(needsNormalization.length);
+      setCountryOnlyCount(seenCountryVariants.size);
     };
     fetchCount();
-  }, [businessId, showResults]);
+  }, [businessId, showResults, showCountryResults]);
 
   const handleNormalize = useCallback(async () => {
     if (!businessId) return;
@@ -278,9 +310,104 @@ export function CertificateLocationNormalizationTool() {
     abortRef.current = true;
   };
 
+  const handleNormalizeCountries = useCallback(async () => {
+    if (!businessId) return;
+    setCountryMappings([]);
+    setShowCountryResults(false);
+
+    const { data: certs, error } = await supabase
+      .from('certificates')
+      .select('id, place_of_issue, personnel!inner(business_id)')
+      .eq('personnel.business_id', businessId)
+      .not('place_of_issue', 'is', null)
+      .not('place_of_issue', 'eq', '');
+
+    if (error || !certs) {
+      toast.error('Failed to fetch certificates');
+      return;
+    }
+
+    const groups = new Map<string, string[]>();
+    certs.forEach((c: any) => {
+      const val = c.place_of_issue?.trim();
+      if (!val || val.includes(',')) return; // skip city,country format
+      if (!groups.has(val)) groups.set(val, []);
+      groups.get(val)!.push(c.id);
+    });
+
+    const results: LocationMapping[] = [];
+    groups.forEach((certIds, value) => {
+      const canonical = COUNTRY_VARIANTS[value.toLowerCase()];
+      if (canonical && canonical !== value) {
+        results.push({ oldValue: value, newValue: canonical, certCount: certIds.length, certIds });
+      }
+    });
+
+    setCountryMappings(results);
+    setShowCountryResults(true);
+
+    if (results.length === 0) {
+      toast.info('No country name variants found to normalize');
+    }
+  }, [businessId]);
+
+  const handleRejectCountryMapping = (index: number) => {
+    setCountryMappings(prev => prev.map((m, i) => i === index ? { ...m, rejected: true } : m));
+  };
+
+  const handleApplyCountries = useCallback(async () => {
+    const toApply = countryMappings.filter(m => !m.rejected);
+    if (toApply.length === 0) {
+      toast.info('No mappings to apply');
+      return;
+    }
+
+    setCountryApplying(true);
+    let applied = 0;
+    let errors = 0;
+
+    for (const mapping of toApply) {
+      for (const certId of mapping.certIds) {
+        try {
+          const { data: cert } = await supabase
+            .from('certificates')
+            .select('rescan_previous_data')
+            .eq('id', certId)
+            .single();
+
+          const existingData = (cert?.rescan_previous_data as Record<string, unknown>) || {};
+          const updatedPreviousData = { ...existingData, place_of_issue_original: mapping.oldValue };
+
+          const { error } = await supabase
+            .from('certificates')
+            .update({ place_of_issue: mapping.newValue, rescan_previous_data: updatedPreviousData })
+            .eq('id', certId);
+
+          if (error) errors++;
+          else applied++;
+        } catch {
+          errors++;
+        }
+      }
+    }
+
+    setCountryApplying(false);
+
+    if (errors > 0) {
+      toast.warning(`Applied ${applied} updates with ${errors} errors`);
+    } else {
+      toast.success(`Successfully normalized ${applied} country names`);
+    }
+
+    setCountryMappings([]);
+    setShowCountryResults(false);
+  }, [countryMappings]);
+
   const progressPercent = total > 0 ? Math.round((current / total) * 100) : 0;
   const acceptedMappings = mappings.filter(m => !m.rejected);
   const totalCertsAffected = acceptedMappings.reduce((sum, m) => sum + m.certCount, 0);
+  const acceptedCountryMappings = countryMappings.filter(m => !m.rejected);
+  const totalCountryCertsAffected = acceptedCountryMappings.reduce((sum, m) => sum + m.certCount, 0);
 
   return (
     <Collapsible className="mb-6">
@@ -419,6 +546,97 @@ export function CertificateLocationNormalizationTool() {
               Normalize locations
             </Button>
           )}
+
+          {/* Separator */}
+          <div className="border-t border-border/50 pt-4 mt-2">
+            <p className="text-sm font-medium mb-2">Normalize Country Names</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Standardize country-only values (e.g., "NORWAY" → "Norway", "UK" → "United Kingdom") using a built-in mapping. No API calls needed.
+            </p>
+
+            {/* Country applying state */}
+            {countryApplying && (
+              <div className="flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Applying {totalCountryCertsAffected} certificate updates...</span>
+              </div>
+            )}
+
+            {/* Country results */}
+            {showCountryResults && !countryApplying && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-3 text-sm">
+                  {acceptedCountryMappings.length > 0 && (
+                    <span className="flex items-center gap-1 text-primary">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {acceptedCountryMappings.length} country names to normalize ({totalCountryCertsAffected} certificates)
+                    </span>
+                  )}
+                  {countryMappings.length === 0 && (
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4" />
+                      No country variants found
+                    </span>
+                  )}
+                </div>
+
+                {countryMappings.length > 0 && (
+                  <Collapsible defaultOpen>
+                    <CollapsibleTrigger className="flex items-center gap-1 text-sm text-primary hover:underline cursor-pointer">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {acceptedCountryMappings.length} country names ({totalCountryCertsAffected} certificates)
+                      <ChevronDown className="h-3 w-3 ml-1 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2 space-y-1">
+                      {countryMappings.map((mapping, i) => (
+                        <div
+                          key={mapping.oldValue}
+                          className={`flex items-center text-xs border-b border-border/50 pb-1 last:border-0 gap-1 ${mapping.rejected ? 'opacity-40' : ''}`}
+                        >
+                          <span className="text-muted-foreground line-through">{mapping.oldValue}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="font-medium">{mapping.newValue}</span>
+                          <span className="text-muted-foreground ml-1">({mapping.certCount} cert{mapping.certCount !== 1 ? 's' : ''})</span>
+                          {!mapping.rejected && (
+                            <button
+                              onClick={() => handleRejectCountryMapping(i)}
+                              className="ml-auto p-0.5 hover:bg-destructive/10 rounded"
+                              title="Reject this mapping"
+                            >
+                              <X className="h-3 w-3 text-destructive" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {acceptedCountryMappings.length > 0 && (
+                  <Button onClick={handleApplyCountries} size="sm">
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Apply All ({totalCountryCertsAffected} certificates)
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Country action button */}
+            {!countryApplying && !showCountryResults && !processing && !applying && (
+              <Button
+                onClick={handleNormalizeCountries}
+                disabled={countryOnlyCount === 0}
+                variant="outline"
+                size="sm"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Normalize country names
+                {countryOnlyCount > 0 && (
+                  <span className="text-xs text-muted-foreground ml-1">({countryOnlyCount} variants)</span>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Confirmation dialog */}
