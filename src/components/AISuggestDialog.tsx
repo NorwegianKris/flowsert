@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,6 +16,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Loader2,
   Sparkles,
@@ -96,6 +103,12 @@ function getConfidencePillClass(confidence: string) {
   }
 }
 
+const CONFIDENCE_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+function sortByConfidence(a: SuggestionRow, b: SuggestionRow) {
+  return (CONFIDENCE_ORDER[a.suggestion.confidence] ?? 3) - (CONFIDENCE_ORDER[b.suggestion.confidence] ?? 3);
+}
+
 export function AISuggestDialog({
   open,
   onOpenChange,
@@ -122,12 +135,27 @@ export function AISuggestDialog({
   const [partialInfo, setPartialInfo] = useState<{ processed: number; total: number } | null>(null);
 
   // Expandable sections
-  const [suggestionsOpen, setSuggestionsOpen] = useState(true);
+  const [existingTypesOpen, setExistingTypesOpen] = useState(true);
+  const [newTypesOpen, setNewTypesOpen] = useState(true);
   const [noMatchOpen, setNoMatchOpen] = useState(false);
+
+  // New-type overrides
+  const [newTypeCategoryOverrides, setNewTypeCategoryOverrides] = useState<Record<string, string>>({});
+  const [newTypeExistingOverrides, setNewTypeExistingOverrides] = useState<Record<string, string>>({});
 
   // Processing control
   const [processing, setProcessing] = useState(false);
   const abortRef = useRef(false);
+
+  // ─── Derived: split rows into existing vs new type ─────────────
+  const existingTypeRows = useMemo(
+    () => suggestionRows.filter((r) => !r.isNewType).sort(sortByConfidence),
+    [suggestionRows]
+  );
+  const newTypeRows = useMemo(
+    () => suggestionRows.filter((r) => r.isNewType).sort(sortByConfidence),
+    [suggestionRows]
+  );
 
   const invalidateAll = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
@@ -144,8 +172,11 @@ export function AISuggestDialog({
     setNoMatchRows([]);
     setFailedCount(0);
     setPartialInfo(null);
-    setSuggestionsOpen(true);
+    setExistingTypesOpen(true);
+    setNewTypesOpen(true);
     setNoMatchOpen(false);
+    setNewTypeCategoryOverrides({});
+    setNewTypeExistingOverrides({});
     setProcessing(false);
     abortRef.current = false;
   }, []);
@@ -153,11 +184,9 @@ export function AISuggestDialog({
   const handleClose = useCallback((newOpen: boolean) => {
     if (!newOpen) {
       abortRef.current = true;
-      // If we had results, invalidate queries
       if (phase === "results") {
         invalidateAll();
       }
-      // Delay reset so dialog close animation finishes
       setTimeout(resetState, 300);
     }
     onOpenChange(newOpen);
@@ -170,7 +199,6 @@ export function AISuggestDialog({
     abortRef.current = false;
 
     try {
-      // Fetch all unmapped certs matching current filters
       let query = supabase
         .from("certificates")
         .select(`
@@ -213,7 +241,6 @@ export function AISuggestDialog({
 
       if (abortRef.current) { setPhase("confirming"); setProcessing(false); return; }
 
-      // Build payloads
       const certsPayload = filtered.map((c: any) => ({
         id: c.id,
         title_raw: c.title_raw,
@@ -223,7 +250,6 @@ export function AISuggestDialog({
         personnel_role: c.personnel?.role || null,
       }));
 
-      // Build a lookup map for personnel names
       const personnelMap = new Map<string, string>();
       for (const c of filtered as any[]) {
         personnelMap.set(c.id, c.personnel?.name || "Unknown");
@@ -290,7 +316,6 @@ export function AISuggestDialog({
       const noMatch: { cert: UnmappedCertificate; suggestion: AISuggestion }[] = [];
 
       for (const s of suggestions) {
-        // Find the cert from unmappedCerts (already loaded) or build a minimal one
         const existingCert = unmappedCerts.find((c) => c.id === s.certificate_id);
         const certData: UnmappedCertificate = existingCert || {
           id: s.certificate_id,
@@ -330,7 +355,6 @@ export function AISuggestDialog({
         }
       }
 
-      // Failed = total sent minus suggestions returned
       const failCount = filtered.length - suggestions.length;
 
       setSuggestionRows(matched);
@@ -347,15 +371,21 @@ export function AISuggestDialog({
   };
 
   // ─── Accept a single suggestion ──────────────────────────────
-  const handleApprove = async (index: number) => {
-    const row = suggestionRows[index];
-    if (!row || row.approved || row.rejected) return;
+  const handleApprove = async (row: SuggestionRow) => {
+    if (row.approved || row.rejected) return;
+
+    const globalIdx = suggestionRows.findIndex((r) => r.cert.id === row.cert.id);
+    if (globalIdx === -1) return;
 
     try {
-      if (row.isNewType) {
+      const existingOverride = newTypeExistingOverrides[row.cert.id];
+
+      if (row.isNewType && !existingOverride) {
         // Create new type then assign
-        let categoryId: string | undefined;
-        if (row.suggestion.suggested_new_type_category) {
+        const categoryOverride = newTypeCategoryOverrides[row.cert.id];
+        let categoryId: string | undefined = categoryOverride;
+
+        if (!categoryId && row.suggestion.suggested_new_type_category) {
           const matchedCat = categories.find(
             (c) => c.name.toLowerCase() === row.suggestion.suggested_new_type_category!.toLowerCase()
           );
@@ -386,10 +416,11 @@ export function AISuggestDialog({
           }
         }
       } else {
-        // Assign existing type
+        // Assign existing type (either original suggestion or admin override)
+        const typeId = existingOverride || row.suggestion.suggested_type_id!;
         const { error } = await supabase
           .from("certificates")
-          .update({ certificate_type_id: row.suggestion.suggested_type_id!, needs_review: false })
+          .update({ certificate_type_id: typeId, needs_review: false })
           .eq("id", row.cert.id);
         if (error) throw error;
 
@@ -397,7 +428,7 @@ export function AISuggestDialog({
           try {
             await createAliasMutation.mutateAsync({
               aliasRaw: row.cert.title_raw,
-              certificateTypeId: row.suggestion.suggested_type_id!,
+              certificateTypeId: typeId,
               createdBy: "system",
               confidence: row.suggestion.confidence === "high" ? 85 : 70,
             });
@@ -407,27 +438,33 @@ export function AISuggestDialog({
         }
       }
 
+      const displayName = existingOverride
+        ? mergedTypes.find((t) => t.id === existingOverride)?.name || row.suggestedTypeName
+        : row.suggestedTypeName;
+
       setSuggestionRows((prev) =>
-        prev.map((r, i) => (i === index ? { ...r, approved: true } : r))
+        prev.map((r, i) => (i === globalIdx ? { ...r, approved: true } : r))
       );
-      toast.success(`Assigned "${row.cert.title_raw}" → "${row.suggestedTypeName}"`);
+      toast.success(`Assigned "${row.cert.title_raw}" → "${displayName}"`);
     } catch (error) {
       console.error("Approve error:", error);
       toast.error("Failed to approve suggestion");
     }
   };
 
-  const handleReject = (index: number) => {
+  const handleReject = (row: SuggestionRow) => {
+    const globalIdx = suggestionRows.findIndex((r) => r.cert.id === row.cert.id);
+    if (globalIdx === -1) return;
     setSuggestionRows((prev) =>
-      prev.map((r, i) => (i === index ? { ...r, rejected: true } : r))
+      prev.map((r, i) => (i === globalIdx ? { ...r, rejected: true } : r))
     );
   };
 
-  // ─── Approve All ──────────────────────────────────────────────
+  // ─── Approve All (existing types only) ────────────────────────
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
   const handleApproveAll = async () => {
-    const pending = suggestionRows.filter((r) => !r.approved && !r.rejected && !r.isNewType && r.suggestion.suggested_type_id);
+    const pending = existingTypeRows.filter((r) => !r.approved && !r.rejected && r.suggestion.suggested_type_id);
     if (pending.length === 0) {
       toast.info("No pending suggestions to approve");
       return;
@@ -437,7 +474,6 @@ export function AISuggestDialog({
     let successCount = 0;
 
     try {
-      // Group by type
       const byType = new Map<string, SuggestionRow[]>();
       for (const row of pending) {
         const list = byType.get(row.suggestion.suggested_type_id!) || [];
@@ -460,7 +496,6 @@ export function AISuggestDialog({
           successCount += batch.length;
         }
 
-        // Create aliases
         const processedTitles = new Set<string>();
         for (const row of rows) {
           if (!row.cert.title_raw) continue;
@@ -480,7 +515,6 @@ export function AISuggestDialog({
         }
       }
 
-      // Mark all as approved
       const approvedIds = new Set(pending.map((r) => r.cert.id));
       setSuggestionRows((prev) =>
         prev.map((r) => (approvedIds.has(r.cert.id) ? { ...r, approved: true } : r))
@@ -496,9 +530,9 @@ export function AISuggestDialog({
   };
 
   // ─── Counts ────────────────────────────────────────────────────
-  const pendingSuggestions = suggestionRows.filter((r) => !r.approved && !r.rejected);
-  const approvedSuggestions = suggestionRows.filter((r) => r.approved);
-  const rejectedSuggestions = suggestionRows.filter((r) => r.rejected);
+  const pendingExisting = existingTypeRows.filter((r) => !r.approved && !r.rejected);
+  const pendingNew = newTypeRows.filter((r) => !r.approved && !r.rejected);
+  const approvedAll = suggestionRows.filter((r) => r.approved);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -548,10 +582,14 @@ export function AISuggestDialog({
           {phase === "results" && (
             <div className="space-y-3">
               {/* Summary stats */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold">{suggestionRows.length}</p>
-                  <p className="text-xs text-muted-foreground">Suggestions</p>
+                  <p className="text-2xl font-bold">{existingTypeRows.length}</p>
+                  <p className="text-xs text-muted-foreground">Existing matches</p>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 text-center border border-amber-200 dark:border-amber-800">
+                  <p className="text-2xl font-bold">{newTypeRows.length}</p>
+                  <p className="text-xs text-muted-foreground">New types</p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-3 text-center">
                   <p className="text-2xl font-bold">{noMatchRows.length}</p>
@@ -570,27 +608,27 @@ export function AISuggestDialog({
                 </div>
               )}
 
-              {/* ─── Suggestions Ready ─────────────────────────── */}
-              {suggestionRows.length > 0 && (
-                <Collapsible open={suggestionsOpen} onOpenChange={setSuggestionsOpen}>
+              {/* ─── Matched to Existing Types ─────────────────── */}
+              {existingTypeRows.length > 0 && (
+                <Collapsible open={existingTypesOpen} onOpenChange={setExistingTypesOpen}>
                   <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <ChevronDown className={`h-4 w-4 transition-transform ${suggestionsOpen ? "" : "-rotate-90"}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform ${existingTypesOpen ? "" : "-rotate-90"}`} />
                     <CheckCircle2 className="h-4 w-4 text-chart-2" />
                     <span className="font-medium text-sm flex-1 text-left">
-                      {suggestionRows.length} suggestion{suggestionRows.length !== 1 ? "s" : ""} ready
+                      Matched to existing types ({existingTypeRows.length})
                     </span>
-                    {approvedSuggestions.length > 0 && (
+                    {approvedAll.length > 0 && (
                       <Badge variant="secondary" className="text-xs">
-                        {approvedSuggestions.length} approved
+                        {approvedAll.length} approved
                       </Badge>
                     )}
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    {/* Approve All bar */}
-                    {pendingSuggestions.length > 0 && (
+                    {/* Approve All bar — existing types only */}
+                    {pendingExisting.length > 0 && (
                       <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
                         <span className="text-xs text-muted-foreground">
-                          {pendingSuggestions.length} pending review
+                          {pendingExisting.length} pending review
                         </span>
                         <Button
                           size="sm"
@@ -604,13 +642,13 @@ export function AISuggestDialog({
                           ) : (
                             <Check className="h-3 w-3 mr-1" />
                           )}
-                          Approve All ({pendingSuggestions.filter((r) => !r.isNewType).length})
+                          Approve All ({pendingExisting.length})
                         </Button>
                       </div>
                     )}
                     <div className="max-h-[400px] overflow-y-auto">
                       <div className="divide-y">
-                        {suggestionRows.map((row, idx) => (
+                        {existingTypeRows.map((row) => (
                           <div
                             key={row.cert.id}
                             className={`p-3 space-y-1 transition-opacity ${
@@ -641,9 +679,7 @@ export function AISuggestDialog({
                             <div className="flex items-center gap-2 text-xs">
                               <span className="text-muted-foreground truncate">{row.cert.title_raw}</span>
                               <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <span className="font-medium truncate">
-                                {row.isNewType ? `New: ${row.suggestedTypeName}` : row.suggestedTypeName}
-                              </span>
+                              <span className="font-medium truncate">{row.suggestedTypeName}</span>
                             </div>
                             {row.suggestion.reasoning && (
                               <p className="text-[11px] text-muted-foreground italic">"{row.suggestion.reasoning}"</p>
@@ -654,16 +690,16 @@ export function AISuggestDialog({
                                   size="sm"
                                   variant="outline"
                                   className="h-7 text-xs"
-                                  onClick={() => handleApprove(idx)}
+                                  onClick={() => handleApprove(row)}
                                 >
                                   <Check className="h-3 w-3 mr-1" />
-                                  {row.isNewType ? "Create & Approve" : "Approve"}
+                                  Approve
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 text-xs"
-                                  onClick={() => handleReject(idx)}
+                                  onClick={() => handleReject(row)}
                                 >
                                   <X className="h-3 w-3 mr-1" />
                                   Reject
@@ -672,6 +708,167 @@ export function AISuggestDialog({
                             )}
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* ─── New Types Suggested ────────────────────────── */}
+              {newTypeRows.length > 0 && (
+                <Collapsible open={newTypesOpen} onOpenChange={setNewTypesOpen}>
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors">
+                    <ChevronDown className={`h-4 w-4 transition-transform ${newTypesOpen ? "" : "-rotate-90"}`} />
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="font-medium text-sm flex-1 text-left">
+                      New types suggested ({newTypeRows.length})
+                    </span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
+                      Creates new types — review individually
+                    </span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="max-h-[400px] overflow-y-auto">
+                      <div className="divide-y divide-amber-200 dark:divide-amber-800">
+                        {newTypeRows.map((row) => {
+                          const existingOverride = newTypeExistingOverrides[row.cert.id];
+                          const isOverriddenToExisting = !!existingOverride;
+
+                          return (
+                            <div
+                              key={row.cert.id}
+                              className={`p-3 space-y-2 bg-amber-50/50 dark:bg-amber-950/10 transition-opacity ${
+                                row.approved ? "opacity-50 bg-chart-2/5" : row.rejected ? "opacity-40" : ""
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-medium truncate">{row.cert.personnel_name}</span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] px-1.5 py-0 uppercase font-semibold ${getConfidencePillClass(row.suggestion.confidence)}`}
+                                  >
+                                    {row.suggestion.confidence}
+                                  </Badge>
+                                  {row.approved && (
+                                    <Badge variant="secondary" className="text-[10px] py-0 bg-chart-2/20 text-chart-2">
+                                      Approved
+                                    </Badge>
+                                  )}
+                                  {row.rejected && (
+                                    <Badge variant="secondary" className="text-[10px] py-0">
+                                      Rejected
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-muted-foreground truncate">{row.cert.title_raw}</span>
+                                <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="font-medium truncate flex items-center gap-1">
+                                  {isOverriddenToExisting ? (
+                                    mergedTypes.find((t) => t.id === existingOverride)?.name || "Unknown"
+                                  ) : (
+                                    <>
+                                      <Plus className="h-3 w-3" />
+                                      {row.suggestedTypeName}
+                                    </>
+                                  )}
+                                </span>
+                              </div>
+                              {row.suggestion.reasoning && (
+                                <p className="text-[11px] text-muted-foreground italic">"{row.suggestion.reasoning}"</p>
+                              )}
+
+                              {/* Override controls — only show when not yet approved/rejected */}
+                              {!row.approved && !row.rejected && (
+                                <>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {/* Category dropdown */}
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Category</label>
+                                      <Select
+                                        value={newTypeCategoryOverrides[row.cert.id] || categories.find((c) => c.name.toLowerCase() === (row.suggestion.suggested_new_type_category || "").toLowerCase())?.id || ""}
+                                        onValueChange={(val) =>
+                                          setNewTypeCategoryOverrides((prev) => ({ ...prev, [row.cert.id]: val }))
+                                        }
+                                        disabled={isOverriddenToExisting}
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Select category..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {categories.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                                              {cat.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    {/* Assign to existing type dropdown */}
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Assign to existing type</label>
+                                      <Select
+                                        value={existingOverride || ""}
+                                        onValueChange={(val) => {
+                                          if (val === "__clear") {
+                                            setNewTypeExistingOverrides((prev) => {
+                                              const next = { ...prev };
+                                              delete next[row.cert.id];
+                                              return next;
+                                            });
+                                          } else {
+                                            setNewTypeExistingOverrides((prev) => ({ ...prev, [row.cert.id]: val }));
+                                          }
+                                        }}
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Use new type..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="__clear" className="text-xs text-muted-foreground">
+                                            Use new type (default)
+                                          </SelectItem>
+                                          {mergedTypes
+                                            .filter((t) => t.is_active)
+                                            .map((t) => (
+                                              <SelectItem key={t.id} value={t.id} className="text-xs">
+                                                {t.name}
+                                                {t.category_name && ` (${t.category_name})`}
+                                              </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 pt-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-xs"
+                                      onClick={() => handleApprove(row)}
+                                    >
+                                      <Check className="h-3 w-3 mr-1" />
+                                      {isOverriddenToExisting ? "Approve" : "Create & Approve"}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-xs"
+                                      onClick={() => handleReject(row)}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </CollapsibleContent>
