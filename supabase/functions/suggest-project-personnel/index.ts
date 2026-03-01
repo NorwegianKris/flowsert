@@ -670,6 +670,7 @@ Analyze the requirements and suggest matching personnel. Also extract any projec
     const validPersonnelIds = new Set(cappedPersonnel.map((p: PersonnelData) => p.id));
     result.suggestedPersonnel = result.suggestedPersonnel
       .filter(sp => validPersonnelIds.has(sp.id))
+      .map(sp => ({ ...sp, matchScore: Math.min(sp.matchScore, 100) }))
       .sort((a, b) => b.matchScore - a.matchScore);
 
     if (businessId) {
