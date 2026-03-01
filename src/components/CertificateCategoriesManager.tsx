@@ -195,7 +195,7 @@ export function CertificateCategoriesManager() {
                     <AccordionTrigger className="px-3 hover:no-underline">
                       <div className="flex items-center gap-2 flex-1 mr-2">
                         <span className="font-medium">{category.name}</span>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant={types.length > 0 ? "secondary" : "outline"} className={`text-xs ${types.length === 0 ? 'text-muted-foreground' : ''}`}>
                           {types.length} type{types.length !== 1 ? 's' : ''}
                         </Badge>
                         <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
