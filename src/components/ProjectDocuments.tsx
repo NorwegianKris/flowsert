@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProjectDocumentUrl, downloadAsBlob, getSignedUrl } from '@/lib/storageUtils';
+import { getProjectDocumentUrl, downloadAsBlob, getSignedUrl, extractStoragePath } from '@/lib/storageUtils';
 import { PdfViewer } from '@/components/PdfViewer';
 import {
   Upload,
@@ -120,10 +120,8 @@ export function ProjectDocuments({ projectId, businessId }: ProjectDocumentsProp
 
     const loadDocument = async () => {
       try {
-        // Extract file path from URL
-        const url = new URL(selectedDocument.fileUrl);
-        const pathParts = url.pathname.split('/');
-        const filePath = pathParts.slice(pathParts.indexOf('project-documents') + 1).join('/');
+        // Extract file path — handle both full URLs (legacy) and relative paths (new)
+        const filePath = extractStoragePath(selectedDocument.fileUrl, 'project-documents');
 
         const isPdf = selectedDocument.fileType === 'application/pdf';
         const isImage = selectedDocument.fileType?.startsWith('image/');
@@ -339,10 +337,8 @@ export function ProjectDocuments({ projectId, businessId }: ProjectDocumentsProp
     if (!documentToDelete) return;
 
     try {
-      // Extract file path from URL
-      const url = new URL(documentToDelete.fileUrl);
-      const pathParts = url.pathname.split('/');
-      const filePath = pathParts.slice(pathParts.indexOf('project-documents') + 1).join('/');
+      // Extract file path — handle both full URLs (legacy) and relative paths (new)
+      const filePath = extractStoragePath(documentToDelete.fileUrl, 'project-documents');
 
       // Delete from storage
       await supabase.storage.from('project-documents').remove([filePath]);
