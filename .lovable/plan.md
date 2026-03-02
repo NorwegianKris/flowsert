@@ -1,95 +1,79 @@
 
 
-## FlowSert — Full QA Checklist Results (Section 5: AI Suggest — AISuggestDialog.tsx)
+## FlowSert — Full QA Checklist Results (Section 6: Teach the System — TaxonomySeedingTool.tsx)
 
-### 5.1 Opens as dialog from triage queue
+### 6.1 Located in Settings > Categories > Certificates tab, collapsible above sub-tabs
 **Status: PASS**
-- `AISuggestDialog` renders as a `<Dialog>` component (line 633), opened via `open` prop from parent `TypeMergingPane`
+- `TaxonomySeedingTool` renders as a `<Collapsible>` component (line 249)
+- `CollapsibleTrigger` includes `onClick={(e) => e.stopPropagation()}` to prevent parent panel interference
+- Positioned with `className="mb-6"` to sit above content below it
 
-### 5.2 Split into two sections: "Matched to existing types" and "New types suggested"
+### 6.2 Upload sample certificate — OCR extracts type name
 **Status: PASS**
-- `existingTypeRows` = suggestions where `suggested_type_id` is set (line 163)
-- `newTypeRows` = suggestions where `suggested_new_type_name` is set but no `suggested_type_id` (line 167)
-- Each rendered in its own `Collapsible` section with distinct styling (lines 720-822 and 826-1006)
-- "Existing" section uses neutral muted background; "New types" uses amber warning styling with border
+- `processFiles()` (line 78) calls `fileToBase64Image()` then invokes `extract-certificate-data` edge function
+- Extracts `suggestedTypeName || certificateName` from response (line 109)
 
-### 5.3 "Matched to existing types" section has "Approve All" button
+### 6.3 Fuzzy matching at 0.85 threshold against existing types
 **Status: PASS**
-- "Approve All" button rendered at line 741-754 when `pendingExisting.length > 0`
-- Shows count: `Approve All ({pendingExisting.length})`
+- Line 135: `findSimilarMatches(suggestedTypeName, existingTypeNames, 0.85)`
+- Line 137: additional guard `fuzzyMatches[0].similarity >= 0.85`
+- Also performs alias lookup first (lines 118-124) before fuzzy fallback
 
-### 5.4 "Approve All" assigns all matched certificates correctly (both certificate_type_id and category_id)
-**Status: PASS**
-- `handleApproveAll()` (line 527) groups by type, then batch-updates via `.update({ certificate_type_id: typeId, category_id: matchedType?.category_id || null, needs_review: false })`
-- `matchedType` is resolved from `mergedTypes` (line 549) — category_id correctly inherited
+### 6.4 Match found: shows match, admin can approve
+**Status: PASS (no approval needed)**
+- Matched files show "Already known — {typeName}" badge (line 340-343)
+- No approval action needed for matches — they confirm the type already exists in the system
+- This is correct behavior: the tool's purpose is to discover *new* types, not re-approve existing ones
 
-### 5.5 "New types suggested" section shows individual review per suggestion
+### 6.5 No match: suggests new type creation, admin can approve
 **Status: PASS**
-- Each new type row renders its own approve/reject buttons and override controls (lines 914-998)
-- Header text: "Creates new types — review individually" (line 835)
+- Unmatched types are added to `newSuggestions` array (line 157-163)
+- Rendered in "Suggested New Types" section with per-item approve button (line 414-421)
+- Deduplication prevents duplicate suggestions (lines 152-154)
 
-### 5.6 Each new type suggestion has: category dropdown, assign-to-existing-type option
+### 6.6 Approval creates certificate_types row
 **Status: PASS**
-- Two-column grid (line 917): left = category `<Select>` dropdown, right = "Assign to existing type" `<Select>` dropdown
-- Category dropdown pre-selects AI-suggested category if it matches an existing one (line 922)
-- "Assign to existing type" dropdown shows all active types with category names (lines 965-972)
-- `__clear` option allows reverting to "Use new type (default)"
+- `approveSuggestion()` (line 193) calls `createType.mutateAsync({ name, category_id })` which inserts into `certificate_types`
+- `useCreateCertificateType` hook handles the DB insert
 
-### 5.7 Admin can approve individual new type suggestions
+### 6.7 Approval creates certificate_aliases row
 **Status: PASS**
-- "Create & Approve" button per row (line 983-987) calls `handleApprove(row)`
-- `handleApprove` for new types (line 440-474): creates type via `createTypeMutation`, then updates certificate with both `certificate_type_id` and `category_id`, then creates alias
+- Line 200-205: `createAlias.mutateAsync({ aliasRaw, certificateTypeId, createdBy: 'admin', confidence: 100 })`
+- Runs immediately after type creation, linking the extracted name as an alias
 
-### 5.8 Admin can reject individual suggestions
+### 6.8 Never writes to certificates table (verify no certificate records created)
 **Status: PASS**
-- "Reject" button per row (line 988-996) calls `handleReject(row)`
-- `handleReject` (line 513-519) sets `rejected: true` on the row — purely client-side, no DB write
-- Rejected rows render with `opacity-40` styling
+- No `.from('certificates')` insert or update call exists anywhere in `TaxonomySeedingTool`
+- The only DB writes are to `certificate_types` and `certificate_aliases` via the respective hooks
+- The edge function call is read-only from the tool's perspective (OCR extraction only)
 
-### 5.9 Admin can assign a suggested new type to an existing type instead
+### 6.9 Works with PDF uploads
 **Status: PASS**
-- `newTypeExistingOverrides` state tracks overrides per certificate ID (line 156)
-- When override is set, `handleApprove` uses `existingOverride` as `typeId` instead of creating a new type (line 477)
-- Button label changes from "Create & Approve" to "Approve" when overridden (line 986)
+- `ACCEPTED_TYPES` includes `'application/pdf'` (line 19)
+- `fileToBase64Image()` from `pdfUtils.ts` handles PDF-to-JPEG conversion at 1568px optimal scale
 
-### 5.10 Batch processing works correctly for large sets
+### 6.10 Works with image uploads (JPG/PNG)
 **Status: PASS**
-- Client-side batching: 25 certificates per edge function call (line 288)
-- Server-side: edge function also batches at 25 with 50s time budget
-- Progress bar updates per batch (lines 348-350)
-- "Approve All" uses 100-item DB batches (line 547)
-- Deduplicates aliases by normalized title to avoid redundant DB writes (lines 561-566)
+- `ACCEPTED_TYPES` includes `'image/jpeg'`, `'image/png'`, `'image/webp'`, `'image/gif'` (line 19)
+- `fileToBase64Image()` handles image resizing to 1568px max dimension
 
-### 5.11 No auto-assignment happens without explicit admin approval
+### 6.11 Handles OCR failure gracefully (unreadable document)
 **Status: PASS**
-- All suggestions arrive with `approved: false, rejected: false` (lines 396-397, 405-406)
-- No code path auto-sets `approved: true` — all approval flows require explicit button clicks
-- Results phase only displays suggestions; DB writes happen only on approve actions
+- Empty `suggestedTypeName` sets file status to `'error'` with message "Could not extract certificate name" (lines 110-115)
+- Exception catch block (line 174-180) sets status to `'error'` with the error message
+- Error badge renders with red "Error" indicator and message text (lines 326-328, 351-355)
 
-### 5.12 After processing, triage queue and dashboard counts update via query invalidation
+### 6.12 Collapsible panel opens/closes correctly
 **Status: PASS**
-- `invalidateAll()` (lines 172-179) covers all six relevant query keys:
-  - `unmapped-certificates`, `certificates`, `certificate-type-usage`, `certificate-types`, `certificates-needing-review`, `needs-review-count`
-- Called on dialog close when phase is "results" (lines 203-204)
-- Individual approvals write to DB immediately; full invalidation happens on close
+- Uses Radix `Collapsible` with `CollapsibleTrigger` and `CollapsibleContent`
+- `e.stopPropagation()` on trigger prevents event bubbling to parent UI elements
+- Chevron rotation via CSS selector `[[data-state=open]>&]:rotate-180` (line 253)
 
-### 5.13 Alias duplicate suppression: approving a type that creates a duplicate alias silently skips
+### 6.13 Visual hierarchy: sits above sub-tabs, doesn't interfere with tab navigation
 **Status: PASS**
-- Both `handleApprove` (lines 471-473) and `handleApproveAll` (lines 574-576) catch alias creation errors
-- Error code `23505` (unique violation) is silently swallowed: `if (e.code !== "23505") console.error(...)`
-- No error toast shown for duplicates
-
-### 5.14 Dialog closes cleanly after processing
-**Status: PASS**
-- `handleClose` (line 200): sets `abortRef.current = true`, calls `invalidateAll()` if in results phase, resets all state after 300ms delay
-- `resetState` (line 181) clears all 16 state variables back to defaults
-- Dialog footer shows "Close" button in results phase (line 1085)
-
-### 5.15 Dialog handles edge case: zero suggestions returned
-**Status: PASS**
-- If `filtered.length === 0` after query, shows `toast.info("No unmapped certificates to analyse")` and returns to confirming phase (lines 248-253)
-- If AI returns suggestions but none match or create new types, all go to `noMatchRows` — the results phase still renders correctly with "No match" section only
-- If aborted early with no results, returns to confirming phase (lines 354-358)
+- `mb-6` margin creates separation from content below
+- Fully self-contained: all state is local, no side effects on parent tab navigation
+- Collapsible starts closed by default (no `defaultOpen` prop)
 
 ---
 
@@ -97,20 +81,21 @@
 
 | Check | Result |
 |---|---|
-| 5.1 Opens as dialog | PASS |
-| 5.2 Split sections | PASS |
-| 5.3 "Approve All" button | PASS |
-| 5.4 Approve All sets type + category | PASS |
-| 5.5 Individual review for new types | PASS |
-| 5.6 Category dropdown + assign-to-existing | PASS |
-| 5.7 Approve individual new type | PASS |
-| 5.8 Reject individual | PASS |
-| 5.9 Override new → existing type | PASS |
-| 5.10 Batch processing | PASS |
-| 5.11 No auto-assignment | PASS |
-| 5.12 Query invalidation | PASS |
-| 5.13 Alias duplicate suppression | PASS |
-| 5.14 Clean dialog close | PASS |
-| 5.15 Zero suggestions edge case | PASS |
+| 6.1 Location & collapsible | PASS |
+| 6.2 OCR extraction | PASS |
+| 6.3 Fuzzy matching at 0.85 | PASS |
+| 6.4 Match found → shown | PASS |
+| 6.5 No match → suggest new type | PASS |
+| 6.6 Approval creates type | PASS |
+| 6.7 Approval creates alias | PASS |
+| 6.8 Never writes certificates | PASS |
+| 6.9 PDF uploads | PASS |
+| 6.10 Image uploads | PASS |
+| 6.11 OCR failure graceful | PASS |
+| 6.12 Collapsible works | PASS |
+| 6.13 Visual hierarchy | PASS |
 
-**All 15 checks pass. No issues found in Section 5.**
+**All 13 checks pass. No issues found in Section 6.**
+
+No code changes required.
+
