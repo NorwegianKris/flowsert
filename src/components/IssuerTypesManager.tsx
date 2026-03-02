@@ -352,8 +352,7 @@ function IssuersManageList() {
           )}
         </div>
       ) : (
-        <ScrollArea className="max-h-[65vh]">
-          <div className="border rounded-lg divide-y">
+        <div className="max-h-[65vh] overflow-y-auto border rounded-lg divide-y">
             {filteredIssuers.map((issuer) => (
               <div
                 key={issuer.id}
@@ -418,8 +417,7 @@ function IssuersManageList() {
                 </div>
               </div>
             ))}
-          </div>
-        </ScrollArea>
+        </div>
       )}
 
       <p className="text-xs text-muted-foreground">
