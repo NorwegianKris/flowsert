@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.suggest-certificate-types]
 verify_jwt = false
+
+[functions.suggest-issuer-types]
+verify_jwt = false
