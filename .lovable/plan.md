@@ -1,17 +1,18 @@
 
 
-## Match Info Banner Style to Reference
+## Add Custom Name Field to Merge Dialog
 
-Update the info banner in `IssuerTypesManager.tsx` (line ~238) to match the exact styling from `CategoriesSection.tsx`.
+### Change
 
-### Changes
+**File: `src/components/IssuerTypesManager.tsx`**
 
-| Current | Reference |
-|---------|-----------|
-| `bg-yellow-50 border border-yellow-200 rounded-lg p-3` | `bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5` |
-| `Lightbulb` icon component | `💡` emoji |
-| `text-sm text-yellow-800` | `text-xs text-muted-foreground` |
-| `flex items-start gap-2` | `flex items-center gap-2` |
+In the merge confirmation dialog (the `Dialog` with `mergeDialogOpen`):
 
-**File**: `src/components/IssuerTypesManager.tsx` — replace the banner div with the reference style, remove the `Lightbulb` import if no longer used.
+1. Add a new state variable `mergeNewName: string` (default empty)
+2. After the `RadioGroup` for selecting the primary issuer, add a text input field labeled "New name (optional)" with placeholder showing the current primary issuer's name
+3. In `handleMerge`, after reassigning certificates/aliases and deleting duplicates, if `mergeNewName.trim()` is non-empty, update the primary issuer's name: `UPDATE issuer_types SET name = mergeNewName WHERE id = primaryIssuerId`
+4. Reset `mergeNewName` when the dialog closes or merge completes
+5. Auto-update the placeholder when the primary radio selection changes (use the selected primary's current name)
+
+No schema/RLS changes -- uses existing UPDATE permission on `issuer_types`.
 
