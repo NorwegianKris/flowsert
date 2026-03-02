@@ -395,17 +395,6 @@ export function IssuerMergingPane() {
         <span>
           {mergedIssuers.filter((t) => t.is_active).length} merged issuer{mergedIssuers.filter((t) => t.is_active).length !== 1 ? "s" : ""}
         </span>
-        {unmappedCount > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto h-7 text-xs"
-            onClick={() => setAiDialogOpen(true)}
-          >
-            <Sparkles className="h-3.5 w-3.5 mr-1" />
-            AI Group Issuers
-          </Button>
-        )}
       </div>
 
       <AIIssuerSuggestDialog
@@ -660,6 +649,17 @@ export function IssuerMergingPane() {
         {/* Center: Action Area */}
         <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0" style={{ flex: "0 0 28%" }}>
           <div className="flex flex-col items-center gap-4 text-center">
+            {unmappedCount > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => setAiDialogOpen(true)}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1" />
+                AI Group Issuers
+              </Button>
+            )}
             <Button size="icon" className="rounded-full hidden lg:flex" disabled>
               <ArrowRight className="h-4 w-4" />
             </Button>

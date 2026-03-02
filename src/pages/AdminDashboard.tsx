@@ -18,7 +18,6 @@ import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsMa
 import { LocationStandardizationTool } from '@/components/LocationStandardizationTool';
 import { CertificateLocationNormalizationTool } from '@/components/CertificateLocationNormalizationTool';
 import { IssuerTypesManager } from '@/components/IssuerTypesManager';
-import { IssuerMergingPane } from '@/components/IssuerMergingPane';
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
@@ -924,7 +923,6 @@ export default function AdminDashboard() {
                         Manage the official issuing authorities used to organize and group certificates consistently.
                       </p>
                       <IssuerTypesManager />
-                      <IssuerMergingPane />
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
