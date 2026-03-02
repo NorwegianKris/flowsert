@@ -99,16 +99,7 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-documents')
-        .getPublicUrl(filePath);
-
-      // For private buckets, use signed URL
-      const { data: signedData } = await supabase.storage
-        .from('project-documents')
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
-
-      setImageUrl(signedData?.signedUrl || filePath);
+      setImageUrl(filePath);
       toast.success('Image uploaded');
     } catch (error) {
       console.error('Upload error:', error);

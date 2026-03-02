@@ -401,13 +401,9 @@ export function AddCertificateDialog({
             continue;
           }
 
-          const { data: urlData } = supabase.storage
-            .from('certificate-documents')
-            .getPublicUrl(filePath);
-
           await supabase
             .from('certificates')
-            .update({ document_url: urlData.publicUrl })
+            .update({ document_url: filePath })
             .eq('id', insertedCert.id);
         }
         
