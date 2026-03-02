@@ -19,8 +19,8 @@ import {
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { ProjectPhase } from '@/hooks/useProjectPhases';
-import { FileDown, Mail, FileText, Users, FileStack, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { FileDown, Mail, FileText, Users, FileStack, Loader2, Briefcase, UsersRound } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
@@ -29,6 +29,9 @@ import { getCertificateStatus, getPersonnelOverallStatus, EXPIRY_WARNING_DAYS } 
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
 import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
+import { useWorkerGroups } from '@/hooks/useWorkerGroups';
+import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
 
 interface ShareProjectDialogProps {
   open: boolean;
@@ -51,10 +54,44 @@ export function ShareProjectDialog({
   const [selectedBundlePersonId, setSelectedBundlePersonId] = useState<string>('');
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [bundleProgress, setBundleProgress] = useState<{ current: number; total: number; label: string } | null>(null);
+  const [selectedRoleFilters, setSelectedRoleFilters] = useState<string[]>([]);
+  const [selectedWorkerGroupFilters, setSelectedWorkerGroupFilters] = useState<string[]>([]);
 
-  const assignedPersonnel = project.assignedPersonnel
+  const { data: workerGroups = [] } = useWorkerGroups();
+  const { categories: workerCategories } = useWorkerCategories();
+  const { data: personnelWorkerGroups = [] } = usePersonnelWorkerGroups();
+
+  const allAssignedPersonnel = project.assignedPersonnel
     .map((id) => personnel.find((p) => p.id === id))
     .filter((p): p is Personnel => p !== undefined);
+
+  const assignedPersonnel = useMemo(() => {
+    let filtered = allAssignedPersonnel;
+    if (selectedRoleFilters.length > 0) {
+      filtered = filtered.filter(p => selectedRoleFilters.includes(p.role));
+    }
+    if (selectedWorkerGroupFilters.length > 0) {
+      const personnelIdsInGroups = new Set(
+        personnelWorkerGroups
+          .filter(pg => selectedWorkerGroupFilters.includes(pg.worker_group_id))
+          .map(pg => pg.personnel_id)
+      );
+      filtered = filtered.filter(p => personnelIdsInGroups.has(p.id));
+    }
+    return filtered;
+  }, [allAssignedPersonnel, selectedRoleFilters, selectedWorkerGroupFilters, personnelWorkerGroups]);
+
+  const toggleRoleFilter = (roleName: string) => {
+    setSelectedRoleFilters(prev =>
+      prev.includes(roleName) ? prev.filter(r => r !== roleName) : [...prev, roleName]
+    );
+  };
+
+  const toggleWorkerGroupFilter = (groupId: string) => {
+    setSelectedWorkerGroupFilters(prev =>
+      prev.includes(groupId) ? prev.filter(g => g !== groupId) : [...prev, groupId]
+    );
+  };
 
   const toggleExport = (exportType: string) => {
     setSelectedExports(prev => 
@@ -568,7 +605,7 @@ export function ShareProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileDown className="h-5 w-5" />
@@ -579,7 +616,74 @@ export function ShareProjectDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 flex-1 overflow-y-auto">
+          {/* Role & Worker Group Filters */}
+          {(workerCategories.length > 0 || workerGroups.length > 0) && (
+            <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+              <Label className="text-sm font-medium">Filter assigned personnel:</Label>
+              <p className="text-xs text-muted-foreground">
+                {assignedPersonnel.length} of {allAssignedPersonnel.length} personnel
+                {selectedRoleFilters.length > 0 || selectedWorkerGroupFilters.length > 0 ? ' (filtered)' : ''}
+              </p>
+
+              {workerCategories.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                    <Briefcase className="h-3 w-3" />
+                    Role
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {workerCategories.map(cat => (
+                      <Button
+                        key={cat.id}
+                        variant={selectedRoleFilters.includes(cat.name) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => toggleRoleFilter(cat.name)}
+                        className="h-7 text-xs gap-1.5"
+                      >
+                        {selectedRoleFilters.includes(cat.name) && <span>✓</span>}
+                        {cat.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {workerGroups.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                    <UsersRound className="h-3 w-3" />
+                    Worker group
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {workerGroups.map(wg => (
+                      <Button
+                        key={wg.id}
+                        variant={selectedWorkerGroupFilters.includes(wg.id) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => toggleWorkerGroupFilter(wg.id)}
+                        className="h-7 text-xs gap-1.5"
+                      >
+                        {selectedWorkerGroupFilters.includes(wg.id) && <span>✓</span>}
+                        {wg.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(selectedRoleFilters.length > 0 || selectedWorkerGroupFilters.length > 0) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectedRoleFilters([]); setSelectedWorkerGroupFilters([]); }}
+                  className="h-6 text-xs px-2"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )}
           {/* Export Options */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Select exports:</Label>
