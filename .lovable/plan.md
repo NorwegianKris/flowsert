@@ -1,36 +1,44 @@
 
 
-## Bug Fix: Category Onboarding Modal Shows on Every Login
+## Add Role & Worker Group Filters to Export Sharing Dialogs
 
-### Root Cause
+### Problem
+The External Sharing dialog (admin dashboard) and Share Project dialog (project view) currently only allow filtering personnel by Employee/Freelancer. The user wants to filter by **job roles** (worker categories) and **worker groups** — the same filters available in the dashboard's Workers popover.
 
-Although the caller (`AdminDashboard.tsx` line 509) guards with `profile?.business_id &&`, there is a timing window where `businessId` could arrive as an empty string or change during re-renders. The `useEffect` runs on mount with whatever `businessId` value is present, and if `storageKey` resolves to `flowsert_category_onboarding_dismissed_undefined` or `flowsert_category_onboarding_dismissed_`, the dismissal is written under the wrong key — so it never matches on the next login.
+### Changes
 
-### Fix (single file: `CertificateCategoryOnboarding.tsx`)
+#### 1. ExternalSharingDialog.tsx
+- Import `useWorkerGroups` and `useWorkerCategories` hooks
+- Add state for `selectedRoleFilters: string[]` and `selectedWorkerGroupFilters: string[]`
+- Replace the current "Select by group" section (Employee/Freelancer buttons) with a richer filter section containing three parts:
+  - **Personnel type**: Employee / Freelancer toggles (existing behavior, kept)
+  - **Roles**: List of business worker categories as checkable buttons (from `useWorkerCategories`)
+  - **Worker Groups**: List of business worker groups as checkable buttons (from `useWorkerGroups`)
+- Update `getSelectedPersonnel()` to also filter by selected roles (`p.role` matching selected worker category names) and worker groups (using `usePersonnelWorkerGroups` data to resolve which personnel belong to selected groups)
+- Import `usePersonnelWorkerGroups` to resolve group membership
+- Clear new filter state in `handleClose()`
 
-1. **Early return before any rendering** — Add `if (!businessId) return null;` at the top of the component body, before the `useState`/`useEffect` hooks execute with a bad key.
+#### 2. ShareProjectDialog.tsx
+- Add the same role and worker group filter options to the personnel selection area
+- Currently this dialog shows assigned personnel for the project — add optional role/group sub-filtering so the user can narrow down which assigned personnel appear in the export
+- Import the same hooks (`useWorkerGroups`, `useWorkerCategories`, `usePersonnelWorkerGroups`)
 
-2. **Clean up broken localStorage keys on mount** — Inside the `useEffect`, before checking the real key, remove the two known broken keys (`_undefined` and trailing `_`) so existing users who already dismissed with a corrupted key don't see the modal again after this fix.
+### UI Layout (within the personnel selection section)
+```text
+Select by group:
+ [Employees] [Freelancers]       ← existing
 
-3. **Move the early-return below hooks** (React rules of hooks) — Since we can't return before hooks, instead guard the `useEffect` body and the JSX return separately:
-   - Keep `if (!businessId) return;` in the useEffect (already present)
-   - Add `if (!businessId) return null;` after all hooks, before JSX
+Filter by role:                   ← new
+ [Diver] [Welder] [Supervisor]... ← from worker categories
 
-### Technical Detail
-
+Filter by worker group:           ← new
+ [Team A] [Team B] ...            ← from worker_groups table
 ```
-// Inside useEffect:
-// Clean up broken keys from before the fix
-localStorage.removeItem('flowsert_category_onboarding_dismissed_undefined');
-localStorage.removeItem('flowsert_category_onboarding_dismissed_');
 
-if (!businessId) return;
-if (localStorage.getItem(storageKey)) return;
-setOpen(true);
-
-// After hooks, before JSX:
-if (!businessId) return null;
-```
-
-This is a purely UI-level fix — no database, RLS, or backend changes involved.
+### Technical Notes
+- No database or RLS changes — purely UI-level, reads from existing hooks
+- The `role` field on personnel matches worker category names
+- Worker group membership resolved via `personnel_worker_groups` junction table (already queried by `usePersonnelWorkerGroups`)
+- Filters combine with AND logic: personnel must match ALL active filter dimensions
+- When no filters are selected in a dimension, that dimension is ignored (pass-through)
 
