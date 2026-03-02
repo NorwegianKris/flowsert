@@ -22,7 +22,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
-import { FileDown, Mail, FileText, Users, Search, X, GripVertical, FileStack, Loader2 } from 'lucide-react';
+import { FileDown, Mail, FileText, Users, Search, X, GripVertical, FileStack, Loader2, Briefcase, UsersRound } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
@@ -32,6 +32,9 @@ import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
 import { supabase } from '@/integrations/supabase/client';
 import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
+import { useWorkerGroups } from '@/hooks/useWorkerGroups';
+import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
 
 interface ProjectPhaseRow {
   id: string;
@@ -71,6 +74,12 @@ export function ExternalSharingDialog({
   const [bundleProgress, setBundleProgress] = useState<{ current: number; total: number; label: string } | null>(null);
   const [projectFilter, setProjectFilter] = useState<ProjectFilter>('active');
   const [projectPhases, setProjectPhases] = useState<ProjectPhaseRow[]>([]);
+  const [selectedRoleFilters, setSelectedRoleFilters] = useState<string[]>([]);
+  const [selectedWorkerGroupFilters, setSelectedWorkerGroupFilters] = useState<string[]>([]);
+
+  const { data: workerGroups = [] } = useWorkerGroups();
+  const { categories: workerCategories } = useWorkerCategories();
+  const { data: personnelWorkerGroups = [] } = usePersonnelWorkerGroups();
 
   // Fetch phases when selected project changes
   useEffect(() => {
@@ -125,6 +134,18 @@ export function ExternalSharingDialog({
     );
   };
 
+  const toggleRoleFilter = (roleName: string) => {
+    setSelectedRoleFilters(prev =>
+      prev.includes(roleName) ? prev.filter(r => r !== roleName) : [...prev, roleName]
+    );
+  };
+
+  const toggleWorkerGroupFilter = (groupId: string) => {
+    setSelectedWorkerGroupFilters(prev =>
+      prev.includes(groupId) ? prev.filter(g => g !== groupId) : [...prev, groupId]
+    );
+  };
+
   const getSelectedPersonnel = (): Personnel[] => {
     const groupRecipients = personnel.filter(p => {
       if (selectedGroups.includes('employee') && p.category === 'employee') return true;
@@ -135,9 +156,27 @@ export function ExternalSharingDialog({
     const individualRecipients = personnel.filter(p => selectedIndividuals.includes(p.id));
 
     const allSelected = [...groupRecipients, ...individualRecipients];
-    return allSelected.filter((p, index, self) =>
+    const unique = allSelected.filter((p, index, self) =>
       index === self.findIndex(t => t.id === p.id)
     );
+
+    // Apply role filter
+    let filtered = unique;
+    if (selectedRoleFilters.length > 0) {
+      filtered = filtered.filter(p => selectedRoleFilters.includes(p.role));
+    }
+
+    // Apply worker group filter
+    if (selectedWorkerGroupFilters.length > 0) {
+      const personnelIdsInGroups = new Set(
+        personnelWorkerGroups
+          .filter(pg => selectedWorkerGroupFilters.includes(pg.worker_group_id))
+          .map(pg => pg.personnel_id)
+      );
+      filtered = filtered.filter(p => personnelIdsInGroups.has(p.id));
+    }
+
+    return filtered;
   };
 
   const selectedPersonnelCount = getSelectedPersonnel().length;
@@ -707,6 +746,8 @@ export function ExternalSharingDialog({
     setShowIndividualSelect(false);
     setSearchQuery('');
     setProjectFilter('active');
+    setSelectedRoleFilters([]);
+    setSelectedWorkerGroupFilters([]);
     onOpenChange(false);
   };
 
@@ -875,7 +916,7 @@ export function ExternalSharingDialog({
               <div className="ml-8 space-y-3">
                 {/* Group Selection */}
                 <div className="space-y-2">
-                  <Label className="text-sm">Select by group:</Label>
+                  <Label className="text-sm">Select by type:</Label>
                   <div className="flex flex-wrap gap-2">
                     {(Object.keys(groupLabels) as RecipientGroup[]).map(group => (
                       <Button
@@ -891,6 +932,54 @@ export function ExternalSharingDialog({
                     ))}
                   </div>
                 </div>
+
+                {/* Role Filter */}
+                {workerCategories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm flex items-center gap-1.5">
+                      <Briefcase className="h-3.5 w-3.5" />
+                      Filter by role:
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {workerCategories.map(cat => (
+                        <Button
+                          key={cat.id}
+                          variant={selectedRoleFilters.includes(cat.name) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleRoleFilter(cat.name)}
+                          className="h-7 text-xs gap-1.5"
+                        >
+                          {selectedRoleFilters.includes(cat.name) && <span>✓</span>}
+                          {cat.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Worker Group Filter */}
+                {workerGroups.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm flex items-center gap-1.5">
+                      <UsersRound className="h-3.5 w-3.5" />
+                      Filter by worker group:
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {workerGroups.map(wg => (
+                        <Button
+                          key={wg.id}
+                          variant={selectedWorkerGroupFilters.includes(wg.id) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleWorkerGroupFilter(wg.id)}
+                          className="h-7 text-xs gap-1.5"
+                        >
+                          {selectedWorkerGroupFilters.includes(wg.id) && <span>✓</span>}
+                          {wg.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Individual Selection Toggle */}
                 <Button
