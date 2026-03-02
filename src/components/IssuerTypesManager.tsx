@@ -34,7 +34,7 @@ import {
   Building2,
   Merge,
   Settings,
-  Lightbulb,
+  
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -296,8 +296,8 @@ function IssuersManageList() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2 text-sm text-yellow-800">
-        <Lightbulb className="h-4 w-4 mt-0.5 shrink-0" />
+      <div className="bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>💡</span>
         <span>Manage your canonical issuing authorities here. Select two or more duplicate issuers and merge them into one to keep your data clean.</span>
       </div>
 
