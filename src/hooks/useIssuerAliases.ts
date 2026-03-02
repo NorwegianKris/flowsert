@@ -142,11 +142,11 @@ export function useCreateIssuerAlias() {
       queryClient.invalidateQueries({ queryKey: ["issuer-alias-lookup"] });
     },
     onError: (error: any) => {
+      // Silently suppress duplicate alias errors (23505) to allow automated workflows to continue
       if (error.code === "23505") {
-        toast.error("An alias with this name already exists");
-      } else {
-        toast.error("Failed to create alias");
+        return;
       }
+      toast.error("Failed to create alias");
     },
   });
 }
