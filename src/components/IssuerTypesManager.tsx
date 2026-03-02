@@ -98,6 +98,7 @@ function IssuersManageList() {
   const [selectedForMerge, setSelectedForMerge] = useState<Set<string>>(new Set());
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [primaryIssuerId, setPrimaryIssuerId] = useState<string>("");
+  const [mergeNewName, setMergeNewName] = useState("");
   const [isMerging, setIsMerging] = useState(false);
 
   const queryClient = useQueryClient();
@@ -164,6 +165,18 @@ function IssuersManageList() {
 
     setIsMerging(true);
     try {
+      // 0. Rename primary issuer if custom name provided
+      if (mergeNewName.trim()) {
+        const { error: renameError } = await supabase
+          .from("issuer_types")
+          .update({ name: mergeNewName.trim() })
+          .eq("id", primaryIssuerId);
+        if (renameError) {
+          console.error("Error renaming primary issuer:", renameError);
+          throw renameError;
+        }
+      }
+
       // 1. Reassign certificates
       const { error: certError } = await supabase
         .from("certificates")
@@ -215,12 +228,13 @@ function IssuersManageList() {
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
       queryClient.invalidateQueries({ queryKey: ["issuer-type-usage"] });
 
-      const primaryName = selectedIssuersForMerge.find((i) => i.id === primaryIssuerId)?.name;
+      const primaryName = mergeNewName.trim() || selectedIssuersForMerge.find((i) => i.id === primaryIssuerId)?.name;
       toast.success(
         `Merged ${duplicateIds.length} issuer${duplicateIds.length !== 1 ? "s" : ""} into "${primaryName}"`
       );
 
       setSelectedForMerge(new Set());
+      setMergeNewName("");
       setMergeDialogOpen(false);
     } catch (error) {
       toast.error("Failed to merge issuers");
@@ -592,6 +606,15 @@ function IssuersManageList() {
                 ))}
               </div>
             </RadioGroup>
+            <div className="space-y-2 pt-2">
+              <Label htmlFor="merge-new-name">New name (optional)</Label>
+              <Input
+                id="merge-new-name"
+                value={mergeNewName}
+                onChange={(e) => setMergeNewName(e.target.value)}
+                placeholder={selectedIssuersForMerge.find((i) => i.id === primaryIssuerId)?.name || "Keep current name"}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
