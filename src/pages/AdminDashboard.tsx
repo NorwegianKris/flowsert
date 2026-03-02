@@ -894,7 +894,7 @@ export default function AdminDashboard() {
                 </Collapsible>
 
                 {/* GROUP 3: COMPLIANCE CONFIGURATION */}
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Compliance Configuration</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Certificate Compliance Configuration</p>
 
                 <Collapsible defaultOpen={settingsDeepLink === 'review-queue'}>
                   <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
