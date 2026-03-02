@@ -17,6 +17,8 @@ import { BillingSection, BillingSubscription } from '@/components/BillingSection
 import { DataAcknowledgementsManager } from '@/components/DataAcknowledgementsManager';
 import { LocationStandardizationTool } from '@/components/LocationStandardizationTool';
 import { CertificateLocationNormalizationTool } from '@/components/CertificateLocationNormalizationTool';
+import { IssuerTypesManager } from '@/components/IssuerTypesManager';
+import { IssuerMergingPane } from '@/components/IssuerMergingPane';
 
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
@@ -905,6 +907,25 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <CategoriesSection defaultTab={settingsDeepLink === 'review-queue' ? 'certificates' : undefined} defaultSubTab={settingsDeepLink === 'review-queue' ? 'types' : undefined} />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <span className="font-semibold text-lg">Issuing Authorities</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="p-4 space-y-6">
+                      <p className="text-sm text-muted-foreground">
+                        Manage the official issuing authorities used to organize and group certificates consistently.
+                      </p>
+                      <IssuerTypesManager />
+                      <IssuerMergingPane />
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
 
