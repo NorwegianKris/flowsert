@@ -333,12 +333,7 @@ export function EditCertificateDialog({
           return;
         }
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('certificate-documents')
-          .getPublicUrl(filePath);
-
-        documentUrl = urlData.publicUrl;
+        documentUrl = filePath;
       }
 
       // Prepare update data - title_raw should be the TYPE

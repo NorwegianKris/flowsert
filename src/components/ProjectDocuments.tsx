@@ -284,17 +284,13 @@ export function ProjectDocuments({ projectId, businessId }: ProjectDocumentsProp
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('project-documents')
-        .getPublicUrl(fileName);
-
       const { error: insertError } = await supabase
         .from('project_documents')
         .insert({
           project_id: projectId,
           category_id: selectedCategory && selectedCategory !== 'uncategorized' ? selectedCategory : null,
           name: documentName || selectedFile.name,
-          file_url: urlData.publicUrl,
+          file_url: fileName,
           file_size: selectedFile.size,
           file_type: selectedFile.type,
         });

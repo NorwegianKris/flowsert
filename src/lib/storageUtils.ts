@@ -32,9 +32,7 @@ export async function getSignedUrl(
 
     if (error) {
       console.warn(`Failed to create signed URL for ${bucket}/${filePath}:`, error.message);
-      // Fall back to public URL if signed URL fails (for backwards compatibility)
-      const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-      return publicData?.publicUrl || null;
+      return null;
     }
 
     return data.signedUrl;
