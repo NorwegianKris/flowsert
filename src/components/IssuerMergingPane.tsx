@@ -44,7 +44,9 @@ import {
   Calendar,
   ExternalLink,
   Trash2,
+  Sparkles,
 } from "lucide-react";
+import { AIIssuerSuggestDialog } from "./AIIssuerSuggestDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInputtedIssuers, InputtedIssuer, useDismissInputtedIssuer } from "@/hooks/useInputtedIssuers";
@@ -144,6 +146,7 @@ export function IssuerMergingPane() {
   const [newIssuerDescription, setNewIssuerDescription] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [documentViewOpen, setDocumentViewOpen] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<{ url: string | null; fileName: string } | null>(null);
   const [documentBlobUrl, setDocumentBlobUrl] = useState<string | null>(null);
@@ -392,7 +395,27 @@ export function IssuerMergingPane() {
         <span>
           {mergedIssuers.filter((t) => t.is_active).length} merged issuer{mergedIssuers.filter((t) => t.is_active).length !== 1 ? "s" : ""}
         </span>
+        {unmappedCount > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto h-7 text-xs"
+            onClick={() => setAiDialogOpen(true)}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1" />
+            AI Group Issuers
+          </Button>
+        )}
       </div>
+
+      <AIIssuerSuggestDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        businessId={businessId || ""}
+        unmappedIssuers={inputtedIssuers.filter((t) => !t.is_mapped)}
+        totalUnmapped={unmappedCount}
+        mergedIssuers={mergedIssuers}
+      />
 
       {/* Three-pane layout matching TypeMergingPane */}
       <div className="flex flex-col lg:flex-row lg:gap-0 gap-4 overflow-hidden">
