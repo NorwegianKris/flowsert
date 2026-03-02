@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Loader2, CheckCircle2, AlertTriangle, XCircle, ChevronDown, Square, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -37,6 +38,7 @@ interface RescanDetailItem {
 
 export function RescanCertificatesTool() {
   const { businessId } = useAuth();
+  const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [unmappedCount, setUnmappedCount] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -279,6 +281,10 @@ export function RescanCertificatesTool() {
     setResult(stats);
     setMatchedDetails([...matchedRef.current]);
     setCleanedDetails([...cleanedRef.current]);
+    queryClient.invalidateQueries({ queryKey: ["needs-review-count"] });
+    queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
+    queryClient.invalidateQueries({ queryKey: ["certificates"] });
+    queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
     setProcessing(false);
 
     if (abortRef.current) {
