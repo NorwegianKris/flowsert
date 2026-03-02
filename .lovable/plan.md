@@ -1,33 +1,44 @@
 
 
-## Fix: Add missing React Query invalidations to RescanCertificatesTool
+## Section 9: Certificate Categories Manager — QA Results
 
-### What's already done (no changes needed)
-- **Fix 1** (category_id in `executeGrouping`): Already implemented at lines 268/277 of `TypeMergingPane.tsx`
-- **Fix 2** (invalidations in `TypeMergingPane`): Already implemented at lines 294-297 and 343-344
+### 9.1 Default categories seeded for new businesses
 
-### What needs fixing
-**RescanCertificatesTool.tsx** has no `queryClient` usage at all. After processing completes, dashboard counts and triage queue stay stale until manual refresh.
+**Status: PASS**
 
-### Changes
+The `seed_default_certificate_categories()` trigger (SECURITY DEFINER, fires on `businesses` INSERT) seeds exactly these 19 categories:
 
-**`src/components/RescanCertificatesTool.tsx`**
-1. Import `useQueryClient` from `@tanstack/react-query`
-2. Add `const queryClient = useQueryClient()` inside the component
-3. After processing completes (just before `setProcessing(false)` around the end of `handleRescan`), add:
-   ```ts
-   queryClient.invalidateQueries({ queryKey: ["needs-review-count"] });
-   queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
-   queryClient.invalidateQueries({ queryKey: ["certificates"] });
-   queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
-   ```
+| # | Category | In trigger |
+|---|---|---|
+| 1 | Health & Safety | Yes |
+| 2 | First Aid & Medical | Yes |
+| 3 | Lifting & Rigging | Yes |
+| 4 | Electrical | Yes |
+| 5 | Welding | Yes |
+| 6 | Mechanical | Yes |
+| 7 | NDT / Inspection | Yes |
+| 8 | Diving | Yes |
+| 9 | Maritime / STCW | Yes |
+| 10 | Crane & Heavy Equipment | Yes |
+| 11 | Scaffolding | Yes |
+| 12 | Rope Access & Working at Heights | Yes |
+| 13 | Hazardous Materials & Chemicals | Yes |
+| 14 | Fire Safety & Emergency Response | Yes |
+| 15 | Management & Supervision | Yes |
+| 16 | Trade Certifications | Yes |
+| 17 | Regulatory / Compliance | Yes |
+| 18 | Driver & Operator Licenses | Yes |
+| 19 | Other | Yes |
 
-This matches the invalidation pattern used in both `AISuggestDialog` and `TypeMergingPane`.
+The trigger uses idempotent `INSERT ... WHERE NOT EXISTS` to prevent duplicates on re-runs.
+
+The `CertificateCategoryOnboarding` component displays the same 19 categories (hardcoded in `DEFAULT_CATEGORIES` array) and dismisses via `localStorage` key per business.
+
+**All 19 default categories match between the DB trigger and the onboarding UI. No code changes required.**
 
 ### Anchor check
-- Q1 (SQL/schema): No
-- Q2 (edge functions/auth): No
-- Q3 (access control): No
-- Q4 (core filtering/compliance): No — cache invalidation only
-- Q5 (UI only): Yes → 🟢 anchor optional
+- Q1 (SQL/schema): No changes
+- Q2 (edge functions/auth): No changes
+- Q3 (access control): No changes
+- Q5 (UI only): Audit only
 
