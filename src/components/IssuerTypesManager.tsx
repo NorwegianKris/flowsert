@@ -34,7 +34,9 @@ import {
   Building2,
   Merge,
   Settings,
+  Lightbulb,
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -294,6 +296,11 @@ function IssuersManageList() {
 
   return (
     <div className="space-y-4">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2 text-sm text-yellow-800">
+        <Lightbulb className="h-4 w-4 mt-0.5 shrink-0" />
+        <span>Manage your canonical issuing authorities here. Select two or more duplicate issuers and merge them into one to keep your data clean.</span>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
@@ -314,15 +321,16 @@ function IssuersManageList() {
           </Tabs>
         </div>
         <div className="flex items-center gap-2">
-          {selectedForMerge.size >= 2 && (
-            <Button
-              variant="secondary"
-              onClick={() => setMergeDialogOpen(true)}
-            >
-              <Merge className="h-4 w-4 mr-2" />
-              Merge Selected ({selectedForMerge.size})
-            </Button>
-          )}
+          <Button
+            variant="secondary"
+            onClick={() => setMergeDialogOpen(true)}
+            disabled={selectedForMerge.size < 2}
+          >
+            <Merge className="h-4 w-4 mr-2" />
+            {selectedForMerge.size >= 2
+              ? `Merge Selected (${selectedForMerge.size})`
+              : "Merge Issuers"}
+          </Button>
           <Button
             onClick={() => {
               resetForm();
@@ -344,72 +352,74 @@ function IssuersManageList() {
           )}
         </div>
       ) : (
-        <div className="border rounded-lg divide-y">
-          {filteredIssuers.map((issuer) => (
-            <div
-              key={issuer.id}
-              className="flex items-center justify-between p-4 hover:bg-muted/50"
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Checkbox
-                  checked={selectedForMerge.has(issuer.id)}
-                  onCheckedChange={() => toggleMergeSelection(issuer.id)}
-                  aria-label={`Select ${issuer.name} for merging`}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{issuer.name}</span>
-                    {!issuer.is_active && (
-                      <Badge variant="secondary" className="text-xs">
-                        Archived
-                      </Badge>
-                    )}
-                    {(issuer.usage_count ?? 0) > 0 && (
-                      <Badge variant="outline" className="text-xs">
-                        {issuer.usage_count} cert{issuer.usage_count !== 1 ? "s" : ""}
-                      </Badge>
+        <ScrollArea className="max-h-[65vh]">
+          <div className="border rounded-lg divide-y">
+            {filteredIssuers.map((issuer) => (
+              <div
+                key={issuer.id}
+                className="flex items-center justify-between p-4 hover:bg-muted/50"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Checkbox
+                    checked={selectedForMerge.has(issuer.id)}
+                    onCheckedChange={() => toggleMergeSelection(issuer.id)}
+                    aria-label={`Select ${issuer.name} for merging`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{issuer.name}</span>
+                      {!issuer.is_active && (
+                        <Badge variant="secondary" className="text-xs">
+                          Archived
+                        </Badge>
+                      )}
+                      {(issuer.usage_count ?? 0) > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {issuer.usage_count} cert{issuer.usage_count !== 1 ? "s" : ""}
+                        </Badge>
+                      )}
+                    </div>
+                    {issuer.description && (
+                      <p className="text-sm text-muted-foreground mt-1 truncate">
+                        {issuer.description}
+                      </p>
                     )}
                   </div>
-                  {issuer.description && (
-                    <p className="text-sm text-muted-foreground mt-1 truncate">
-                      {issuer.description}
-                    </p>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditDialog(issuer)}
+                    className="h-8 w-8"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  {issuer.is_active ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openArchiveDialog(issuer)}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRestore(issuer)}
+                      disabled={restoreMutation.isPending}
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openEditDialog(issuer)}
-                  className="h-8 w-8"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                {issuer.is_active ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openArchiveDialog(issuer)}
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRestore(issuer)}
-                    disabled={restoreMutation.isPending}
-                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </ScrollArea>
       )}
 
       <p className="text-xs text-muted-foreground">
