@@ -43,6 +43,10 @@ export function CertificateCategoryOnboarding({ businessId, onComplete }: Certif
   const storageKey = `flowsert_category_onboarding_dismissed_${businessId}`;
 
   useEffect(() => {
+    // Clean up broken keys from before the fix
+    localStorage.removeItem('flowsert_category_onboarding_dismissed_undefined');
+    localStorage.removeItem('flowsert_category_onboarding_dismissed_');
+
     if (!businessId) return;
     if (localStorage.getItem(storageKey)) return;
     setOpen(true);
@@ -53,6 +57,8 @@ export function CertificateCategoryOnboarding({ businessId, onComplete }: Certif
     setOpen(false);
     onComplete();
   };
+
+  if (!businessId) return null;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleDismiss()}>
