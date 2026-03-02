@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +36,8 @@ import {
   Settings,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useIssuerTypes,
   useCreateIssuerType,
@@ -88,6 +92,14 @@ function IssuersManageList() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
 
+  // Merge state
+  const [selectedForMerge, setSelectedForMerge] = useState<Set<string>>(new Set());
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [primaryIssuerId, setPrimaryIssuerId] = useState<string>("");
+  const [isMerging, setIsMerging] = useState(false);
+
+  const queryClient = useQueryClient();
+
   const { data: issuers = [], isLoading } = useIssuerTypes({
     includeInactive: filterStatus !== "active",
   });
@@ -111,6 +123,109 @@ function IssuersManageList() {
 
     return true;
   });
+
+  // Get the selected issuers for the merge dialog
+  const selectedIssuersForMerge = useMemo(() => {
+    return issuers.filter((i) => selectedForMerge.has(i.id));
+  }, [issuers, selectedForMerge]);
+
+  // Auto-select primary as the one with highest usage_count when dialog opens
+  useEffect(() => {
+    if (mergeDialogOpen && selectedIssuersForMerge.length >= 2) {
+      const sorted = [...selectedIssuersForMerge].sort(
+        (a, b) => (b.usage_count || 0) - (a.usage_count || 0)
+      );
+      setPrimaryIssuerId(sorted[0].id);
+    }
+  }, [mergeDialogOpen, selectedIssuersForMerge]);
+
+  const toggleMergeSelection = (id: string) => {
+    setSelectedForMerge((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleMerge = async () => {
+    if (!primaryIssuerId || selectedForMerge.size < 2) return;
+
+    const duplicateIds = selectedIssuersForMerge
+      .filter((i) => i.id !== primaryIssuerId)
+      .map((i) => i.id);
+
+    if (duplicateIds.length === 0) return;
+
+    setIsMerging(true);
+    try {
+      // 1. Reassign certificates
+      const { error: certError } = await supabase
+        .from("certificates")
+        .update({ issuer_type_id: primaryIssuerId })
+        .in("issuer_type_id", duplicateIds);
+
+      if (certError) {
+        console.error("Error reassigning certificates:", certError);
+        throw certError;
+      }
+
+      // 2. Reassign issuer aliases (catch unique violations silently)
+      for (const dupId of duplicateIds) {
+        const { error: aliasError } = await supabase
+          .from("issuer_aliases")
+          .update({ issuer_type_id: primaryIssuerId })
+          .eq("issuer_type_id", dupId);
+
+        if (aliasError && aliasError.code !== "23505") {
+          console.error("Error reassigning issuer aliases:", aliasError);
+          // For unique conflicts on individual rows, we need to handle differently
+          // Delete conflicting aliases from duplicates instead
+          const { error: deleteAliasError } = await supabase
+            .from("issuer_aliases")
+            .delete()
+            .eq("issuer_type_id", dupId);
+
+          if (deleteAliasError) {
+            console.error("Error cleaning up duplicate aliases:", deleteAliasError);
+          }
+        }
+      }
+
+      // 3. Delete duplicate issuer_types
+      const { error: deleteError } = await supabase
+        .from("issuer_types")
+        .delete()
+        .in("id", duplicateIds);
+
+      if (deleteError) {
+        console.error("Error deleting duplicate issuers:", deleteError);
+        throw deleteError;
+      }
+
+      // 4. Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["issuer-types"] });
+      queryClient.invalidateQueries({ queryKey: ["issuer-aliases"] });
+      queryClient.invalidateQueries({ queryKey: ["issuer-alias-lookup"] });
+      queryClient.invalidateQueries({ queryKey: ["certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["issuer-type-usage"] });
+
+      const primaryName = selectedIssuersForMerge.find((i) => i.id === primaryIssuerId)?.name;
+      toast.success(
+        `Merged ${duplicateIds.length} issuer${duplicateIds.length !== 1 ? "s" : ""} into "${primaryName}"`
+      );
+
+      setSelectedForMerge(new Set());
+      setMergeDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to merge issuers");
+    } finally {
+      setIsMerging(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!formName.trim()) {
@@ -198,15 +313,26 @@ function IssuersManageList() {
             </TabsList>
           </Tabs>
         </div>
-        <Button
-          onClick={() => {
-            resetForm();
-            setCreateDialogOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Issuer
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedForMerge.size >= 2 && (
+            <Button
+              variant="secondary"
+              onClick={() => setMergeDialogOpen(true)}
+            >
+              <Merge className="h-4 w-4 mr-2" />
+              Merge Selected ({selectedForMerge.size})
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              resetForm();
+              setCreateDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Issuer
+          </Button>
+        </div>
       </div>
 
       {filteredIssuers.length === 0 ? (
@@ -224,20 +350,32 @@ function IssuersManageList() {
               key={issuer.id}
               className="flex items-center justify-between p-4 hover:bg-muted/50"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{issuer.name}</span>
-                  {!issuer.is_active && (
-                    <Badge variant="secondary" className="text-xs">
-                      Archived
-                    </Badge>
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Checkbox
+                  checked={selectedForMerge.has(issuer.id)}
+                  onCheckedChange={() => toggleMergeSelection(issuer.id)}
+                  aria-label={`Select ${issuer.name} for merging`}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{issuer.name}</span>
+                    {!issuer.is_active && (
+                      <Badge variant="secondary" className="text-xs">
+                        Archived
+                      </Badge>
+                    )}
+                    {(issuer.usage_count ?? 0) > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {issuer.usage_count} cert{issuer.usage_count !== 1 ? "s" : ""}
+                      </Badge>
+                    )}
+                  </div>
+                  {issuer.description && (
+                    <p className="text-sm text-muted-foreground mt-1 truncate">
+                      {issuer.description}
+                    </p>
                   )}
                 </div>
-                {issuer.description && (
-                  <p className="text-sm text-muted-foreground mt-1 truncate">
-                    {issuer.description}
-                  </p>
-                )}
               </div>
               <div className="flex items-center gap-2 ml-4">
                 <Button
@@ -416,6 +554,64 @@ function IssuersManageList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Merge Confirmation Dialog */}
+      <Dialog open={mergeDialogOpen} onOpenChange={setMergeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Merge Issuers</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select the primary issuer to keep. All certificates and aliases from the
+              other issuers will be reassigned to it, and the duplicates will be deleted.
+            </p>
+            <RadioGroup value={primaryIssuerId} onValueChange={setPrimaryIssuerId}>
+              <div className="space-y-2">
+                {selectedIssuersForMerge.map((issuer) => (
+                  <label
+                    key={issuer.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <RadioGroupItem value={issuer.id} />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-sm">{issuer.name}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {issuer.usage_count || 0} cert{(issuer.usage_count || 0) !== 1 ? "s" : ""}
+                    </Badge>
+                  </label>
+                ))}
+              </div>
+            </RadioGroup>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setMergeDialogOpen(false)}
+              disabled={isMerging}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMerge}
+              disabled={isMerging || !primaryIssuerId}
+            >
+              {isMerging ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Merging...
+                </>
+              ) : (
+                <>
+                  <Merge className="h-4 w-4 mr-2" />
+                  Merge into Selected
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
