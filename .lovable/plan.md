@@ -1,5 +1,6 @@
 
 
+
 ## FlowSert — Full QA Checklist Results (Section 1: Authentication & Tenant Isolation)
 
 ### 1.1 New user signup creates business correctly
@@ -88,4 +89,3 @@ No stray or duplicate policies remain.
 | project-documents | 3 policies | business_id scoped via projects table |
 
 All buckets have proper tenant isolation policies.
-
