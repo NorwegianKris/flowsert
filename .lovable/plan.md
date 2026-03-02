@@ -1,44 +1,36 @@
 
 
-## Section 9: Certificate Categories Manager — QA Results
+## Bug Fix: Category Onboarding Modal Shows on Every Login
 
-### 9.1 Default categories seeded for new businesses
+### Root Cause
 
-**Status: PASS**
+Although the caller (`AdminDashboard.tsx` line 509) guards with `profile?.business_id &&`, there is a timing window where `businessId` could arrive as an empty string or change during re-renders. The `useEffect` runs on mount with whatever `businessId` value is present, and if `storageKey` resolves to `flowsert_category_onboarding_dismissed_undefined` or `flowsert_category_onboarding_dismissed_`, the dismissal is written under the wrong key — so it never matches on the next login.
 
-The `seed_default_certificate_categories()` trigger (SECURITY DEFINER, fires on `businesses` INSERT) seeds exactly these 19 categories:
+### Fix (single file: `CertificateCategoryOnboarding.tsx`)
 
-| # | Category | In trigger |
-|---|---|---|
-| 1 | Health & Safety | Yes |
-| 2 | First Aid & Medical | Yes |
-| 3 | Lifting & Rigging | Yes |
-| 4 | Electrical | Yes |
-| 5 | Welding | Yes |
-| 6 | Mechanical | Yes |
-| 7 | NDT / Inspection | Yes |
-| 8 | Diving | Yes |
-| 9 | Maritime / STCW | Yes |
-| 10 | Crane & Heavy Equipment | Yes |
-| 11 | Scaffolding | Yes |
-| 12 | Rope Access & Working at Heights | Yes |
-| 13 | Hazardous Materials & Chemicals | Yes |
-| 14 | Fire Safety & Emergency Response | Yes |
-| 15 | Management & Supervision | Yes |
-| 16 | Trade Certifications | Yes |
-| 17 | Regulatory / Compliance | Yes |
-| 18 | Driver & Operator Licenses | Yes |
-| 19 | Other | Yes |
+1. **Early return before any rendering** — Add `if (!businessId) return null;` at the top of the component body, before the `useState`/`useEffect` hooks execute with a bad key.
 
-The trigger uses idempotent `INSERT ... WHERE NOT EXISTS` to prevent duplicates on re-runs.
+2. **Clean up broken localStorage keys on mount** — Inside the `useEffect`, before checking the real key, remove the two known broken keys (`_undefined` and trailing `_`) so existing users who already dismissed with a corrupted key don't see the modal again after this fix.
 
-The `CertificateCategoryOnboarding` component displays the same 19 categories (hardcoded in `DEFAULT_CATEGORIES` array) and dismisses via `localStorage` key per business.
+3. **Move the early-return below hooks** (React rules of hooks) — Since we can't return before hooks, instead guard the `useEffect` body and the JSX return separately:
+   - Keep `if (!businessId) return;` in the useEffect (already present)
+   - Add `if (!businessId) return null;` after all hooks, before JSX
 
-**All 19 default categories match between the DB trigger and the onboarding UI. No code changes required.**
+### Technical Detail
 
-### Anchor check
-- Q1 (SQL/schema): No changes
-- Q2 (edge functions/auth): No changes
-- Q3 (access control): No changes
-- Q5 (UI only): Audit only
+```
+// Inside useEffect:
+// Clean up broken keys from before the fix
+localStorage.removeItem('flowsert_category_onboarding_dismissed_undefined');
+localStorage.removeItem('flowsert_category_onboarding_dismissed_');
+
+if (!businessId) return;
+if (localStorage.getItem(storageKey)) return;
+setOpen(true);
+
+// After hooks, before JSX:
+if (!businessId) return null;
+```
+
+This is a purely UI-level fix — no database, RLS, or backend changes involved.
 
