@@ -393,7 +393,7 @@ export function IssuerMergingPane() {
         )}
         <span>•</span>
         <span>
-          {mergedIssuers.filter((t) => t.is_active).length} merged issuer{mergedIssuers.filter((t) => t.is_active).length !== 1 ? "s" : ""}
+          {mergedIssuers.filter((t) => t.is_active).length} canonical issuer{mergedIssuers.filter((t) => t.is_active).length !== 1 ? "s" : ""}
         </span>
       </div>
 
@@ -665,7 +665,7 @@ export function IssuerMergingPane() {
             </Button>
 
             <div className="text-xs text-muted-foreground max-w-[200px]">
-              Select inputted issuers on the left, then group them into a merged issuer on the right.
+              Select inputted issuers on the left, then group them into a canonical issuer on the right.
             </div>
 
             <div className="flex flex-col gap-2 w-full">
@@ -707,11 +707,11 @@ export function IssuerMergingPane() {
           </div>
         </div>
 
-        {/* Right Pane: Merged Issuers — with collapsible certificate rows */}
+        {/* Right Pane: Canonical Issuers — with collapsible certificate rows */}
         <div className="border rounded-lg flex flex-col h-[600px] min-w-0 overflow-hidden" style={{ flex: "0 0 37%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium">Merged Issuers</h3>
+              <h3 className="font-medium">Canonical Issuers</h3>
               <Badge variant="secondary">{filteredMerged.length}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -732,7 +732,7 @@ export function IssuerMergingPane() {
             <div>
               {filteredMerged.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No merged issuers found.</p>
+                  <p className="text-sm">No canonical issuers found.</p>
                   <p className="text-xs mt-1">Create your first issuer to get started.</p>
                 </div>
               ) : (
@@ -856,7 +856,7 @@ export function IssuerMergingPane() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Merged Issuer</DialogTitle>
+            <DialogTitle>Create Canonical Issuer</DialogTitle>
             <DialogDescription>
               Create a new official issuer and group the selected inputted issuers into it.
             </DialogDescription>
