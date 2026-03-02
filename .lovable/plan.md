@@ -1,43 +1,49 @@
 
 
-## Plan: Fix Cross-Tenant Storage Gap + Clean Up Public URL Pattern
+## Verification Results: Cross-Tenant Storage Fix
 
-**Risk**: 🔴 Storage RLS policy migration — anchor required.
+### Migration: Applied Successfully
+The migration ran at 2026-03-02 and both policies were dropped and recreated. Confirmed in database logs.
 
-### 1. Migration: Fix project-documents storage policies
+### Policy Audit: Bug Found — But Security Is Intact
 
-Drop and recreate both policies to add `business_id` scoping via the `projects` table:
+There are now **duplicate** DELETE and INSERT policies for `project-documents`:
 
-- **DELETE policy**: Add `EXISTS (SELECT 1 FROM projects proj WHERE proj.id::text = (storage.foldername(name))[1] AND proj.business_id = get_user_business_id(auth.uid()))`
-- **INSERT policy**: Same business_id scoping check
+| Policy | Command | `foldername()` reference | Status |
+|---|---|---|---|
+| "Admins can delete project documents" | DELETE | `storage.foldername(proj.name)` | **BROKEN** — resolves to project's display name, not storage path |
+| "Secure delete from project documents" | DELETE | `storage.foldername(objects.name)` | CORRECT — business_id scoped |
+| "Admins can upload project documents" | INSERT | `storage.foldername(proj.name)` | **BROKEN** — same bug |
+| "Secure upload to project documents" | INSERT | `storage.foldername(objects.name)` | CORRECT — business_id scoped |
+| "Secure access to project documents" | SELECT | `storage.foldername(objects.name)` | CORRECT |
 
-This closes the cross-tenant gap where any authenticated admin could manipulate files in another tenant's project folder.
+**Root cause:** Inside the `EXISTS` subquery, bare `name` resolves to `proj.name` (the projects table column) instead of `objects.name` (the storage object path). The migration should have used `objects.name`.
 
-### 2. Store relative `filePath` instead of `getPublicUrl()`
+**Security impact: NONE.** The broken policies compare `proj.id::text` against `foldername(proj.name)` which never matches, so they fail closed (deny everything). All legitimate access flows through the correctly-scoped "Secure" policies that were already in place.
 
-Replace `getPublicUrl()` calls with storing the relative path directly:
+### Cross-Tenant Status: CLOSED
 
-| File | Change |
+The old loose "Admins can delete/upload" policies (which only checked `has_role(admin)` without business_id scoping) are **gone**. Replaced by broken-but-deny duplicates. The "Secure" policies gate all real access with proper `business_id = get_user_business_id(auth.uid())` checks.
+
+### Recommended Fix
+
+Drop the two broken duplicate policies since the "Secure" policies already cover the same operations correctly:
+
+```sql
+DROP POLICY "Admins can delete project documents" ON storage.objects;
+DROP POLICY "Admins can upload project documents" ON storage.objects;
+```
+
+This is a GREEN cleanup migration — removes non-functional duplicates, no behavior change.
+
+### Files Changed Summary
+
+| Item | Status |
 |---|---|
-| `src/components/AddCertificateDialog.tsx` (line 404–411) | Store `filePath` directly instead of `urlData.publicUrl` |
-| `src/components/EditCertificateDialog.tsx` (line 337–341) | Store `filePath` directly instead of `urlData.publicUrl` |
-| `src/components/ProjectDocuments.tsx` (line 287–297) | Store `fileName` directly instead of `urlData.publicUrl` |
-| `src/components/EditProjectDialog.tsx` (line 102–111) | Remove dead `getPublicUrl()` call (already stores `filePath` as fallback) |
-
-### 3. Remove signed URL fallback in storageUtils.ts
-
-**File: `src/lib/storageUtils.ts`** (lines 33–37)
-
-On `createSignedUrl` failure, return `null` instead of falling back to a non-functional public URL. Log the warning but don't mask the error.
-
-### Files changed
-
-| File | Action |
-|---|---|
-| Migration | DROP + CREATE two storage policies on `storage.objects` |
-| `src/components/AddCertificateDialog.tsx` | Store relative path |
-| `src/components/EditCertificateDialog.tsx` | Store relative path |
-| `src/components/ProjectDocuments.tsx` | Store relative path |
-| `src/components/EditProjectDialog.tsx` | Remove dead `getPublicUrl()` call |
-| `src/lib/storageUtils.ts` | Return `null` on failure |
+| Storage RLS: cross-tenant gap | Closed (via existing "Secure" policies) |
+| `AddCertificateDialog.tsx` | Stores relative path — correct |
+| `EditCertificateDialog.tsx` | Stores relative path — correct |
+| `ProjectDocuments.tsx` | Stores relative path — correct |
+| `EditProjectDialog.tsx` | Dead `getPublicUrl()` removed — correct |
+| `storageUtils.ts` | Returns `null` on failure — correct |
 
