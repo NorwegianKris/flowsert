@@ -7,7 +7,7 @@ import { WorkerGroupsManager } from '@/components/WorkerGroupsManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
 import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
-import { IssuerTypesManager } from '@/components/IssuerTypesManager';
+
 import { CertificateBackfillTool } from '@/components/CertificateBackfillTool';
 import { TaxonomySeedingTool } from '@/components/TaxonomySeedingTool';
 import { Award, FileText, Users, Building2, ChevronDown, Settings2 } from 'lucide-react';
@@ -93,11 +93,10 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
                 <TabsList>
                   <TabsTrigger value="categories">Categories</TabsTrigger>
                   <TabsTrigger value="types">Types</TabsTrigger>
-                  <TabsTrigger value="issuers">Issuers</TabsTrigger>
                 </TabsList>
                 <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
                   <span className="text-sm">💡</span>
-                  <span className="text-xs text-muted-foreground">Categories are broad groupings; Types are specific classifications; Issuers are issuing authorities.</span>
+                  <span className="text-xs text-muted-foreground">Categories are broad groupings; Types are specific classifications.</span>
                 </div>
               </div>
               
@@ -117,15 +116,6 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
                   </p>
                 </div>
                 <CertificateTypesManager />
-              </TabsContent>
-              
-              <TabsContent value="issuers">
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    Manage the official issuing authorities used to organize and group certificates consistently.
-                  </p>
-                </div>
-                <IssuerTypesManager />
               </TabsContent>
             </Tabs>
             
