@@ -99,7 +99,14 @@ export function CertificateCategoriesManager() {
         .from('certificate_categories')
         .delete()
         .eq('id', categoryToDelete.id);
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23503') {
+          toast.error('Cannot delete — this category has types assigned to it. Reassign or remove them first.');
+        } else {
+          throw error;
+        }
+        return;
+      }
       toast.success('Category deleted successfully');
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
@@ -317,16 +324,25 @@ export function CertificateCategoriesManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Certificate Category</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the category "{categoryToDelete?.name}"? 
-              This will not affect existing certificates, but personnel will no longer 
-              be able to select this category when adding new certificates.
+              {categoryToDelete && getTypesForCategory(categoryToDelete.id).length > 0 ? (
+                <>
+                  The category "{categoryToDelete.name}" has {getTypesForCategory(categoryToDelete.id).length} type(s) assigned. 
+                  Reassign or remove them first before deleting this category.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete the category "{categoryToDelete?.name}"? 
+                  This will not affect existing certificates, but personnel will no longer 
+                  be able to select this category when adding new certificates.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteCategory}
-              disabled={deleting}
+              disabled={deleting || (categoryToDelete ? getTypesForCategory(categoryToDelete.id).length > 0 : false)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? (
