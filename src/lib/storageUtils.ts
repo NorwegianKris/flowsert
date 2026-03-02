@@ -1,6 +1,26 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * Extract the relative storage path from a value that may be a full URL or already a relative path.
+ */
+export function extractStoragePath(value: string, bucket: string): string {
+  // Already a relative path (no protocol)
+  if (!value.includes('://')) return value;
+
+  try {
+    const url = new URL(value);
+    const parts = url.pathname.split('/');
+    const bucketIdx = parts.indexOf(bucket);
+    if (bucketIdx !== -1) {
+      return parts.slice(bucketIdx + 1).join('/');
+    }
+  } catch {
+    // Not a valid URL — treat as relative path
+  }
+  return value;
+}
+
+/**
  * Get a signed URL for a file in a private storage bucket.
  * Falls back to public URL if signed URL generation fails.
  * 
