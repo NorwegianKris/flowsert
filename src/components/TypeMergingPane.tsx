@@ -265,6 +265,8 @@ export function TypeMergingPane() {
         }
       }
 
+      const targetType = mergedTypes.find(t => t.id === targetTypeId);
+
       const batchSize = 100;
       for (let i = 0; i < selectedIds.length; i += batchSize) {
         const batch = selectedIds.slice(i, i + batchSize);
@@ -272,6 +274,7 @@ export function TypeMergingPane() {
           .from("certificates")
           .update({
             certificate_type_id: targetTypeId,
+            category_id: targetType?.category_id || null,
             needs_review: false,
           })
           .in("id", batch);
@@ -291,6 +294,7 @@ export function TypeMergingPane() {
       queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
       queryClient.invalidateQueries({ queryKey: ["certificate-type-usage"] });
+      queryClient.invalidateQueries({ queryKey: ["needs-review-count"] });
     } catch (error) {
       console.error("Grouping error:", error);
       toast.error("Failed to assign types");
@@ -337,6 +341,7 @@ export function TypeMergingPane() {
 
       toast.success("Certificate dismissed");
       queryClient.invalidateQueries({ queryKey: ["unmapped-certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["needs-review-count"] });
     } catch (error) {
       console.error("Error dismissing certificate:", error);
       toast.error("Failed to dismiss certificate");
