@@ -1,38 +1,18 @@
 
 
-## Add "Merge Canonical Issuers" to Manage Issuers Tab
+## Two UI Fixes for Manage Issuers Tab
 
-### What it does
-Adds multi-select checkboxes to the existing issuer list in the Manage Issuers tab. When 2+ issuers are selected, a "Merge Selected" button appears. Clicking it opens a confirmation dialog where the admin picks the primary issuer (defaulting to highest usage count). On confirm, all certificates and aliases are reassigned to the primary, and the duplicate `issuer_types` rows are deleted.
+### 1. Scrollable issuer list with fixed height
+Wrap the issuer list (`div.border.rounded-lg.divide-y` at line 347) in a `ScrollArea` component with `max-h-[65vh]` and `overflow-y-auto`. The toolbar (search, filters, buttons) and footer count stay outside the scroll container.
 
-### Changes
+### 2. Info banner + always-visible merge button
 
-**File: `src/components/IssuerTypesManager.tsx`** (sole file changed)
+**Banner**: Add an amber info banner above the toolbar, matching the existing category/type banner style: `bg-yellow-50 border border-yellow-200 rounded-lg p-3` with a `Lightbulb` icon. Text: "Manage your canonical issuing authorities here. Select two or more duplicate issuers and merge them into one to keep your data clean."
 
-1. **State**: Add `selectedForMerge: Set<string>`, `mergeDialogOpen`, `isMerging` state variables
+**Merge button**: Remove the `selectedForMerge.size >= 2` conditional (line 317). Always render the button. When `< 2` selected, show it as `disabled` with label "Merge Issuers". When `>= 2` selected, enable it with label "Merge Selected (N)".
 
-2. **Toolbar**: Next to "New Issuer" button, show a "Merge Selected (N)" button when `selectedForMerge.size >= 2`
-
-3. **List rows**: Add a `Checkbox` to the left of each issuer row. Checkbox toggles membership in `selectedForMerge`. Show usage count badge per issuer (already available from the hook's `usage_count` field)
-
-4. **Merge Confirmation Dialog**: 
-   - Lists selected issuers with radio buttons to pick primary (auto-selects highest `usage_count`)
-   - Shows certificate count per issuer
-   - "Merge" button executes the operation
-
-5. **Merge execution logic** (all client-side Supabase SDK calls, no schema changes):
-   - `UPDATE certificates SET issuer_type_id = <primary> WHERE issuer_type_id IN (<duplicates>)`
-   - `UPDATE issuer_aliases SET issuer_type_id = <primary> WHERE issuer_type_id IN (<duplicates>)` -- catch `23505` silently for conflicts
-   - `DELETE FROM issuer_types WHERE id IN (<duplicates>)`
-   - Invalidate query keys: `issuer-types`, `issuer-aliases`, `certificates`, `issuer-alias-lookup`
-   - Toast success with merged count
-   - Clear selection
-
-### Prompt Risk Assessment
-- Q1 (SQL/migration): No schema changes -- only client SDK calls against existing tables with existing RLS policies. GREEN.
-- Q2 (edge functions/auth): No. GREEN.
-- Q3 (access control): No changes to RLS. GREEN.
-
-### No AI Detect Duplicates in this iteration
-Can be added as a follow-up feature.
+### File changed
+| File | Change |
+|------|--------|
+| `src/components/IssuerTypesManager.tsx` | Add `Lightbulb` import, amber banner, `ScrollArea` wrapper on list, always-visible merge button |
 
