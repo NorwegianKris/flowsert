@@ -57,7 +57,7 @@ import { useCreateIssuerAlias } from "@/hooks/useIssuerAliases";
 import { normalizeCertificateTitle } from "@/lib/certificateNormalization";
 import { PdfViewer } from "./PdfViewer";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 function formatDate(dateStr: string | null) {
@@ -67,6 +67,51 @@ function formatDate(dateStr: string | null) {
   } catch {
     return null;
   }
+}
+
+/** Hook to fetch certificates linked to a specific issuer type */
+function useIssuerTypeCertificates(issuerTypeId: string | null, businessId: string | null) {
+  return useQuery({
+    queryKey: ["issuer-type-certificates", issuerTypeId, businessId],
+    queryFn: async () => {
+      if (!issuerTypeId || !businessId) return [];
+
+      const { data, error } = await supabase
+        .from("certificates")
+        .select(`
+          id,
+          name,
+          date_of_issue,
+          expiry_date,
+          issuing_authority,
+          personnel!inner (
+            id,
+            name,
+            business_id
+          )
+        `)
+        .eq("issuer_type_id", issuerTypeId)
+        .eq("personnel.business_id", businessId)
+        .order("name")
+        .limit(20);
+
+      if (error) {
+        console.error("Error fetching issuer type certificates:", error);
+        return [];
+      }
+
+      return (data || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        date_of_issue: c.date_of_issue,
+        expiry_date: c.expiry_date,
+        issuing_authority: c.issuing_authority,
+        personnel_name: c.personnel?.name || "Unknown",
+      }));
+    },
+    enabled: !!issuerTypeId && !!businessId,
+    staleTime: 1000 * 60 * 2,
+  });
 }
 
 export function IssuerMergingPane() {
@@ -87,6 +132,9 @@ export function IssuerMergingPane() {
   const [rightSearch, setRightSearch] = useState("");
   const [selectedInputted, setSelectedInputted] = useState<Set<string>>(new Set());
   const [selectedMerged, setSelectedMerged] = useState<string | null>(null);
+
+  // Track which right-pane issuer rows are expanded
+  const [expandedIssuers, setExpandedIssuers] = useState<Set<string>>(new Set());
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -195,6 +243,15 @@ export function IssuerMergingPane() {
     }
   };
 
+  const toggleExpanded = (issuerId: string) => {
+    setExpandedIssuers((prev) => {
+      const next = new Set(prev);
+      if (next.has(issuerId)) next.delete(issuerId);
+      else next.add(issuerId);
+      return next;
+    });
+  };
+
   const canGroup = selectedInputted.size > 0 && selectedMerged !== null;
 
   const handleGroupIntoSelected = () => {
@@ -274,6 +331,9 @@ export function IssuerMergingPane() {
       refetchInputted();
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
       queryClient.invalidateQueries({ queryKey: ["issuer-type-usage"] });
+      queryClient.invalidateQueries({ queryKey: ["issuer-types"] });
+      queryClient.invalidateQueries({ queryKey: ["issuer-type-certificates"] });
+      queryClient.invalidateQueries({ queryKey: ["needs-review-count"] });
     } catch (error) {
       console.error("Grouping error:", error);
       toast.error("Failed to group issuers");
@@ -334,10 +394,10 @@ export function IssuerMergingPane() {
         </span>
       </div>
 
-      {/* Two-pane layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 lg:gap-0">
+      {/* Three-pane layout matching TypeMergingPane */}
+      <div className="flex flex-col lg:flex-row lg:gap-0 gap-4 overflow-hidden">
         {/* Left Pane: Inputted Issuers */}
-        <div className="border rounded-lg flex flex-col h-[600px]">
+        <div className="border rounded-lg flex flex-col h-[600px] min-w-0" style={{ flex: "0 0 35%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Inputted Issuers</h3>
@@ -575,9 +635,11 @@ export function IssuerMergingPane() {
         </div>
 
         {/* Center: Action Area */}
-        <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0">
+        <div className="flex flex-col items-center justify-center px-4 py-6 lg:py-0" style={{ flex: "0 0 28%" }}>
           <div className="flex flex-col items-center gap-4 text-center">
-            <ArrowRight className="h-6 w-6 text-muted-foreground hidden lg:block" />
+            <Button size="icon" className="rounded-full hidden lg:flex" disabled>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
 
             <div className="text-xs text-muted-foreground max-w-[200px]">
               Select inputted issuers on the left, then group them into a merged issuer on the right.
@@ -622,15 +684,15 @@ export function IssuerMergingPane() {
           </div>
         </div>
 
-        {/* Right Pane: Merged Issuers */}
-        <div className="border rounded-lg flex flex-col h-[600px]">
+        {/* Right Pane: Merged Issuers — with collapsible certificate rows */}
+        <div className="border rounded-lg flex flex-col h-[600px] min-w-0 overflow-hidden" style={{ flex: "0 0 37%" }}>
           <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Merged Issuers</h3>
               <Badge variant="secondary">{filteredMerged.length}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Official standardized issuers. Click to select a target for grouping.
+              Official standardized issuers. Select a target for grouping.
             </p>
             <div className="relative pt-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -644,7 +706,7 @@ export function IssuerMergingPane() {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="divide-y">
+            <div>
               {filteredMerged.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <p className="text-sm">No merged issuers found.</p>
@@ -653,40 +715,72 @@ export function IssuerMergingPane() {
               ) : (
                 filteredMerged.map((merged) => {
                   const isSelected = selectedMerged === merged.id;
+                  const isExpanded = expandedIssuers.has(merged.id);
+                  const usageCount = (merged as any).usage_count || 0;
+
                   return (
-                    <div
+                    <Collapsible
                       key={merged.id}
-                      className={`p-3 cursor-pointer transition-colors ${
-                        isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => setSelectedMerged(isSelected ? null : merged.id)}
+                      open={isExpanded}
+                      onOpenChange={() => toggleExpanded(merged.id)}
                     >
-                      <div className="flex items-start gap-3">
+                      <div
+                        className={`border-b transition-colors ${
+                          isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : "hover:bg-muted/50"
+                        }`}
+                      >
                         <div
-                          className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${
-                            isSelected
-                              ? "border-primary bg-primary"
-                              : "border-muted-foreground/30"
-                          }`}
+                          className="p-3 cursor-pointer"
+                          onClick={() => setSelectedMerged(isSelected ? null : merged.id)}
                         >
-                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{merged.name}</span>
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                                isSelected
+                                  ? "border-primary bg-primary"
+                                  : "border-muted-foreground/30"
+                              }`}
+                            >
+                              {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{merged.name}</span>
+                                <Badge
+                                  variant={usageCount > 0 ? "secondary" : "outline"}
+                                  className="text-xs"
+                                >
+                                  {usageCount} cert{usageCount !== 1 ? "s" : ""}
+                                </Badge>
+                              </div>
+                              {merged.description && (
+                                <p className="text-xs text-muted-foreground mt-1 whitespace-normal">
+                                  {merged.description}
+                                </p>
+                              )}
+                            </div>
+
+                            <CollapsibleTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                              </Button>
+                            </CollapsibleTrigger>
                           </div>
-                          {merged.description && (
-                            <p className="text-xs text-muted-foreground mt-1 truncate">
-                              {merged.description}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            <FileText className="h-3 w-3 inline mr-1" />
-                            {(merged as any).usage_count || 0} certificate{(merged as any).usage_count !== 1 ? 's' : ''}
-                          </p>
                         </div>
+
+                        <CollapsibleContent>
+                          <IssuerTypeCertificatesList
+                            issuerTypeId={merged.id}
+                            businessId={businessId}
+                          />
+                        </CollapsibleContent>
                       </div>
-                    </div>
+                    </Collapsible>
                   );
                 })
               )}
@@ -873,22 +967,83 @@ export function IssuerMergingPane() {
                 className="max-h-[70vh] w-auto mx-auto object-contain rounded"
               />
             ) : documentBlobUrl ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
-                <Button asChild>
-                  <a href={documentBlobUrl} download={viewingDocument?.fileName}>
-                    Download File
-                  </a>
-                </Button>
-              </div>
+              <iframe
+                src={documentBlobUrl}
+                className="w-full h-[70vh] rounded"
+                title={viewingDocument?.fileName || 'Document'}
+              />
             ) : (
-              <div className="text-center py-8 text-destructive">
-                Failed to load document. Please try again.
+              <div className="text-center py-8 text-muted-foreground">
+                Failed to load document.
               </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Sub-component for displaying certificates linked to an issuer type in the right pane */
+function IssuerTypeCertificatesList({
+  issuerTypeId,
+  businessId,
+}: {
+  issuerTypeId: string;
+  businessId: string | null;
+}) {
+  const { data: certs = [], isLoading } = useIssuerTypeCertificates(issuerTypeId, businessId);
+
+  if (isLoading) {
+    return (
+      <div className="px-3 pb-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Loading certificates...
+      </div>
+    );
+  }
+
+  if (certs.length === 0) {
+    return (
+      <div className="px-3 pb-3 text-xs text-muted-foreground italic">
+        No certificates linked to this issuer.
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-3 pb-3 border-t border-border/50 bg-muted/20">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1.5 pt-2">
+        Linked Certificates
+      </p>
+      <div className="space-y-1.5">
+        {certs.map((cert) => (
+          <div
+            key={cert.id}
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+          >
+            <span className="font-medium text-foreground truncate max-w-[100px]">
+              {cert.personnel_name}
+            </span>
+            <span className="text-muted-foreground/50">—</span>
+            <span className="truncate flex-1">{cert.name}</span>
+            {cert.expiry_date && (
+              <>
+                <span className="text-muted-foreground/50">—</span>
+                <span className="shrink-0 flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(cert.expiry_date)}
+                </span>
+              </>
+            )}
+          </div>
+        ))}
+        {certs.length >= 20 && (
+          <p className="text-[10px] text-muted-foreground italic">
+            Showing first 20 certificates
+          </p>
+        )}
+      </div>
     </div>
   );
 }
