@@ -241,11 +241,12 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
       <CardContent className="flex flex-col flex-1">
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>
         
-        <div className="flex items-center gap-1 mb-3">
+        {/* Row 3: Avatar stack or placeholder — fixed height */}
+        <div className="flex items-center gap-1 mb-2 min-h-[24px]">
           {assignedPersonnel.length > 0 ? (
             <>
               <div className="flex -space-x-2">
-                {assignedPersonnel.slice(0, 4).map((person) => (
+                {assignedPersonnel.slice(0, 5).map((person) => (
                   <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
                     <AvatarImage src={person.avatarUrl} alt={person.name} />
                     <AvatarFallback className="text-[10px]">
@@ -254,26 +255,34 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
                   </Avatar>
                 ))}
               </div>
-              {assignedPersonnel.length > 4 && (
+              {assignedPersonnel.length > 5 && (
                 <span className="text-xs text-muted-foreground ml-1">
-                  +{assignedPersonnel.length - 4} more
+                  +{assignedPersonnel.length - 5} more
                 </span>
               )}
-              <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1.5">
-                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-                <span className="text-border">|</span>
-                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
-              </span>
             </>
           ) : (
-            <span className="text-xs text-muted-foreground">No personnel assigned</span>
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="h-4 w-4" />
+              No personnel assigned
+            </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-          <Users className="h-3.5 w-3.5 text-primary" />
-          <span>{isPosted ? applicantCount : '—'} Applicant{applicantCount !== 1 || !isPosted ? 's' : ''}</span>
-        </div>
+        {/* Row 4: Employee/Freelancer/Applicant counts — only when personnel exist */}
+        {assignedPersonnel.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
+            <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
+            <span className="text-border">|</span>
+            <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
+            {isPosted && (
+              <>
+                <span className="text-border">|</span>
+                <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
+              </>
+            )}
+          </div>
+        )}
         <div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
