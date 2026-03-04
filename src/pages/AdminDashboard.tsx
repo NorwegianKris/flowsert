@@ -804,7 +804,7 @@ export default function AdminDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-2 pb-1">Plan & Billing</p>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Plan & Usage</span>
@@ -840,7 +840,7 @@ export default function AdminDashboard() {
 
                 <div ref={billingRef}>
                   <Collapsible open={billingOpen} onOpenChange={setBillingOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-5 w-5 text-primary" />
                         <span className="font-semibold text-lg">Payment & Billing</span>
@@ -875,7 +875,7 @@ export default function AdminDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Access & Team</p>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <Shield className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Team & Admins</span>
@@ -888,7 +888,7 @@ export default function AdminDashboard() {
                 </Collapsible>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Company</span>
@@ -906,7 +906,7 @@ export default function AdminDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Certificate Compliance Configuration</p>
 
                 <Collapsible defaultOpen={settingsDeepLink === 'review-queue'}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <Award className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Categories</span>
@@ -919,7 +919,7 @@ export default function AdminDashboard() {
                 </Collapsible>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Issuing Authorities</span>
@@ -937,7 +937,7 @@ export default function AdminDashboard() {
                 </Collapsible>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Locations</span>
@@ -954,7 +954,7 @@ export default function AdminDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Privacy & Tools</p>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Privacy & Data</span>
@@ -975,7 +975,7 @@ export default function AdminDashboard() {
                 </Collapsible>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <Link2 className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Freelancer Registration</span>
@@ -991,7 +991,7 @@ export default function AdminDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-4 pb-1">Support</p>
 
                 <Collapsible open={feedbackOpen} onOpenChange={setFeedbackOpen}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-5 w-5 text-primary" />
                       <span className="font-semibold text-lg">Feedback</span>

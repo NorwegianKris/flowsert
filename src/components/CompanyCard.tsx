@@ -393,7 +393,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
             </CardHeader>
             <CardContent className="space-y-2">
               {documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-2 border rounded-lg">
+                <div key={doc.id} className="flex items-center justify-between p-2 border rounded-lg bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all">
                   <div className="flex items-center gap-2 min-w-0">
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-sm truncate">{doc.name}</span>
@@ -471,6 +471,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Company Name"
               required
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2">
@@ -481,6 +482,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="contact@company.com"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2">
@@ -490,6 +492,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="+47 123 45 678"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2">
@@ -499,6 +502,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               placeholder="https://company.com"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2">
@@ -508,6 +512,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.org_number}
               onChange={(e) => setFormData({ ...formData, org_number: e.target.value })}
               placeholder="123 456 789"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2">
@@ -517,6 +522,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Street name and number"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2">
@@ -526,6 +532,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.postal_code}
               onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
               placeholder="0001"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -535,6 +542,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               value={formData.postal_address}
               onChange={(e) => setFormData({ ...formData, postal_address: e.target.value })}
               placeholder="Oslo, Norway"
+              className="bg-white dark:bg-card"
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -545,6 +553,7 @@ export function CompanyCard({ isAdmin = false, onClose, businessId: businessIdPr
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Brief description of your company..."
               rows={3}
+              className="bg-white dark:bg-card"
             />
           </div>
         </div>

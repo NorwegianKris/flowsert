@@ -321,7 +321,7 @@ export function AdminOverview() {
               return (
                 <div
                   key={admin.id}
-                  className="flex items-center gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-4 p-3 rounded-lg border border-border/50 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all"
                 >
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/10 text-primary text-sm">

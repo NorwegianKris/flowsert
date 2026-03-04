@@ -202,7 +202,7 @@ export function FeedbackList({ embedded, open: externalOpen }: FeedbackListProps
             </Button>
           </div>
           {feedback.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.id} className="bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-2">
