@@ -1,78 +1,47 @@
 
 
-## Compliance Plan Generator — Implementation Plan
+## Add Compliance Plan Export to External Sharing Dialog
 
 ### Overview
 
-A client-side compliance plan generator placed between `ComplianceSnapshot` and `ExpiryTimeline` on the Overview tab. Uses existing `personnel` data — no API calls, no schema changes, no RLS impact.
+Add a fourth export option — "Export Compliance Plan" — to the External Sharing dialog. It reuses the same `generateCompliancePlanPdf` function from the Overview tab. When selected, it shows inline period toggles (30d / 90d / 6mo) and uses the existing personnel selection (type toggles, role/group filters, individuals) to scope the plan.
 
-### Data Note
-
-The "Issuing Authority" column will use the `issuingAuthority` field already on each certificate (raw free-text from the `issuing_authority` column). This is available without any additional joins. It may be blank for some certificates — those will show "—" in the table.
-
-### Files
+### File
 
 | Action | File |
 |--------|------|
-| **Create** | `src/components/CompliancePlanGenerator.tsx` |
-| **Create** | `src/lib/compliancePlanPdf.ts` |
-| **Edit** | `src/pages/AdminDashboard.tsx` — insert component between `ComplianceSnapshot` and `ExpiryTimeline` (line ~737) |
+| **Edit** | `src/components/ExternalSharingDialog.tsx` |
 
-### Component: `CompliancePlanGenerator.tsx`
+### Changes
 
-**Props**: Same as `ExpiryTimeline` — `personnel`, `personnelFilter`, `customPersonnelIds`, `customRoles`, `customWorkerGroupIds`.
+1. **Import** `generateCompliancePlanPdf` from `@/lib/compliancePlanPdf` and `getDaysUntilExpiry` from `@/lib/certificateUtils` (partially already imported). Import `ClipboardList` icon.
 
-**Trigger bar**: Matches AI search bar — `p-3 border rounded-lg bg-primary text-white` with `flex items-center justify-between`.
-- Left: `ClipboardList` icon + "Generate Compliance Plan"
-- Center-right: `ToggleGroup` for period (30d / 90d / 6mo), styled white-on-purple
-- Right: "Generate" button
+2. **New state**: `compliancePlanPeriod` — string, default `'90'`.
 
-**Filter logic**: Replicates `ExpiryTimeline` lines 57–80 exactly — uses `usePersonnelWorkerGroups` for custom filter with worker groups.
+3. **New export option card** — add after the Certificate Bundle card (line ~893), same styling pattern:
+   - Checkbox + `ClipboardList` icon + "Export Compliance Plan"
+   - Subtitle: "Certificate expiry report for the selected period and personnel"
+   - `toggleExport('compliancePlan')`
 
-**Generate logic** (on click):
-1. Filter personnel per active toggle
-2. Collect certificates with non-null `expiryDate` where `daysRemaining <= period` OR overdue
-3. Build plan data for four sections
+4. **Period toggle** — when `compliancePlan` is selected, show inline below (in `ml-8`):
+   - Three small buttons for 30 days / 90 days / 6 months (same pattern as `projectFilter` toggle)
 
-**Plan sections** (rendered below bar, dismissible):
+5. **Generate logic** — in `handleDownloadPdfs`, add a block for `compliancePlan`:
+   - Get `selectedPersonnel` via `getSelectedPersonnel()`
+   - Build `planEntries` array (same logic as `CompliancePlanGenerator.tsx` lines 91–107): iterate personnel certificates, compute `getDaysUntilExpiry`, include if `days <= periodDays || days < 0`
+   - Compute `summary`, `byPersonnel`, `byIssuer` groupings (same as CompliancePlanGenerator)
+   - Derive `periodLabel` and `filterLabel` from selected groups/roles
+   - Call `generateCompliancePlanPdf({ entries, periodLabel, filterLabel, businessName, summary, byPersonnel, byIssuer })`
+   - Save as `compliance-plan-{period}d-{date}.pdf`
 
-1. **Summary** — "X certificates expiring within [period], affecting Y personnel across Z categories. W already overdue." Color-coded `Badge` (red/amber/green).
+6. **Same block in `handleEmailPdfs`** — generate and save the PDF, add filename to `attachmentNames`.
 
-2. **Priority list** — `Table` sorted by expiry ascending. Columns: Personnel Name, Certificate Type, Category, Issuing Authority, Expiry Date, Days Remaining. Row badges: red (<0), amber (<30), yellow (30–60), green (60+).
+7. **`canDownload` update** — if `compliancePlan` is selected, require `selectedPersonnelCount > 0`.
 
-3. **Grouped by personnel** — `Accordion`. Header: "Name — N certificates". Sorted by most affected first.
+8. **Personnel selection visibility** — update the condition on line 915 to also show personnel selection when `compliancePlan` is selected:
+   ```
+   (selectedExports.includes('personnelCertificates') || selectedExports.includes('certificateBundle') || selectedExports.includes('compliancePlan'))
+   ```
 
-4. **Grouped by issuer** — `Accordion`. Header: "Authority — N certificates, M personnel". Groups by `issuingAuthority` string.
-
-**Edge cases**: No expiring certs → "All clear" with next upcoming date. No personnel → "No personnel match filter." Null expiry → excluded.
-
-**Export**:
-- "Copy to clipboard" — formatted text via `navigator.clipboard.writeText`
-- "Download as PDF" — calls new `generateCompliancePlanPdf`
-
-### PDF: `compliancePlanPdf.ts`
-
-Follows `competenceMatrixPdf.ts` pattern exactly:
-- A4 landscape, 14mm margins
-- `loadPdfLogo` / `drawPdfLogo` header
-- Title: "COMPLIANCE PLAN — NEXT [period]"
-- Subtitle: business name, date, filter scope
-- Four sections as `autoTable` with gray-header grid theme (6pt headers, 8pt body)
-- Status row fills (green/yellow/amber/red)
-- Footer: centered page numbers, right-aligned "Generated by FlowSert"
-
-### Dashboard integration
-
-Insert between lines 737–738 in `AdminDashboard.tsx`:
-
-```tsx
-<CompliancePlanGenerator
-  personnel={personnel}
-  personnelFilter={complianceFilter}
-  customPersonnelIds={customFilterPersonnelIds}
-  customRoles={customFilterRoles}
-  customWorkerGroupIds={customFilterWorkerGroupIds}
-  businessName={business?.name}
-/>
-```
+### No schema/RLS changes. Pure client-side PDF generation using existing data and the existing `generateCompliancePlanPdf` utility.
 
