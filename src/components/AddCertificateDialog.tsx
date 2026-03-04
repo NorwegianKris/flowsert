@@ -34,6 +34,7 @@ import { useLookupIssuerAlias, useCreateIssuerAlias } from '@/hooks/useIssuerAli
 import { useIssuerTypes } from '@/hooks/useIssuerTypes';
 import { normalizeCertificateTitle, isAmbiguousTitle } from '@/lib/certificateNormalization';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DuplicateCertificateDialog } from './DuplicateCertificateDialog';
 
 interface AddCertificateDialogProps {
   open: boolean;
@@ -110,6 +111,13 @@ export function AddCertificateDialog({
     normalizedTitle: string;
     typeId: string;
     rawTitle: string;
+  } | null>(null);
+  
+  // Duplicate certificate detection state
+  const [duplicateCheck, setDuplicateCheck] = useState<{
+    existing: Array<{ id: string; name: string; date_of_issue: string; expiry_date: string | null }>;
+    newCert: CertificateEntry;
+    resolve: (action: 'replace' | 'keep' | 'cancel') => void;
   } | null>(null);
   
   // Alias mutation hooks
@@ -336,6 +344,33 @@ export function AddCertificateDialog({
 
     try {
       for (const cert of validCerts) {
+        // --- Duplicate detection ---
+        if (cert.certificateTypeId) {
+          const { data: existing } = await supabase
+            .from('certificates')
+            .select('id, name, date_of_issue, expiry_date')
+            .eq('personnel_id', personnelId)
+            .eq('certificate_type_id', cert.certificateTypeId);
+
+          if (existing && existing.length > 0) {
+            const action = await new Promise<'replace' | 'keep' | 'cancel'>((resolve) =>
+              setDuplicateCheck({ existing, newCert: cert, resolve })
+            );
+            setDuplicateCheck(null);
+
+            if (action === 'cancel') continue;
+
+            if (action === 'replace') {
+              // Delete the oldest by date_of_issue
+              const oldest = existing.reduce((a, b) =>
+                a.date_of_issue < b.date_of_issue ? a : b
+              );
+              await supabase.from('certificates').delete().eq('id', oldest.id);
+            }
+            // 'keep' falls through to insert
+          }
+        }
+
         // Determine title_raw based on how type was specified
         // This ensures title_raw stores the CERTIFICATE TYPE, not the filename
         let titleRaw: string | null = cert.titleRaw || null;
@@ -912,6 +947,19 @@ export function AddCertificateDialog({
         normalizedTitle={pendingAmbiguousAlias?.normalizedTitle || ''}
         onConfirm={handleAmbiguityConfirm}
         onCancel={handleAmbiguityCancel}
+      />
+      
+      <DuplicateCertificateDialog
+        open={!!duplicateCheck}
+        existingCerts={duplicateCheck?.existing || []}
+        newCert={{
+          name: duplicateCheck?.newCert.certificateTypeName || duplicateCheck?.newCert.name || '',
+          dateOfIssue: duplicateCheck?.newCert.dateOfIssue || '',
+          expiryDate: duplicateCheck?.newCert.expiryDate || null,
+        }}
+        onReplace={() => duplicateCheck?.resolve('replace')}
+        onKeepBoth={() => duplicateCheck?.resolve('keep')}
+        onCancel={() => duplicateCheck?.resolve('cancel')}
       />
     </Dialog>
   );
