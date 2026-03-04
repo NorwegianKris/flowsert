@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { Sparkles, Loader2, CheckCircle2, AlertTriangle, XCircle, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -248,15 +248,16 @@ export function TaxonomySeedingTool() {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="mb-6">
-      {!open && (
-        <CollapsibleTrigger
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 text-sm font-bold cursor-pointer py-2 px-4 rounded-full bg-primary text-primary-foreground shadow-lg animate-pulse hover:animate-none transition-colors"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>Teach the System</span>
-        </CollapsibleTrigger>
-      )}
+      <CollapsibleTrigger
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "flex items-center gap-2 text-sm font-bold cursor-pointer py-2 px-4 rounded-full bg-primary text-primary-foreground shadow-lg transition-colors",
+          !open && "animate-pulse hover:animate-none"
+        )}
+      >
+        <Sparkles className="h-4 w-4" />
+        <span>Teach the System</span>
+      </CollapsibleTrigger>
       <CollapsibleContent className="pt-2">
         <div className="border rounded-lg p-4 space-y-4 bg-muted/20 relative">
           <button
