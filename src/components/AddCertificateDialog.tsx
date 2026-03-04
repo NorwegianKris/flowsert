@@ -215,7 +215,7 @@ export function AddCertificateDialog({
       } : undefined,
       certificateTypeFreeText: '', // For free text certificate type
       titleRaw: extractedData.certificateName || fileName,
-      ocrExtractedName: extractedData.suggestedTypeName || extractedData.certificateName || '',
+      ocrExtractedName: extractedData.certificateName || extractedData.suggestedTypeName || '',
       ocrConfidence: extractedData.classificationConfidence || result.confidence,
     };
 
