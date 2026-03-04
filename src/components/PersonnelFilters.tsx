@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Briefcase, Globe, Users } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Briefcase, Globe } from 'lucide-react';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
@@ -13,11 +13,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export type PersonnelSortOption = 'recent' | 'last_updated' | 'alphabetical';
 export type CertificateFilterMode = 'types' | 'categories' | 'issuers';
-
-interface WorkerGroupForFilter {
-  id: string;
-  name: string;
-}
 
 interface PersonnelFiltersProps {
   roleFilters: string[];
@@ -39,10 +34,6 @@ interface PersonnelFiltersProps {
   certificateFilterMode?: CertificateFilterMode;
   onCertificateFilterModeChange?: (mode: CertificateFilterMode) => void;
   resultCount?: number;
-  // Worker Groups filter props
-  workerGroups?: WorkerGroupForFilter[];
-  workerGroupFilters?: string[];
-  onWorkerGroupFiltersChange?: (values: string[]) => void;
 }
 
 export function PersonnelFilters({
@@ -65,14 +56,10 @@ export function PersonnelFilters({
   certificateFilterMode = 'types',
   onCertificateFilterModeChange,
   resultCount,
-  workerGroups,
-  workerGroupFilters = [],
-  onWorkerGroupFiltersChange,
 }: PersonnelFiltersProps) {
   const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
   const [workersOpen, setWorkersOpen] = useState(false);
-  const [workersFilterView, setWorkersFilterView] = useState<'roles' | 'groups'>('roles');
   const [locationOpen, setLocationOpen] = useState(false);
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [departmentOpen, setDepartmentOpen] = useState(false);
@@ -93,8 +80,7 @@ export function PersonnelFilters({
     locationFilters.length > 0 || 
     certificateFilters.length > 0 ||
     departmentFilters.length > 0 ||
-    availabilityDateRange?.from !== undefined ||
-    workerGroupFilters.length > 0;
+    availabilityDateRange?.from !== undefined;
 
   const clearAllFilters = () => {
     onRoleFiltersChange([]);
@@ -102,7 +88,6 @@ export function PersonnelFilters({
     onCertificateFiltersChange([]);
     onDepartmentFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
-    onWorkerGroupFiltersChange?.([]);
   };
 
   const toggleFilter = (
@@ -175,107 +160,46 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Workers Filter (Roles + Groups) */}
+      {/* Roles Filter */}
       <Popover open={workersOpen} onOpenChange={setWorkersOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-9 justify-between min-w-[160px]">
-            <Users className="mr-2 h-4 w-4" />
+            <Briefcase className="mr-2 h-4 w-4" />
             <span className="truncate">
-              {(() => {
-                const count = roleFilters.length + workerGroupFilters.length;
-                return count === 0 ? 'Workers' : `${count} selected`;
-              })()}
+              {roleFilters.length === 0 ? 'Roles' : `${roleFilters.length} selected`}
             </span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[260px] p-0 bg-popover border shadow-md z-50" align="start">
-          {/* Toggle between Roles and Groups */}
-          <div className="p-2 border-b">
-            <ToggleGroup
-              type="single"
-              value={workersFilterView}
-              onValueChange={(value) => {
-                if (value) setWorkersFilterView(value as 'roles' | 'groups');
-              }}
-              className="w-full bg-primary p-1 rounded-md"
-            >
-              <ToggleGroupItem
-                value="roles"
-                className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
-                aria-label="Filter by roles"
-              >
-                <Briefcase className="h-3.5 w-3.5" />
-                Roles
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="groups"
-                className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
-                aria-label="Filter by groups"
-              >
-                <Users className="h-3.5 w-3.5" />
-                Groups
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
           <div className="p-2 max-h-[250px] overflow-y-auto">
-            {workersFilterView === 'roles' ? (
-              <div className="space-y-1">
-                {workerCategories.map((category) => (
-                  <label
-                    key={category.id}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={roleFilters.includes(category.name)}
-                      onCheckedChange={() =>
-                        toggleFilter(category.name, roleFilters, onRoleFiltersChange)
-                      }
-                    />
-                    <span className="text-sm">{category.name}</span>
-                  </label>
-                ))}
-                {workerCategories.length === 0 && (
-                  <p className="text-sm text-muted-foreground px-2 py-1">No roles defined</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {workerGroups && workerGroups.length > 0 ? (
-                  workerGroups.map((group) => (
-                    <label
-                      key={group.id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={workerGroupFilters.includes(group.id)}
-                        onCheckedChange={() =>
-                          onWorkerGroupFiltersChange && toggleFilter(group.id, workerGroupFilters, onWorkerGroupFiltersChange)
-                        }
-                      />
-                      <span className="text-sm">{group.name}</span>
-                    </label>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground px-2 py-1">No groups yet</p>
-                )}
-              </div>
-            )}
+            <div className="space-y-1">
+              {workerCategories.map((category) => (
+                <label
+                  key={category.id}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                >
+                  <Checkbox
+                    checked={roleFilters.includes(category.name)}
+                    onCheckedChange={() =>
+                      toggleFilter(category.name, roleFilters, onRoleFiltersChange)
+                    }
+                  />
+                  <span className="text-sm">{category.name}</span>
+                </label>
+              ))}
+              {workerCategories.length === 0 && (
+                <p className="text-sm text-muted-foreground px-2 py-1">No roles defined</p>
+              )}
+            </div>
           </div>
-          {/* Clear button for active view */}
-          {(workersFilterView === 'roles' ? roleFilters.length > 0 : workerGroupFilters.length > 0) && (
+          {roleFilters.length > 0 && (
             <div className="p-2 border-t">
               <Button
                 variant="ghost"
                 size="sm"
                 className="w-full"
-                onClick={() => {
-                  if (workersFilterView === 'roles') {
-                    onRoleFiltersChange([]);
-                  } else {
-                    onWorkerGroupFiltersChange?.([]);
-                  }
-                }}
+                onClick={() => onRoleFiltersChange([])}
               >
                 Clear
               </Button>
@@ -581,22 +505,6 @@ export function PersonnelFilters({
               </button>
             </Badge>
           ))}
-          {workerGroups && onWorkerGroupFiltersChange && workerGroupFilters.map((gid) => {
-            const group = workerGroups.find(g => g.id === gid);
-            if (!group) return null;
-            return (
-              <Badge key={gid} variant="secondary" className="text-xs">
-                <Users className="h-3 w-3 mr-1" />
-                {group.name}
-                <button
-                  className="ml-1 hover:text-destructive"
-                  onClick={() => toggleFilter(gid, workerGroupFilters, onWorkerGroupFiltersChange)}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            );
-          })}
         </div>
       )}
 
