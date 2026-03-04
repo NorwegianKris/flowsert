@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, SlidersHorizontal, Search } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, Search } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
@@ -24,13 +23,14 @@ const statusConfig = {
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock },
 };
 
+type ProjectFilterValue = 'all' | 'active' | 'recurring' | 'posted';
+
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
   const [previousOpen, setPreviousOpen] = useState(false);
-  const [includePosted, setIncludePosted] = useState(true);
-  const [includeRecurring, setIncludeRecurring] = useState(true);
+  const [projectFilter, setProjectFilter] = useState<ProjectFilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Filter projects based on search and toggles
+  // Filter projects based on search
   const searchedProjects = projects.filter(p => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -42,16 +42,16 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
     );
   });
   
+  // Filter by toggle group selection
   const filteredProjects = searchedProjects.filter(p => {
-    if (!includePosted && p.isPosted) return false;
-    if (!includeRecurring && p.isRecurring) return false;
-    return true;
+    if (projectFilter === 'active') return !p.isPosted && !p.isRecurring;
+    if (projectFilter === 'recurring') return p.isRecurring;
+    if (projectFilter === 'posted') return p.isPosted;
+    return true; // 'all'
   });
   
   const activeProjects = filteredProjects.filter((p) => p.status === 'active' || p.status === 'pending');
   const completedProjects = filteredProjects.filter((p) => p.status === 'completed');
-  const postedProjectsCount = projects.filter(p => p.isPosted).length;
-  const recurringProjectsCount = projects.filter(p => p.isRecurring).length;
 
   const getPersonnelById = (id: string) => personnel.find((p) => p.id === id);
 
@@ -66,49 +66,55 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
 
   return (
     <div className="space-y-6">
-      {/* Search Field */}
-      <div className="relative max-w-96">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search projects by name, description or location..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      {/* Project View Filter Bar */}
-      <div className="py-3 px-4 bg-[#C4B5FD]/10 rounded-lg border border-[#C4B5FD]/50">
-        <div className="flex items-center gap-2 text-muted-foreground mb-2">
-          <SlidersHorizontal className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Project view:</span>
+      {/* Search + Filter Row */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative w-full max-w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search projects by name, description or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 border-border"
+          />
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="includePosted"
-              checked={includePosted}
-              onCheckedChange={setIncludePosted}
-            />
-            <Label htmlFor="includePosted" className="text-sm cursor-pointer flex items-center gap-1.5">
-              <Megaphone className="h-3.5 w-3.5" />
-              Show posted projects
-            </Label>
-            <Badge variant="secondary">{postedProjectsCount}</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="includeRecurring"
-              checked={includeRecurring}
-              onCheckedChange={setIncludeRecurring}
-            />
-            <Label htmlFor="includeRecurring" className="text-sm cursor-pointer flex items-center gap-1.5">
-              <Repeat className="h-3.5 w-3.5" />
-              Show recurring projects
-            </Label>
-            <Badge variant="secondary">{recurringProjectsCount}</Badge>
-          </div>
-        </div>
+        <ToggleGroup
+          type="single"
+          value={projectFilter}
+          onValueChange={(value) => {
+            if (value) setProjectFilter(value as ProjectFilterValue);
+          }}
+          className="bg-primary p-1 rounded-lg shrink-0"
+        >
+          <ToggleGroupItem
+            value="all"
+            aria-label="All projects"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            <FolderOpen className="h-4 w-4 mr-1.5" />
+            All
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="active"
+            aria-label="Active projects"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            Active
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="recurring"
+            aria-label="Recurring projects"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            Recurring
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="posted"
+            aria-label="Posted projects"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            Posted
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <div>
