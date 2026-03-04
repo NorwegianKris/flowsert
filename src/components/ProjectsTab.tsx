@@ -67,7 +67,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   return (
     <div className="space-y-6">
       {/* Search Field */}
-      <div className="relative max-w-80">
+      <div className="relative max-w-96">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search projects by name, description or location..."
