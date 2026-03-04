@@ -259,7 +259,7 @@ export function TaxonomySeedingTool() {
         <span>Teach the System</span>
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-2">
-        <div className="border rounded-lg p-4 space-y-4 bg-muted/20 relative">
+        <div className="border rounded-lg p-4 space-y-4 bg-white dark:bg-card relative">
           <button
             onClick={() => setOpen(false)}
             className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"

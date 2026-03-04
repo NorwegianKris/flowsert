@@ -131,6 +131,7 @@ export function DepartmentsManager() {
         {/* Add new department */}
         <div className="flex gap-2">
           <Input
+            className="bg-white dark:bg-card"
             placeholder="Enter new department name..."
             value={newDepartmentName}
             onChange={(e) => setNewDepartmentName(e.target.value)}

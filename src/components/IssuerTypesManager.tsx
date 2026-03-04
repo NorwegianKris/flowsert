@@ -593,7 +593,7 @@ function IssuersManageList() {
                 {selectedIssuersForMerge.map((issuer) => (
                   <label
                     key={issuer.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all"
                   >
                     <RadioGroupItem value={issuer.id} />
                     <div className="flex-1 min-w-0">

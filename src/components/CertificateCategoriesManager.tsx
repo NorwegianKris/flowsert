@@ -251,7 +251,7 @@ export function CertificateCategoriesManager() {
                                 setNewTypeName('');
                               }
                             }}
-                            className="h-8 text-sm"
+                            className="h-8 text-sm bg-white dark:bg-card"
                             autoFocus
                             disabled={createTypeMutation.isPending}
                           />

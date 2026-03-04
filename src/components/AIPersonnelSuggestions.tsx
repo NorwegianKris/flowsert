@@ -138,7 +138,7 @@ export function AIPersonnelSuggestions({
       </div>
       
       <CollapsibleContent className="mt-2">
-        <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+        <div className="p-4 border rounded-lg bg-white dark:bg-card space-y-3">
           <Textarea
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
