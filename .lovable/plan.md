@@ -1,31 +1,54 @@
 
 
-## Color & Layout Fixes for Certificate Status Table in Project View
+## Standardize Employee/Freelancer Badges Across the App
 
-CSS and data changes only. No schema changes. 🟢
+Purely cosmetic. No schema or backend changes. 🟢
 
-### Changes in `src/components/ProjectCertificateStatus.tsx`
+### Reference Style (from PersonnelCard.tsx — the Personnel tab)
+```tsx
+<Badge variant={category === 'freelancer' ? 'secondary' : 'default'} className="font-normal">
+  {category === 'freelancer' ? 'Freelancer' : 'Employee'}
+</Badge>
+```
 
-**1. Extend `CertificateWithPersonnel` interface (line 33)**
-Add `personnelCategory?: PersonnelCategory` and `personnelCity?: string`, `personnelCountry?: string` fields.
+### Files to Update
 
-**2. Update data mapping (line 146–153)**
-Include `personnelCategory: person.category`, `personnelCity: person.city`, `personnelCountry: person.country` in the flatMap.
+1. **`src/components/ProjectDetail.tsx`** (line 414)
+   - Currently: `variant="secondary"` for all, custom lavender classes for freelancer
+   - Fix: Use reference pattern with correct variant switching
 
-**3. Color table rows by category (line 243–247)**
-Add conditional background to `TableRow`: freelancers get `bg-[#C4B5FD]/10`, employees stay default (white).
+2. **`src/components/WorkerProjectDetail.tsx`** (line 275)
+   - Same issue as ProjectDetail — fix identically
 
-**4. Add category badge next to role (line 259)**
-After the role text, add a small `Badge`: "Freelancer" (lavender: `bg-[#C4B5FD]/20 text-[#4338CA]`) or "Employee" (default secondary).
+3. **`src/components/project-timeline/PersonnelGroup.tsx`** (line 55–58)
+   - Currently: Correct variants but `text-[8px] uppercase` sizing
+   - Fix: Use `font-normal` class, remove uppercase, keep small sizing appropriate for timeline context (`text-[10px]`)
 
-**5. Split location into city/country (line 310–312)**
-Replace single-line `placeOfIssue` display with a two-line layout: city on top, country below in smaller muted text. Parse from the "City, Country" format already stored.
+4. **`src/components/ActivationOverview.tsx`** (line 311)
+   - Currently: `variant="outline"` for both
+   - Fix: Use correct variant switching + `font-normal`
 
-Wait — the user said "personnel list sections" and "location" — they're referring to the Personnel column (person's location), not the certificate's place of issue. Let me re-read: "the location is slightly off, and it extends beyond the right side of the scroll section" — looking at the table, there's no personnel location column in the certificate table. The user might be referring to a different view.
+5. **`src/components/AddProjectDialog.tsx`** (lines 464–479, 1234–1239)
+   - Currently: Custom `bg-violet-100 text-violet-700` for freelancer, complex logic
+   - Fix: Simplify `getCategoryLabel` to return correct variant, use `font-normal`
 
-Let me re-read: "Make the colours of the personnel list sections inside project view" — this could be the team members list in `ProjectDetail.tsx`, not the certificate table.
+6. **`src/components/PersonnelPreviewSheet.tsx`** (line 217–221)
+   - Currently: Correct variants but missing `font-normal`
+   - Fix: Add `className="font-normal"`
 
-### Revised scope — check ProjectDetail team section
+7. **`src/components/WorkerGroupsManageList.tsx`** (line 203)
+   - Currently: Correct variants but `text-xs`
+   - Fix: Change to `font-normal`
 
-The "personnel list sections inside project view" likely refers to the assigned personnel list in `ProjectDetail.tsx`. Let me check that.
+8. **`src/components/DataAcknowledgementsManager.tsx`** (line 157)
+   - Currently: Correct variants but `text-xs`
+   - Fix: Change to `font-normal`
+
+9. **`src/components/SendNotificationDialog.tsx`** (line 364)
+   - Currently: Only shows for freelancers, `text-xs`
+   - Fix: Show for all, use reference pattern
+
+10. **`src/components/RecentRegistrations.tsx`** (line 148)
+    - Currently: Correct variants, `font-normal text-xs`
+    - Fix: Remove `text-xs` to match reference exactly
 
