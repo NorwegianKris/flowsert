@@ -1,14 +1,26 @@
 
 
-## Remove Fixed min-h from Project Cards
+## Show Applicant Count for Posted Projects
 
 Cosmetic only. 🟢
 
-### Changes — `src/components/ProjectsTab.tsx`
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-1. **Card root** (line 212): Remove `min-h-[240px]` from the Card className. CSS grid's default `align-items: stretch` will make cards in the same row match the tallest card's height automatically.
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-2. Grids are already `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4` (lines 127, 155) — no changes needed there.
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
 
 ### File
 - `src/components/ProjectsTab.tsx`
