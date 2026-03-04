@@ -155,11 +155,19 @@ export function CertificateTypeSelector({
         if (isClearWinner) {
           onChange(best.id, best.name);
           setOcrAutoSelected(true);
+        } else if (showFallbackInput && onFreeTextChange) {
+          // Ambiguous match — pre-fill free-text with AI-extracted name
+          setShowFreeTextInput(true);
+          onFreeTextChange(ocrHint.extractedName);
         } else {
           setSearchValue(ocrHint.extractedName);
         }
+      } else if (showFallbackInput && onFreeTextChange) {
+        // No good fuzzy match — pre-fill free-text with AI-extracted name
+        setShowFreeTextInput(true);
+        onFreeTextChange(ocrHint.extractedName);
       } else {
-        // Medium confidence or no good fuzzy match — pre-fill search
+        // Fallback: pre-fill search
         setSearchValue(ocrHint.extractedName);
       }
     };
