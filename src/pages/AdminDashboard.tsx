@@ -31,7 +31,6 @@ import { ActivationOverview } from '@/components/ActivationOverview';
 import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/components/PersonnelFilters';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 import { useWorkerGroups } from '@/hooks/useWorkerGroups';
-import { usePersonnelGroupFilter } from '@/hooks/usePersonnelGroupFilter';
 import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
 import { FreelancerFilters } from '@/components/FreelancerFilters';
@@ -133,7 +132,7 @@ export default function AdminDashboard() {
   const [personnelCustomIds, setPersonnelCustomIds] = useState<string[]>([]);
   const [personnelCustomRoles, setPersonnelCustomRoles] = useState<string[]>([]);
   const [personnelCustomWorkerGroupIds, setPersonnelCustomWorkerGroupIds] = useState<string[]>([]);
-  const [workerGroupFilters, setWorkerGroupFilters] = useState<string[]>([]);
+  
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
   const { count: needsReviewCount, refetch: refetchNeedsReview } = useNeedsReviewCount();
@@ -145,8 +144,6 @@ export default function AdminDashboard() {
   const { categories: certCategories } = useCertificateCategories();
   const { data: workerGroups = [] } = useWorkerGroups();
   
-  const allPersonnelIds = useMemo(() => personnel.map(p => p.id), [personnel]);
-  const { personnelIdFilter: groupFilter } = usePersonnelGroupFilter(workerGroupFilters, false, allPersonnelIds);
   const { data: personnelWorkerGroupMemberships = [] } = usePersonnelWorkerGroups();
   
   // Build a lookup: personnelId -> Set of worker group IDs
@@ -394,17 +391,12 @@ export default function AdminDashboard() {
     // Availability filter
     if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
     
-    // Worker group filter
-    if (groupFilter !== null) {
-      const groupSet = new Set(groupFilter);
-      if (!groupSet.has(p.id)) return false;
-    }
     
     // AI filter
     if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) return false;
     
     return true;
-  }, [searchQuery, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter, aiFilteredPersonnelIds]);
+  }, [searchQuery, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, aiFilteredPersonnelIds]);
 
   const applySorting = useCallback((list: Personnel[]) => {
     return [...list].sort((a, b) => {
@@ -434,15 +426,6 @@ export default function AdminDashboard() {
     return applySorting(filtered);
   }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
 
-  // Ghost group pruning: remove stale group IDs from filters
-  useEffect(() => {
-    if (workerGroups.length === 0 && workerGroupFilters.length === 0) return;
-    const validIds = new Set(workerGroups.map(g => g.id));
-    const pruned = workerGroupFilters.filter(id => validIds.has(id));
-    if (pruned.length !== workerGroupFilters.length) {
-      setWorkerGroupFilters(pruned);
-    }
-  }, [workerGroups, workerGroupFilters]);
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -740,7 +723,7 @@ export default function AdminDashboard() {
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">👤</div>
                     <p className="text-muted-foreground">
-                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from || workerGroupFilters.length > 0
+                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from || personnelTabFilter === 'custom'
                         ? 'No personnel found matching your filters'
                         : 'No personnel yet. Add your first team member to get started.'}
                     </p>
