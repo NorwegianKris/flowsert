@@ -204,7 +204,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
 
   return (
     <>
-      <Collapsible defaultOpen>
+      <Collapsible>
       <Card className="border-border/50">
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
