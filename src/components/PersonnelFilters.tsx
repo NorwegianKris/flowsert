@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Globe } from 'lucide-react';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Globe, ShieldCheck } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export type PersonnelSortOption = 'recent' | 'last_updated' | 'alphabetical';
 export type CertificateFilterMode = 'types' | 'categories' | 'issuers';
+export type ComplianceStatusFilter = 'all' | 'valid' | 'expiring' | 'expired';
 
 interface PersonnelFiltersProps {
   locationFilters: string[];
@@ -30,6 +31,8 @@ interface PersonnelFiltersProps {
   onSortOptionChange: (option: PersonnelSortOption) => void;
   certificateFilterMode?: CertificateFilterMode;
   onCertificateFilterModeChange?: (mode: CertificateFilterMode) => void;
+  complianceStatusFilter?: ComplianceStatusFilter;
+  onComplianceStatusFilterChange?: (value: ComplianceStatusFilter) => void;
   resultCount?: number;
 }
 
@@ -50,6 +53,8 @@ export function PersonnelFilters({
   onSortOptionChange,
   certificateFilterMode = 'types',
   onCertificateFilterModeChange,
+  complianceStatusFilter = 'all',
+  onComplianceStatusFilterChange,
   resultCount,
 }: PersonnelFiltersProps) {
   const { departments } = useDepartments();
@@ -58,6 +63,7 @@ export function PersonnelFilters({
   const [departmentOpen, setDepartmentOpen] = useState(false);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [complianceOpen, setComplianceOpen] = useState(false);
 
   // Determine which list to show based on mode
   const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificateFilterMode === 'issuers' ? certificateIssuers : certificates;
@@ -68,17 +74,26 @@ export function PersonnelFilters({
     { value: 'alphabetical' as PersonnelSortOption, label: 'Alphabetical' },
   ];
 
+  const complianceOptions: { value: ComplianceStatusFilter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'valid', label: 'Valid' },
+    { value: 'expiring', label: 'Expiring Soon' },
+    { value: 'expired', label: 'Expired' },
+  ];
+
   const hasActiveFilters = 
     locationFilters.length > 0 || 
     certificateFilters.length > 0 ||
     departmentFilters.length > 0 ||
-    availabilityDateRange?.from !== undefined;
+    availabilityDateRange?.from !== undefined ||
+    complianceStatusFilter !== 'all';
 
   const clearAllFilters = () => {
     onLocationFiltersChange([]);
     onCertificateFiltersChange([]);
     onDepartmentFiltersChange([]);
     onAvailabilityDateRangeChange(undefined);
+    onComplianceStatusFilterChange?.('all');
   };
 
   const toggleFilter = (
@@ -344,6 +359,40 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
+      {/* Compliance Status Filter */}
+      {onComplianceStatusFilterChange && (
+        <Popover open={complianceOpen} onOpenChange={setComplianceOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              <span className="truncate">
+                {complianceStatusFilter === 'all'
+                  ? 'Compliance'
+                  : complianceOptions.find(o => o.value === complianceStatusFilter)?.label || 'Compliance'}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[180px] p-2 bg-popover border shadow-md z-50" align="start">
+            <div className="space-y-1">
+              {complianceOptions.map((option) => (
+                <button
+                  key={option.value}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm text-left ${
+                    complianceStatusFilter === option.value ? 'bg-muted font-medium' : ''
+                  }`}
+                  onClick={() => {
+                    onComplianceStatusFilterChange(option.value);
+                    setComplianceOpen(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
 
       <Popover open={sortOpen} onOpenChange={setSortOpen}>
         <PopoverTrigger asChild>
@@ -438,6 +487,18 @@ export function PersonnelFilters({
               </button>
             </Badge>
           ))}
+          {complianceStatusFilter !== 'all' && (
+            <Badge variant="secondary" className="text-xs">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              {complianceOptions.find(o => o.value === complianceStatusFilter)?.label}
+              <button
+                className="ml-1 hover:text-destructive"
+                onClick={() => onComplianceStatusFilterChange?.('all')}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
         </div>
       )}
 
