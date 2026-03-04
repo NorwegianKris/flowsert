@@ -198,10 +198,10 @@ IMPORTANT RULES:
 1. Only extract information that is clearly visible and readable
 2. For dates, convert to YYYY-MM-DD format (e.g., "15 January 2024" -> "2024-01-15")
 3. If a field is not visible or unclear, return null for that field
-4. Certificate names should be the official title (e.g., "BOSIET", "First Aid Certificate", "Crane Operator License")
+4. certificateName MUST be the verbatim title copied character-for-character from the document in its original language. NEVER translate, NEVER paraphrase, NEVER convert to English. If the document says "Helseerklæring /udyktighetserklæring for arbeidsdykking", that exact string must be returned as certificateName.
 5. Place of issue is typically a country or city
 6. Issuing authority is the organization that issued the certificate (e.g., "DNV", "Falck Safety Services", "Red Cross")
-7. IMPORTANT: Also classify the certificate into its canonical industry-standard type name. Use ALL available signals: document title, issuing authority, logos, expiry period, qualification level, and any other context clues. Examples of canonical type names: "BOSIET with CA-EBS", "CSWIP 3.2U Diver Inspector", "Offshore Diving Medical (DMAC 11)", "Basic Offshore Safety Induction & Emergency Training", "HUET with CA-EBS", "First Aid at Work". Return null for suggestedTypeName if you are genuinely uncertain about the certificate type.
+7. IMPORTANT: Also classify the certificate into its canonical industry-standard type name in English via the suggestedTypeName field. This is a SEPARATE field from certificateName and may differ from it — that is expected and correct. Use ALL available signals: document title, issuing authority, logos, expiry period, qualification level, and any other context clues. Examples: "BOSIET with CA-EBS", "CSWIP 3.2U Diver Inspector", "Offshore Diving Medical (DMAC 11)". Return null if genuinely uncertain.
 
 ${existingCategories.length > 0 ? `
 Known certificate categories in this system: ${existingCategories.join(", ")}
