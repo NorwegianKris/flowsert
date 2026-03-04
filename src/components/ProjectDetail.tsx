@@ -419,9 +419,9 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                           <div className="flex flex-col items-end text-xs text-muted-foreground shrink-0">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3 shrink-0" />
-                              <span className="truncate max-w-[80px]">{person.city || person.location?.split(',')[0]?.trim() || '—'}</span>
+                              <span className="truncate max-w-[80px]">{(person.city || '').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || person.location?.split(',')[0]?.trim() || '—'}</span>
                             </div>
-                            <span className="truncate max-w-[80px] text-muted-foreground/70">{person.country || person.location?.split(',')[1]?.trim() || ''}</span>
+                            <span className="truncate max-w-[80px] text-muted-foreground/70">{(person.country || '').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || person.location?.split(',')[1]?.trim() || ''}</span>
                           </div>
                         </div>
                       ))}
