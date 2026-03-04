@@ -35,6 +35,7 @@ const PERIOD_OPTIONS = [
   { value: '30', label: '30 days' },
   { value: '90', label: '90 days' },
   { value: '180', label: '6 months' },
+  { value: '365', label: '1 year' },
 ];
 
 function getDaysBadgeClass(days: number): string {
