@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Sparkles, Loader2, CheckCircle2, AlertTriangle, XCircle, ChevronDown, Check, X } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, AlertTriangle, XCircle, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,6 +44,7 @@ export function TaxonomySeedingTool() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const { data: certificateTypes } = useCertificateTypes();
   const { categories } = useCertificateCategories();
@@ -246,14 +247,24 @@ export function TaxonomySeedingTool() {
   const pendingSuggestions = suggestions.filter(s => s.status === 'pending');
 
   return (
-    <Collapsible className="mb-6">
-      <CollapsibleTrigger onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 text-sm font-medium hover:text-primary cursor-pointer w-full py-2">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <span>Teach the System</span>
-        <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-      </CollapsibleTrigger>
+    <Collapsible open={open} onOpenChange={setOpen} className="mb-6">
+      {!open && (
+        <CollapsibleTrigger
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-2 text-sm font-bold cursor-pointer py-2 px-4 rounded-full bg-primary text-primary-foreground shadow-lg animate-pulse hover:animate-none transition-colors"
+        >
+          <Sparkles className="h-4 w-4" />
+          <span>Teach the System</span>
+        </CollapsibleTrigger>
+      )}
       <CollapsibleContent className="pt-2">
-        <div className="border rounded-lg p-4 space-y-4 bg-muted/20">
+        <div className="border rounded-lg p-4 space-y-4 bg-muted/20 relative">
+          <button
+            onClick={() => setOpen(false)}
+            className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <div>
             <p className="text-sm text-muted-foreground">
               Upload sample certificates from your business. The AI will analyze them and suggest new certificate types and categories for your system.
