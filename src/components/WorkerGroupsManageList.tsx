@@ -120,6 +120,7 @@ export function WorkerGroupsManageList() {
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           disabled={createMutation.isPending}
+          className="bg-white dark:bg-card"
         />
         <Button onClick={handleAdd} disabled={createMutation.isPending || !newName.trim()}>
           {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -181,7 +182,7 @@ export function WorkerGroupsManageList() {
 
                 {/* Expanded member list */}
                 {isExpanded && (
-                  <div className="bg-muted/30 border-t">
+                  <div className="bg-white dark:bg-card border-t">
                     {members.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">No members assigned to this group.</p>
                     ) : (

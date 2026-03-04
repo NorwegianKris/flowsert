@@ -438,7 +438,7 @@ export function CertificateLocationNormalizationTool() {
         <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-2">
-        <div className="border rounded-lg p-4 space-y-4 bg-muted/20">
+        <div className="border rounded-lg p-4 space-y-4 bg-white dark:bg-card">
           <p className="text-sm text-muted-foreground">
             Standardize certificate place-of-issue values to clean "City, Country" format using geocoding. Groups identical values to minimize API calls. Original data is preserved for rollback.
           </p>
