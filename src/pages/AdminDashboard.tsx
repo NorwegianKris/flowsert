@@ -568,7 +568,7 @@ export default function AdminDashboard() {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="bg-white dark:bg-card">
                   <Bell className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Actions</span>
                   <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
@@ -589,11 +589,11 @@ export default function AdminDashboard() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+            <Button variant="outline" className="bg-white dark:bg-card" onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Settings</span>
             </Button>
-            <Button variant="outline" onClick={signOut}>
+            <Button variant="outline" className="bg-white dark:bg-card" onClick={signOut}>
               <LogOut className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Sign Out</span>
             </Button>
