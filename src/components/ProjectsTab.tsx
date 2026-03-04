@@ -209,7 +209,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
 
   return (
     <Card 
-      className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
+      className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col min-h-[240px] ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
       onClick={onClick}
     >
       <CardHeader className="pb-2">
@@ -241,8 +241,8 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
       <CardContent className="flex flex-col flex-1">
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>
         
-        {/* Row 3: Avatar stack or placeholder — fixed height */}
-        <div className="flex items-center gap-1 mb-2 min-h-[24px]">
+        {/* Personnel row: avatars + counts OR placeholder — fixed height */}
+        <div className="flex items-center gap-1 mb-2 min-h-[28px]">
           {assignedPersonnel.length > 0 ? (
             <>
               <div className="flex -space-x-2">
@@ -260,6 +260,17 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
                   +{assignedPersonnel.length - 5} more
                 </span>
               )}
+              <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
+                <span className="text-border">|</span>
+                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
+                {isPosted && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
+                  </>
+                )}
+              </span>
             </>
           ) : (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -268,21 +279,6 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             </span>
           )}
         </div>
-
-        {/* Row 4: Employee/Freelancer/Applicant counts — only when personnel exist */}
-        {assignedPersonnel.length > 0 && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
-            <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-            <span className="text-border">|</span>
-            <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
-            {isPosted && (
-              <>
-                <span className="text-border">|</span>
-                <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
-              </>
-            )}
-          </div>
-        )}
         <div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
