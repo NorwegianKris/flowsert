@@ -1,33 +1,22 @@
 
 
-## Add 1 Year Toggle to Compliance Plan Generator
+## Auto-assign Category from OCR Extraction
 
-### Overview
-Add a "1 year" (365 days) option to the period toggles in both the Overview tab generator and the External Sharing dialog.
+### Problem
+Line 207 in `AddCertificateDialog.tsx` hardcodes `categoryId: null` when creating a certificate entry from OCR results, even though the extraction returns `matchedCategoryId`. The category dropdown exists but is never pre-filled.
 
-### Files
+### Fix
 
-| Action | File |
-|--------|------|
-| **Edit** | `src/components/CompliancePlanGenerator.tsx` — add `{ value: '365', label: '1 year' }` to `PERIOD_OPTIONS` array (line 38) |
-| **Edit** | `src/components/ExternalSharingDialog.tsx` — add `{ value: '365', label: '1 year' }` to inline options array (line 1042), update `periodLabel` logic (line 607) to handle `365` → `'1 year'` |
+**File**: `src/components/AddCertificateDialog.tsx`
 
-### Detail
+**Single change** — line 207:
+```tsx
+// Before
+categoryId: null, // Personnel choose themselves
 
-**CompliancePlanGenerator.tsx** line 37 — append new option:
-```ts
-{ value: '365', label: '1 year' },
+// After
+categoryId: extractedData.matchedCategoryId || null,
 ```
 
-**ExternalSharingDialog.tsx** line 607 — update label derivation:
-```ts
-const periodLabel = periodDays === 365 ? '1 year' : periodDays === 180 ? '6 months' : `${periodDays} days`;
-```
-
-**ExternalSharingDialog.tsx** line 1042 — append new option:
-```ts
-{ value: '365', label: '1 year' },
-```
-
-No schema, RLS, or backend changes.
+This pre-selects the category dropdown with the AI-matched category. The user can accept it or change it via the existing dropdown. No schema, RLS, or backend changes.
 
