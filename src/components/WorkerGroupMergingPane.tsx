@@ -120,7 +120,7 @@ export function WorkerGroupMergingPane() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 lg:gap-0">
         {/* Left: Personnel */}
         <div className="border rounded-lg flex flex-col h-[500px]">
-          <div className="p-3 border-b bg-muted/30 space-y-2">
+          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Personnel</h3>
               <Badge variant="secondary">{filteredPersonnel.length}</Badge>
@@ -132,7 +132,7 @@ export function WorkerGroupMergingPane() {
                   placeholder="Search..."
                   value={leftSearch}
                   onChange={(e) => setLeftSearch(e.target.value)}
-                  className="pl-9 h-8"
+                  className="pl-9 h-8 bg-white dark:bg-card"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export function WorkerGroupMergingPane() {
                   return (
                     <div
                       key={p.id}
-                      className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
+                      className={`p-3 cursor-pointer transition-all ${isSelected ? 'bg-primary/10' : 'bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20'}`}
                       onClick={() => togglePersonnel(p.id)}
                     >
                       <div className="flex items-start gap-3">
@@ -243,7 +243,7 @@ export function WorkerGroupMergingPane() {
 
         {/* Right: Groups */}
         <div className="border rounded-lg flex flex-col h-[500px]">
-          <div className="p-3 border-b bg-muted/30 space-y-2">
+          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Worker Groups</h3>
               <Badge variant="secondary">{filteredGroups.length}</Badge>
@@ -254,7 +254,7 @@ export function WorkerGroupMergingPane() {
                 placeholder="Search groups..."
                 value={rightSearch}
                 onChange={(e) => setRightSearch(e.target.value)}
-                className="pl-9 h-8"
+                className="pl-9 h-8 bg-white dark:bg-card"
               />
             </div>
           </div>
@@ -266,7 +266,7 @@ export function WorkerGroupMergingPane() {
                 return (
                   <div
                     key={g.id}
-                    className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 ring-2 ring-primary ring-inset' : 'hover:bg-muted/50'}`}
+                    className={`p-3 cursor-pointer transition-all ${isSelected ? 'bg-primary/10 ring-2 ring-primary ring-inset' : 'bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20'}`}
                     onClick={() => setSelectedGroup(isSelected ? null : g.id)}
                   >
                     <div className="flex items-start gap-3">

@@ -199,7 +199,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
               <div className="border rounded-lg overflow-hidden shrink-0">
                 <div 
                   style={{ height: messageHeight }} 
-                  className="p-4 bg-muted/30 overflow-y-auto"
+                  className="p-4 bg-white dark:bg-card overflow-y-auto"
                 >
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <h3 className="font-semibold text-lg text-foreground">
@@ -285,7 +285,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
                   key={notification.id}
                   role="button"
                   tabIndex={0}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="border rounded-lg p-4 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all cursor-pointer"
                   onClick={() => handleSelectNotification(notification)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

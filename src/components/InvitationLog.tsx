@@ -113,7 +113,7 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-border/50">
         <CollapsibleTrigger asChild>
-          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+          <CardHeader className="pb-3 cursor-pointer hover:bg-white dark:hover:bg-card transition-colors">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-purple-500" />
@@ -174,7 +174,7 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
                     return (
                       <div
                         key={invitation.id}
-                        className="flex items-center gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-4 p-3 rounded-lg border border-border/50 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all"
                       >
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={person?.avatarUrl} alt={person?.name} />

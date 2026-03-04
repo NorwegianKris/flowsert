@@ -443,7 +443,7 @@ export function CertificateReviewQueue() {
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
+                  <TableRow className="bg-white dark:bg-card">
                     <TableHead className="w-[50px] p-2">
                       <Checkbox
                         checked={selectedGroups.size === filteredGroups.length && filteredGroups.length > 0}
@@ -472,7 +472,7 @@ export function CertificateReviewQueue() {
                         <>
                           <TableRow
                             className={`cursor-pointer transition-colors ${
-                              isSelected ? "bg-primary/5" : "hover:bg-muted/50"
+                              isSelected ? "bg-primary/5" : "bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20"
                             }`}
                           >
                             <TableCell onClick={(e) => e.stopPropagation()} className="p-1">
@@ -540,7 +540,7 @@ export function CertificateReviewQueue() {
                             </TableCell>
                           </TableRow>
                           <CollapsibleContent asChild>
-                            <TableRow className="bg-muted/30 hover:bg-muted/30">
+                            <TableRow className="bg-white dark:bg-card hover:bg-white dark:hover:bg-card">
                               <TableCell colSpan={8} className="p-0">
                                 <div className="px-6 py-4 space-y-4">
                                   {/* Document Preview */}
@@ -660,7 +660,7 @@ export function CertificateReviewQueue() {
             </div>
 
             {selectedGroups.size > 0 && (
-              <div className="max-h-[120px] overflow-y-auto space-y-1 p-2 bg-muted rounded-md">
+              <div className="max-h-[120px] overflow-y-auto space-y-1 p-2 bg-white dark:bg-card rounded-md">
                 {Array.from(selectedGroups).map((title) => (
                   <div key={title} className="text-sm text-foreground truncate">
                     • {toDisplayTitle(title)}

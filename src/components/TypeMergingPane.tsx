@@ -373,7 +373,7 @@ export function TypeMergingPane() {
       <div className="flex flex-col lg:flex-row lg:gap-0 gap-4 overflow-hidden">
         {/* Left Pane: Unmapped Certificates */}
         <div className="border rounded-lg flex flex-col h-[600px] min-w-0" style={{ flex: "0 0 35%" }}>
-          <div className="p-3 border-b bg-muted/30 space-y-2">
+          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Unmapped Certificates</h3>
               <Badge variant="secondary">{totalUnmapped}</Badge>
@@ -389,7 +389,7 @@ export function TypeMergingPane() {
                 placeholder="Search title or personnel..."
                 value={leftSearch}
                 onChange={(e) => { setLeftSearch(e.target.value); setVisibleCount(50); }}
-                className="pl-9 h-8"
+                className="pl-9 h-8 bg-white dark:bg-card"
               />
             </div>
 
@@ -460,7 +460,7 @@ export function TypeMergingPane() {
                     <div key={cert.id}>
                       <div
                         className={`p-3 cursor-pointer transition-colors ${
-                          isSelected ? "bg-primary/10" : "hover:bg-muted/50"
+                          isSelected ? "bg-primary/10" : "bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20"
                         }`}
                         onClick={() => toggleCertSelection(cert.id)}
                       >
@@ -612,7 +612,7 @@ export function TypeMergingPane() {
 
         {/* Right Pane: Canonical Types */}
         <div className="border rounded-lg flex flex-col h-[600px] min-w-0 overflow-hidden" style={{ flex: "0 0 37%" }}>
-          <div className="p-3 border-b bg-muted/30 space-y-2">
+          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Canonical Types</h3>
               <Badge variant="secondary">{filteredMerged.length}</Badge>
@@ -626,7 +626,7 @@ export function TypeMergingPane() {
                 placeholder="Search types..."
                 value={rightSearch}
                 onChange={(e) => setRightSearch(e.target.value)}
-                className="pl-9 h-8"
+                className="pl-9 h-8 bg-white dark:bg-card"
               />
             </div>
           </div>
@@ -657,7 +657,7 @@ export function TypeMergingPane() {
 
                   return sortedKeys.map((categoryName) => (
                     <div key={categoryName}>
-                      <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b">
+                      <div className="font-semibold text-xs uppercase text-muted-foreground bg-white dark:bg-card px-3 py-2 border-b">
                         {categoryName}
                       </div>
                       {groups.get(categoryName)!.map((merged) => {
@@ -666,7 +666,7 @@ export function TypeMergingPane() {
                           <div
                             key={merged.id}
                             className={`p-3 cursor-pointer transition-colors border-b ${
-                              isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : "hover:bg-muted/50"
+                              isSelected ? "bg-primary/10 ring-2 ring-primary ring-inset" : "bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20"
                             }`}
                             onClick={() => setSelectedMerged(isSelected ? null : merged.id)}
                           >
@@ -718,7 +718,7 @@ export function TypeMergingPane() {
                   <strong>{selectedCerts.size} certificate{selectedCerts.size !== 1 ? "s" : ""}</strong>{" "}
                   to:
                 </p>
-                <div className="bg-muted rounded-md p-3">
+                <div className="bg-white dark:bg-card rounded-md p-3">
                   <p className="font-medium">{selectedMergedData?.name}</p>
                   {selectedMergedData?.category_name && (
                     <p className="text-sm text-muted-foreground">
@@ -811,7 +811,7 @@ export function TypeMergingPane() {
               </Select>
             </div>
 
-            <div className="bg-muted rounded-md p-3 text-sm">
+            <div className="bg-white dark:bg-card rounded-md p-3 text-sm">
               <p className="text-muted-foreground">
                 This will assign <strong>{selectedCerts.size} certificate{selectedCerts.size !== 1 ? "s" : ""}</strong> to the new type.
               </p>
