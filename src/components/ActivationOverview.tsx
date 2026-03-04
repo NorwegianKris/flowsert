@@ -308,7 +308,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground truncate">{person.role}</span>
                         {person.category && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          <Badge variant={person.category === 'freelancer' ? 'secondary' : 'default'} className="font-normal">
                             {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
                           </Badge>
                         )}

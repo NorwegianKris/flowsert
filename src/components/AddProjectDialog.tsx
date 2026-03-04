@@ -462,21 +462,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const getCategoryLabel = (person: Personnel) => {
-    // Freelancers get a distinct tag
+    if (!person.category) return null;
     if (person.category === 'freelancer') {
-      return { label: 'Freelancer', className: 'bg-violet-100 text-violet-700 border-violet-200' };
-    }
-    
-    const category = person.category;
-    if (!category) return null;
-    const lowerCategory = category.toLowerCase();
-    if (lowerCategory.includes('fixed') || lowerCategory.includes('employee')) {
-      return { label: 'Employee', variant: 'default' as const };
-    }
-    if (lowerCategory.includes('freelance') || lowerCategory.includes('contractor')) {
       return { label: 'Freelancer', variant: 'secondary' as const };
     }
-    return { label: category, variant: 'outline' as const };
+    return { label: 'Employee', variant: 'default' as const };
   };
 
   const getMatchScoreColor = (score: number) => {
@@ -1232,8 +1222,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                             </span>
                             {categoryInfo && (
                               <Badge 
-                                variant={'className' in categoryInfo ? 'outline' : categoryInfo.variant} 
-                                className={`text-[10px] px-1.5 py-0 ${'className' in categoryInfo ? categoryInfo.className : ''}`}
+                                variant={categoryInfo.variant} 
+                                className="font-normal"
                               >
                                 {categoryInfo.label}
                               </Badge>

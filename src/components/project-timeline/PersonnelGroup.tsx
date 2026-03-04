@@ -54,7 +54,7 @@ export function PersonnelGroup({
         <span className="text-xs font-medium text-foreground truncate">{person.name}</span>
         <Badge
           variant={person.category === 'freelancer' ? 'secondary' : 'default'}
-          className="text-[8px] px-1.5 py-0 ml-1.5 uppercase h-4 flex-shrink-0"
+          className="font-normal text-[10px] px-1.5 py-0 ml-1.5 h-4 flex-shrink-0"
         >
           {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
         </Badge>

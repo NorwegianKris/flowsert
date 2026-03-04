@@ -146,7 +146,7 @@ export function RecentRegistrations({
                             </h3>
                             <Badge 
                               variant={isFreelancer ? 'secondary' : 'default'}
-                              className="font-normal text-xs"
+                              className="font-normal"
                             >
                               {isFreelancer ? 'Freelancer' : 'Employee'}
                             </Badge>

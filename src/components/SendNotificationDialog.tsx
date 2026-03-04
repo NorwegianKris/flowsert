@@ -360,11 +360,9 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                           />
                           <span className="text-sm flex-1 truncate">{p.name}</span>
                           <span className="text-xs text-muted-foreground truncate max-w-[120px]">{p.role}</span>
-                          {p.category === 'freelancer' && (
-                            <Badge variant="secondary" className="text-xs shrink-0">
-                              Freelancer
-                            </Badge>
-                          )}
+                          <Badge variant={p.category === 'freelancer' ? 'secondary' : 'default'} className="font-normal shrink-0">
+                            {p.category === 'freelancer' ? 'Freelancer' : 'Employee'}
+                          </Badge>
                         </div>
                       ))
                     )}
