@@ -882,7 +882,7 @@ export function IssuerMergingPane() {
               />
             </div>
 
-            <div className="bg-white dark:bg-card rounded-md p-3 text-sm">
+            <div className="bg-muted rounded-md p-3 text-sm">
               <p className="text-muted-foreground">
                 This will group <strong>{selectedInputted.size} inputted issuer{selectedInputted.size !== 1 ? "s" : ""}</strong>{" "}
                 (<strong>{totalSelectedCerts} certificate{totalSelectedCerts !== 1 ? "s" : ""}</strong>) into the new issuer.
