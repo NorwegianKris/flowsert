@@ -1,15 +1,18 @@
 
-## Fix Search/Label Bar Widths to Match Projects Tab
 
-Cosmetic only. No schema changes. 🟢
+## Dynamic Section Title Based on Toggle Filter
 
-### Problem
-All three bars have `max-w-96`, but the Personnel and Overview bars are inside `flex` containers where they shrink to content size instead of expanding to fill up to 384px like the standalone Projects bar does.
+Cosmetic only. 🟢
 
-### Fix
-Add `w-full` to the two flex-child wrappers so they expand to `max-w-96`:
+### Change
 
-1. **`src/pages/AdminDashboard.tsx` (~line 617)**: `"relative max-w-96"` → `"relative w-full max-w-96"`
-2. **`src/pages/AdminDashboard.tsx` (~line 726)**: `"relative max-w-96"` → `"relative w-full max-w-96"`
+In `src/components/ProjectsTab.tsx`, make the "Active & Upcoming Projects" heading dynamic based on `projectFilter`:
 
-No change to ProjectsTab — it's already the reference width.
+Map filter values to titles:
+- `all` → "All Projects"
+- `active` → "Active Projects"
+- `recurring` → "Recurring Projects"
+- `posted` → "Posted Projects"
+
+Replace the static `<h2>Active & Upcoming Projects</h2>` with the mapped title. One small code change, no other files affected.
+
