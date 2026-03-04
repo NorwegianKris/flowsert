@@ -117,13 +117,14 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
-  const [personnelFilter, setPersonnelFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
+  const [personnelTabFilter, setPersonnelTabFilter] = useState<'all' | 'employees' | 'freelancers'>('employees');
+  const [overviewFilter, setOverviewFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('last_updated');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('categories');
-  // complianceFilter removed — using shared personnelFilter
+  // Custom filter state — used only by Overview tab's 'custom' option
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
@@ -314,91 +315,99 @@ export default function AdminDashboard() {
     return map;
   }, [personnel]);
 
-  const filteredPersonnel = useMemo(() => {
-    const filtered = personnel.filter((p) => {
-      // Personnel category filter
-      const isFreelancer = p.category === 'freelancer';
-      if (personnelFilter === 'employees' && isFreelancer) return false;
-      if (personnelFilter === 'freelancers' && !isFreelancer) return false;
-      if (personnelFilter === 'custom') {
-        const inCustom = customFilterPersonnelIds.includes(p.id) || customFilterRoles.includes(p.role);
-        if (!inCustom) return false;
-      }
-      
-      // Search query filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch = 
-          p.name.toLowerCase().includes(query) ||
-          p.role.toLowerCase().includes(query) ||
-          p.location.toLowerCase().includes(query) ||
-          p.certificates.some((c) => c.name.toLowerCase().includes(query));
-        if (!matchesSearch) return false;
-      }
-      
-      // Role filter (multi-select)
-      if (roleFilters.length > 0 && !roleFilters.includes(p.role)) return false;
-      
-      // Location filter (multi-select)
-      if (locationFilters.length > 0 && !locationFilters.includes(p.location)) return false;
-      
-      
-      // Certificate filter (multi-select: personnel must have ALL selected certificates/categories)
-      if (certificateFilters.length > 0) {
-        if (certificateFilterMode === 'categories') {
-          // Filter by certificate categories
-          const personnelCategories = personnelCertificateCategoriesMap.get(p.id) || new Set<string>();
-          const hasAllCategories = certificateFilters.every(cat => personnelCategories.has(cat));
-          if (!hasAllCategories) return false;
-        } else if (certificateFilterMode === 'issuers') {
-          const personnelIssuers = personnelIssuersMap.get(p.id) || new Set<string>();
-          const hasAllIssuers = certificateFilters.every(issuer => personnelIssuers.has(issuer));
-          if (!hasAllIssuers) return false;
-        } else {
-          // Filter by certificate types/names
-          const personnelCertNames = p.certificates.map(c => c.name);
-          const hasAllCerts = certificateFilters.every(cert => personnelCertNames.includes(cert));
-          if (!hasAllCerts) return false;
-        }
-      }
-      
-      // Department filter (multi-select)
-      if (departmentFilters.length > 0 && (!p.department || !departmentFilters.includes(p.department))) return false;
-      
-      // Availability filter
-      if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
-      
-      // Worker group filter
-      if (groupFilter !== null) {
-        const groupSet = new Set(groupFilter);
-        if (!groupSet.has(p.id)) return false;
-      }
-      
-      // AI filter - applied last, within the current toggle-filtered pool
-      if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) {
-        return false;
-      }
-      
-      return true;
-    });
+  // Helper: apply category filter to a person
+  const applyCategoryFilter = useCallback((p: Personnel, filter: 'all' | 'employees' | 'freelancers' | 'custom') => {
+    const isFreelancer = p.category === 'freelancer';
+    if (filter === 'employees' && isFreelancer) return false;
+    if (filter === 'freelancers' && !isFreelancer) return false;
+    if (filter === 'custom') {
+      const inCustom = customFilterPersonnelIds.includes(p.id) || customFilterRoles.includes(p.role);
+      if (!inCustom) return false;
+    }
+    return true;
+  }, [customFilterPersonnelIds, customFilterRoles]);
 
-    // Apply sorting
-    return filtered.sort((a, b) => {
+  // Shared filtering logic (excludes category filter)
+  const applyCommonFilters = useCallback((p: Personnel) => {
+    // Search query filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        p.name.toLowerCase().includes(query) ||
+        p.role.toLowerCase().includes(query) ||
+        p.location.toLowerCase().includes(query) ||
+        p.certificates.some((c) => c.name.toLowerCase().includes(query));
+      if (!matchesSearch) return false;
+    }
+    
+    // Role filter (multi-select)
+    if (roleFilters.length > 0 && !roleFilters.includes(p.role)) return false;
+    
+    // Location filter (multi-select)
+    if (locationFilters.length > 0 && !locationFilters.includes(p.location)) return false;
+    
+    // Certificate filter (multi-select: personnel must have ALL selected certificates/categories)
+    if (certificateFilters.length > 0) {
+      if (certificateFilterMode === 'categories') {
+        const personnelCategories = personnelCertificateCategoriesMap.get(p.id) || new Set<string>();
+        const hasAllCategories = certificateFilters.every(cat => personnelCategories.has(cat));
+        if (!hasAllCategories) return false;
+      } else if (certificateFilterMode === 'issuers') {
+        const personnelIssuers = personnelIssuersMap.get(p.id) || new Set<string>();
+        const hasAllIssuers = certificateFilters.every(issuer => personnelIssuers.has(issuer));
+        if (!hasAllIssuers) return false;
+      } else {
+        const personnelCertNames = p.certificates.map(c => c.name);
+        const hasAllCerts = certificateFilters.every(cert => personnelCertNames.includes(cert));
+        if (!hasAllCerts) return false;
+      }
+    }
+    
+    // Department filter (multi-select)
+    if (departmentFilters.length > 0 && (!p.department || !departmentFilters.includes(p.department))) return false;
+    
+    // Availability filter
+    if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
+    
+    // Worker group filter
+    if (groupFilter !== null) {
+      const groupSet = new Set(groupFilter);
+      if (!groupSet.has(p.id)) return false;
+    }
+    
+    // AI filter
+    if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) return false;
+    
+    return true;
+  }, [searchQuery, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter, aiFilteredPersonnelIds]);
+
+  const applySorting = useCallback((list: Personnel[]) => {
+    return [...list].sort((a, b) => {
       if (sortOption === 'alphabetical') {
         return a.name.localeCompare(b.name);
       } else if (sortOption === 'recent') {
-        // Most Recent - sort by createdAt (newest registrations first)
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
       } else {
-        // Last Updated - sort by updatedAt (newest first)
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, personnelFilter, customFilterPersonnelIds, customFilterRoles, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
+  }, [sortOption]);
+
+  // Personnel tab filtered list
+  const filteredPersonnel = useMemo(() => {
+    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter) && applyCommonFilters(p));
+    return applySorting(filtered);
+  }, [personnel, personnelTabFilter, applyCategoryFilter, applyCommonFilters, applySorting]);
+
+  // Overview tab filtered list
+  const overviewFiltered = useMemo(() => {
+    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter) && applyCommonFilters(p));
+    return applySorting(filtered);
+  }, [personnel, overviewFilter, applyCategoryFilter, applyCommonFilters, applySorting]);
 
   // Ghost group pruning: remove stale group IDs from filters
   useEffect(() => {
@@ -578,31 +587,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-          <div className="flex-1">
-            <DashboardStats
-              personnel={filteredPersonnel}
-              needsReviewCount={needsReviewCount}
-              onNeedsReviewClick={() => {
-                setSettingsOpen(true);
-                setSettingsDeepLink('review-queue');
-              }}
-            />
-          </div>
-          <FreelancerFilters
-            personnelFilter={personnelFilter}
-            onPersonnelFilterChange={setPersonnelFilter}
-            personnel={personnel}
-            customPersonnelIds={customFilterPersonnelIds}
-            customRoles={customFilterRoles}
-            customWorkerGroupIds={customFilterWorkerGroupIds}
-            onCustomFilterChange={(ids, roles, workerGroupIds) => {
-              setCustomFilterPersonnelIds(ids);
-              setCustomFilterRoles(roles);
-              setCustomFilterWorkerGroupIds(workerGroupIds);
-            }}
-          />
-        </div>
+        <DashboardStats
+          personnel={filteredPersonnel}
+          needsReviewCount={needsReviewCount}
+          onNeedsReviewClick={() => {
+            setSettingsOpen(true);
+            setSettingsDeepLink('review-queue');
+          }}
+        />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 p-1.5 h-12">
@@ -621,14 +613,22 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
-            <div className="relative w-full sm:w-80 mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search personnel..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-border"
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative flex-1 sm:max-w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search personnel..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 border-border"
+                />
+              </div>
+              <FreelancerFilters
+                personnelFilter={personnelTabFilter}
+                onPersonnelFilterChange={(v) => {
+                  if (v === 'all' || v === 'employees' || v === 'freelancers') setPersonnelTabFilter(v);
+                }}
               />
             </div>
             
@@ -637,8 +637,8 @@ export default function AdminDashboard() {
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
-              includeEmployees={personnelFilter !== 'freelancers'}
-              includeFreelancers={personnelFilter !== 'employees'}
+              includeEmployees={personnelTabFilter !== 'freelancers'}
+              includeFreelancers={personnelTabFilter !== 'employees'}
               onFilterByAI={setAiFilteredPersonnelIds}
             />
             
@@ -722,10 +722,27 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="overview" className="mt-6 space-y-6">
-            <ComplianceSnapshot personnel={filteredPersonnel} />
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="flex-1">
+                <ComplianceSnapshot personnel={overviewFiltered} />
+              </div>
+              <FreelancerFilters
+                personnelFilter={overviewFilter}
+                onPersonnelFilterChange={setOverviewFilter}
+                personnel={personnel}
+                customPersonnelIds={customFilterPersonnelIds}
+                customRoles={customFilterRoles}
+                customWorkerGroupIds={customFilterWorkerGroupIds}
+                onCustomFilterChange={(ids, roles, workerGroupIds) => {
+                  setCustomFilterPersonnelIds(ids);
+                  setCustomFilterRoles(roles);
+                  setCustomFilterWorkerGroupIds(workerGroupIds);
+                }}
+              />
+            </div>
             <CompliancePlanGenerator
               personnel={personnel}
-              personnelFilter={personnelFilter}
+              personnelFilter={overviewFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
@@ -733,7 +750,7 @@ export default function AdminDashboard() {
             />
             <ExpiryTimeline 
               personnel={personnel} 
-              personnelFilter={personnelFilter}
+              personnelFilter={overviewFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
