@@ -272,6 +272,11 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
                   )}
                 </span>
               </>
+            ) : isPosted ? (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Users className="h-4 w-4" />
+                {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+              </span>
             ) : (
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Users className="h-4 w-4" />
