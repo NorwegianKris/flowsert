@@ -126,7 +126,7 @@ export function PersonnelFilters({
       {/* Availability Date Range Filter */}
       <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+          <Button variant="outline" className="h-9 justify-between min-w-[160px] bg-white dark:bg-card">
             <CalendarIcon className="mr-2 h-4 w-4" />
             <span className="truncate">{formatDateRange()}</span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -170,7 +170,7 @@ export function PersonnelFilters({
       {/* Location Filter */}
       <Popover open={locationOpen} onOpenChange={setLocationOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[180px]">
+          <Button variant="outline" className="h-9 justify-between min-w-[180px] bg-white dark:bg-card">
             <Globe className="mr-2 h-4 w-4" />
             <span className="truncate">
               {locationFilters.length === 0
@@ -218,7 +218,7 @@ export function PersonnelFilters({
       {/* Certificate Filter */}
       <Popover open={certificateOpen} onOpenChange={setCertificateOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+          <Button variant="outline" className="h-9 justify-between min-w-[160px] bg-white dark:bg-card">
             <Award className="mr-2 h-4 w-4" />
             <span className="truncate">
               {certificateFilters.length === 0
@@ -314,7 +314,7 @@ export function PersonnelFilters({
       {/* Department Filter */}
       <Popover open={departmentOpen} onOpenChange={setDepartmentOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+          <Button variant="outline" className="h-9 justify-between min-w-[160px] bg-white dark:bg-card">
             <Building2 className="mr-2 h-4 w-4" />
             <span className="truncate">
               {departmentFilters.length === 0
@@ -363,7 +363,7 @@ export function PersonnelFilters({
       {onComplianceStatusFilterChange && (
         <Popover open={complianceOpen} onOpenChange={setComplianceOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="h-9 justify-between min-w-[160px]">
+          <Button variant="outline" className="h-9 justify-between min-w-[160px] bg-white dark:bg-card">
               <ShieldCheck className="mr-2 h-4 w-4" />
               <span className="truncate">
                 {complianceStatusFilter === 'all'

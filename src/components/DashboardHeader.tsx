@@ -16,7 +16,7 @@ export function DashboardHeader({ onMyProfileClick, hasLinkedProfile }: Dashboar
           <Logo />
           <div className="flex items-center gap-2">
             {onMyProfileClick && (
-              <Button variant="outline" size="sm" onClick={onMyProfileClick}>
+              <Button variant="outline" size="sm" className="bg-white dark:bg-card" onClick={onMyProfileClick}>
                 <User className="h-4 w-4 sm:mr-1" />
                 <span className="hidden sm:inline">My Profile</span>
                 {hasLinkedProfile && (
