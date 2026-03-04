@@ -394,7 +394,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                       {assignedPersonnel.map((person) => (
                         <div
                           key={person.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors ${onPersonnelClick ? 'cursor-pointer' : ''}`}
+                          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/10 hover:bg-[#C4B5FD]/20' : 'bg-muted/50 hover:bg-muted'} ${onPersonnelClick ? 'cursor-pointer' : ''}`}
                           onClick={() => onPersonnelClick?.(person)}
                         >
                           <Avatar className="h-10 w-10">
@@ -407,13 +407,21 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                             <p className="font-medium text-foreground truncate">
                               {person.name}
                             </p>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {person.role}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-muted-foreground truncate">
+                                {person.role}
+                              </p>
+                              <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/20 text-[#4338CA]' : ''}`}>
+                                {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate max-w-[80px]">{person.location}</span>
+                          <div className="flex flex-col items-end text-xs text-muted-foreground shrink-0">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span className="truncate max-w-[80px]">{person.city || person.location?.split(',')[0]?.trim() || '—'}</span>
+                            </div>
+                            <span className="truncate max-w-[80px] text-muted-foreground/70">{person.country || person.location?.split(',')[1]?.trim() || ''}</span>
                           </div>
                         </div>
                       ))}
