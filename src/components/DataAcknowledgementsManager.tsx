@@ -100,7 +100,7 @@ export function DataAcknowledgementsManager({
             placeholder="Search by name..."
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setShowAll(false); }}
-            className="pl-9"
+            className="pl-9 bg-white dark:bg-card"
           />
         </div>
 
@@ -215,7 +215,7 @@ export function DataAcknowledgementsManager({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-border/50">
         <CollapsibleTrigger asChild>
-          <CardHeader className="py-4 cursor-pointer hover:bg-muted/50 transition-colors">
+          <CardHeader className="py-4 cursor-pointer hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg">
             <CardTitle className="text-lg font-semibold flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />

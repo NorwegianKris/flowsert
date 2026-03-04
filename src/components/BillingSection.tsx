@@ -362,7 +362,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
 
   return (
     <Collapsible>
-      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:bg-muted/50 transition-colors group">
+      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
           <span className="font-semibold text-lg">Payment & Billing</span>

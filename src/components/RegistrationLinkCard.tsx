@@ -85,7 +85,7 @@ export function RegistrationLinkCard({ embedded }: RegistrationLinkCardProps) {
             id="company-code"
             value={companyCode}
             readOnly
-            className="font-mono bg-muted"
+            className="font-mono bg-white dark:bg-card"
           />
           <Button
             variant="outline"
@@ -105,7 +105,7 @@ export function RegistrationLinkCard({ embedded }: RegistrationLinkCardProps) {
             id="registration-link"
             value={registrationUrl}
             readOnly
-            className="text-sm bg-muted"
+            className="text-sm bg-white dark:bg-card"
           />
           <Button
             variant="outline"

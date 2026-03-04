@@ -267,7 +267,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
               placeholder="Search by name or role..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-sm"
+              className="pl-9 h-9 text-sm bg-white dark:bg-card"
             />
           </div>
 
@@ -283,7 +283,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                 {filteredPersonnel.map((person) => (
                   <div
                     key={person.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all cursor-pointer"
                     onClick={() => { setPreviewPerson(person); setPreviewOpen(true); }}
                   >
                     <Avatar className="h-9 w-9 shrink-0">
@@ -360,7 +360,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
 
           {/* Terms & Conditions */}
           <Collapsible open={tcOpen} onOpenChange={setTcOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors group">
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 rounded-lg border border-border/50 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Terms & Conditions (View)</span>

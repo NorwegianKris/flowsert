@@ -160,7 +160,7 @@ export function WorkerCategoriesManager() {
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="flex items-center justify-between p-3 hover:bg-muted/50"
+                className="flex items-center justify-between p-3 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg"
               >
                 <span className="font-medium">{category.name}</span>
                 <Button
