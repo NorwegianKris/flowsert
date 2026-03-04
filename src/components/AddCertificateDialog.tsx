@@ -230,7 +230,7 @@ export function AddCertificateDialog({
     // Fire-and-forget geocoding for plain text place of issue
     if (extractedData.placeOfIssue) {
       const certId = newCert.id;
-      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(extractedData.placeOfIssue)}&format=json&addressdetails=1&featuretype=city&limit=3`, {
+      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(extractedData.placeOfIssue)}&format=json&addressdetails=1&featuretype=city&limit=3&accept-language=en`, {
         headers: { 'User-Agent': 'FlowSert/1.0' }
       })
         .then(r => r.json())
