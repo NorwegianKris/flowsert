@@ -8,7 +8,7 @@ import { ProjectDetail } from '@/components/ProjectDetail';
 import { ChatBot } from '@/components/ChatBot';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
-import { ComplianceSnapshot } from '@/components/ComplianceSnapshot';
+
 import { CompliancePlanGenerator } from '@/components/CompliancePlanGenerator';
 import { ExpiryTimeline } from '@/components/ExpiryTimeline';
 import { RecentRegistrations } from '@/components/RecentRegistrations';
@@ -722,10 +722,7 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="overview" className="mt-6 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex-1">
-                <ComplianceSnapshot personnel={overviewFiltered} />
-              </div>
+            <div className="flex justify-end">
               <FreelancerFilters
                 personnelFilter={overviewFilter}
                 onPersonnelFilterChange={setOverviewFilter}
