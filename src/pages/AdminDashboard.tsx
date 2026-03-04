@@ -28,7 +28,8 @@ import { Badge } from '@/components/ui/badge';
 
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
-import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/components/PersonnelFilters';
+import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode, ComplianceStatusFilter } from '@/components/PersonnelFilters';
+import { getPersonnelOverallStatus } from '@/lib/certificateUtils';
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 import { useWorkerGroups } from '@/hooks/useWorkerGroups';
 import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
@@ -124,6 +125,7 @@ export default function AdminDashboard() {
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('alphabetical');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('categories');
+  const [complianceStatusFilter, setComplianceStatusFilter] = useState<ComplianceStatusFilter>('all');
   // Custom filter state — Overview tab
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
@@ -389,12 +391,17 @@ export default function AdminDashboard() {
     // Availability filter
     if (availabilityDateRange?.from && !isAvailable(p.id)) return false;
     
+    // Compliance status filter
+    if (complianceStatusFilter !== 'all') {
+      const status = getPersonnelOverallStatus(p);
+      if (status !== complianceStatusFilter) return false;
+    }
     
     // AI filter
     if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) return false;
     
     return true;
-  }, [searchQuery, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, aiFilteredPersonnelIds]);
+  }, [searchQuery, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, aiFilteredPersonnelIds, complianceStatusFilter]);
 
   const applySorting = useCallback((list: Personnel[]) => {
     return [...list].sort((a, b) => {
@@ -672,6 +679,8 @@ export default function AdminDashboard() {
               onSortOptionChange={setSortOption}
               certificateFilterMode={certificateFilterMode}
               onCertificateFilterModeChange={setCertificateFilterMode}
+              complianceStatusFilter={complianceStatusFilter}
+              onComplianceStatusFilterChange={setComplianceStatusFilter}
               resultCount={filteredPersonnel.length}
             />
             
