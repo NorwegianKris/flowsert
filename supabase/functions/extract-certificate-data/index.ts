@@ -206,6 +206,15 @@ IMPORTANT RULES:
 ${existingCategories.length > 0 ? `
 Known certificate categories in this system: ${existingCategories.join(", ")}
 If the certificate matches one of these categories exactly or closely, include that category name in matchedCategory.
+
+CATEGORY PRIORITY RULE: When a certificate could plausibly belong to multiple categories, choose the category that best describes the certificate's PRIMARY FUNCTION — the skill or competence being certified, NOT the work environment or industry sector.
+Examples of correct primary-category assignments:
+- "CSWIP 3.2U Diver Inspector" → "NDT / Inspection" (primary function is inspection, diving is the work environment)
+- "Offshore Crane Operator" → "Crane & Heavy Equipment" (primary function is crane operation, offshore is the environment)
+- "Subsea Welding Certificate" → "Welding" (primary function is welding, subsea/diving is the environment)
+- "Maritime First Aid" → "First Aid & Medical" (primary function is first aid, maritime is the context)
+- "NEBOSH Oil & Gas Safety" → "Health & Safety" (primary function is safety management)
+Always apply this rule consistently — never alternate between environment-based and function-based categorization.
 ` : ""}
 ${existingIssuers && existingIssuers.length > 0 ? `
 Known issuing authorities in this system: ${existingIssuers.join(", ")}
@@ -225,6 +234,7 @@ Return the extracted data using the extract_certificate_data function.`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        temperature: 0,
         messages: [
           { role: "system", content: systemPrompt },
           {
