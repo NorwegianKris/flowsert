@@ -1,51 +1,42 @@
 
 
-## Revert Container Backgrounds to Grey — Keep Content White
+## White Backgrounds + Lavender Hover — Remaining Settings Surfaces
 
 Cosmetic only. No schema changes. 🟢
 
-**Design rule**: Grey (`bg-muted/*`) for structural wrappers, headers, and static containers. White (`bg-white dark:bg-card`) for content items (list cards, inputs, message bodies). The Notifications Log is the reference template — white cards on grey space.
+I've done an exhaustive audit of every component rendered inside the Settings panel. Below are the **remaining** places where interactive surfaces (inputs, list rows, callout boxes) still use `bg-muted/50`, `bg-muted/30`, `bg-muted/20`, or no explicit white background, and therefore blend into the grey Settings background.
 
-### Reverts (containers back to grey)
+### Changes by File
 
-| # | File | Element | Revert to |
-|---|---|---|---|
-| 1 | `IssuerMergingPane.tsx` | Left panel header | `bg-muted/30` |
-| 2 | `IssuerMergingPane.tsx` | Expanded content | `bg-muted/20` |
-| 3 | `IssuerMergingPane.tsx` | Right panel header | `bg-muted/30` |
-| 4 | `IssuerMergingPane.tsx` | Merge summary | `bg-muted` |
-| 5 | `IssuerMergingPane.tsx` | Create info box | `bg-muted` |
-| 6 | `IssuerMergingPane.tsx` | Linked certs panel | `bg-muted/20` |
-| 7 | `TypeMergingPane.tsx` | Left panel header | `bg-muted/30` |
-| 8 | `TypeMergingPane.tsx` | Right panel header | `bg-muted/30` |
-| 9 | `TypeMergingPane.tsx` | Category group header | `bg-muted/50` |
-| 10 | `TypeMergingPane.tsx` | Merge summary | `bg-muted` |
-| 11 | `TypeMergingPane.tsx` | Create info box | `bg-muted` |
-| 12 | `WorkerGroupMergingPane.tsx` | Left panel header | `bg-muted/30` |
-| 13 | `WorkerGroupMergingPane.tsx` | Right panel header | `bg-muted/30` |
-| 14 | `LocationStandardizationTool.tsx` | Panel header | `bg-muted/50` |
-| 15 | `LocationStandardizationTool.tsx` | Selected footer | `bg-muted/50` |
-| 16 | `LocationStandardizationTool.tsx` | Tabs header | `bg-muted/50` |
-| 17 | `LocationStandardizationTool.tsx` | Preview callout | `bg-muted/30` |
-| 18 | `CertificateTypesManager.tsx` | Category group header | `bg-muted/50` |
-| 19 | `CertificateLocationNormalizationTool.tsx` | Wrapper | `bg-muted/20` |
-| 20 | `TaxonomySeedingTool.tsx` | Wrapper | `bg-muted/20` |
-| 21 | `CertificateBackfillTool.tsx` | Progress panel | `bg-muted/30` |
-| 22 | `BillingSection.tsx` | Canceled callout | `bg-muted/50` |
-| 23 | `BillingSection.tsx` | Enterprise callout | `bg-muted/30` |
-| 24 | `BillingSection.tsx` | Portal callout | `bg-muted/30` |
-| 25 | `AIPersonnelSuggestions.tsx` | Wrapper | `bg-muted/30` |
-| 26 | `RescanCertificatesTool.tsx` | Wrapper | `bg-muted/20` |
-| 27 | `WorkerGroupsManageList.tsx` | Expanded members | `bg-muted/30` |
-| 28 | `CertificateReviewQueue.tsx` | Table header | `bg-muted/50` |
-| 29 | `CertificateReviewQueue.tsx` | Expanded row | `bg-muted/30` |
-| 30 | `CertificateReviewQueue.tsx` | Selected list | `bg-muted` |
-| 31 | `NotificationsLog.tsx` | Message panel bg | `bg-muted/30` |
+| # | File | Line(s) | Current | Change to |
+|---|---|---|---|---|
+| 1 | `CategoriesSection.tsx` | 289 | `<Input>` (cert categories add) — no bg class | Add `className="bg-white dark:bg-card"` |
+| 2 | `CategoriesSection.tsx` | 311 | Cert category list rows `hover:bg-muted/50` | `bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg` |
+| 3 | `CategoriesSection.tsx` | 452 | `<Input>` (doc categories add) — no bg class | Add `bg-white dark:bg-card` |
+| 4 | `CategoriesSection.tsx` | 474 | Doc category list rows `hover:bg-muted/50` | Same lavender hover pattern |
+| 5 | `CategoriesSection.tsx` | 564 | Issuers list items `hover:bg-muted/50` | Same lavender hover pattern |
+| 6 | `CertificateTypesManager.tsx` | 294 | Category group header `bg-muted/50` | `bg-white dark:bg-card` |
+| 7 | `CertificateAliasesManager.tsx` | 121 | Search `<Input>` — no bg class | Add `bg-white dark:bg-card` |
+| 8 | `CertificateAliasesManager.tsx` | 148 | Alias list rows `hover:bg-muted/50` | Lavender hover pattern |
+| 9 | `CertificateCategoriesManager.tsx` | 243 | Inline add-type `<Input>` — no bg class | Add `bg-white dark:bg-card` |
+| 10 | `IssuerTypesManager.tsx` | 596 | Merge dialog radio labels `hover:bg-muted/50` | `bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all` |
+| 11 | `LocationStandardizationTool.tsx` | 170 | Panel header `bg-muted/50` | `bg-white dark:bg-card` |
+| 12 | `LocationStandardizationTool.tsx` | 212 | Selected footer `bg-muted/50` | `bg-white dark:bg-card` |
+| 13 | `LocationStandardizationTool.tsx` | 223 | Tabs header `bg-muted/50` | `bg-white dark:bg-card` |
+| 14 | `LocationStandardizationTool.tsx` | 246 | Preview callout `bg-muted/30` | `bg-white dark:bg-card` |
+| 15 | `CertificateLocationNormalizationTool.tsx` | 441 | Outer content wrapper `bg-muted/20` | `bg-white dark:bg-card` |
+| 16 | `TaxonomySeedingTool.tsx` | 262 | Content wrapper `bg-muted/20` | `bg-white dark:bg-card` |
+| 17 | `CertificateBackfillTool.tsx` | 327 | Progress panel `bg-muted/30` | `bg-white dark:bg-card` |
+| 18 | `BillingSection.tsx` | 255 | Canceled callout `bg-muted/50` | `bg-white dark:bg-card` |
+| 19 | `BillingSection.tsx` | 267 | Enterprise callout `bg-muted/30` | `bg-white dark:bg-card` |
+| 20 | `BillingSection.tsx` | 332 | Portal-managed callout `bg-muted/30` | `bg-white dark:bg-card` |
+| 21 | `WorkerGroupsManageList.tsx` | 116-122 | Add-group `<Input>` — no bg class | Add `bg-white dark:bg-card` |
+| 22 | `WorkerGroupsManageList.tsx` | 184 | Expanded members wrapper `bg-muted/30` | `bg-white dark:bg-card` |
+| 23 | `WorkerCategoriesManager.tsx` | 134 | Add `<Input>` — no bg class | Add `bg-white dark:bg-card` |
+| 24 | `DepartmentsManager.tsx` | 133 | Add `<Input>` — no bg class | Add `bg-white dark:bg-card` |
+| 25 | `AIPersonnelSuggestions.tsx` | 141 | AI panel wrapper `bg-muted/30` | `bg-white dark:bg-card` |
 
-### What stays white (no changes)
-- All `<Input>` / search fields — `bg-white dark:bg-card`
-- All list item cards — `bg-white dark:bg-card`
-- All lavender hover patterns on interactive rows
+### Summary
 
-31 container reverts across 14 files. Content items and inputs untouched.
+25 touch-points across 14 files. Every `bg-muted/*` surface inside a Settings section gets replaced with `bg-white dark:bg-card`. Every list row without the lavender hover pattern gets it added. Every `<Input>` without an explicit white background gets one.
 

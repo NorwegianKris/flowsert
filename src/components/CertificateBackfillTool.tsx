@@ -324,7 +324,7 @@ export function CertificateBackfillTool() {
 
       {/* Progress section */}
       {(state.isRunning || state.isPaused || state.isComplete) && (
-        <div className="space-y-3 p-4 border rounded-lg bg-white dark:bg-card">
+        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
               {state.isComplete ? "Complete" : state.isPaused ? "Paused" : "Processing..."}

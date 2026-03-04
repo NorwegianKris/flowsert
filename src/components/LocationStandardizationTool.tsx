@@ -167,7 +167,7 @@ export function LocationStandardizationTool() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left panel: user-inputted locations only */}
             <div className="border rounded-md">
-              <div className="flex items-center justify-between p-3 border-b bg-white dark:bg-card">
+              <div className="flex items-center justify-between p-3 border-b bg-muted/50">
                 <span className="text-sm font-medium">
                   User-inputted locations ({userInputted.length})
                 </span>
@@ -209,7 +209,7 @@ export function LocationStandardizationTool() {
                 )}
               </ScrollArea>
               {selected.size > 0 && (
-                <div className="p-2 border-t bg-white dark:bg-card">
+                <div className="p-2 border-t bg-muted/50">
                   <span className="text-xs text-muted-foreground">
                     {selected.size} selected
                   </span>
@@ -220,7 +220,7 @@ export function LocationStandardizationTool() {
             {/* Right panel: tabs */}
             <div className="border rounded-md flex flex-col">
               <Tabs defaultValue="standardize" className="flex flex-col flex-1">
-                <div className="p-3 border-b bg-white dark:bg-card">
+                <div className="p-3 border-b bg-muted/50">
                   <TabsList className="w-full">
                     <TabsTrigger value="standardize" className="flex-1">Standardize to</TabsTrigger>
                     <TabsTrigger value="existing" className="flex-1">
@@ -243,7 +243,7 @@ export function LocationStandardizationTool() {
                     </div>
 
                     {selected.size > 0 && standardValue.trim() && (
-                      <div className="rounded-md border p-3 bg-white dark:bg-card">
+                      <div className="rounded-md border p-3 bg-muted/30">
                         <p className="text-sm mb-2">
                           Will update <strong>{selected.size}</strong> location value{selected.size > 1 ? 's' : ''} to:
                         </p>

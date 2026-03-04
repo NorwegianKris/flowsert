@@ -311,7 +311,7 @@ export function RescanCertificatesTool() {
         <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-2">
-        <div className="border rounded-lg p-4 space-y-4 bg-white dark:bg-card">
+        <div className="border rounded-lg p-4 space-y-4 bg-muted/20">
           <p className="text-sm text-muted-foreground">
             Re-scan unmapped certificates through AI to extract clean titles and auto-match them to existing certificate types. Original data is preserved for rollback.
           </p>

@@ -252,7 +252,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
 
           {/* Canceled subscription callout */}
           {isCanceled && !isEnterprise && (
-            <div className="flex items-center gap-2 rounded-md bg-white dark:bg-card border border-border/50 p-3">
+            <div className="flex items-center gap-2 rounded-md bg-muted/50 border border-border/50 p-3">
               <AlertTriangle className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Your subscription has been canceled. Restart it in the billing portal.</span>
               <Button size="sm" variant="outline" onClick={handleManageBilling}
@@ -264,7 +264,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
 
           {/* Enterprise callout */}
           {effectiveEntitlement?.is_unlimited && (
-            <div className="rounded-md border border-border/50 bg-white dark:bg-card p-4 space-y-3">
+            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Enterprise Plan — Manual Billing</p>
                 <p className="text-xs text-muted-foreground">
@@ -329,7 +329,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
 
           {/* Portal-managed helper callout */}
           {isPortalManaged && (
-            <div className="rounded-md border border-border/50 bg-white dark:bg-card p-4 space-y-1">
+            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-1">
               <p className="text-sm font-medium">Plan changes happen in billing</p>
               <p className="text-xs text-muted-foreground">
                 Upgrades, downgrades, and cancellations are managed in the billing portal.

@@ -443,7 +443,7 @@ export function CertificateReviewQueue() {
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-white dark:bg-card">
+                  <TableRow className="bg-muted/50">
                     <TableHead className="w-[50px] p-2">
                       <Checkbox
                         checked={selectedGroups.size === filteredGroups.length && filteredGroups.length > 0}
@@ -540,7 +540,7 @@ export function CertificateReviewQueue() {
                             </TableCell>
                           </TableRow>
                           <CollapsibleContent asChild>
-                            <TableRow className="bg-white dark:bg-card hover:bg-white dark:hover:bg-card">
+                            <TableRow className="bg-muted/30 hover:bg-muted/30">
                               <TableCell colSpan={8} className="p-0">
                                 <div className="px-6 py-4 space-y-4">
                                   {/* Document Preview */}
@@ -660,7 +660,7 @@ export function CertificateReviewQueue() {
             </div>
 
             {selectedGroups.size > 0 && (
-              <div className="max-h-[120px] overflow-y-auto space-y-1 p-2 bg-white dark:bg-card rounded-md">
+              <div className="max-h-[120px] overflow-y-auto space-y-1 p-2 bg-muted rounded-md">
                 {Array.from(selectedGroups).map((title) => (
                   <div key={title} className="text-sm text-foreground truncate">
                     • {toDisplayTitle(title)}

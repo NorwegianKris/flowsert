@@ -410,7 +410,7 @@ export function IssuerMergingPane() {
       <div className="flex flex-col lg:flex-row lg:gap-0 gap-4 overflow-hidden">
         {/* Left Pane: Inputted Issuers */}
         <div className="border rounded-lg flex flex-col h-[600px] min-w-0" style={{ flex: "0 0 35%" }}>
-          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
+          <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Inputted Issuers</h3>
               <Badge variant="secondary">{filteredInputted.length}</Badge>
@@ -559,7 +559,7 @@ export function IssuerMergingPane() {
                         </div>
 
                         <CollapsibleContent>
-                          <div className="px-3 pb-3 pt-0 pl-10 space-y-3 border-t border-border/50 bg-white dark:bg-card">
+                          <div className="px-3 pb-3 pt-0 pl-10 space-y-3 border-t border-border/50 bg-muted/20">
                             {inputted.raw_examples.length > 1 && (
                               <div>
                                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
@@ -709,7 +709,7 @@ export function IssuerMergingPane() {
 
         {/* Right Pane: Canonical Issuers — with collapsible certificate rows */}
         <div className="border rounded-lg flex flex-col h-[600px] min-w-0 overflow-hidden" style={{ flex: "0 0 37%" }}>
-          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
+          <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Canonical Issuers</h3>
               <Badge variant="secondary">{filteredMerged.length}</Badge>
@@ -824,7 +824,7 @@ export function IssuerMergingPane() {
                   <strong>{selectedInputted.size} inputted issuer{selectedInputted.size !== 1 ? "s" : ""}</strong>{" "}
                   (<strong>{totalSelectedCerts} certificate{totalSelectedCerts !== 1 ? "s" : ""}</strong>) into:
                 </p>
-                <div className="bg-white dark:bg-card rounded-md p-3">
+                <div className="bg-muted rounded-md p-3">
                   <p className="font-medium">{selectedMergedData?.name}</p>
                 </div>
                 <p className="text-sm">
@@ -882,7 +882,7 @@ export function IssuerMergingPane() {
               />
             </div>
 
-            <div className="bg-white dark:bg-card rounded-md p-3 text-sm">
+            <div className="bg-muted rounded-md p-3 text-sm">
               <p className="text-muted-foreground">
                 This will group <strong>{selectedInputted.size} inputted issuer{selectedInputted.size !== 1 ? "s" : ""}</strong>{" "}
                 (<strong>{totalSelectedCerts} certificate{totalSelectedCerts !== 1 ? "s" : ""}</strong>) into the new issuer.
@@ -1035,7 +1035,7 @@ function IssuerTypeCertificatesList({
   }
 
   return (
-    <div className="px-3 pb-3 border-t border-border/50 bg-white dark:bg-card">
+    <div className="px-3 pb-3 border-t border-border/50 bg-muted/20">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1.5 pt-2">
         Linked Certificates
       </p>

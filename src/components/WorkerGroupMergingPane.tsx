@@ -120,7 +120,7 @@ export function WorkerGroupMergingPane() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 lg:gap-0">
         {/* Left: Personnel */}
         <div className="border rounded-lg flex flex-col h-[500px]">
-          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
+          <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Personnel</h3>
               <Badge variant="secondary">{filteredPersonnel.length}</Badge>
@@ -243,7 +243,7 @@ export function WorkerGroupMergingPane() {
 
         {/* Right: Groups */}
         <div className="border rounded-lg flex flex-col h-[500px]">
-          <div className="p-3 border-b bg-white dark:bg-card space-y-2">
+          <div className="p-3 border-b bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Worker Groups</h3>
               <Badge variant="secondary">{filteredGroups.length}</Badge>
