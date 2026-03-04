@@ -111,7 +111,7 @@ export default function AdminDashboard() {
   }, [selectedProject, selectedPersonnel]);
   
   // Filter states (arrays for multi-select)
-  const [roleFilters, setRoleFilters] = useState<string[]>([]);
+  
   const [locationFilters, setLocationFilters] = useState<string[]>([]);
   
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
@@ -362,8 +362,6 @@ export default function AdminDashboard() {
       if (!matchesSearch) return false;
     }
     
-    // Role filter (multi-select)
-    if (roleFilters.length > 0 && !roleFilters.includes(p.role)) return false;
     
     // Location filter (multi-select)
     if (locationFilters.length > 0 && !locationFilters.includes(p.location)) return false;
@@ -396,7 +394,7 @@ export default function AdminDashboard() {
     if (aiFilteredPersonnelIds !== null && !aiFilteredPersonnelIds.includes(p.id)) return false;
     
     return true;
-  }, [searchQuery, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, aiFilteredPersonnelIds]);
+  }, [searchQuery, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, aiFilteredPersonnelIds]);
 
   const applySorting = useCallback((list: Personnel[]) => {
     return [...list].sort((a, b) => {
@@ -658,8 +656,6 @@ export default function AdminDashboard() {
             />
             
             <PersonnelFilters
-              roleFilters={roleFilters}
-              onRoleFiltersChange={setRoleFilters}
               locationFilters={locationFilters}
               onLocationFiltersChange={setLocationFilters}
               certificateFilters={certificateFilters}
@@ -723,7 +719,7 @@ export default function AdminDashboard() {
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">👤</div>
                     <p className="text-muted-foreground">
-                      {searchQuery || roleFilters.length > 0 || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from || personnelTabFilter === 'custom'
+                      {searchQuery || locationFilters.length > 0 || certificateFilters.length > 0 || departmentFilters.length > 0 || availabilityDateRange?.from || personnelTabFilter === 'custom'
                         ? 'No personnel found matching your filters'
                         : 'No personnel yet. Add your first team member to get started.'}
                     </p>

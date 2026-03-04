@@ -4,8 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Briefcase, Globe } from 'lucide-react';
-import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { ChevronDown, X, CalendarIcon, Award, Building2, ArrowUpDown, FolderOpen, Tag, Globe } from 'lucide-react';
 import { useDepartments } from '@/hooks/useDepartments';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -15,8 +14,6 @@ export type PersonnelSortOption = 'recent' | 'last_updated' | 'alphabetical';
 export type CertificateFilterMode = 'types' | 'categories' | 'issuers';
 
 interface PersonnelFiltersProps {
-  roleFilters: string[];
-  onRoleFiltersChange: (values: string[]) => void;
   locationFilters: string[];
   onLocationFiltersChange: (values: string[]) => void;
   certificateFilters: string[];
@@ -37,8 +34,6 @@ interface PersonnelFiltersProps {
 }
 
 export function PersonnelFilters({
-  roleFilters,
-  onRoleFiltersChange,
   locationFilters,
   onLocationFiltersChange,
   certificateFilters,
@@ -57,9 +52,7 @@ export function PersonnelFilters({
   onCertificateFilterModeChange,
   resultCount,
 }: PersonnelFiltersProps) {
-  const { categories: workerCategories } = useWorkerCategories();
   const { departments } = useDepartments();
-  const [workersOpen, setWorkersOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [departmentOpen, setDepartmentOpen] = useState(false);
@@ -76,14 +69,12 @@ export function PersonnelFilters({
   ];
 
   const hasActiveFilters = 
-    roleFilters.length > 0 || 
     locationFilters.length > 0 || 
     certificateFilters.length > 0 ||
     departmentFilters.length > 0 ||
     availabilityDateRange?.from !== undefined;
 
   const clearAllFilters = () => {
-    onRoleFiltersChange([]);
     onLocationFiltersChange([]);
     onCertificateFiltersChange([]);
     onDepartmentFiltersChange([]);
@@ -160,53 +151,6 @@ export function PersonnelFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Roles Filter */}
-      <Popover open={workersOpen} onOpenChange={setWorkersOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[160px]">
-            <Briefcase className="mr-2 h-4 w-4" />
-            <span className="truncate">
-              {roleFilters.length === 0 ? 'Roles' : `${roleFilters.length} selected`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[260px] p-0 bg-popover border shadow-md z-50" align="start">
-          <div className="p-2 max-h-[250px] overflow-y-auto">
-            <div className="space-y-1">
-              {workerCategories.map((category) => (
-                <label
-                  key={category.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                >
-                  <Checkbox
-                    checked={roleFilters.includes(category.name)}
-                    onCheckedChange={() =>
-                      toggleFilter(category.name, roleFilters, onRoleFiltersChange)
-                    }
-                  />
-                  <span className="text-sm">{category.name}</span>
-                </label>
-              ))}
-              {workerCategories.length === 0 && (
-                <p className="text-sm text-muted-foreground px-2 py-1">No roles defined</p>
-              )}
-            </div>
-          </div>
-          {roleFilters.length > 0 && (
-            <div className="p-2 border-t">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                onClick={() => onRoleFiltersChange([])}
-              >
-                Clear
-              </Button>
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
 
       {/* Location Filter */}
       <Popover open={locationOpen} onOpenChange={setLocationOpen}>
@@ -459,17 +403,6 @@ export function PersonnelFilters({
               </button>
             </Badge>
           )}
-          {roleFilters.map((role) => (
-            <Badge key={role} variant="secondary" className="text-xs">
-              {role}
-              <button
-                className="ml-1 hover:text-destructive"
-                onClick={() => toggleFilter(role, roleFilters, onRoleFiltersChange)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
           {locationFilters.map((location) => (
             <Badge key={location} variant="secondary" className="text-xs">
               {location}
