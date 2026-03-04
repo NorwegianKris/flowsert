@@ -1,18 +1,15 @@
 
-
-## Widen Search/Label Bars Across All Tabs
+## Fix Search/Label Bar Widths to Match Projects Tab
 
 Cosmetic only. No schema changes. 🟢
 
 ### Problem
-`max-w-80` (320px) is too narrow — the Projects placeholder text gets truncated.
+All three bars have `max-w-96`, but the Personnel and Overview bars are inside `flex` containers where they shrink to content size instead of expanding to fill up to 384px like the standalone Projects bar does.
 
 ### Fix
-Change `max-w-80` to `max-w-96` (384px) in all three places:
+Add `w-full` to the two flex-child wrappers so they expand to `max-w-96`:
 
-1. **`src/components/ProjectsTab.tsx` (line 70)**: `max-w-80` → `max-w-96`
-2. **`src/pages/AdminDashboard.tsx` (Personnel search bar, ~line 617)**: `max-w-80` → `max-w-96`
-3. **`src/pages/AdminDashboard.tsx` (Overview static label, ~line 726)**: `max-w-80` → `max-w-96`
+1. **`src/pages/AdminDashboard.tsx` (~line 617)**: `"relative max-w-96"` → `"relative w-full max-w-96"`
+2. **`src/pages/AdminDashboard.tsx` (~line 726)**: `"relative max-w-96"` → `"relative w-full max-w-96"`
 
-384px comfortably fits the full placeholder text with the search icon padding.
-
+No change to ProjectsTab — it's already the reference width.
