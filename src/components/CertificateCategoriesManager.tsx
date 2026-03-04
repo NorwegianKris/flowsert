@@ -174,6 +174,7 @@ export function CertificateCategoriesManager() {
           {/* Add new category */}
           <div className="flex gap-2">
             <Input
+              className="bg-white dark:bg-card"
               placeholder="Enter new category name..."
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}

@@ -191,7 +191,7 @@ export function LocationStandardizationTool() {
                       <label
                         key={loc.value}
                         className={cn(
-                          'flex items-center gap-2 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-accent/50 transition-colors',
+                          'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all',
                           selected.has(loc.value) && 'bg-accent'
                         )}
                       >

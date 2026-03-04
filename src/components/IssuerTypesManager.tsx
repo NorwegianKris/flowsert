@@ -323,7 +323,7 @@ function IssuersManageList() {
               placeholder="Search issuers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-[200px]"
+              className="pl-9 w-[200px] bg-white dark:bg-card"
             />
           </div>
           <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
@@ -370,7 +370,7 @@ function IssuersManageList() {
             {filteredIssuers.map((issuer) => (
               <div
                 key={issuer.id}
-                className="flex items-center justify-between p-4 hover:bg-muted/50"
+                className="flex items-center justify-between p-4 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Checkbox
