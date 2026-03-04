@@ -272,7 +272,7 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
                           <p className="text-sm text-muted-foreground truncate">
                             {person.role}
                           </p>
-                          <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/20 text-[#4338CA]' : ''}`}>
+                          <Badge variant={person.category === 'freelancer' ? 'secondary' : 'default'} className="font-normal">
                             {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
                           </Badge>
                         </div>

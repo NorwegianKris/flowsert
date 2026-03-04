@@ -200,7 +200,7 @@ export function WorkerGroupsManageList() {
                               <p className="text-sm font-medium truncate">{person.name}</p>
                               <p className="text-xs text-muted-foreground truncate">{person.role || person.email}</p>
                             </div>
-                            <Badge variant={person.category === 'freelancer' ? 'secondary' : 'default'} className="text-xs">
+                            <Badge variant={person.category === 'freelancer' ? 'secondary' : 'default'} className="font-normal">
                               {person.category === 'freelancer' ? 'Freelancer' : 'Employee'}
                             </Badge>
                           </button>

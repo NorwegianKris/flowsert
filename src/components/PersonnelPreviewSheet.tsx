@@ -215,9 +215,9 @@ export function PersonnelPreviewSheet({ open, onOpenChange, personnel }: Personn
                 <SheetTitle className="text-xl">{personnel.name}</SheetTitle>
                 <div className="flex items-center gap-2 flex-wrap mt-1">
                   {personnel.category === 'freelancer' ? (
-                    <Badge variant="secondary">Freelancer</Badge>
+                    <Badge variant="secondary" className="font-normal">Freelancer</Badge>
                   ) : (
-                    <Badge variant="default">Employee</Badge>
+                    <Badge variant="default" className="font-normal">Employee</Badge>
                   )}
                   {personnel.department && (
                     <Badge variant="outline" className="text-xs">
