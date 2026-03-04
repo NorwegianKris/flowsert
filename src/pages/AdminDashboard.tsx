@@ -618,7 +618,7 @@ export default function AdminDashboard() {
                 placeholder="Search personnel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-background border-border"
+                className="pl-10 border-border"
               />
             </div>
             
