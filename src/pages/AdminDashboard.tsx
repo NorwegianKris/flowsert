@@ -614,7 +614,7 @@ export default function AdminDashboard() {
           
           <TabsContent value="personnel" className="mt-6">
             <div className="flex items-center justify-between gap-4 mb-4">
-              <div className="relative flex-1 sm:max-w-80">
+              <div className="relative max-w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
@@ -722,7 +722,15 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="overview" className="mt-6 space-y-6">
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative max-w-80">
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  value="Compliance Overview"
+                  className="border-border text-muted-foreground cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
               <FreelancerFilters
                 personnelFilter={overviewFilter}
                 onPersonnelFilterChange={setOverviewFilter}
