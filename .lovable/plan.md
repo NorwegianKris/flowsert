@@ -1,23 +1,34 @@
 
 
-## Current Dynamic
+## Fix: OCR Must Extract Verbatim Document Title, Never Translate
 
-1. **Certificate uploaded → OCR extracts a name** (e.g., "CSWIP 3.2U Diver Inspector") with a confidence score.
-2. **Alias lookup**: checks if the extracted name matches a known alias in the business's `certificate_aliases` table. If yes → auto-selects the type, shows "AI suggested" badge.
-3. **Fuzzy match**: if no alias, compares extracted name against all certificate types using string similarity. If a clear winner exists (score > 0.7, confidence ≥ 85) → auto-selects, shows "AI suggested" badge.
-4. **No match found**: if fuzzy match fails or is ambiguous, the free-text input is activated and pre-filled with the AI-extracted name. The user sees a plain `<Input>` with the suggested name — **no visual indicator that this came from AI**.
+**RED change** — edge function edit. Anchor before publish.
 
-## What Needs to Change
+### Change 1: Edge function prompt
+**File:** `supabase/functions/extract-certificate-data/index.ts` (lines 201–204)
 
-When the free-text input is pre-filled by AI suggestion (step 4), add a "Suggested" badge/tag in front of the input value so the user knows this name was extracted from the document, not typed manually.
+Replace rules 4–7:
 
-### File: `src/components/CertificateTypeSelector.tsx`
+```
+4. certificateName MUST be the verbatim title copied character-for-character from the document in its original language. NEVER translate, NEVER paraphrase, NEVER convert to English. If the document says "Helseerklæring /udyktighetserklæring for arbeidsdykking", that exact string must be returned as certificateName.
+5. Place of issue is typically a country or city
+6. Issuing authority is the organization that issued the certificate (e.g., "DNV", "Falck Safety Services", "Red Cross")
+7. IMPORTANT: Also classify the certificate into its canonical industry-standard type name in English via the suggestedTypeName field. This is a SEPARATE field from certificateName and may differ from it — that is expected and correct. Use ALL available signals: document title, issuing authority, logos, expiry period, qualification level, and any other context clues. Examples: "BOSIET with CA-EBS", "CSWIP 3.2U Diver Inspector", "Offshore Diving Medical (DMAC 11)". Return null if genuinely uncertain.
+```
 
-In the free-text input section (lines 410-419), wrap the `<Input>` with a container that shows a `<Badge>` tag with "Suggested" (using Sparkles icon) when the free-text value was pre-filled by OCR. Track this with a new `freeTextFromOcr` state boolean, set to `true` when the OCR auto-fill path activates (lines 158-168), and reset to `false` when the user manually edits the input.
+### Change 2: Frontend display priority
+**File:** `src/components/AddCertificateDialog.tsx` (line 218)
 
-Changes:
-1. Add `const [freeTextFromOcr, setFreeTextFromOcr] = useState(false);` state.
-2. In the OCR fallback paths (lines 160-161 and 167-168), also call `setFreeTextFromOcr(true)`.
-3. In the free-text input render (lines 412-419), add a "Suggested" badge inline before/beside the input when `freeTextFromOcr` is true.
-4. When the user edits the input, set `freeTextFromOcr` to false (or keep it true as long as value matches the original OCR suggestion — simpler to just keep it true until user types).
+```typescript
+// Before:
+ocrExtractedName: extractedData.suggestedTypeName || extractedData.certificateName || '',
+
+// After:
+ocrExtractedName: extractedData.certificateName || extractedData.suggestedTypeName || '',
+```
+
+### Downstream effect (confirmed acceptable)
+- Fuzzy matching receives original-language titles → lower scores against English types → more certs route to triage
+- Alias flywheel strengthens: admin sees real title, assigns type, alias auto-created for future matches
+- `suggestedTypeName` still exists in response for internal matching — never displayed to user
 
