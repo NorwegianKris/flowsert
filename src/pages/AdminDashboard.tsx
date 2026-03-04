@@ -32,6 +32,7 @@ import { PersonnelFilters, PersonnelSortOption, CertificateFilterMode } from '@/
 import { useCertificateCategories } from '@/hooks/useCertificateCategories';
 import { useWorkerGroups } from '@/hooks/useWorkerGroups';
 import { usePersonnelGroupFilter } from '@/hooks/usePersonnelGroupFilter';
+import { usePersonnelWorkerGroups } from '@/hooks/usePersonnelWorkerGroups';
 import { AIPersonnelSuggestions } from '@/components/AIPersonnelSuggestions';
 import { FreelancerFilters } from '@/components/FreelancerFilters';
 import { usePersonnel } from '@/hooks/usePersonnel';
@@ -117,17 +118,21 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
-  const [personnelTabFilter, setPersonnelTabFilter] = useState<'all' | 'employees' | 'freelancers'>('employees');
+  const [personnelTabFilter, setPersonnelTabFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [overviewFilter, setOverviewFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('last_updated');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('categories');
-  // Custom filter state — used only by Overview tab's 'custom' option
+  // Custom filter state — Overview tab
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
+  // Custom filter state — Personnel tab
+  const [personnelCustomIds, setPersonnelCustomIds] = useState<string[]>([]);
+  const [personnelCustomRoles, setPersonnelCustomRoles] = useState<string[]>([]);
+  const [personnelCustomWorkerGroupIds, setPersonnelCustomWorkerGroupIds] = useState<string[]>([]);
   const [workerGroupFilters, setWorkerGroupFilters] = useState<string[]>([]);
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
@@ -142,6 +147,17 @@ export default function AdminDashboard() {
   
   const allPersonnelIds = useMemo(() => personnel.map(p => p.id), [personnel]);
   const { personnelIdFilter: groupFilter } = usePersonnelGroupFilter(workerGroupFilters, false, allPersonnelIds);
+  const { data: personnelWorkerGroupMemberships = [] } = usePersonnelWorkerGroups();
+  
+  // Build a lookup: personnelId -> Set of worker group IDs
+  const personnelGroupMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    personnelWorkerGroupMemberships.forEach(m => {
+      if (!map.has(m.personnel_id)) map.set(m.personnel_id, new Set());
+      map.get(m.personnel_id)!.add(m.worker_group_id);
+    });
+    return map;
+  }, [personnelWorkerGroupMemberships]);
   
   const loading = personnelLoading || projectsLoading;
 
@@ -316,16 +332,25 @@ export default function AdminDashboard() {
   }, [personnel]);
 
   // Helper: apply category filter to a person
-  const applyCategoryFilter = useCallback((p: Personnel, filter: 'all' | 'employees' | 'freelancers' | 'custom') => {
+  const applyCategoryFilter = useCallback((
+    p: Personnel,
+    filter: 'all' | 'employees' | 'freelancers' | 'custom',
+    customIds: string[],
+    customRoles: string[],
+    customGroupIds: string[],
+  ) => {
     const isFreelancer = p.category === 'freelancer';
     if (filter === 'employees' && isFreelancer) return false;
     if (filter === 'freelancers' && !isFreelancer) return false;
     if (filter === 'custom') {
-      const inCustom = customFilterPersonnelIds.includes(p.id) || customFilterRoles.includes(p.role);
-      if (!inCustom) return false;
+      const inById = customIds.includes(p.id);
+      const inByRole = customRoles.includes(p.role);
+      const inByGroup = customGroupIds.length > 0 && (personnelGroupMap.get(p.id) || new Set()).size > 0
+        && customGroupIds.some(gid => personnelGroupMap.get(p.id)?.has(gid));
+      if (!inById && !inByRole && !inByGroup) return false;
     }
     return true;
-  }, [customFilterPersonnelIds, customFilterRoles]);
+  }, [personnelGroupMap]);
 
   // Shared filtering logic (excludes category filter)
   const applyCommonFilters = useCallback((p: Personnel) => {
@@ -399,15 +424,15 @@ export default function AdminDashboard() {
 
   // Personnel tab filtered list
   const filteredPersonnel = useMemo(() => {
-    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter) && applyCommonFilters(p));
+    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds) && applyCommonFilters(p));
     return applySorting(filtered);
-  }, [personnel, personnelTabFilter, applyCategoryFilter, applyCommonFilters, applySorting]);
+  }, [personnel, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
 
   // Overview tab filtered list
   const overviewFiltered = useMemo(() => {
-    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter) && applyCommonFilters(p));
+    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds) && applyCommonFilters(p));
     return applySorting(filtered);
-  }, [personnel, overviewFilter, applyCategoryFilter, applyCommonFilters, applySorting]);
+  }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
 
   // Ghost group pruning: remove stale group IDs from filters
   useEffect(() => {
@@ -626,8 +651,15 @@ export default function AdminDashboard() {
               </div>
               <FreelancerFilters
                 personnelFilter={personnelTabFilter}
-                onPersonnelFilterChange={(v) => {
-                  if (v === 'all' || v === 'employees' || v === 'freelancers') setPersonnelTabFilter(v);
+                onPersonnelFilterChange={setPersonnelTabFilter}
+                personnel={personnel}
+                customPersonnelIds={personnelCustomIds}
+                customRoles={personnelCustomRoles}
+                customWorkerGroupIds={personnelCustomWorkerGroupIds}
+                onCustomFilterChange={(ids, roles, workerGroupIds) => {
+                  setPersonnelCustomIds(ids);
+                  setPersonnelCustomRoles(roles);
+                  setPersonnelCustomWorkerGroupIds(workerGroupIds);
                 }}
               />
             </div>
@@ -662,9 +694,6 @@ export default function AdminDashboard() {
               certificateFilterMode={certificateFilterMode}
               onCertificateFilterModeChange={setCertificateFilterMode}
               resultCount={filteredPersonnel.length}
-              workerGroups={workerGroups}
-              workerGroupFilters={workerGroupFilters}
-              onWorkerGroupFiltersChange={setWorkerGroupFilters}
             />
             
             {aiFilteredPersonnelIds !== null && (
