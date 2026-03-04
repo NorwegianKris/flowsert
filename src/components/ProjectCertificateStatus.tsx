@@ -221,7 +221,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
             <Table className="w-full table-fixed">
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-primary hover:bg-primary">
-                  <TableHead className="w-[18%] font-semibold text-white">Personnel</TableHead>
+                  <TableHead className="w-[16%] font-semibold text-white">Personnel</TableHead>
                   <TableHead className="w-[14%] font-semibold text-white">Certificate</TableHead>
                   <TableHead className="w-[10%] font-semibold text-white">Status</TableHead>
                   <TableHead className="w-[10%] font-semibold text-white">Category</TableHead>
@@ -229,7 +229,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
                   <TableHead className="w-[10%] font-semibold text-white">Date of Issue</TableHead>
                   <TableHead className="w-[10%] font-semibold text-white">Expiry Date</TableHead>
                   <TableHead className="w-[8%] font-semibold text-white">Place of Issue</TableHead>
-                  <TableHead className="w-[7%] font-semibold text-white">Document</TableHead>
+                  <TableHead className="w-[9%] font-semibold text-white">Document</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
