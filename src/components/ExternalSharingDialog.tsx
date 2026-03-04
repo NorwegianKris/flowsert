@@ -604,7 +604,7 @@ export function ExternalSharingDialog({
 
   const generateCompliancePlanForExport = async (selectedPeople: Personnel[]): Promise<jsPDF> => {
     const periodDays = parseInt(compliancePlanPeriod);
-    const periodLabel = periodDays === 180 ? '6 months' : `${periodDays} days`;
+    const periodLabel = periodDays === 365 ? '1 year' : periodDays === 180 ? '6 months' : `${periodDays} days`;
 
     // Build entries
     type PlanCertEntry = {
@@ -1040,6 +1040,7 @@ export function ExternalSharingDialog({
                     { value: '30', label: '30 days' },
                     { value: '90', label: '90 days' },
                     { value: '180', label: '6 months' },
+                    { value: '365', label: '1 year' },
                   ].map(opt => (
                     <Button
                       key={opt.value}
