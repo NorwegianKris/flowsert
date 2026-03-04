@@ -238,46 +238,48 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col flex-1 space-y-1.5">
-        <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+      <CardContent className="flex flex-col flex-1 justify-between">
+        <div className="space-y-1.5">
+          <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
         
-        {/* Personnel row: avatars + counts OR placeholder — fixed height */}
-        <div className="flex items-center gap-1 min-h-[28px]">
-          {assignedPersonnel.length > 0 ? (
-            <>
-              <div className="flex -space-x-2">
-                {assignedPersonnel.slice(0, 5).map((person) => (
-                  <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
-                    <AvatarImage src={person.avatarUrl} alt={person.name} />
-                    <AvatarFallback className="text-[10px]">
-                      {getInitials(person.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-              </div>
-              {assignedPersonnel.length > 5 && (
-                <span className="text-xs text-muted-foreground ml-1">
-                  +{assignedPersonnel.length - 5} more
-                </span>
-              )}
-              <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-                <span className="text-border">|</span>
-                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
-                {isPosted && (
-                  <>
-                    <span className="text-border">|</span>
-                    <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
-                  </>
+          {/* Personnel row: avatars + counts OR placeholder — fixed height */}
+          <div className="flex items-center gap-1 h-10">
+            {assignedPersonnel.length > 0 ? (
+              <>
+                <div className="flex -space-x-2">
+                  {assignedPersonnel.slice(0, 5).map((person) => (
+                    <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
+                      <AvatarImage src={person.avatarUrl} alt={person.name} />
+                      <AvatarFallback className="text-[10px]">
+                        {getInitials(person.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                {assignedPersonnel.length > 5 && (
+                  <span className="text-xs text-muted-foreground ml-1">
+                    +{assignedPersonnel.length - 5} more
+                  </span>
                 )}
+                <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
+                  <span className="text-border">|</span>
+                  <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
+                  {isPosted && (
+                    <>
+                      <span className="text-border">|</span>
+                      <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
+                    </>
+                  )}
+                </span>
+              </>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Users className="h-4 w-4" />
+                No personnel assigned
               </span>
-            </>
-          ) : (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Users className="h-4 w-4" />
-              No personnel assigned
-            </span>
-          )}
+            )}
+          </div>
         </div>
         <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
