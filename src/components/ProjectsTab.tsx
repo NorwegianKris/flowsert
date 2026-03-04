@@ -118,9 +118,11 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
       </div>
 
       <div>
-        <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4">
           <FolderOpen className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Active & Upcoming Projects</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {{ all: 'All Projects', active: 'Active Projects', recurring: 'Recurring Projects', posted: 'Posted Projects' }[projectFilter]}
+          </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {activeProjects.map((project) => (
