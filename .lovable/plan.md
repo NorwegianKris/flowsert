@@ -1,34 +1,33 @@
 
 
-## Make Project Cards Consistent in Size and Content
+## Merge Worker Filter into Custom Toggle on Personnel Tab
 
-Cosmetic only. 🟢
+Cosmetic + filtering logic. No schema/RLS changes. 🟢
 
 ### Problem
-Cards vary in height because some sections render conditionally — personnel avatars only show when `assignedPersonnel.length > 0`, applicant count only shows for posted projects, and end date / location only show when present. This causes uneven card sizes across the grid.
+The Personnel tab has `All | Employees | Freelancers` in its toggle group but no "Custom" option. The worker group filtering is handled separately via the `PersonnelFilters` popover. The Overview tab already has a "Custom" toggle that opens the `CustomPersonnelFilterDialog` with individuals, roles, and worker groups.
 
-### Fix
-Always render every content section, using placeholder/fallback text when data is absent. Keep existing conditional badges (Posted, Recurring) and their coloring unchanged.
+### Plan
 
-Changes in `src/components/ProjectsTab.tsx` `ProjectCard` component:
+#### 1. Add dedicated custom filter state for Personnel tab
+Currently, the custom filter state (`customFilterPersonnelIds`, `customFilterRoles`, `customFilterWorkerGroupIds`) is shared/used only by the Overview tab. Add a parallel set for the Personnel tab:
+- `personnelCustomIds`, `personnelCustomRoles`, `personnelCustomWorkerGroupIds`
 
-1. **Personnel row** — always render. When no personnel assigned, show "No personnel assigned" in muted text instead of hiding the row entirely.
+#### 2. Widen `personnelTabFilter` type
+Change from `'all' | 'employees' | 'freelancers'` to `'all' | 'employees' | 'freelancers' | 'custom'`.
 
-2. **Applicant count row** — always render for consistency. For non-posted projects, show "— Applicants" or simply "0 Applicants" with the same icon layout. This keeps vertical space consistent.
+#### 3. Pass custom filter props to Personnel tab's `FreelancerFilters`
+Currently (line 627-632), the Personnel tab's `FreelancerFilters` doesn't pass `personnel`, `customPersonnelIds`, `customRoles`, `customWorkerGroupIds`, or `onCustomFilterChange`. Add these props so the "Custom" button appears and opens the dialog.
 
-3. **Date/location footer** — always render Start, End, and Location lines. Use "—" as fallback for missing end date or location so every card has the same number of lines.
+#### 4. Update `applyCategoryFilter` to resolve worker groups
+The existing `applyCategoryFilter` (line 319-328) handles `customFilterPersonnelIds` and `customFilterRoles` but ignores `customFilterWorkerGroupIds`. Update it to accept the worker group IDs and resolve membership using a query (via `usePersonnelGroupFilter` or inline lookup). This requires:
+- Adding a second `usePersonnelGroupFilter` call for the personnel-tab custom worker groups
+- Passing the resolved IDs into `applyCategoryFilter`
 
-4. **Description** — already uses `line-clamp-2`, which is good. No change needed.
+#### 5. Remove `workerGroupFilters` from `PersonnelFilters` popover
+Since worker group filtering will now be handled via the Custom toggle, remove the worker group section from the `PersonnelFilters` component (or at least from its usage on the Personnel tab). This consolidates all personnel-scoping into one place.
 
-5. **Card min-height** — optionally add `min-h-[200px]` to the Card to enforce a baseline, though the always-rendered rows should handle this naturally.
-
-### Specific code changes
-
-All in `src/components/ProjectsTab.tsx`, within the `ProjectCard` function:
-
-- **Lines 244-266** (personnel section): Remove the `{assignedPersonnel.length > 0 && ...}` conditional wrapper. Always render the row. When `assignedPersonnel.length === 0`, show a `<span>` with "No personnel assigned".
-
-- **Lines 269-273** (applicant count): Remove the `{isPosted && ...}` conditional. Always show the row; display `0 Applicants` for non-posted projects.
-
-- **Lines 277-284** (end date & location): Remove conditionals around end date and location. Show "—" when values are absent.
+### Files changed
+- `src/pages/AdminDashboard.tsx` — new state, updated `FreelancerFilters` props, updated `applyCategoryFilter`, remove `workerGroupFilters` prop from `PersonnelFilters`
+- `src/components/FreelancerFilters.tsx` — remove the guard that blocks `'custom'` on Personnel tab (line 629-631)
 
