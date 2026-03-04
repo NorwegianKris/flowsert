@@ -1,19 +1,35 @@
 
 
-## Two Toggle Position Fixes
+## Add "Expiring Soon" Stat Card to ComplianceSnapshot
 
 Cosmetic only. No schema changes. 🟢
 
-### Changes in `src/pages/AdminDashboard.tsx`
+### Changes in `src/components/ComplianceSnapshot.tsx`
 
-**1. Personnel tab (line 616):** Change `flex items-center gap-4` to `flex items-center justify-between gap-4` so the search bar sits left and the toggle is pushed far right.
+**1. Import**: Add `AlertTriangle` from lucide-react.
 
-**2. Overview tab (line 725):** Change `sm:items-start` to `sm:items-center` so the toggle vertically centers relative to the stat cards row.
+**2. Metrics** (lines 13-31): Track `expiring` count alongside existing ones:
+```tsx
+let expiring = 0;
+// in the loop:
+} else if (status === 'expiring') {
+  expiring++;
+}
+return { total, valid, expiring, expired };
+```
 
-| Line | Current | New |
-|---|---|---|
-| 616 | `flex items-center gap-4 mb-4` | `flex items-center justify-between gap-4 mb-4` |
-| 725 | `flex flex-col sm:flex-row sm:items-start gap-4` | `flex flex-col sm:flex-row sm:items-center gap-4` |
+**3. Stats array** (lines 34-57): Insert "Expiring Soon" card between Valid and Expired:
+```tsx
+{
+  label: 'Expiring Soon',
+  value: metrics.expiring,
+  icon: AlertTriangle,
+  iconBg: 'bg-amber-500/10',
+  iconColor: 'text-amber-500',
+},
+```
 
-Two class changes, same file.
+**4. Grid** (line 60): Change `sm:grid-cols-3` to `sm:grid-cols-4` for 4 cards.
+
+Single file, four small edits.
 
