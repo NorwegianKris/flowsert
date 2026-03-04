@@ -1,19 +1,14 @@
 
 
-## Fix Project Card Heights
+## Remove Fixed min-h from Project Cards
 
 Cosmetic only. 🟢
 
-### Changes — `src/components/ProjectsTab.tsx` (ProjectCard)
+### Changes — `src/components/ProjectsTab.tsx`
 
-1. **CardContent** (line 241): Change from `space-y-1.5` to `justify-between` so content splits top/bottom within the flex column.
-   - `className="flex flex-col flex-1 justify-between"`
+1. **Card root** (line 212): Remove `min-h-[240px]` from the Card className. CSS grid's default `align-items: stretch` will make cards in the same row match the tallest card's height automatically.
 
-2. **Wrap top content** (lines 242–280): Wrap description + personnel row in a `<div className="space-y-1.5">` so they stay grouped at the top.
-
-3. **Personnel row** (line 245): Change `min-h-[28px]` to `h-10` (40px) to match avatar stack height exactly. Both the avatar branch and the "No personnel assigned" branch will occupy the same fixed height.
-
-4. **Date row** (line 282): Stays as-is — `justify-between` on the parent pins it to the bottom automatically.
+2. Grids are already `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4` (lines 127, 155) — no changes needed there.
 
 ### File
 - `src/components/ProjectsTab.tsx`
