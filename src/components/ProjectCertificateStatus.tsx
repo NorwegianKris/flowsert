@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   Table,
   TableBody,
@@ -25,7 +26,7 @@ import {
 } from '@/lib/certificateUtils';
 import { getCertificateDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, Image, File, Tag, ShieldAlert, User, Loader2, RotateCcw, RotateCw, ZoomIn, ZoomOut, Download } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, Image, File, Tag, ShieldAlert, User, Loader2, RotateCcw, RotateCw, ZoomIn, ZoomOut, Download, ChevronDown } from 'lucide-react';
 import { PdfViewer } from './PdfViewer';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -203,17 +204,22 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
 
   return (
     <>
+      <Collapsible defaultOpen>
       <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-primary" />
-            Certificate Status ({sortedCertificates.length})
-          </CardTitle>
-        </CardHeader>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-primary" />
+              Certificate Status ({sortedCertificates.length})
+              <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=closed]_&]:rotate-[-90deg]" />
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
         <CardContent>
-          <div className="rounded-lg border border-border/50 overflow-hidden">
+          <div className="rounded-lg border border-border/50 overflow-hidden max-h-[600px] overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-primary hover:bg-primary">
                   <TableHead className="font-semibold text-white">Personnel</TableHead>
                   <TableHead className="font-semibold text-white">Certificate</TableHead>
@@ -325,7 +331,9 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
             </Table>
           </div>
         </CardContent>
+        </CollapsibleContent>
       </Card>
+      </Collapsible>
 
       <Dialog open={!!selectedCertificate} onOpenChange={(open) => !open && setSelectedCertificate(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
