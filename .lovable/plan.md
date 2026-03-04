@@ -1,37 +1,24 @@
 
 
-## Restyle Informational Banner to Amber Lightbulb Pattern
+## Fix: Consistent Certificate Category Assignment
 
-### Overview
-Change the verification note in `AddCertificateDialog.tsx` from the current muted grey `Info` icon style to the amber 💡 lightbulb banner pattern already used in `CategoriesSection.tsx` and `IssuerTypesManager.tsx`.
+### Root Cause
+The `extract-certificate-data` edge function omits the `temperature` parameter in its AI gateway call (line 226). This means the model uses a non-deterministic default, causing the same document to be categorized differently across uploads. The `suggest-certificate-types` function already sets `temperature: 0` — the extraction function does not.
 
-### File
+### Changes
 
-| Action | File |
-|--------|------|
-| **Edit** | `src/components/AddCertificateDialog.tsx` — lines 563–569 |
+**File: `supabase/functions/extract-certificate-data/index.ts`**
 
-### Change
+1. **Add `temperature: 0`** to the AI gateway request body (around line 226–313) to ensure deterministic outputs.
 
-Replace:
-```tsx
-<div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-  <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-  <p className="text-xs text-muted-foreground">
-    Please review each certificate below...
-  </p>
-</div>
-```
+2. **Improve the category matching prompt** (lines 206–209) to give the AI explicit priority rules for cross-domain certificates. Current prompt just says "if it matches one of these categories, include it" — no guidance for certificates spanning multiple categories. Add:
+   - A rule: "When a certificate spans multiple categories (e.g., CSWIP 3.2U is both NDT/Inspection and Diving), choose the category that best describes the certificate's primary function — the skill being certified, not the work environment."
+   - Examples of known cross-domain certificates and their correct primary categories.
 
-With:
-```tsx
-<div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
-  <span className="text-sm">💡</span>
-  <span className="text-xs text-muted-foreground">
-    Please review each certificate below and ensure all fields are correct before saving. Click on a certificate to expand and edit its details.
-  </span>
-</div>
-```
+### Risk Assessment
+- Q1 (SQL/migration): No
+- Q2 (edge functions): Yes → 🔴 anchor required — this edits the OCR extraction edge function
+- Q5 (UI only): No
 
-This matches the existing pattern in `CategoriesSection.tsx` (lines 54–56, 97–99) and `IssuerTypesManager.tsx` (line 313). No schema or backend changes.
+No database or schema changes required. Single edge function edit.
 
