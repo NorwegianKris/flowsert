@@ -1,22 +1,22 @@
 
 
-## Minor UI Fixes — Overview Tab Styling
+## Make Certificate Status Section Scrollable & Collapsible
 
-Three small CSS-only changes, no schema or logic changes. Risk level: 🟢 green.
+Two CSS/structure changes to `src/components/ProjectCertificateStatus.tsx`. No schema or logic changes. 🟢
 
-### Change 1: Lavender background on ComplianceSnapshot card
-**File:** `src/components/ComplianceSnapshot.tsx` (line 125)
+### Change 1: Collapsible section
+Wrap the `CardContent` in a `Collapsible` from `@radix-ui/react-collapsible` (already available). Add a `CollapsibleTrigger` on the `CardHeader` with a chevron icon, default open. Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible` and `ChevronDown` from lucide.
 
-Change the Card from `border-border/50` to use lavender background (`bg-[#C4B5FD]/20 border-[#C4B5FD]/40`) so the certificate overview section sits on a soft lavender tone matching the brand palette.
+### Change 2: Scrollable table with 10-row max height
+Wrap the table's container `div` (line 214) with a `max-h` and `overflow-y-auto`. Each table row is roughly 56px, so 10 rows ≈ `max-h-[600px]` (including header). Use `overflow-y-auto` on the table wrapper. Keep `TableHeader` sticky with `sticky top-0 z-10 bg-primary`.
 
-### Change 2: Consistent toggle widths in CompliancePlanGenerator
-**File:** `src/components/CompliancePlanGenerator.tsx` (line 226)
-
-Add `min-w-[70px] justify-center` to each `ToggleGroupItem` so "30 days", "90 days", "6 months", and "1 year" all render at the same width.
-
-### Change 3: Match compliance plan bar height to AI search bar + grey Generate button
-**File:** `src/components/CompliancePlanGenerator.tsx`
-
-- Line 210: Both bars already use `p-3 border rounded-lg bg-primary` — they should match. Will verify the height is consistent (both use `p-3`).
-- Lines 232–238: Change the Generate button from `variant="secondary"` to `variant="outline"` with explicit `bg-muted text-foreground hover:bg-muted/80` to render as light grey with black text, matching the "Actions" button style.
+### Files
+**`src/components/ProjectCertificateStatus.tsx`**
+- Add imports: `Collapsible, CollapsibleTrigger, CollapsibleContent`, `ChevronDown`
+- Add `const [isOpen, setIsOpen] = useState(true)` state
+- Wrap outer Card content in `Collapsible open={isOpen} onOpenChange={setIsOpen}`
+- Make CardHeader a `CollapsibleTrigger` with chevron that rotates on open
+- Wrap CardContent in `CollapsibleContent`
+- Add `max-h-[600px] overflow-y-auto` to the table container div (line 214)
+- Add `sticky top-0 z-10` to `TableHeader` row
 
