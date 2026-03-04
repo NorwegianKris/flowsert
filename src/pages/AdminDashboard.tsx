@@ -117,13 +117,13 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
-  const [personnelTabFilter, setPersonnelTabFilter] = useState<'all' | 'employees' | 'freelancers'>('all');
+  const [personnelFilter, setPersonnelFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [sortOption, setSortOption] = useState<PersonnelSortOption>('last_updated');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('categories');
-  const [complianceFilter, setComplianceFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
+  // complianceFilter removed — using shared personnelFilter
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
@@ -318,8 +318,12 @@ export default function AdminDashboard() {
     const filtered = personnel.filter((p) => {
       // Personnel category filter
       const isFreelancer = p.category === 'freelancer';
-      if (personnelTabFilter === 'employees' && isFreelancer) return false;
-      if (personnelTabFilter === 'freelancers' && !isFreelancer) return false;
+      if (personnelFilter === 'employees' && isFreelancer) return false;
+      if (personnelFilter === 'freelancers' && !isFreelancer) return false;
+      if (personnelFilter === 'custom') {
+        const inCustom = customFilterPersonnelIds.includes(p.id) || customFilterRoles.includes(p.role);
+        if (!inCustom) return false;
+      }
       
       // Search query filter
       if (searchQuery.trim()) {
@@ -394,7 +398,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, personnelTabFilter, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, personnelFilter, customFilterPersonnelIds, customFilterRoles, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
 
   // Ghost group pruning: remove stale group IDs from filters
   useEffect(() => {
@@ -574,14 +578,31 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <DashboardStats
-          personnel={personnel}
-          needsReviewCount={needsReviewCount}
-          onNeedsReviewClick={() => {
-            setSettingsOpen(true);
-            setSettingsDeepLink('review-queue');
-          }}
-        />
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          <div className="flex-1">
+            <DashboardStats
+              personnel={filteredPersonnel}
+              needsReviewCount={needsReviewCount}
+              onNeedsReviewClick={() => {
+                setSettingsOpen(true);
+                setSettingsDeepLink('review-queue');
+              }}
+            />
+          </div>
+          <FreelancerFilters
+            personnelFilter={personnelFilter}
+            onPersonnelFilterChange={setPersonnelFilter}
+            personnel={personnel}
+            customPersonnelIds={customFilterPersonnelIds}
+            customRoles={customFilterRoles}
+            customWorkerGroupIds={customFilterWorkerGroupIds}
+            onCustomFilterChange={(ids, roles, workerGroupIds) => {
+              setCustomFilterPersonnelIds(ids);
+              setCustomFilterRoles(roles);
+              setCustomFilterWorkerGroupIds(workerGroupIds);
+            }}
+          />
+        </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 p-1.5 h-12">
@@ -600,20 +621,14 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="relative flex-1 sm:max-w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search personnel..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 border-border"
-                />
-              </div>
-              <FreelancerFilters
-                personnelFilter={personnelTabFilter}
-                onPersonnelFilterChange={setPersonnelTabFilter}
+            <div className="relative w-full sm:w-80 mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search personnel..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 border-border"
               />
             </div>
             
@@ -622,8 +637,8 @@ export default function AdminDashboard() {
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
-              includeEmployees={personnelTabFilter !== 'freelancers'}
-              includeFreelancers={personnelTabFilter !== 'employees'}
+              includeEmployees={personnelFilter !== 'freelancers'}
+              includeFreelancers={personnelFilter !== 'employees'}
               onFilterByAI={setAiFilteredPersonnelIds}
             />
             
@@ -707,22 +722,10 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="overview" className="mt-6 space-y-6">
-            <ComplianceSnapshot 
-              personnel={personnel}
-              personnelFilter={complianceFilter}
-              onPersonnelFilterChange={setComplianceFilter}
-              customPersonnelIds={customFilterPersonnelIds}
-              customRoles={customFilterRoles}
-              customWorkerGroupIds={customFilterWorkerGroupIds}
-              onCustomFilterChange={(ids, roles, workerGroupIds) => {
-                setCustomFilterPersonnelIds(ids);
-                setCustomFilterRoles(roles);
-                setCustomFilterWorkerGroupIds(workerGroupIds);
-              }}
-            />
+            <ComplianceSnapshot personnel={filteredPersonnel} />
             <CompliancePlanGenerator
               personnel={personnel}
-              personnelFilter={complianceFilter}
+              personnelFilter={personnelFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
@@ -730,7 +733,7 @@ export default function AdminDashboard() {
             />
             <ExpiryTimeline 
               personnel={personnel} 
-              personnelFilter={complianceFilter}
+              personnelFilter={personnelFilter}
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}

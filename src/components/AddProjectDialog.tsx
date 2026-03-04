@@ -67,7 +67,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [visibilityMode, setVisibilityMode] = useState<'same_country' | 'all'>('same_country');
   const [includeCountries, setIncludeCountries] = useState<string[]>([]);
   const [excludeCountries, setExcludeCountries] = useState<string[]>([]);
-  const [projectPersonnelFilter, setProjectPersonnelFilter] = useState<'all' | 'employees' | 'freelancers'>('employees');
+  const [projectPersonnelFilter, setProjectPersonnelFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);

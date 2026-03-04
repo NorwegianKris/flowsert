@@ -1,50 +1,119 @@
+import { useState } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Users } from 'lucide-react';
+import { Users, SlidersHorizontal } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CustomPersonnelFilterDialog } from './CustomPersonnelFilterDialog';
+import { Personnel } from '@/types';
 
-type PersonnelFilterValue = 'all' | 'employees' | 'freelancers';
+type PersonnelFilterValue = 'all' | 'employees' | 'freelancers' | 'custom';
 
 interface FreelancerFiltersProps {
   personnelFilter: PersonnelFilterValue;
   onPersonnelFilterChange: (value: PersonnelFilterValue) => void;
+  personnel?: Personnel[];
+  customPersonnelIds?: string[];
+  customRoles?: string[];
+  customWorkerGroupIds?: string[];
+  onCustomFilterChange?: (personnelIds: string[], roles: string[], workerGroupIds: string[]) => void;
 }
 
 export function FreelancerFilters({
   personnelFilter,
   onPersonnelFilterChange,
+  personnel = [],
+  customPersonnelIds = [],
+  customRoles = [],
+  customWorkerGroupIds = [],
+  onCustomFilterChange,
 }: FreelancerFiltersProps) {
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+
+  const handleCustomClick = () => {
+    if (personnelFilter === 'custom') {
+      setCustomDialogOpen(true);
+    } else {
+      onPersonnelFilterChange('custom');
+      setCustomDialogOpen(true);
+    }
+  };
+
+  const handleApplyCustomFilter = (personnelIds: string[], roles: string[], workerGroupIds: string[]) => {
+    onCustomFilterChange?.(personnelIds, roles, workerGroupIds);
+    if (personnelIds.length === 0 && roles.length === 0 && workerGroupIds.length === 0) {
+      onPersonnelFilterChange('employees');
+    }
+  };
+
+  const customSelectionCount = customPersonnelIds.length + customRoles.length + customWorkerGroupIds.length;
+
   return (
-    <ToggleGroup
-      type="single"
-      value={personnelFilter}
-      onValueChange={(value) => {
-        if (value) {
-          onPersonnelFilterChange(value as PersonnelFilterValue);
-        }
-      }}
-      className="bg-primary p-1 rounded-lg shrink-0"
-    >
-      <ToggleGroupItem
-        value="all"
-        aria-label="All personnel"
-        className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+    <>
+      <ToggleGroup
+        type="single"
+        value={personnelFilter}
+        onValueChange={(value) => {
+          if (value === 'custom') {
+            handleCustomClick();
+          } else if (value) {
+            onPersonnelFilterChange(value as PersonnelFilterValue);
+          }
+        }}
+        className="bg-primary p-1 rounded-lg shrink-0"
       >
-        <Users className="h-4 w-4 mr-1.5" />
-        All
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="employees"
-        aria-label="Employees only"
-        className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
-      >
-        Employees
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="freelancers"
-        aria-label="Freelancers only"
-        className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
-      >
-        Freelancers
-      </ToggleGroupItem>
-    </ToggleGroup>
+        <ToggleGroupItem
+          value="all"
+          aria-label="All personnel"
+          className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+        >
+          <Users className="h-4 w-4 mr-1.5" />
+          All
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="employees"
+          aria-label="Employees only"
+          className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+        >
+          Employees
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="freelancers"
+          aria-label="Freelancers only"
+          className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+        >
+          Freelancers
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="custom"
+          aria-label="Custom filter"
+          className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm gap-1.5"
+          onClick={(e) => {
+            if (personnelFilter === 'custom') {
+              e.preventDefault();
+              setCustomDialogOpen(true);
+            }
+          }}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Custom
+          {personnelFilter === 'custom' && customSelectionCount > 0 && (
+            <Badge variant="secondary" className="h-5 px-1.5 text-xs ml-1">
+              {customSelectionCount}
+            </Badge>
+          )}
+        </ToggleGroupItem>
+      </ToggleGroup>
+
+      {onCustomFilterChange && (
+        <CustomPersonnelFilterDialog
+          open={customDialogOpen}
+          onOpenChange={setCustomDialogOpen}
+          personnel={personnel}
+          selectedPersonnelIds={customPersonnelIds}
+          selectedRoles={customRoles}
+          selectedWorkerGroupIds={customWorkerGroupIds}
+          onApply={handleApplyCustomFilter}
+        />
+      )}
+    </>
   );
 }
