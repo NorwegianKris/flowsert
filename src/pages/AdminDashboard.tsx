@@ -9,6 +9,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { AddProjectDialog } from '@/components/AddProjectDialog';
 import { ComplianceSnapshot } from '@/components/ComplianceSnapshot';
+import { CompliancePlanGenerator } from '@/components/CompliancePlanGenerator';
 import { ExpiryTimeline } from '@/components/ExpiryTimeline';
 import { RecentRegistrations } from '@/components/RecentRegistrations';
 import { ProjectsTab } from '@/components/ProjectsTab';
@@ -734,6 +735,14 @@ export default function AdminDashboard() {
                 setCustomFilterRoles(roles);
                 setCustomFilterWorkerGroupIds(workerGroupIds);
               }}
+            />
+            <CompliancePlanGenerator
+              personnel={personnel}
+              personnelFilter={complianceFilter}
+              customPersonnelIds={customFilterPersonnelIds}
+              customRoles={customFilterRoles}
+              customWorkerGroupIds={customFilterWorkerGroupIds}
+              businessName={business?.name}
             />
             <ExpiryTimeline 
               personnel={personnel} 
