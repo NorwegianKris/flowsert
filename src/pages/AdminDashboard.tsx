@@ -117,9 +117,7 @@ export default function AdminDashboard() {
   const [certificateFilters, setCertificateFilters] = useState<string[]>([]);
   const [departmentFilters, setDepartmentFilters] = useState<string[]>([]);
   const [availabilityDateRange, setAvailabilityDateRange] = useState<DateRange | undefined>(undefined);
-  const [includeEmployees, setIncludeEmployees] = useState(true);
-  const [includeFreelancers, setIncludeFreelancers] = useState(false);
-  const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
+  const [personnelTabFilter, setPersonnelTabFilter] = useState<'all' | 'employees' | 'freelancers'>('all');
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
@@ -318,18 +316,10 @@ export default function AdminDashboard() {
 
   const filteredPersonnel = useMemo(() => {
     const filtered = personnel.filter((p) => {
-      // Employee filter
-      const isEmployee = p.category === 'employee' || !p.category || (p.category !== 'freelancer');
+      // Personnel category filter
       const isFreelancer = p.category === 'freelancer';
-      
-      // If showing freelancers only, filter out non-freelancers
-      if (showFreelancersOnly && !isFreelancer) return false;
-      
-      // Exclude employees if not included
-      if (!includeEmployees && !isFreelancer) return false;
-      
-      // If not including freelancers and not showing only, exclude freelancers
-      if (!includeFreelancers && !showFreelancersOnly && isFreelancer) return false;
+      if (personnelTabFilter === 'employees' && isFreelancer) return false;
+      if (personnelTabFilter === 'freelancers' && !isFreelancer) return false;
       
       // Search query filter
       if (searchQuery.trim()) {
@@ -404,7 +394,7 @@ export default function AdminDashboard() {
         return dateB - dateA;
       }
     });
-  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, includeEmployees, includeFreelancers, showFreelancersOnly, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
+  }, [searchQuery, personnel, roleFilters, locationFilters, certificateFilters, departmentFilters, availabilityDateRange, isAvailable, personnelTabFilter, aiFilteredPersonnelIds, sortOption, certificateFilterMode, personnelCertificateCategoriesMap, personnelIssuersMap, groupFilter]);
 
   // Ghost group pruning: remove stale group IDs from filters
   useEffect(() => {
@@ -622,14 +612,10 @@ export default function AdminDashboard() {
               />
             </div>
             
-            <div className="mb-4">
+            <div className="flex justify-end mb-4">
               <FreelancerFilters
-                includeEmployees={includeEmployees}
-                onIncludeEmployeesChange={setIncludeEmployees}
-                includeFreelancers={includeFreelancers}
-                onIncludeFreelancersChange={setIncludeFreelancers}
-                showFreelancersOnly={showFreelancersOnly}
-                onShowFreelancersOnlyChange={setShowFreelancersOnly}
+                personnelFilter={personnelTabFilter}
+                onPersonnelFilterChange={setPersonnelTabFilter}
               />
             </div>
             
@@ -638,8 +624,8 @@ export default function AdminDashboard() {
               onApplyFilters={() => {}}
               onHighlightPersonnel={setHighlightedPersonnelIds}
               onClearHighlight={() => setHighlightedPersonnelIds([])}
-              includeEmployees={includeEmployees}
-              includeFreelancers={includeFreelancers}
+              includeEmployees={personnelTabFilter !== 'freelancers'}
+              includeFreelancers={personnelTabFilter !== 'employees'}
               onFilterByAI={setAiFilteredPersonnelIds}
             />
             

@@ -67,8 +67,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [visibilityMode, setVisibilityMode] = useState<'same_country' | 'all'>('same_country');
   const [includeCountries, setIncludeCountries] = useState<string[]>([]);
   const [excludeCountries, setExcludeCountries] = useState<string[]>([]);
-  const [showFreelancersOnly, setShowFreelancersOnly] = useState(false);
-  const [includeEmployees, setIncludeEmployees] = useState(true);
+  const [projectPersonnelFilter, setProjectPersonnelFilter] = useState<'all' | 'employees' | 'freelancers'>('employees');
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -121,7 +120,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
-  const [includeFreelancers, setIncludeFreelancers] = useState(false);
+  
   const { loading: aiLoading, suggestions, getSuggestions, clearSuggestions, getSuggestionForPersonnel } = useSuggestPersonnel();
 
   // Personnel preview state
@@ -146,7 +145,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       toast.error('Please enter project requirements first');
       return;
     }
-    await getSuggestions(aiPrompt, personnel, includeFreelancers, includeEmployees);
+    await getSuggestions(aiPrompt, personnel, projectPersonnelFilter !== 'employees', projectPersonnelFilter !== 'freelancers');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -251,15 +250,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setLocation('');
     setProjectManager('');
     setAiPrompt('');
-    setIncludeFreelancers(false);
     setIsPosted(false);
     setProjectCountry('');
     setProjectLocationLabel('');
     setVisibilityMode('same_country');
     setIncludeCountries([]);
     setExcludeCountries([]);
-    setShowFreelancersOnly(false);
-    setIncludeEmployees(true);
+    setProjectPersonnelFilter('employees');
     setImageUrl('');
     setSearchQuery('');
     setRoleFilters([]);
@@ -365,19 +362,14 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const getFilteredPersonnel = () => {
     let filtered = personnel;
     
-    // Freelancer filtering
-    if (showFreelancersOnly) {
+    // Personnel category filtering
+    if (projectPersonnelFilter === 'employees') {
+      filtered = filtered.filter(p => p.category !== 'freelancer');
+    } else if (projectPersonnelFilter === 'freelancers') {
       filtered = filtered.filter(p => p.category === 'freelancer' && p.activated);
     } else {
-      // Exclude employees if not included
-      if (!includeEmployees) {
-        filtered = filtered.filter(p => p.category === 'freelancer');
-      }
-      if (includeFreelancers) {
-        filtered = filtered.filter(p => p.category !== 'freelancer' || p.activated);
-      } else {
-        filtered = filtered.filter(p => p.category !== 'freelancer');
-      }
+      // 'all' — include both, but only activated freelancers
+      filtered = filtered.filter(p => p.category !== 'freelancer' || p.activated);
     }
 
     // Search query (includes certificate names, matching dashboard)
@@ -439,7 +431,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const activeFilterCount = roleFilters.length + locationFilters.length + departmentFilters.length + certificateFilters.length + (availabilityDateRange?.from ? 1 : 0);
 
   const selectablePersonnel = getSortedPersonnel(getFilteredPersonnel());
-  const nonSelectablePersonnel = includeFreelancers 
+  const nonSelectablePersonnel = projectPersonnelFilter !== 'employees'
     ? personnel.filter(p => p.category === 'freelancer' && !p.activated)
     : [];
 
@@ -888,12 +880,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
             </div>
 
             <FreelancerFilters
-              includeEmployees={includeEmployees}
-              onIncludeEmployeesChange={setIncludeEmployees}
-              includeFreelancers={includeFreelancers}
-              onIncludeFreelancersChange={setIncludeFreelancers}
-              showFreelancersOnly={showFreelancersOnly}
-              onShowFreelancersOnlyChange={setShowFreelancersOnly}
+              personnelFilter={projectPersonnelFilter}
+              onPersonnelFilterChange={setProjectPersonnelFilter}
             />
 
             <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
@@ -1187,9 +1175,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 </div>
               ) : selectablePersonnel.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  {includeFreelancers
+                  {projectPersonnelFilter !== 'employees'
                     ? 'No personnel available for project assignment.'
-                    : 'No personnel available. Toggle "Include freelancers" to see more options.'}
+                    : 'No personnel available. Switch to "All" or "Freelancers" to see more options.'}
                 </p>
               ) : (
                 <div className="space-y-1">

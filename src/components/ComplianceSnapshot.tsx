@@ -99,6 +99,7 @@ export function ComplianceSnapshot({
       icon: XCircle,
       iconBg: 'bg-destructive/10',
       iconColor: 'text-destructive',
+      tinted: true,
     },
   ];
 
@@ -122,85 +123,80 @@ export function ComplianceSnapshot({
 
   return (
     <>
-      <Card className="bg-[#C4B5FD]/20 border-[#C4B5FD]/40">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Main metrics */}
-            <div className="flex flex-wrap items-center gap-4 flex-1">
-              {stats.map((stat) => (
-                <div 
-                  key={stat.label} 
-                  className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card"
-                >
-                  <div className={`p-2 rounded-lg ${stat.iconBg}`}>
-                    <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  </div>
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+        {/* Stat cards matching DashboardStats pattern */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+          {stats.map((stat) => (
+            <Card key={stat.label} className={`border-border/50 ${stat.tinted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-            {/* Personnel Filter Toggle - far right */}
-            <ToggleGroup 
-              type="single" 
-              value={personnelFilter} 
-              onValueChange={(value) => {
-                if (value === 'custom') {
-                  handleCustomClick();
-                } else if (value) {
-                  onPersonnelFilterChange(value as 'all' | 'employees' | 'freelancers' | 'custom');
-                }
-              }}
-              className="bg-primary p-1 rounded-lg shrink-0"
-            >
-              <ToggleGroupItem 
-                value="all" 
-                aria-label="All personnel"
-                className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
-              >
-                <Users className="h-4 w-4 mr-1.5" />
-                All
-              </ToggleGroupItem>
-              <ToggleGroupItem 
-                value="employees" 
-                aria-label="Employees only"
-                className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
-              >
-                Employees
-              </ToggleGroupItem>
-              <ToggleGroupItem 
-                value="freelancers" 
-                aria-label="Freelancers only"
-                className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
-              >
-                Freelancers
-              </ToggleGroupItem>
-              <ToggleGroupItem 
-                value="custom" 
-                aria-label="Custom filter"
-                className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm gap-1.5"
-                onClick={(e) => {
-                  if (personnelFilter === 'custom') {
-                    e.preventDefault();
-                    setCustomDialogOpen(true);
-                  }
-                }}
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Custom
-                {personnelFilter === 'custom' && customSelectionCount > 0 && (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-xs ml-1">
-                    {customSelectionCount}
-                  </Badge>
-                )}
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Personnel Filter Toggle - far right */}
+        <ToggleGroup 
+          type="single" 
+          value={personnelFilter} 
+          onValueChange={(value) => {
+            if (value === 'custom') {
+              handleCustomClick();
+            } else if (value) {
+              onPersonnelFilterChange(value as 'all' | 'employees' | 'freelancers' | 'custom');
+            }
+          }}
+          className="bg-primary p-1 rounded-lg shrink-0"
+        >
+          <ToggleGroupItem 
+            value="all" 
+            aria-label="All personnel"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            <Users className="h-4 w-4 mr-1.5" />
+            All
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="employees" 
+            aria-label="Employees only"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            Employees
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="freelancers" 
+            aria-label="Freelancers only"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+          >
+            Freelancers
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="custom" 
+            aria-label="Custom filter"
+            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm gap-1.5"
+            onClick={(e) => {
+              if (personnelFilter === 'custom') {
+                e.preventDefault();
+                setCustomDialogOpen(true);
+              }
+            }}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Custom
+            {personnelFilter === 'custom' && customSelectionCount > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs ml-1">
+                {customSelectionCount}
+              </Badge>
+            )}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
       <CustomPersonnelFilterDialog
         open={customDialogOpen}
