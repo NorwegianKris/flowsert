@@ -279,7 +279,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             </span>
           )}
         </div>
-        <div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
+        <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
           <span className="flex items-center gap-1">
