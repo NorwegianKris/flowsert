@@ -241,48 +241,46 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
       <CardContent className="flex flex-col flex-1">
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{project.description}</p>
         
-        {assignedPersonnel.length > 0 && (
-          <div className="flex items-center gap-1 mb-3">
-            <div className="flex -space-x-2">
-              {assignedPersonnel.slice(0, 4).map((person) => (
-                <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
-                  <AvatarImage src={person.avatarUrl} alt={person.name} />
-                  <AvatarFallback className="text-[10px]">
-                    {getInitials(person.name)}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-            </div>
-            {assignedPersonnel.length > 4 && (
-              <span className="text-xs text-muted-foreground ml-1">
-                +{assignedPersonnel.length - 4} more
+        <div className="flex items-center gap-1 mb-3">
+          {assignedPersonnel.length > 0 ? (
+            <>
+              <div className="flex -space-x-2">
+                {assignedPersonnel.slice(0, 4).map((person) => (
+                  <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
+                    <AvatarImage src={person.avatarUrl} alt={person.name} />
+                    <AvatarFallback className="text-[10px]">
+                      {getInitials(person.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+              {assignedPersonnel.length > 4 && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  +{assignedPersonnel.length - 4} more
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1.5">
+                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
+                <span className="text-border">|</span>
+                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
               </span>
-            )}
-            <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1.5">
-              <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-              <span className="text-border">|</span>
-              <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
-            </span>
-          </div>
-        )}
-        
-        {isPosted && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-            <Users className="h-3.5 w-3.5 text-primary" />
-            <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
-          </div>
-        )}
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">No personnel assigned</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+          <Users className="h-3.5 w-3.5 text-primary" />
+          <span>{isPosted ? applicantCount : '—'} Applicant{applicantCount !== 1 || !isPosted ? 's' : ''}</span>
+        </div>
         <div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
-          {project.endDate && (
-            <span>End: {new Date(project.endDate).toLocaleDateString()}</span>
-          )}
-          {(project.projectLocationLabel || project.location) && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {project.projectLocationLabel || project.location}
-            </span>
-          )}
+          <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {project.projectLocationLabel || project.location || '—'}
+          </span>
         </div>
       </CardContent>
     </Card>
