@@ -199,7 +199,7 @@ export function NotificationsLog({ open, onOpenChange }: NotificationsLogProps) 
               <div className="border rounded-lg overflow-hidden shrink-0">
                 <div 
                   style={{ height: messageHeight }} 
-                  className="p-4 bg-white dark:bg-card overflow-y-auto"
+                  className="p-4 bg-muted/30 overflow-y-auto"
                 >
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <h3 className="font-semibold text-lg text-foreground">

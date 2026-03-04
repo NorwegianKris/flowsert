@@ -291,7 +291,7 @@ function TypesManageList() {
             }
             return sortedKeys.map((category) => (
               <div key={category}>
-                <div className="font-semibold text-xs uppercase text-muted-foreground bg-white dark:bg-card px-3 py-2 border-b">
+                <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b">
                   {category}
                 </div>
                 <div className="divide-y">

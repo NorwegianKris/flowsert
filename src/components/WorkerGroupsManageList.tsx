@@ -182,7 +182,7 @@ export function WorkerGroupsManageList() {
 
                 {/* Expanded member list */}
                 {isExpanded && (
-                  <div className="bg-white dark:bg-card border-t">
+                  <div className="bg-muted/30 border-t">
                     {members.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">No members assigned to this group.</p>
                     ) : (
