@@ -122,7 +122,7 @@ export function ComplianceSnapshot({
 
   return (
     <>
-      <Card className="border-border/50">
+      <Card className="bg-[#C4B5FD]/20 border-[#C4B5FD]/40">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Main metrics */}

@@ -223,7 +223,7 @@ export function CompliancePlanGenerator({
               <ToggleGroupItem
                 key={opt.value}
                 value={opt.value}
-                className="text-xs px-3 h-8 border border-primary-foreground/30 text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                className="text-xs px-3 h-8 min-w-[70px] justify-center border border-primary-foreground/30 text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
               >
                 {opt.label}
               </ToggleGroupItem>
@@ -231,7 +231,8 @@ export function CompliancePlanGenerator({
           </ToggleGroup>
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
+            className="bg-muted text-foreground hover:bg-muted/80 border-border"
             onClick={handleGenerate}
           >
             Generate
