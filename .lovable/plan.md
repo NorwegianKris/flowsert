@@ -1,24 +1,22 @@
 
 
-## Add Compliance Status Filter
+## Make All Filter & Action Buttons White Background
 
-Cosmetic + filtering logic. No schema/RLS changes. 🟢
+Purely cosmetic. 🟢
+
+### Problem
+The outline buttons use `bg-background` which is the soft slate-blue page color (`hsl(209 40% 96%)`), making them blend into the background rather than standing out as white controls.
 
 ### Changes
 
 **`src/components/PersonnelFilters.tsx`**
-1. Add `complianceStatusFilter` and `onComplianceStatusFilterChange` props (type: `'all' | 'valid' | 'expiring' | 'expired'`).
-2. Add a `[complianceOpen, setComplianceOpen]` state and a new outline-style dropdown after the Department filter (before the Sort button).
-3. Use a `ShieldCheck` (or similar) icon. Options: All (default), Valid, Expiring Soon, Expired — rendered as simple radio-style buttons (like the Sort popover).
-4. Include compliance status in `hasActiveFilters` and `clearAllFilters`.
-5. Show a badge when active (not "all").
+- Add `bg-white dark:bg-card` to all five filter button triggers (Availability, Location, Certificates, Department, Compliance). They currently use `variant="outline"` which inherits the slate-blue background.
 
 **`src/pages/AdminDashboard.tsx`**
-1. Add `complianceStatusFilter` state defaulting to `'all'`.
-2. Pass it and its setter to `PersonnelFilters`.
-3. In the personnel filtering pipeline, apply `getPersonnelOverallStatus(p)` (already imported from `@/lib/certificateUtils`) and compare against the selected filter value. Map `'expiring'` filter to the `'expiring'` status return value.
+- Add `bg-white dark:bg-card` to the three header action buttons: **Actions** dropdown trigger, **Settings**, and **Sign Out**.
 
-### Files
-- `src/components/PersonnelFilters.tsx`
-- `src/pages/AdminDashboard.tsx`
+**`src/components/DashboardHeader.tsx`**
+- Add `bg-white dark:bg-card` to the **My Profile** button.
+
+All buttons keep `variant="outline"` for border styling; we just override the background color with an additional class.
 
