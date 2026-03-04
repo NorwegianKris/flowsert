@@ -1,45 +1,18 @@
 
 
-## Standardize Search/Label Bar Width Across All Tabs
+## Widen Search/Label Bars Across All Tabs
 
 Cosmetic only. No schema changes. 🟢
 
 ### Problem
-- Projects search bar is full-width — too long
-- Personnel search bar uses `flex-1 sm:max-w-80` (320px)
-- Overview tab has no static label field yet
+`max-w-80` (320px) is too narrow — the Projects placeholder text gets truncated.
 
-### Changes
+### Fix
+Change `max-w-80` to `max-w-96` (384px) in all three places:
 
-**1. `src/components/ProjectsTab.tsx` (line 70)**
-Constrain the Projects search bar wrapper from full-width to a fixed max-width. Change:
-```tsx
-<div className="relative">
-```
-to:
-```tsx
-<div className="relative max-w-80">
-```
-This caps it at 320px — right after the ellipsis in the placeholder text.
+1. **`src/components/ProjectsTab.tsx` (line 70)**: `max-w-80` → `max-w-96`
+2. **`src/pages/AdminDashboard.tsx` (Personnel search bar, ~line 617)**: `max-w-80` → `max-w-96`
+3. **`src/pages/AdminDashboard.tsx` (Overview static label, ~line 726)**: `max-w-80` → `max-w-96`
 
-**2. `src/pages/AdminDashboard.tsx` (lines 725-738)**
-Add the static "Compliance Overview" input on the left, same `max-w-80` width:
-```tsx
-<div className="flex items-center justify-between gap-4">
-  <div className="relative max-w-80">
-    <Input
-      readOnly
-      tabIndex={-1}
-      value="Compliance Overview"
-      className="border-border text-muted-foreground cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
-    />
-  </div>
-  <FreelancerFilters ... />
-</div>
-```
-
-**3. `src/pages/AdminDashboard.tsx` (line 617)**
-Personnel search bar — change `flex-1 sm:max-w-80` to just `max-w-80` (drop `flex-1`) so all three bars share the identical fixed max-width without stretching.
-
-All three bars: `max-w-80` (320px), same `Input` component = identical dimensions.
+384px comfortably fits the full placeholder text with the search icon padding.
 
