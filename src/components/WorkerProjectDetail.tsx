@@ -256,7 +256,7 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
                   {assignedPersonnel.map((person) => (
                     <div
                       key={person.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/10' : 'bg-muted/50'}`}
+                      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]' : 'bg-card border-border/50'}`}
                     >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={person.avatarUrl} alt={person.name} />
