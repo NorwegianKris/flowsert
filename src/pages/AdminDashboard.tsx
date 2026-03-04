@@ -613,7 +613,7 @@ export default function AdminDashboard() {
           </TabsList>
           
           <TabsContent value="personnel" className="mt-6">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center justify-between gap-4 mb-4">
               <div className="relative flex-1 sm:max-w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -722,7 +722,7 @@ export default function AdminDashboard() {
           </TabsContent>
           
           <TabsContent value="overview" className="mt-6 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex-1">
                 <ComplianceSnapshot personnel={overviewFiltered} />
               </div>
