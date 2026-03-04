@@ -204,7 +204,7 @@ export function AddCertificateDialog({
       placeOfIssue: extractedData.placeOfIssue || '',
       issuingAuthority: extractedData.issuingAuthority || '',
       file,
-      categoryId: null, // Personnel choose themselves
+      categoryId: extractedData.matchedCategoryId || null,
       wasAutoFilled: result.status !== 'red',
       extractionStatus: result.status,
       fieldConfidence: result.status !== 'red' ? {
