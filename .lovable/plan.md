@@ -1,35 +1,37 @@
 
 
-## Add "Expiring Soon" Stat Card to ComplianceSnapshot
+## Remove ComplianceSnapshot from Overview Tab
 
 Cosmetic only. No schema changes. 🟢
 
-### Changes in `src/components/ComplianceSnapshot.tsx`
+### Changes in `src/pages/AdminDashboard.tsx` (lines 724-742)
 
-**1. Import**: Add `AlertTriangle` from lucide-react.
+Remove `ComplianceSnapshot` and its wrapper. Place `FreelancerFilters` on its own row above the Compliance Plan bar:
 
-**2. Metrics** (lines 13-31): Track `expiring` count alongside existing ones:
 ```tsx
-let expiring = 0;
-// in the loop:
-} else if (status === 'expiring') {
-  expiring++;
-}
-return { total, valid, expiring, expired };
+<TabsContent value="overview" className="mt-6 space-y-6">
+  <div className="flex justify-end">
+    <FreelancerFilters
+      personnelFilter={overviewFilter}
+      onPersonnelFilterChange={setOverviewFilter}
+      personnel={personnel}
+      customPersonnelIds={customFilterPersonnelIds}
+      customRoles={customFilterRoles}
+      customWorkerGroupIds={customFilterWorkerGroupIds}
+      onCustomFilterChange={...}
+    />
+  </div>
+  <CompliancePlanGenerator ... />
+  <ExpiryTimeline ... />
+  ...
+</TabsContent>
 ```
 
-**3. Stats array** (lines 34-57): Insert "Expiring Soon" card between Valid and Expired:
-```tsx
-{
-  label: 'Expiring Soon',
-  value: metrics.expiring,
-  icon: AlertTriangle,
-  iconBg: 'bg-amber-500/10',
-  iconColor: 'text-amber-500',
-},
-```
+The `ComplianceSnapshot` import can be removed from the file.
 
-**4. Grid** (line 60): Change `sm:grid-cols-3` to `sm:grid-cols-4` for 4 cards.
+**Overview tab flow**: Toggle (right-aligned) → Compliance Plan → Expiry Timeline → Recent Registrations.
 
-Single file, four small edits.
+| File | Change |
+|---|---|
+| `AdminDashboard.tsx` | Remove ComplianceSnapshot usage; toggle gets own right-aligned row |
 
