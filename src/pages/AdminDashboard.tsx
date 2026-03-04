@@ -601,7 +601,7 @@ export default function AdminDashboard() {
         </div>
 
         <DashboardStats
-          personnel={filteredPersonnel}
+          personnel={personnel}
           needsReviewCount={needsReviewCount}
           onNeedsReviewClick={() => {
             setSettingsOpen(true);
