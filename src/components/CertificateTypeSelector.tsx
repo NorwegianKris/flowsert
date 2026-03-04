@@ -77,6 +77,7 @@ export function CertificateTypeSelector({
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
   const [ocrAutoSelected, setOcrAutoSelected] = useState(false);
   const [lowConfidenceHint, setLowConfidenceHint] = useState<string | null>(null);
+  const [freeTextFromOcr, setFreeTextFromOcr] = useState(false);
   const ocrAutoApplied = useRef(false);
   const { data: types = [], isLoading } = useCertificateTypes();
 
@@ -159,6 +160,7 @@ export function CertificateTypeSelector({
           // Ambiguous match — pre-fill free-text with AI-extracted name
           setShowFreeTextInput(true);
           onFreeTextChange(ocrHint.extractedName);
+          setFreeTextFromOcr(true);
         } else {
           setSearchValue(ocrHint.extractedName);
         }
@@ -166,6 +168,7 @@ export function CertificateTypeSelector({
         // No good fuzzy match — pre-fill free-text with AI-extracted name
         setShowFreeTextInput(true);
         onFreeTextChange(ocrHint.extractedName);
+        setFreeTextFromOcr(true);
       } else {
         // Fallback: pre-fill search
         setSearchValue(ocrHint.extractedName);
@@ -410,9 +413,18 @@ export function CertificateTypeSelector({
         ) : (
           <>
             {/* Free text input */}
+            {freeTextFromOcr && freeTextValue && (
+              <Badge variant="secondary" className="flex items-center gap-1 w-fit bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300">
+                <Sparkles className="h-3 w-3" />
+                Suggested
+              </Badge>
+            )}
             <Input
               value={freeTextValue}
-              onChange={(e) => onFreeTextChange?.(e.target.value)}
+              onChange={(e) => {
+                onFreeTextChange?.(e.target.value);
+                setFreeTextFromOcr(false);
+              }}
               placeholder="Enter certificate name..."
               disabled={disabled}
               className={className}
