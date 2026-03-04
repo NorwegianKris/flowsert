@@ -22,14 +22,15 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
-import { FileDown, Mail, FileText, Users, Search, X, GripVertical, FileStack, Loader2, Briefcase, UsersRound } from 'lucide-react';
+import { FileDown, Mail, FileText, Users, Search, X, GripVertical, FileStack, Loader2, Briefcase, UsersRound, ClipboardList } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getCertificateStatus, getPersonnelOverallStatus, EXPIRY_WARNING_DAYS } from '@/lib/certificateUtils';
+import { getCertificateStatus, getPersonnelOverallStatus, getDaysUntilExpiry, EXPIRY_WARNING_DAYS } from '@/lib/certificateUtils';
 import { generateCompetenceMatrixPdf } from '@/lib/competenceMatrixPdf';
 import { generateCertificateBundlePdf } from '@/lib/mergeCertificatesPdf';
+import { generateCompliancePlanPdf } from '@/lib/compliancePlanPdf';
 import { supabase } from '@/integrations/supabase/client';
 import { loadPdfLogo, drawPdfLogo } from '@/lib/pdfLogoUtils';
 import { useWorkerGroups } from '@/hooks/useWorkerGroups';
@@ -76,6 +77,7 @@ export function ExternalSharingDialog({
   const [projectPhases, setProjectPhases] = useState<ProjectPhaseRow[]>([]);
   const [selectedRoleFilters, setSelectedRoleFilters] = useState<string[]>([]);
   const [selectedWorkerGroupFilters, setSelectedWorkerGroupFilters] = useState<string[]>([]);
+  const [compliancePlanPeriod, setCompliancePlanPeriod] = useState<string>('90');
 
   const { data: workerGroups = [] } = useWorkerGroups();
   const { categories: workerCategories } = useWorkerCategories();
@@ -600,6 +602,83 @@ export function ExternalSharingDialog({
     return doc;
   };
 
+  const generateCompliancePlanForExport = async (selectedPeople: Personnel[]): Promise<jsPDF> => {
+    const periodDays = parseInt(compliancePlanPeriod);
+    const periodLabel = periodDays === 180 ? '6 months' : `${periodDays} days`;
+
+    // Build entries
+    type PlanCertEntry = {
+      personnelName: string;
+      personnelId: string;
+      certName: string;
+      category: string;
+      issuingAuthority: string;
+      expiryDate: string;
+      daysRemaining: number;
+    };
+    const entries: PlanCertEntry[] = [];
+    for (const person of selectedPeople) {
+      for (const cert of person.certificates) {
+        const days = getDaysUntilExpiry(cert.expiryDate);
+        if (days === null) continue;
+        if (days > periodDays && days >= 0) continue;
+        entries.push({
+          personnelName: person.name,
+          personnelId: person.id,
+          certName: cert.name,
+          category: cert.category || '—',
+          issuingAuthority: cert.issuingAuthority || '—',
+          expiryDate: cert.expiryDate!,
+          daysRemaining: days,
+        });
+      }
+    }
+    entries.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+    const overdue = entries.filter(e => e.daysRemaining < 0).length;
+    const expiring = entries.filter(e => e.daysRemaining >= 0).length;
+    const affectedPersonnel = new Set(entries.map(e => e.personnelId)).size;
+    const categories = new Set(entries.map(e => e.category)).size;
+
+    // Build filterLabel from selected groups/roles
+    const filterParts: string[] = [];
+    if (selectedGroups.length > 0) filterParts.push(selectedGroups.map(g => groupLabels[g]).join(', '));
+    if (selectedRoleFilters.length > 0) filterParts.push(`Roles: ${selectedRoleFilters.join(', ')}`);
+    if (selectedWorkerGroupFilters.length > 0) {
+      const names = selectedWorkerGroupFilters.map(id => workerGroups.find(wg => wg.id === id)?.name || id);
+      filterParts.push(`Groups: ${names.join(', ')}`);
+    }
+    if (selectedIndividuals.length > 0) filterParts.push(`${selectedIndividuals.length} individual(s)`);
+    const filterLabel = filterParts.length > 0 ? filterParts.join(' · ') : 'All personnel';
+
+    // Group by personnel
+    const byPersonnelMap = new Map<string, PlanCertEntry[]>();
+    entries.forEach(e => {
+      if (!byPersonnelMap.has(e.personnelName)) byPersonnelMap.set(e.personnelName, []);
+      byPersonnelMap.get(e.personnelName)!.push(e);
+    });
+    const byPersonnel = Array.from(byPersonnelMap.entries()).sort((a, b) => b[1].length - a[1].length);
+
+    // Group by issuer
+    const byIssuerMap = new Map<string, PlanCertEntry[]>();
+    entries.forEach(e => {
+      const key = e.issuingAuthority || '—';
+      if (!byIssuerMap.has(key)) byIssuerMap.set(key, []);
+      byIssuerMap.get(key)!.push(e);
+    });
+    const byIssuer = Array.from(byIssuerMap.entries()).sort((a, b) => b[1].length - a[1].length);
+
+    return generateCompliancePlanPdf({
+      entries,
+      periodLabel,
+      filterLabel,
+      businessName,
+      summary: { overdue, expiring, total: entries.length, affectedPersonnel, categories },
+      byPersonnel,
+      byIssuer,
+    });
+  };
+
   const generatePersonnelCertificatesPdf = (selectedPersonnel: Personnel[]): Promise<jsPDF> => {
     return generateCompetenceMatrixPdf({
       personnel: selectedPersonnel,
@@ -641,6 +720,18 @@ export function ExternalSharingDialog({
         return;
       }
 
+      if (selectedExports.includes('compliancePlan')) {
+        const selectedPeople = getSelectedPersonnel();
+        if (selectedPeople.length === 0) {
+          toast.error('Please select personnel to export');
+          return;
+        }
+        const doc = await generateCompliancePlanForExport(selectedPeople);
+        const periodDays = compliancePlanPeriod;
+        const dateStr = format(new Date(), 'yyyy-MM-dd');
+        doc.save(`compliance-plan-${periodDays}d-${dateStr}.pdf`);
+      }
+
       toast.success('PDF(s) downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -680,6 +771,20 @@ export function ExternalSharingDialog({
         attachmentNames.push(fileName);
       }
 
+      if (selectedExports.includes('compliancePlan')) {
+        const selectedPeople = getSelectedPersonnel();
+        if (selectedPeople.length === 0) {
+          toast.error('Please select personnel to export');
+          return;
+        }
+        const doc = await generateCompliancePlanForExport(selectedPeople);
+        const periodDays = compliancePlanPeriod;
+        const dateStr = format(new Date(), 'yyyy-MM-dd');
+        const fileName = `compliance-plan-${periodDays}d-${dateStr}.pdf`;
+        doc.save(fileName);
+        attachmentNames.push(fileName);
+      }
+
       const subject = encodeURIComponent('Export Documents');
       const body = encodeURIComponent(
         `Please find attached the following documents:\n\n` +
@@ -700,6 +805,7 @@ export function ExternalSharingDialog({
     if (selectedExports.includes('projectCard') && !selectedProjectId) return false;
     if (selectedExports.includes('personnelCertificates') && selectedPersonnelCount === 0) return false;
     if (selectedExports.includes('certificateBundle') && selectedPersonnelCount !== 1) return false;
+    if (selectedExports.includes('compliancePlan') && selectedPersonnelCount === 0) return false;
     return true;
   };
 
@@ -748,6 +854,7 @@ export function ExternalSharingDialog({
     setProjectFilter('active');
     setSelectedRoleFilters([]);
     setSelectedWorkerGroupFilters([]);
+    setCompliancePlanPeriod('90');
     onOpenChange(false);
   };
 
@@ -899,6 +1006,55 @@ export function ExternalSharingDialog({
               </p>
             )}
 
+            {/* Compliance Plan Option */}
+            <div
+              className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
+                selectedExports.includes('compliancePlan')
+                  ? 'bg-primary/10 border-primary'
+                  : 'bg-muted/50 border-border hover:bg-muted'
+              }`}
+              onClick={() => toggleExport('compliancePlan')}
+            >
+              <Checkbox
+                id="compliancePlan"
+                checked={selectedExports.includes('compliancePlan')}
+                className="pointer-events-none"
+              />
+              <div className="flex items-center gap-3 flex-1">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Export Compliance Plan</p>
+                  <p className="text-xs text-muted-foreground">
+                    Certificate expiry report for the selected period and personnel
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Compliance Plan period toggle */}
+            {selectedExports.includes('compliancePlan') && (
+              <div className="ml-8 space-y-2">
+                <Label className="text-sm">Select period:</Label>
+                <div className="flex gap-1">
+                  {[
+                    { value: '30', label: '30 days' },
+                    { value: '90', label: '90 days' },
+                    { value: '180', label: '6 months' },
+                  ].map(opt => (
+                    <Button
+                      key={opt.value}
+                      variant={compliancePlanPeriod === opt.value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); setCompliancePlanPeriod(opt.value); }}
+                      className="text-xs h-7"
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Bundle generation progress */}
             {isBundleGenerating && bundleProgress && (
               <div className="ml-8 space-y-2">
@@ -911,8 +1067,8 @@ export function ExternalSharingDialog({
               </div>
             )}
 
-            {/* Personnel Selection (when personnel certificates or certificate bundle is selected) */}
-            {(selectedExports.includes('personnelCertificates') || selectedExports.includes('certificateBundle')) && (
+            {/* Personnel Selection (when personnel certificates, certificate bundle, or compliance plan is selected) */}
+            {(selectedExports.includes('personnelCertificates') || selectedExports.includes('certificateBundle') || selectedExports.includes('compliancePlan')) && (
               <div className="ml-8 space-y-3">
                 {/* Group Selection */}
                 <div className="space-y-2">
