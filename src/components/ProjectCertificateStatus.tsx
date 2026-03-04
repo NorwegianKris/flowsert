@@ -218,18 +218,18 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
         <CollapsibleContent>
         <CardContent>
           <div className="rounded-lg border border-border/50 overflow-hidden max-h-[600px] overflow-y-auto">
-            <Table>
+            <Table className="w-full table-fixed">
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-primary hover:bg-primary">
-                  <TableHead className="font-semibold text-white">Personnel</TableHead>
-                  <TableHead className="font-semibold text-white">Certificate</TableHead>
-                  <TableHead className="font-semibold text-white">Status</TableHead>
-                  <TableHead className="font-semibold text-white">Category</TableHead>
-                  <TableHead className="font-semibold text-white">Issuing Authority</TableHead>
-                  <TableHead className="font-semibold text-white">Date of Issue</TableHead>
-                  <TableHead className="font-semibold text-white">Expiry Date</TableHead>
-                  <TableHead className="font-semibold text-white">Place of Issue</TableHead>
-                  <TableHead className="font-semibold text-white">Document</TableHead>
+                  <TableHead className="w-[18%] font-semibold text-white">Personnel</TableHead>
+                  <TableHead className="w-[14%] font-semibold text-white">Certificate</TableHead>
+                  <TableHead className="w-[10%] font-semibold text-white">Status</TableHead>
+                  <TableHead className="w-[10%] font-semibold text-white">Category</TableHead>
+                  <TableHead className="w-[13%] font-semibold text-white">Issuing Authority</TableHead>
+                  <TableHead className="w-[10%] font-semibold text-white">Date of Issue</TableHead>
+                  <TableHead className="w-[10%] font-semibold text-white">Expiry Date</TableHead>
+                  <TableHead className="w-[8%] font-semibold text-white">Place of Issue</TableHead>
+                  <TableHead className="w-[7%] font-semibold text-white">Document</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -261,9 +261,9 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="font-medium">{cert.name}</span>
+                          <span className="font-medium truncate">{cert.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -284,7 +284,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
                           <span className="text-xs text-muted-foreground italic">Uncategorized</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground truncate">
                         {cert.issuingAuthority || <span className="italic">Not specified</span>}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -307,7 +307,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
                           <span className="text-muted-foreground italic">No expiry</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground truncate">
                         {cert.placeOfIssue}
                       </TableCell>
                       <TableCell>
