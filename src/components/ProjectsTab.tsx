@@ -238,8 +238,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col flex-1 justify-between">
-        <div className="space-y-1.5">
+      <CardContent className="flex flex-col flex-1 gap-1.5">
           <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
         
           {/* Personnel row: avatars + counts OR placeholder — fixed height */}
@@ -280,8 +279,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
               </span>
             )}
           </div>
-        </div>
-        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
+        <div className="mt-auto text-xs text-muted-foreground flex flex-wrap gap-x-3">
           <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
           <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
           <span className="flex items-center gap-1">
