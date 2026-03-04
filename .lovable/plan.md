@@ -1,36 +1,20 @@
 
 
-## Standardise Project Card Row Layout
+## Fix Project Card Height Consistency
 
 Purely cosmetic. 🟢
 
-### Current issues
-- Row 3 (avatar stack) and the "no personnel" placeholder have different heights, causing card misalignment in the grid.
-- The employee/freelancer count text is mixed into the avatar row when personnel exist, and absent when they don't.
-- A separate "Applicants" row with a Users icon always renders (showing "—" for non-posted projects), wasting vertical space.
+### Changes — `src/components/ProjectsTab.tsx` (ProjectCard)
 
-### New row structure (all card types)
+Merge Row 3 and Row 4 into a single row with fixed height, and add a min-height to the Card.
 
-```text
-Row 1: Name + image + badge (Posted / Recurring)
-Row 2: Description (line-clamp-2)
-Row 3: Avatar stack (up to 5 faces + "+X more") OR placeholder (Users icon + "No personnel assigned") — fixed min-h-[24px] so both paths match height
-Row 4: "X Employees | Y Freelancers" + " | Z Applicants" for posted projects. Hidden entirely when no personnel assigned.
-Row 5: Start / End / Location (mt-auto to pin to bottom)
-```
+**Single personnel row** (replaces lines 244–285):
+- One `div` with `flex items-center min-h-[28px] mb-2`.
+- **Has personnel**: avatars on the left, `ml-auto` pushes "X Employees | Y Freelancers" (+ "| Z Applicants" for posted) to the right. All vertically centered.
+- **No personnel**: Users icon + "No personnel assigned" — same row, same height.
 
-### Changes — `src/components/ProjectsTab.tsx` (ProjectCard only)
+**Card min-height**: Add `min-h-[240px]` to the Card component to prevent grid misalignment.
 
-**Row 3** (lines 244–271): Restructure into two separate blocks sharing a wrapper with `min-h-[24px]`:
-- **Has personnel**: avatar stack (`.slice(0, 5)` instead of 4), then "+X more" overflow label.
-- **No personnel**: `<Users>` icon + "No personnel assigned" muted text, same height.
-
-**Row 4** (new, replaces old lines 262–266 and 273–276): Render only when `assignedPersonnel.length > 0`. Single line: `"X Employees | Y Freelancers"`, and if `isPosted`, append `" | Z Applicants"`.
-
-**Row 5** (lines 277–284): Unchanged, stays `mt-auto`.
-
-**Remove**: The standalone "Applicants" row (lines 273–276) — applicant count moves into Row 4.
-
-### Files
+### File
 - `src/components/ProjectsTab.tsx`
 
