@@ -1,30 +1,31 @@
 
 
-## Fix Personnel Row Colors in Project View
+## Fix Location Casing in Project View Personnel List
 
 Cosmetic only. No schema changes. 🟢
 
 ### Problem
-Employee rows in the project view personnel list use `bg-muted/50` (grey). Should match the PersonnelCard styling: white background with subtle border for employees, lavender with lavender border for freelancers.
+The `city` and `country` columns in the database are intentionally stored in lowercase for geographic matching. The project view personnel list displays these raw lowercase values. The PersonnelCard on the admin dashboard uses `personnel.location` which has proper casing (e.g., "Haugesund, Norway").
 
-### Reference (PersonnelCard.tsx)
-- **Freelancer**: `border-[#C4B5FD] bg-[#C4B5FD]/10`
-- **Employee**: `border-border/50` (default white card background)
+### Solution
+Capitalize the displayed `city` and `country` values using a simple capitalize helper, or fall back to parsing `person.location` which already has proper casing.
 
-### Changes
+### Files to Update
 
-**`src/components/ProjectDetail.tsx`** (line 397)
-Change the row className from:
-```
-bg-[#C4B5FD]/10 hover:bg-[#C4B5FD]/20  (freelancer)
-bg-muted/50 hover:bg-muted              (employee)
-```
-To:
-```
-bg-[#C4B5FD]/10 border border-[#C4B5FD]  (freelancer)
-bg-card border border-border/50           (employee)
-```
+**`src/components/ProjectDetail.tsx`** (lines 422-424)
+- Capitalize city/country display values using a helper like `word.charAt(0).toUpperCase() + word.slice(1)`
+- Apply to both city and country spans
 
-**`src/components/WorkerProjectDetail.tsx`** (same pattern, line ~268)
-Apply identical change to the personnel row styling.
+**`src/components/WorkerProjectDetail.tsx`** (same pattern, lines ~282-284)
+- Identical fix
+
+### Code Pattern
+```tsx
+// Helper or inline
+const capitalize = (s: string) => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+// Display
+<span>{capitalize(person.city || '') || person.location?.split(',')[0]?.trim() || '—'}</span>
+<span>{capitalize(person.country || '') || person.location?.split(',')[1]?.trim() || ''}</span>
+```
 
