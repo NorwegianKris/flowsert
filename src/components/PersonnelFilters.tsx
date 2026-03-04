@@ -347,7 +347,7 @@ export function PersonnelFilters({
 
       <Popover open={sortOpen} onOpenChange={setSortOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between min-w-[140px]">
+          <Button className="ml-auto h-9 justify-between min-w-[140px] bg-primary text-primary-foreground hover:bg-primary/90">
             <ArrowUpDown className="mr-2 h-4 w-4" />
             <span className="truncate">
               {sortOptions.find(o => o.value === sortOption)?.label || 'Sort'}
@@ -355,7 +355,7 @@ export function PersonnelFilters({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[160px] p-2 bg-popover border shadow-md z-50" align="start">
+        <PopoverContent className="w-[160px] p-2 bg-popover border shadow-md z-50" align="end">
           <div className="space-y-1">
             {sortOptions.map((option) => (
               <button
