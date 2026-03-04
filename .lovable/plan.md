@@ -1,22 +1,14 @@
 
 
-## Make All Filter & Action Buttons White Background
+## Disconnect Stat Cards from Tab Toggles
 
-Purely cosmetic. 🟢
+Purely cosmetic / data-flow change. No schema, RLS, or backend changes. 🟢
 
 ### Problem
-The outline buttons use `bg-background` which is the soft slate-blue page color (`hsl(209 40% 96%)`), making them blend into the background rather than standing out as white controls.
+`DashboardStats` on line 604 of `AdminDashboard.tsx` receives `filteredPersonnel`, which is already filtered by the active tab toggle (Employees/Freelancers/All/Custom). This causes the stat card totals to change when a toggle is selected.
 
-### Changes
+### Fix
 
-**`src/components/PersonnelFilters.tsx`**
-- Add `bg-white dark:bg-card` to all five filter button triggers (Availability, Location, Certificates, Department, Compliance). They currently use `variant="outline"` which inherits the slate-blue background.
-
-**`src/pages/AdminDashboard.tsx`**
-- Add `bg-white dark:bg-card` to the three header action buttons: **Actions** dropdown trigger, **Settings**, and **Sign Out**.
-
-**`src/components/DashboardHeader.tsx`**
-- Add `bg-white dark:bg-card` to the **My Profile** button.
-
-All buttons keep `variant="outline"` for border styling; we just override the background color with an additional class.
+**`src/pages/AdminDashboard.tsx`** — one line change:
+- Change `<DashboardStats personnel={filteredPersonnel} ...>` to `<DashboardStats personnel={personnel} ...>`, where `personnel` is the raw, unfiltered array from `usePersonnel()`. This ensures the cards always show business-wide totals regardless of which toggle or filter is active on either tab.
 
