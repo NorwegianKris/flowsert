@@ -1,85 +1,73 @@
 
 
-## Unify Personnel Filter Toggle — One Toggle, One Position, Both Tabs
+## Revert Toggle Placement — Each Tab Gets Its Own Toggle
 
-Cosmetic + state consolidation. No schema changes. 🟢
-
-### Summary
-
-Merge the two separate filter states (`personnelTabFilter` for Personnel tab, `complianceFilter` for Overview tab) into one shared state. Extract the toggle group out of both tab contents and place it in the shared stat cards row above the tab bar. Default to `'employees'`.
+Cosmetic only. No schema changes. 🟢
 
 ### Changes
 
 #### 1. `src/pages/AdminDashboard.tsx`
 
-**State**: Remove `personnelTabFilter` (line 120) and `complianceFilter` (line 126). Replace with one shared state:
+**State**: Replace single `personnelFilter` with two independent states:
 ```tsx
-const [personnelFilter, setPersonnelFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
+const [personnelTabFilter, setPersonnelTabFilter] = useState<'all' | 'employees' | 'freelancers'>('employees');
+const [overviewFilter, setOverviewFilter] = useState<'all' | 'employees' | 'freelancers' | 'custom'>('employees');
 ```
 
-**DashboardStats row** (lines 577-584): Wrap in a flex row with the toggle group on the right. Move the ComplianceSnapshot-style ToggleGroup (All/Employees/Freelancers/Custom) here, extracted from ComplianceSnapshot. Include the Custom toggle + CustomPersonnelFilterDialog logic here (or create a small wrapper component).
+Keep custom filter state (`customFilterPersonnelIds`, `customFilterRoles`, `customFilterWorkerGroupIds`) — used only by Overview tab's `'custom'` option.
 
+**filteredPersonnel**: Split into two filtered lists or make it dynamic based on active tab. Simpler: compute `personnelTabFiltered` and `overviewFiltered` separately, or keep one `filteredPersonnel` that switches source filter based on `activeTab`. Cleanest approach: use `activeTab === 'overview' ? overviewFilter : personnelTabFilter` as the effective filter in the existing `filteredPersonnel` memo, adding `activeTab` to deps.
+
+**DashboardStats row** (lines 581-605): Remove the `FreelancerFilters` and the flex wrapper. Go back to just:
 ```tsx
-<div className="flex flex-col sm:flex-row sm:items-start gap-4">
-  <div className="flex-1">
-    <DashboardStats
-      personnel={personnel}  // pass filtered-by-toggle personnel
-      needsReviewCount={needsReviewCount}
-      onNeedsReviewClick={...}
-    />
+<DashboardStats personnel={filteredPersonnel} ... />
+```
+
+**Personnel tab** (lines 623-633): Merge search bar and toggle into one row:
+```tsx
+<div className="flex items-center gap-4 mb-4">
+  <div className="relative flex-1 sm:max-w-80">
+    <Search ... /><Input ... />
   </div>
   <FreelancerFilters
-    personnelFilter={personnelFilter}
-    onPersonnelFilterChange={setPersonnelFilter}
-    customPersonnelIds={customFilterPersonnelIds}
-    customRoles={customFilterRoles}
-    customWorkerGroupIds={customFilterWorkerGroupIds}
-    onCustomFilterChange={...}
-    personnel={personnel}
+    personnelFilter={personnelTabFilter}
+    onPersonnelFilterChange={setPersonnelTabFilter}
   />
 </div>
 ```
 
-**DashboardStats**: Pass pre-filtered personnel so its counts reflect the active toggle. Filter personnel by the shared `personnelFilter` before passing to DashboardStats (and ComplianceSnapshot).
-
-**Personnel tab** (lines 602-618): Remove `FreelancerFilters` from the search row. Make search bar full width (`w-full sm:w-80`). Update `filteredPersonnel` to use `personnelFilter` instead of `personnelTabFilter`.
-
-**Overview tab** (lines 709-722): Remove toggle from ComplianceSnapshot props; it no longer owns the toggle. Pass pre-filtered personnel instead.
+**Overview tab** (line 724-725): Add toggle inline with ComplianceSnapshot:
+```tsx
+<div className="flex flex-col sm:flex-row sm:items-start gap-4">
+  <div className="flex-1">
+    <ComplianceSnapshot personnel={overviewFiltered} />
+  </div>
+  <FreelancerFilters
+    personnelFilter={overviewFilter}
+    onPersonnelFilterChange={setOverviewFilter}
+    personnel={personnel}
+    customPersonnelIds={customFilterPersonnelIds}
+    customRoles={customFilterRoles}
+    customWorkerGroupIds={customFilterWorkerGroupIds}
+    onCustomFilterChange={...}
+  />
+</div>
+```
 
 #### 2. `src/components/FreelancerFilters.tsx`
 
-Expand to be the single toggle component with Custom support. Add props for custom filter state and the CustomPersonnelFilterDialog (move dialog + logic from ComplianceSnapshot into here). This becomes the one toggle used above the tabs.
+No changes needed — it already supports both modes. When `onCustomFilterChange` is not provided, it renders without the Custom option (3 items). When provided, it shows all 4 options including Custom + dialog.
 
-Props:
-```tsx
-interface FreelancerFiltersProps {
-  personnelFilter: 'all' | 'employees' | 'freelancers' | 'custom';
-  onPersonnelFilterChange: (value: ...) => void;
-  // Custom filter props
-  personnel: Personnel[];
-  customPersonnelIds: string[];
-  customRoles: string[];
-  customWorkerGroupIds: string[];
-  onCustomFilterChange: (ids: string[], roles: string[], groupIds: string[]) => void;
-}
-```
+#### 3. `src/components/ComplianceSnapshot.tsx` / `DashboardStats.tsx`
 
-Render the 4-option ToggleGroup (All/Employees/Freelancers/Custom) + CustomPersonnelFilterDialog.
-
-#### 3. `src/components/ComplianceSnapshot.tsx`
-
-Remove the ToggleGroup and CustomPersonnelFilterDialog entirely. Remove the `personnelFilter`, `onPersonnelFilterChange`, custom filter props. The component now only receives pre-filtered `personnel` and renders the 3 stat cards. Remove the flex wrapper that positioned the toggle; just render the stat cards grid.
-
-#### 4. `src/components/DashboardStats.tsx`
-
-No structural changes needed. It already receives `personnel` as a prop — just ensure the caller passes filtered personnel so counts reflect the toggle.
+No changes — both already receive pre-filtered personnel.
 
 ### Files
 
 | File | Change |
 |---|---|
-| `AdminDashboard.tsx` | Merge 2 filter states → 1; move toggle above tabs; filter personnel before passing to DashboardStats & ComplianceSnapshot; search bar full width |
-| `FreelancerFilters.tsx` | Expand with Custom option + CustomPersonnelFilterDialog |
-| `ComplianceSnapshot.tsx` | Strip toggle + custom dialog; receive pre-filtered personnel only |
-| `DashboardStats.tsx` | No changes (receives filtered personnel from parent) |
+| `AdminDashboard.tsx` | Split shared state → 2 independent states; move toggle into each tab; DashboardStats row full width |
+| `FreelancerFilters.tsx` | No changes needed |
+| `ComplianceSnapshot.tsx` | No changes |
+| `DashboardStats.tsx` | No changes |
 
