@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Personnel } from '@/types';
 import { getCertificateStatus } from '@/lib/certificateUtils';
-import { Award, XCircle, CheckCircle } from 'lucide-react';
+import { Award, XCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface ComplianceSnapshotProps {
   personnel: Personnel[];
@@ -13,6 +13,7 @@ export function ComplianceSnapshot({ personnel }: ComplianceSnapshotProps) {
   const metrics = useMemo(() => {
     let total = 0;
     let valid = 0;
+    let expiring = 0;
     let expired = 0;
 
     personnel.forEach(p => {
@@ -22,13 +23,15 @@ export function ComplianceSnapshot({ personnel }: ComplianceSnapshotProps) {
 
         if (status === 'expired') {
           expired++;
+        } else if (status === 'expiring') {
+          expiring++;
         } else if (status === 'valid') {
           valid++;
         }
       });
     });
 
-    return { total, valid, expired };
+    return { total, valid, expiring, expired };
   }, [personnel]);
 
   const stats = [
@@ -47,6 +50,13 @@ export function ComplianceSnapshot({ personnel }: ComplianceSnapshotProps) {
       iconColor: 'text-[hsl(var(--status-valid))]',
     },
     {
+      label: 'Expiring Soon',
+      value: metrics.expiring,
+      icon: AlertTriangle,
+      iconBg: 'bg-amber-500/10',
+      iconColor: 'text-amber-500',
+    },
+    {
       label: 'Expired',
       value: metrics.expired,
       icon: XCircle,
@@ -57,7 +67,7 @@ export function ComplianceSnapshot({ personnel }: ComplianceSnapshotProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
       {stats.map((stat) => (
         <Card key={stat.label} className={`border-border/50 ${stat.tinted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`}>
           <CardContent className="p-4 flex items-center gap-3">
