@@ -1,47 +1,44 @@
 
 
-## Anchor: Hybrid Role Extraction with AI Fallback — VERIFIED
+## Unify Document Preview: Create a Shared DocumentPreviewDialog Component
 
-All items confirmed against the deployed code.
+### Problem
 
-### Fast path — keyword extraction (lines 100-151)
-- `extractConstraints` runs first with hardcoded `roleKeywords` map
-- Entries sorted by descending key length (line 144): `"dive supervisor"` checked before `"diver"`
-- Returns immediately when keyword match found — no AI call
+Document previews are inconsistent across the system. The "gold standard" is `CertificateViewerDialog` (timeline view) — it has zoom, rotate, download, certificate info header, and proper PDF/image handling. But `IssuerMergingPane` and `TypeMergingPane` use a bare-bones inline dialog with no zoom/rotate for images and no certificate metadata.
 
-### AI fallback (lines 154-212)
-- `extractConstraintsWithAIFallback` calls `extractConstraints` first (line 158)
-- Returns early if roles found (lines 159-161) — **no AI call on keyword hit**
-- Gemini call uses `temperature: 0` (line 181), `max_tokens: 200` (line 182), model `google/gemini-2.5-flash` (line 172)
-- System prompt requests structured JSON with fields: role, location, certificates (line 176)
-- Response parsed with defensive `try/catch` wrapping `JSON.parse` (lines 190-193 inside outer try, line 208 catch)
-- On gateway error (`!response.ok`), returns keyword result gracefully (lines 185-188)
-- On parse/network failure, returns keyword result gracefully (lines 208-211)
-- `[keyword-miss]` logged with query and extracted role (line 200) — non-blocking `console.log`
+### Approach
 
-### Role-prioritised 50-cap (lines 446-481)
-- `constraints` sourced from `extractConstraintsWithAIFallback` (line 447)
-- Group A / Group B split on `constraints.roles` (lines 454-464)
-- Case-insensitive matching via `.toLowerCase()` (lines 456, 458)
-- Partial title matching via `.includes()` — "Senior Dive Supervisor" matches "dive supervisor" (line 459)
-- If ≤50 candidates total, no capping applied (line 452)
-- If no roles extracted (from either path), falls back to profile-completion sort (lines 477-481)
+Extract the document preview UI into a single reusable `DocumentPreviewDialog` component, then replace the inline dialog code in `IssuerMergingPane` and `TypeMergingPane`.
 
-### Unchanged (confirmed)
-- Location pre-filter runs before cap (lines 432-444)
-- Freelancer/employee toggle runs before cap (lines 437-440)
-- Main scoring prompt with 100%/60%/20%/0% role tiers (confirmed in system prompt block starting line 537)
-- Frontend threshold: ≥40% display, suppress below 50% on strong match (lines 154, 156-158 in `useSuggestPersonnel.ts`)
-- Auth, rate limiting, allowance checks all unchanged (lines 220-314)
-- Response schema unchanged
+### Changes
 
-### Test case expectations
-| Query | Path | Result |
-|---|---|---|
-| "find dive supervisors" | Keyword match → no AI call | All Dive Supervisors in Group A |
-| "run dive ops" | Keyword miss → AI extracts "Dive Supervisor" | All Dive Supervisors in Group A |
-| "NDT guy in Norway" | Keyword miss → AI extracts role + location | Role-prioritised + location-filtered |
-| Gibberish | Keyword miss → AI returns nulls | Falls back to profile-completion sort, no crash |
+**1. Create `src/components/DocumentPreviewDialog.tsx`**
 
-**Status: All 23 checklist items pass. Safe to publish.**
+A new shared component that encapsulates all document viewing logic:
+- Props: `open`, `onOpenChange`, `documentUrl` (storage path), `title` (e.g. certificate name), optional metadata (personnel name, expiry date, date of issue, place of issue, issuing authority, category)
+- Internally handles: blob download from `certificate-documents` bucket, PDF detection + `PdfViewer`, image display with zoom/rotate controls, download button, error/retry state, blob cleanup on close
+- When metadata props are provided, shows certificate info header (personnel avatar area, details grid) matching the `CertificateViewerDialog` layout
+- When no metadata provided, shows just the document preview with controls (still with zoom/rotate)
+
+**2. Update `IssuerMergingPane.tsx`**
+
+- Remove all inline document viewer state (`documentViewOpen`, `viewingDocument`, `documentBlobUrl`, `pdfData`, `loadingDocument`) and the `handleViewDocument` callback
+- Remove the inline `<Dialog>` block (lines ~957-1005)
+- Replace with `<DocumentPreviewDialog>` passing `documentUrl`, `title` (file name), and any available cert metadata (personnel name, expiry from the cert object)
+- Update `handleViewDocument` to just set the selected cert data for the dialog
+
+**3. Update `TypeMergingPane.tsx`**
+
+- Same refactor as IssuerMergingPane — remove inline dialog, replace with `<DocumentPreviewDialog>`
+
+**4. No changes to existing components that already work well**
+
+- `CertificateViewerDialog` — keep as-is (it has timeline-specific event data)
+- `ProjectCertificateStatus` — already has zoom/rotate, keep as-is
+- `PersonnelDocuments` / `ProjectDocuments` — already use `PdfViewer`, keep as-is
+
+### Files changed
+- `src/components/DocumentPreviewDialog.tsx` — new shared component
+- `src/components/IssuerMergingPane.tsx` — replace inline dialog with shared component
+- `src/components/TypeMergingPane.tsx` — replace inline dialog with shared component
 
