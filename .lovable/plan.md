@@ -1,27 +1,22 @@
 
 
-## Show Applicant Count for Posted Projects
+## Fix: Sort Button Sizing & Filter Label Readability
 
-Cosmetic only. 🟢
+**File: `src/components/PersonnelFilters.tsx`**
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+### Changes
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+1. **Sort button (line 399)**: Remove `min-w-[180px]` and add `text-xs` to make the text smaller so it fits naturally.
+   - Change: `className="ml-auto h-9 justify-between min-w-[180px] bg-primary ..."` → `className="ml-auto h-9 justify-between text-xs bg-primary ..."`
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
+2. **Sort button span (line 401)**: Remove `truncate` class so the label displays fully.
 
-### File
-- `src/components/ProjectsTab.tsx`
+3. **Filter buttons**: Remove `truncate` from the span inside each filter trigger so labels show in full:
+   - Availability (line 131): remove `truncate`
+   - Location (line 175): remove `truncate`
+   - Certificates (line 223): remove `truncate`
+   - Department (line 319): remove `truncate`
+   - Compliance (line 368): remove `truncate`
+
+4. **Filter button min-widths**: Remove `min-w-[160px]`/`min-w-[180px]` from filter buttons so they size naturally to their content. This prevents them from being wider than needed while still showing full labels.
 
