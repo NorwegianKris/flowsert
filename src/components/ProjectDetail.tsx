@@ -394,7 +394,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                       {assignedPersonnel.map((person) => (
                         <div
                           key={person.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]' : 'bg-card border-border/50'} ${onPersonnelClick ? 'cursor-pointer' : ''}`}
+                          className={`flex items-center gap-3 p-3 rounded-lg border hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200 ${person.category === 'freelancer' ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]' : 'bg-card border-border/50'} ${onPersonnelClick ? 'cursor-pointer' : ''}`}
                           onClick={() => onPersonnelClick?.(person)}
                         >
                           <Avatar className="h-10 w-10">
