@@ -207,9 +207,9 @@ export function PdfViewer({ pdfData, className }: PdfViewerProps) {
       </div>
       
       {/* Canvas container */}
-      <div className="overflow-auto max-h-[450px] border rounded-b-lg bg-gray-100 dark:bg-gray-900">
-        <div className="flex justify-center p-4">
-          <canvas ref={canvasRef} className="shadow-lg" />
+      <div className="overflow-x-hidden overflow-y-auto max-h-[450px] border rounded-b-lg bg-gray-100 dark:bg-gray-900">
+        <div className="flex justify-center p-4 max-w-full">
+          <canvas ref={canvasRef} className="shadow-lg max-w-full h-auto" />
         </div>
       </div>
     </div>

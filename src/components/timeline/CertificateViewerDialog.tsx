@@ -115,7 +115,7 @@ export function CertificateViewerDialog({ event, onClose }: CertificateViewerDia
 
   return (
     <Dialog open={!!event} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-primary" />
@@ -225,12 +225,12 @@ export function CertificateViewerDialog({ event, onClose }: CertificateViewerDia
                           <ZoomIn className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="overflow-auto max-h-[450px] border rounded-lg bg-muted/10">
-                        <div className="flex justify-center p-4">
+                      <div className="overflow-x-hidden overflow-y-auto max-h-[450px] border rounded-lg bg-muted/10">
+                        <div className="flex justify-center p-4 max-w-full">
                           <img
                             src={displayUrl}
                             alt={`${event.certificateName} document`}
-                            className="object-contain rounded transition-transform"
+                            className="object-contain rounded transition-transform max-w-full"
                             style={{
                               transform: `rotate(${imgRotation}deg) scale(${imgZoom})`,
                               maxHeight: imgRotation % 180 !== 0 ? '600px' : '400px',

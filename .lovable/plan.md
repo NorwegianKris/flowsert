@@ -1,26 +1,27 @@
 
 
-## Fix Document Preview Scaling — No Horizontal Scroll
+## Show Applicant Count for Posted Projects
 
-### Problem
-PDF canvas and images can overflow the dialog width, causing horizontal scrolling. The canvas renders at its native pixel size and images lack width constraints.
+Cosmetic only. 🟢
 
-### Changes
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-**1. `src/components/PdfViewer.tsx`**
-- Add `max-w-full` and `overflow-x-hidden` to the canvas container div
-- Add `max-w-full h-auto` to the canvas element so it scales down to fit the container width
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-**2. `src/components/DocumentPreviewDialog.tsx`**
-- Add `overflow-x-hidden` to the `DialogContent`
-- Add `max-w-full` to the image element alongside existing styles
-- Add `overflow-x-hidden` to the image scroll container
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
 
-**3. `src/components/timeline/CertificateViewerDialog.tsx`**
-- Same fixes as DocumentPreviewDialog: `overflow-x-hidden` on DialogContent, `max-w-full` on image element, `overflow-x-hidden` on image scroll container
-
-### Files changed
-- `src/components/PdfViewer.tsx`
-- `src/components/DocumentPreviewDialog.tsx`
-- `src/components/timeline/CertificateViewerDialog.tsx`
+### File
+- `src/components/ProjectsTab.tsx`
 
