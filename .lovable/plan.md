@@ -1,27 +1,18 @@
 
 
-## Show Applicant Count for Posted Projects
+## Single-Line Full Labels on Stat Cards
 
-Cosmetic only. 🟢
+### Changes in `src/components/DashboardStats.tsx`
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+Update the label strings to full descriptive text on one line:
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+- `'All Valid'` → `'All Valid Profiles'`
+- `'Expiring Soon'` → `'Profiles Expiring Soon'`
+- `'Expired'` → `'Profiles Expired'`
+- `'To Review'` → `'Certificates to Review'`
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
+Keep `whitespace-nowrap` so they stay on one line. No other changes.
 
-### File
-- `src/components/ProjectsTab.tsx`
+### One file changed
+`src/components/DashboardStats.tsx`
 
