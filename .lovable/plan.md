@@ -1,27 +1,24 @@
 
 
-## Show Applicant Count for Posted Projects
+## Add Hover Nudge to All Button Variants
 
-Cosmetic only. 🟢
+Cosmetic change. 🟢
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+### What
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+The hover lift effect (`hover:shadow-md hover:-translate-y-0.5`) currently only exists on the `default` variant. Move the transition and hover-lift classes into the **base** cva string so every variant gets the nudge, except `link` and `ghost` which should stay flat.
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
+### Changes — `src/components/ui/button.tsx`
+
+1. **Base string (line 8)**: Add `transition-[background-color,box-shadow,transform] duration-200 hover:shadow-md hover:-translate-y-0.5` to the shared base classes.
+
+2. **Per-variant cleanup**:
+   - `default` (line 12): Remove the duplicated transition/hover-lift classes (keep only color/bg classes).
+   - `ghost` (line 16): Add `hover:shadow-none hover:translate-y-0` to opt out of the nudge.
+   - `link` (line 17): Add `hover:shadow-none hover:translate-y-0` to opt out of the nudge.
+
+Result: `default`, `destructive`, `outline`, `secondary`, `active`, `completed` all get the nudge. `ghost` and `link` stay flat.
 
 ### File
-- `src/components/ProjectsTab.tsx`
+- `src/components/ui/button.tsx`
 
