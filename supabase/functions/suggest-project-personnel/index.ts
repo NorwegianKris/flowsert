@@ -140,7 +140,9 @@ function extractConstraints(prompt: string): {
     'manager': ['Project Manager'],
   };
   let roles: string[] | null = null;
-  for (const [keyword, matchRoles] of Object.entries(roleKeywords)) {
+  // Sort by descending key length so "dive supervisor" is checked before "diver"
+  const sortedRoleEntries = Object.entries(roleKeywords).sort((a, b) => b[0].length - a[0].length);
+  for (const [keyword, matchRoles] of sortedRoleEntries) {
     if (lower.includes(keyword)) {
       roles = matchRoles;
       break;
@@ -497,9 +499,12 @@ Step 3 — Score each person per active dimension:
     Ambiguous → 60% of location points
 
   ROLE:
-    Exact match → 100% of role points
-    Related role (e.g. Dive Supervisor for "divers") → 70% of role points
-    Unrelated → 0
+    Exact title match → 100% of role points
+    Same role family, different seniority (e.g. "Junior Diver" for "Diver") → 60% of role points
+    Different role in same domain (e.g. "Diver" for "Dive Supervisor" query) → 20% of role points
+    Unrelated role → 0
+
+    CRITICAL: A Diver and a Dive Supervisor are DIFFERENT roles — one works underwater, the other manages dive operations. Scoring a Diver against a Dive Supervisor query should be 20% at most. Similarly, an Electrician and an Electrical Supervisor are different roles. Do not give high scores for partial word overlap — score based on whether the person can actually perform the queried role.
 
   CERTIFICATES:
     Valid cert present → 100% of cert points

@@ -150,8 +150,13 @@ export function useSuggestPersonnel() {
       }
 
       const result = data as SuggestionResult;
-      // Remove any results the AI returned with 0% confidence — these are not matches
-      result.suggestedPersonnel = result.suggestedPersonnel.filter(p => p.matchScore > 0);
+      // Raise minimum display threshold to 40%
+      result.suggestedPersonnel = result.suggestedPersonnel.filter(p => p.matchScore >= 40);
+      // If any result scores 90%+, suppress everything below 50%
+      const hasStrongMatch = result.suggestedPersonnel.some(p => p.matchScore >= 90);
+      if (hasStrongMatch) {
+        result.suggestedPersonnel = result.suggestedPersonnel.filter(p => p.matchScore >= 50);
+      }
       setSuggestions(result);
       return result;
 
