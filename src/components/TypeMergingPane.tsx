@@ -460,7 +460,11 @@ export function TypeMergingPane() {
                                 const fileName = decodeURIComponent(
                                   cert.document_url.split("/").pop() || "document"
                                 ).replace(/^\d+-/, "");
-                                handleViewDocument(cert.document_url, fileName);
+                                handleViewDocument(cert.document_url, fileName, {
+                                  personnelName: cert.personnel_name,
+                                  expiryDate: cert.expiry_date,
+                                  issuingAuthority: cert.issuing_authority,
+                                });
                               }
                             }}
                             title={cert.document_url ? "View document" : undefined}
