@@ -118,272 +118,301 @@ export function PersonnelFilters({
   };
 
   return (
-    <div className="flex flex-nowrap items-center gap-3 mb-4">
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Filter by:</span>
-      </div>
+    <div className={hasActiveFilters ? 'mb-4' : ''}>
+      <div className={`flex flex-nowrap items-center gap-3 ${hasActiveFilters ? 'mb-2' : 'mb-4'}`}>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filter by:</span>
+        </div>
 
-      {/* Availability Date Range Filter */}
-      <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            <span>{formatDateRange()}</span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-popover border shadow-md z-50" align="start">
-          <div className="p-3 border-b">
-            <p className="text-sm font-medium">Select dates to find available workers</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Workers marked as unavailable on these dates will be hidden
-            </p>
-          </div>
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={availabilityDateRange?.from}
-            selected={availabilityDateRange}
-            onSelect={onAvailabilityDateRangeChange}
-            numberOfMonths={2}
-          />
-          <div className="p-3 border-t flex justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onAvailabilityDateRangeChange(undefined)}
-              disabled={!availabilityDateRange?.from}
-            >
-              Clear
+        {/* Availability Date Range Filter */}
+        <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              <span>{formatDateRange()}</span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setAvailabilityOpen(false)}
-            >
-              Apply
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
-
-
-      {/* Location Filter */}
-      <Popover open={locationOpen} onOpenChange={setLocationOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
-            <Globe className="mr-2 h-4 w-4" />
-            <span>
-              {locationFilters.length === 0
-                ? 'Location'
-                : locationFilters.length === 1
-                ? locationFilters[0]
-                : `${locationFilters.length} locations`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
-          <div className="space-y-1">
-            {locations.map((location) => (
-              <label
-                key={location}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-              >
-                <Checkbox
-                  checked={locationFilters.includes(location)}
-                  onCheckedChange={() =>
-                    toggleFilter(location, locationFilters, onLocationFiltersChange)
-                  }
-                />
-                <span className="text-sm">{location}</span>
-              </label>
-            ))}
-            {locations.length === 0 && (
-              <p className="text-sm text-muted-foreground px-2 py-1">No locations</p>
-            )}
-          </div>
-          {locationFilters.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => onLocationFiltersChange([])}
-            >
-              Clear
-            </Button>
-          )}
-        </PopoverContent>
-      </Popover>
-
-      {/* Certificate Filter */}
-      <Popover open={certificateOpen} onOpenChange={setCertificateOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
-            <Award className="mr-2 h-4 w-4" />
-            <span>
-              {certificateFilters.length === 0
-                ? 'Certificates'
-                : certificateFilters.length === 1
-                ? certificateFilters[0]
-                : `${certificateFilters.length} certs`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0 bg-popover border shadow-md z-50" align="start">
-          {/* Toggle between Categories and Types */}
-          {onCertificateFilterModeChange && (certificateCategories.length > 0 || certificateIssuers.length > 0) && (
-            <div className="p-2 border-b">
-              <ToggleGroup
-                type="single"
-                value={certificateFilterMode}
-                onValueChange={(value) => {
-                  if (value) {
-                    // Clear filters when switching modes
-                    onCertificateFiltersChange([]);
-                    onCertificateFilterModeChange(value as CertificateFilterMode);
-                  }
-                }}
-                className="w-full bg-primary p-1 rounded-md"
-              >
-                <ToggleGroupItem
-                  value="categories"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
-                  aria-label="Filter by categories"
-                >
-                  <FolderOpen className="h-3.5 w-3.5" />
-                  Categories
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="types"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
-                  aria-label="Filter by types"
-                >
-                  <Tag className="h-3.5 w-3.5" />
-                  Types
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="issuers"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
-                  aria-label="Filter by issuers"
-                >
-                  <Building2 className="h-3.5 w-3.5" />
-                  Issuers
-                </ToggleGroupItem>
-              </ToggleGroup>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-popover border shadow-md z-50" align="start">
+            <div className="p-3 border-b">
+              <p className="text-sm font-medium">Select dates to find available workers</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Workers marked as unavailable on these dates will be hidden
+              </p>
             </div>
-          )}
-          <div className="p-2 max-h-[250px] overflow-y-auto">
-            <div className="space-y-1">
-              {certificateListItems.map((cert) => (
-                <label
-                  key={cert}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                >
-                  <Checkbox
-                    checked={certificateFilters.includes(cert)}
-                    onCheckedChange={() =>
-                      toggleFilter(cert, certificateFilters, onCertificateFiltersChange)
-                    }
-                  />
-                  <span className="text-sm truncate">{cert}</span>
-                </label>
-              ))}
-              {certificateListItems.length === 0 && (
-                <p className="text-sm text-muted-foreground px-2 py-1">
-                  No {certificateFilterMode === 'categories' ? 'categories' : certificateFilterMode === 'issuers' ? 'issuers' : 'certificates'}
-                </p>
-              )}
-            </div>
-          </div>
-          {certificateFilters.length > 0 && (
-            <div className="p-2 border-t">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={availabilityDateRange?.from}
+              selected={availabilityDateRange}
+              onSelect={onAvailabilityDateRangeChange}
+              numberOfMonths={2}
+            />
+            <div className="p-3 border-t flex justify-between">
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full"
-                onClick={() => onCertificateFiltersChange([])}
+                onClick={() => onAvailabilityDateRangeChange(undefined)}
+                disabled={!availabilityDateRange?.from}
               >
                 Clear
               </Button>
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
-
-      {/* Department Filter */}
-      <Popover open={departmentOpen} onOpenChange={setDepartmentOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
-            <Building2 className="mr-2 h-4 w-4" />
-            <span>
-              {departmentFilters.length === 0
-                ? 'Department'
-                : departmentFilters.length === 1
-                ? departmentFilters[0]
-                : `${departmentFilters.length} depts`}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
-          <div className="space-y-1">
-            {departments.map((dept) => (
-              <label
-                key={dept.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+              <Button
+                size="sm"
+                onClick={() => setAvailabilityOpen(false)}
               >
-                <Checkbox
-                  checked={departmentFilters.includes(dept.name)}
-                  onCheckedChange={() =>
-                    toggleFilter(dept.name, departmentFilters, onDepartmentFiltersChange)
-                  }
-                />
-                <span className="text-sm">{dept.name}</span>
-              </label>
-            ))}
-            {departments.length === 0 && (
-              <p className="text-sm text-muted-foreground px-2 py-1">No departments defined</p>
-            )}
-          </div>
-          {departmentFilters.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => onDepartmentFiltersChange([])}
-            >
-              Clear
-            </Button>
-          )}
-        </PopoverContent>
-      </Popover>
+                Apply
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
 
-      {/* Compliance Status Filter */}
-      {onComplianceStatusFilterChange && (
-        <Popover open={complianceOpen} onOpenChange={setComplianceOpen}>
+        {/* Location Filter */}
+        <Popover open={locationOpen} onOpenChange={setLocationOpen}>
           <PopoverTrigger asChild>
-          <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
-              <ShieldCheck className="mr-2 h-4 w-4" />
+            <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
+              <Globe className="mr-2 h-4 w-4" />
               <span>
-                {complianceStatusFilter === 'all'
-                  ? 'Compliance'
-                  : complianceOptions.find(o => o.value === complianceStatusFilter)?.label || 'Compliance'}
+                {locationFilters.length === 0
+                  ? 'Location'
+                  : locationFilters.length === 1
+                  ? locationFilters[0]
+                  : `${locationFilters.length} locations`}
               </span>
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[180px] p-2 bg-popover border shadow-md z-50" align="start">
+          <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
             <div className="space-y-1">
-              {complianceOptions.map((option) => (
+              {locations.map((location) => (
+                <label
+                  key={location}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                >
+                  <Checkbox
+                    checked={locationFilters.includes(location)}
+                    onCheckedChange={() =>
+                      toggleFilter(location, locationFilters, onLocationFiltersChange)
+                    }
+                  />
+                  <span className="text-sm">{location}</span>
+                </label>
+              ))}
+              {locations.length === 0 && (
+                <p className="text-sm text-muted-foreground px-2 py-1">No locations</p>
+              )}
+            </div>
+            {locationFilters.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => onLocationFiltersChange([])}
+              >
+                Clear
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Certificate Filter */}
+        <Popover open={certificateOpen} onOpenChange={setCertificateOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
+              <Award className="mr-2 h-4 w-4" />
+              <span>
+                {certificateFilters.length === 0
+                  ? 'Certificates'
+                  : certificateFilters.length === 1
+                  ? certificateFilters[0]
+                  : `${certificateFilters.length} certs`}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[320px] p-0 bg-popover border shadow-md z-50" align="start">
+            {onCertificateFilterModeChange && (certificateCategories.length > 0 || certificateIssuers.length > 0) && (
+              <div className="p-2 border-b">
+                <ToggleGroup
+                  type="single"
+                  value={certificateFilterMode}
+                  onValueChange={(value) => {
+                    if (value) {
+                      onCertificateFiltersChange([]);
+                      onCertificateFilterModeChange(value as CertificateFilterMode);
+                    }
+                  }}
+                  className="w-full bg-primary p-1 rounded-md"
+                >
+                  <ToggleGroupItem
+                    value="categories"
+                    className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                    aria-label="Filter by categories"
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Categories
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="types"
+                    className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                    aria-label="Filter by types"
+                  >
+                    <Tag className="h-3.5 w-3.5" />
+                    Types
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="issuers"
+                    className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                    aria-label="Filter by issuers"
+                  >
+                    <Building2 className="h-3.5 w-3.5" />
+                    Issuers
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            )}
+            <div className="p-2 max-h-[250px] overflow-y-auto">
+              <div className="space-y-1">
+                {certificateListItems.map((cert) => (
+                  <label
+                    key={cert}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={certificateFilters.includes(cert)}
+                      onCheckedChange={() =>
+                        toggleFilter(cert, certificateFilters, onCertificateFiltersChange)
+                      }
+                    />
+                    <span className="text-sm truncate">{cert}</span>
+                  </label>
+                ))}
+                {certificateListItems.length === 0 && (
+                  <p className="text-sm text-muted-foreground px-2 py-1">
+                    No {certificateFilterMode === 'categories' ? 'categories' : certificateFilterMode === 'issuers' ? 'issuers' : 'certificates'}
+                  </p>
+                )}
+              </div>
+            </div>
+            {certificateFilters.length > 0 && (
+              <div className="p-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onCertificateFiltersChange([])}
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Department Filter */}
+        <Popover open={departmentOpen} onOpenChange={setDepartmentOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
+              <Building2 className="mr-2 h-4 w-4" />
+              <span>
+                {departmentFilters.length === 0
+                  ? 'Department'
+                  : departmentFilters.length === 1
+                  ? departmentFilters[0]
+                  : `${departmentFilters.length} depts`}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-2 bg-popover border shadow-md z-50 max-h-[300px] overflow-y-auto" align="start">
+            <div className="space-y-1">
+              {departments.map((dept) => (
+                <label
+                  key={dept.id}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                >
+                  <Checkbox
+                    checked={departmentFilters.includes(dept.name)}
+                    onCheckedChange={() =>
+                      toggleFilter(dept.name, departmentFilters, onDepartmentFiltersChange)
+                    }
+                  />
+                  <span className="text-sm">{dept.name}</span>
+                </label>
+              ))}
+              {departments.length === 0 && (
+                <p className="text-sm text-muted-foreground px-2 py-1">No departments defined</p>
+              )}
+            </div>
+            {departmentFilters.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => onDepartmentFiltersChange([])}
+              >
+                Clear
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Compliance Status Filter */}
+        {onComplianceStatusFilterChange && (
+          <Popover open={complianceOpen} onOpenChange={setComplianceOpen}>
+            <PopoverTrigger asChild>
+            <Button variant="outline" className="h-9 justify-between bg-white dark:bg-card">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>
+                  {complianceStatusFilter === 'all'
+                    ? 'Compliance'
+                    : complianceOptions.find(o => o.value === complianceStatusFilter)?.label || 'Compliance'}
+                </span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[180px] p-2 bg-popover border shadow-md z-50" align="start">
+              <div className="space-y-1">
+                {complianceOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm text-left ${
+                      complianceStatusFilter === option.value ? 'bg-muted font-medium' : ''
+                    }`}
+                    onClick={() => {
+                      onComplianceStatusFilterChange(option.value);
+                      setComplianceOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        <Popover open={sortOpen} onOpenChange={setSortOpen}>
+          <PopoverTrigger asChild>
+            <Button className="ml-auto h-9 justify-between text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              <span>
+                {sortOptions.find(o => o.value === sortOption)?.label || 'Sort'}
+              </span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[160px] p-2 bg-popover border shadow-md z-50" align="end">
+            <div className="space-y-1">
+              {sortOptions.map((option) => (
                 <button
                   key={option.value}
                   className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm text-left ${
-                    complianceStatusFilter === option.value ? 'bg-muted font-medium' : ''
+                    sortOption === option.value ? 'bg-muted font-medium' : ''
                   }`}
                   onClick={() => {
-                    onComplianceStatusFilterChange(option.value);
-                    setComplianceOpen(false);
+                    onSortOptionChange(option.value);
+                    setSortOpen(false);
                   }}
                 >
                   {option.label}
@@ -392,54 +421,12 @@ export function PersonnelFilters({
             </div>
           </PopoverContent>
         </Popover>
-      )}
+      </div>
 
-      <Popover open={sortOpen} onOpenChange={setSortOpen}>
-        <PopoverTrigger asChild>
-          <Button className="ml-auto h-9 justify-between text-xs bg-primary text-primary-foreground hover:bg-primary/90">
-            <ArrowUpDown className="mr-2 h-4 w-4" />
-            <span>
-              {sortOptions.find(o => o.value === sortOption)?.label || 'Sort'}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[160px] p-2 bg-popover border shadow-md z-50" align="end">
-          <div className="space-y-1">
-            {sortOptions.map((option) => (
-              <button
-                key={option.value}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm text-left ${
-                  sortOption === option.value ? 'bg-muted font-medium' : ''
-                }`}
-                onClick={() => {
-                  onSortOptionChange(option.value);
-                  setSortOpen(false);
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {/* Clear Filters Button */}
+      {/* Active filters row */}
       {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearAllFilters}
-          className="h-9 px-2 text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-4 w-4 mr-1" />
-          Clear all
-        </Button>
-      )}
-
-      {/* Active filter badges */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-1 ml-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">Active filters:</span>
           {availabilityDateRange?.from && (
             <Badge variant="secondary" className="text-xs">
               <CalendarIcon className="h-3 w-3 mr-1" />
@@ -499,14 +486,24 @@ export function PersonnelFilters({
               </button>
             </Badge>
           )}
+          {resultCount !== undefined && (
+            <>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-xs text-muted-foreground">
+                {resultCount} {resultCount === 1 ? 'result' : 'results'}
+              </span>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAllFilters}
+            className="ml-auto h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3 mr-1" />
+            Clear all
+          </Button>
         </div>
-      )}
-
-      {/* Results count */}
-      {hasActiveFilters && resultCount !== undefined && (
-        <span className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
-          {resultCount} {resultCount === 1 ? 'result' : 'results'}
-        </span>
       )}
     </div>
   );
