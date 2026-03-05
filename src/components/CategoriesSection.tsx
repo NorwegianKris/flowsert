@@ -309,7 +309,7 @@ function CertificateCategoriesInner() {
         ) : (
           <div className="border rounded-lg divide-y">
             {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between p-3 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg">
+              <div key={category.id} className="flex items-center justify-between p-3 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{category.name}</span>
                   {(() => {
@@ -473,7 +473,7 @@ function DocumentCategoriesInner() {
         ) : (
           <div className="border rounded-lg divide-y">
             {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between p-3 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg">
+              <div key={category.id} className="flex items-center justify-between p-3 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg">
                 <span className="font-medium">{category.name}</span>
                 <Button
                   variant="ghost"
@@ -563,7 +563,7 @@ function IssuersListInner() {
       ) : (
         <div className="border rounded-lg divide-y">
           {issuers.map((issuer) => (
-            <div key={issuer} className="flex items-center p-3 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg">
+            <div key={issuer} className="flex items-center p-3 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg">
               <span className="font-medium">{issuer}</span>
             </div>
           ))}
