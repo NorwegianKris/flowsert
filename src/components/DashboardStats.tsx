@@ -27,7 +27,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
 
   const stats: { label: string; value: number; status: ComplianceStatus; icon: typeof CheckCircle; iconBg: string; iconColor: string }[] = [
     {
-      label: 'All Valid Profiles',
+      label: 'All Valid',
       value: personnelByStatus.valid,
       status: 'valid',
       icon: CheckCircle,
@@ -35,7 +35,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       iconColor: 'text-[hsl(var(--status-valid))]',
     },
     {
-      label: 'Profiles Expiring Soon',
+      label: 'Expiring Soon',
       value: personnelByStatus.expiring,
       status: 'expiring',
       icon: AlertTriangle,
@@ -43,7 +43,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       iconColor: 'text-[hsl(var(--status-warning))]',
     },
     {
-      label: 'Profiles Expired',
+      label: 'Expired',
       value: personnelByStatus.expired,
       status: 'expired',
       icon: XCircle,
@@ -60,7 +60,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {/* Personnel & Freelancers combined card — static, no hover */}
       <Card className="border-border/50">
-        <CardContent className="p-4 flex items-center gap-3">
+        <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
           <div className="p-2.5 rounded-lg bg-primary/10">
             <Users className="h-5 w-5 text-primary" />
           </div>
@@ -83,15 +83,15 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
           className="border-border/50 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200"
           onClick={() => onStatClick?.(stat.status)}
         >
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 relative">
             <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
               <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
             </div>
-            <div className="flex-1">
+            <div>
               <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <p className="text-xs text-muted-foreground whitespace-nowrap">{stat.label}</p>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronRight className="absolute top-2 right-2 h-4 w-4 text-muted-foreground/50" />
           </CardContent>
         </Card>
       ))}
@@ -101,7 +101,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
         className={`bg-[#C4B5FD]/10 border-[#C4B5FD]/50 ${onNeedsReviewClick ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200' : ''}`}
         onClick={onNeedsReviewClick}
       >
-        <CardContent className="p-4 flex items-center gap-3">
+        <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 relative">
           <div className={`p-2.5 rounded-lg ${reviewIconBg}`}>
             {reviewIcon === CheckCircle ? (
               <CheckCircle className={`h-5 w-5 ${reviewIconColor}`} />
@@ -109,11 +109,11 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
               <FileSearch className={`h-5 w-5 ${reviewIconColor}`} />
             )}
           </div>
-          <div className="flex-1">
+          <div>
             <p className="text-2xl font-bold text-foreground">{needsReviewCount}</p>
-            <p className="text-xs text-muted-foreground">Certificates to Review</p>
+            <p className="text-xs text-muted-foreground whitespace-nowrap">To Review</p>
           </div>
-          {onNeedsReviewClick && <ChevronRight className="h-4 w-4 text-muted-foreground/50" />}
+          {onNeedsReviewClick && <ChevronRight className="absolute top-2 right-2 h-4 w-4 text-muted-foreground/50" />}
         </CardContent>
       </Card>
     </div>

@@ -1,25 +1,27 @@
 
 
-## Polish Stat Cards: Short Labels, Centered Content
+## Show Applicant Count for Posted Projects
 
-### Changes in `src/components/DashboardStats.tsx`
+Cosmetic only. 🟢
 
-**1. Shorten labels**
-- "All Valid Profiles" → "All Valid"
-- "Profiles Expiring Soon" → "Expiring Soon"
-- "Profiles Expired" → "Expired"
-- "Certificates to Review" → "To Review"
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-**2. Center content in each card**
-- Change `CardContent` layout from `flex items-center gap-3` to `flex flex-col items-center justify-center text-center gap-2`
-- Remove `flex-1` from the text container; center number and label
-- Position icon above the number/label block
-- Move `ChevronRight` to a subtle absolute position (top-right corner) so it doesn't break centering
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-**3. Employees/Freelancers card** — same centering treatment: icon on top, two count columns below, centered
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
 
-**4. Grid** — already `lg:grid-cols-5` with equal implicit columns, no change needed
-
-### One file changed
-`src/components/DashboardStats.tsx`
+### File
+- `src/components/ProjectsTab.tsx`
 
