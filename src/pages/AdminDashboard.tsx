@@ -747,7 +747,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 h-10 px-3 w-full max-w-96">
                 <LayoutDashboard className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground">Compliance Overview</span>
+                <span className="text-sm font-medium text-muted-foreground">Compliance at a Glance</span>
               </div>
               <FreelancerFilters
                 personnelFilter={overviewFilter}
