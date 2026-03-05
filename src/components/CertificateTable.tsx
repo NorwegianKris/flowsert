@@ -414,7 +414,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                         {isImageFile(cert.documentUrl) ? (
                           <Image className="h-4 w-4 text-primary" />
                         ) : (
-                          <File className="h-4 w-4 text-primary" />
+                          <FileIcon className="h-4 w-4 text-primary" />
                         )}
                         <span className="text-xs text-primary">Attached</span>
                       </div>
@@ -495,7 +495,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                     ) : downloadError ? (
                       <div className="flex flex-col items-center gap-4 py-8 text-center">
                         <div className="p-4 rounded-full bg-destructive/10">
-                          <File className="h-12 w-12 text-destructive" />
+                          <FileIcon className="h-12 w-12 text-destructive" />
                         </div>
                         <div className="space-y-2">
                           <p className="font-medium text-foreground">Could not load document</p>
@@ -577,7 +577,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </div>
                     ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
                       <div className="flex flex-col items-center gap-4 py-8">
-                        <File className="h-16 w-16 text-primary" />
+                        <FileIcon className="h-16 w-16 text-primary" />
                         <p className="text-muted-foreground">PDF loading...</p>
                         <Button
                           variant="outline"
@@ -589,7 +589,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
-                        <File className="h-16 w-16 text-muted-foreground" />
+                        <FileIcon className="h-16 w-16 text-muted-foreground" />
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
