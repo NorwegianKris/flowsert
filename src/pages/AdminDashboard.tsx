@@ -744,13 +744,9 @@ export default function AdminDashboard() {
           
           <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="flex items-center justify-between gap-4">
-              <div className="relative w-full max-w-96">
-                <Input
-                  readOnly
-                  tabIndex={-1}
-                  value="Compliance Overview"
-                  className="border-border text-muted-foreground cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
+              <div className="flex items-center gap-2 h-10 px-3 w-full max-w-96">
+                <LayoutDashboard className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-muted-foreground">Compliance Overview</span>
               </div>
               <FreelancerFilters
                 personnelFilter={overviewFilter}
@@ -913,7 +909,10 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <AdminOverview />
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-muted-foreground">Manage team members, roles, and admin access.</p>
+                      <AdminOverview />
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
 
@@ -926,7 +925,8 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="p-4">
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-muted-foreground">Update your company details, logo, and contact information.</p>
                       <CompanyCard isAdmin mode="inline" onClose={() => refetchBusiness()} />
                     </div>
                   </CollapsibleContent>
@@ -975,8 +975,11 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <LocationStandardizationTool />
-                    <CertificateLocationNormalizationTool />
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-muted-foreground">Normalize and manage certificate location data.</p>
+                      <LocationStandardizationTool />
+                      <CertificateLocationNormalizationTool />
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
 
@@ -992,15 +995,18 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <DataAcknowledgementsManager
-                      embedded
-                      personnel={personnel}
-                      businessId={profile?.business_id ?? undefined}
-                      onPersonnelClick={(person) => {
-                        setSettingsOpen(false);
-                        setSelectedPersonnel(person);
-                      }}
-                    />
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-muted-foreground">Configure data processing acknowledgements and privacy settings.</p>
+                      <DataAcknowledgementsManager
+                        embedded
+                        personnel={personnel}
+                        businessId={profile?.business_id ?? undefined}
+                        onPersonnelClick={(person) => {
+                          setSettingsOpen(false);
+                          setSelectedPersonnel(person);
+                        }}
+                      />
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
 
@@ -1013,7 +1019,10 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <RegistrationLinkCard embedded />
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-muted-foreground">Manage registration links for freelancer onboarding.</p>
+                      <RegistrationLinkCard embedded />
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
 
@@ -1029,7 +1038,10 @@ export default function AdminDashboard() {
                     <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <FeedbackList embedded open={feedbackOpen} />
+                    <div className="p-4 space-y-4">
+                      <p className="text-sm text-muted-foreground">View feedback and improvement suggestions from your team.</p>
+                      <FeedbackList embedded open={feedbackOpen} />
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
               </div>

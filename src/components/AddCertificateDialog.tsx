@@ -596,9 +596,9 @@ export function AddCertificateDialog({
                 </div>
 
                 {/* Verification note */}
-                <div className="flex items-center gap-2 bg-primary rounded-md px-3 py-1.5">
+                <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
                   <span className="text-sm">💡</span>
-                  <span className="text-xs text-primary-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Please review each certificate below and ensure all fields are correct before saving. Click on a certificate to expand and edit its details.
                   </span>
                 </div>
