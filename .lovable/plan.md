@@ -1,27 +1,16 @@
 
 
-## Show Applicant Count for Posted Projects
+## Match Stat Card Hover to Personnel Card Hover
 
-Cosmetic only. 🟢
+Update hover classes on the 3 status stat cards and the Needs Review card in `DashboardStats.tsx` to match the personnel card hover effect:
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+**Current:** `hover:shadow-md hover:border-primary/30 transition-all`
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+**New:** `hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200`
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
+Apply to:
+- Line 83: the 3 status stat cards (Valid, Expiring, Expired)
+- Line 100-103: the Needs Review card (when clickable)
 
-### File
-- `src/components/ProjectsTab.tsx`
+One file changed: `src/components/DashboardStats.tsx`
 
