@@ -310,7 +310,7 @@ function IssuersManageList() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="bg-primary rounded-md px-3 py-1.5 flex items-center gap-2 text-xs text-primary-foreground">
         <span>💡</span>
         <span>Manage your canonical issuing authorities here. Select two or more duplicate issuers and merge them into one to keep your data clean.</span>
       </div>

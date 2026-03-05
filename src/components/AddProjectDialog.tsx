@@ -884,9 +884,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               onPersonnelFilterChange={setProjectPersonnelFilter}
             />
 
-            <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+            <div className="flex items-center gap-2 bg-primary rounded-md px-3 py-1.5">
               <span className="text-sm">💡</span>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-primary-foreground">
                 <span className="font-medium">Invite</span> sends the person an invitation to accept or decline. <span className="font-medium">Assign</span> adds them directly to the project.
               </p>
             </div>
