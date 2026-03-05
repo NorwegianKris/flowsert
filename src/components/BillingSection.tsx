@@ -272,7 +272,7 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
                 </p>
               </div>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 className="text-xs"
                 onClick={() => navigate('/contact')}
