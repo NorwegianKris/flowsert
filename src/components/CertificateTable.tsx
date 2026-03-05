@@ -25,7 +25,7 @@ import { getCertificateDocumentUrl, downloadAsBlob, extractStoragePath } from '@
 import { fileToBase64Image } from '@/lib/pdfUtils';
 import { stringSimilarity } from '@/lib/stringUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock, Download, RotateCcw, RotateCw, ZoomIn, ZoomOut, RefreshCw, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File as FileIcon, Tag, Pencil, Loader2, Lock, Download, RotateCcw, RotateCw, ZoomIn, ZoomOut, RefreshCw, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PdfViewer } from './PdfViewer';
