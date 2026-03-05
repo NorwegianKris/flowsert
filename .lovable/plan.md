@@ -1,27 +1,10 @@
 
 
-## Show Applicant Count for Posted Projects
+## Rename "Compliance Overview" Static Label
 
-Cosmetic only. 🟢
+**File:** `src/pages/AdminDashboard.tsx` — line 750
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+Change the text from `"Compliance Overview"` to `"Compliance at a Glance"` — concise, scannable, fits the dashboard context.
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
-
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
-
-### File
-- `src/components/ProjectsTab.tsx`
+If you prefer the longer version `"Overview of Compliance in your organization"`, that works too but may feel verbose for a dashboard label.
 
