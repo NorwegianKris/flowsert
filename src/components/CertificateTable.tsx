@@ -307,7 +307,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
         <Tooltip>
           <TooltipTrigger asChild>
             <RefreshCw
-              className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
+              className="h-3 w-3 text-muted-foreground opacity-30 hover:opacity-100 transition-opacity cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 handleRescan(cert);
@@ -409,7 +409,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                   </TableCell>
                   <TableCell>
                     {cert.documentUrl ? (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         {renderRescanIcon(cert)}
                         {isImageFile(cert.documentUrl) ? (
                           <Image className="h-4 w-4 text-primary" />
