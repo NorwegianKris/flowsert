@@ -27,7 +27,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
 
   const stats: { label: string; value: number; status: ComplianceStatus; icon: typeof CheckCircle; iconBg: string; iconColor: string }[] = [
     {
-      label: 'All Valid',
+      label: 'All Valid Profiles',
       value: personnelByStatus.valid,
       status: 'valid',
       icon: CheckCircle,
@@ -35,7 +35,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       iconColor: 'text-[hsl(var(--status-valid))]',
     },
     {
-      label: 'Expiring Soon',
+      label: 'Profiles Expiring Soon',
       value: personnelByStatus.expiring,
       status: 'expiring',
       icon: AlertTriangle,
@@ -43,7 +43,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       iconColor: 'text-[hsl(var(--status-warning))]',
     },
     {
-      label: 'Expired',
+      label: 'Profiles Expired',
       value: personnelByStatus.expired,
       status: 'expired',
       icon: XCircle,
@@ -111,7 +111,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{needsReviewCount}</p>
-            <p className="text-xs text-muted-foreground whitespace-nowrap">To Review</p>
+            <p className="text-xs text-muted-foreground whitespace-nowrap">Certificates to Review</p>
           </div>
           {onNeedsReviewClick && <ChevronRight className="absolute top-2 right-2 h-4 w-4 text-muted-foreground/50" />}
         </CardContent>
