@@ -1,27 +1,23 @@
 
 
-## Show Applicant Count for Posted Projects
+## Match Compliance Plan Bar Height to Toggle Above
 
-Cosmetic only. 🟢
+Cosmetic fix. 🟢
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+### Analysis
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+The FreelancerFilters toggle row sits inside a `flex items-center` container alongside an Input (default h-10 / 40px). The toggle itself uses `bg-primary p-1 rounded-lg` with items at `py-1.5`.
+
+The compliance plan bar uses `p-3` (12px padding top+bottom = 24px extra), making it noticeably taller.
+
+### Fix — `src/components/CompliancePlanGenerator.tsx`
+
+Line 210: Change the trigger bar padding from `p-3` to `px-3 py-1.5` to match the toggle's compact height.
 
 ```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
+<div className="flex items-center justify-between px-3 py-1.5 border rounded-lg bg-primary text-primary-foreground">
 ```
 
 ### File
-- `src/components/ProjectsTab.tsx`
+- `src/components/CompliancePlanGenerator.tsx`
 
