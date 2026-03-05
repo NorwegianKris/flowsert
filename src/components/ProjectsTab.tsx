@@ -88,7 +88,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           <ToggleGroupItem
             value="all"
             aria-label="All projects"
-            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             <FolderOpen className="h-4 w-4 mr-1.5" />
             All
@@ -96,21 +96,21 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           <ToggleGroupItem
             value="active"
             aria-label="Active projects"
-            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             Active
           </ToggleGroupItem>
           <ToggleGroupItem
             value="recurring"
             aria-label="Recurring projects"
-            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             Recurring
           </ToggleGroupItem>
           <ToggleGroupItem
             value="posted"
             aria-label="Posted projects"
-            className="text-white data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             Posted
           </ToggleGroupItem>

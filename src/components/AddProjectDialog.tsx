@@ -1248,13 +1248,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                           >
                             <ToggleGroupItem
                               value="invite"
-                              className="h-5 px-2 text-[10px] text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary rounded-sm"
+                              className="h-5 px-2 text-[10px] text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary rounded-sm"
                             >
                               Invite
                             </ToggleGroupItem>
                             <ToggleGroupItem
                               value="assign"
-                              className="h-5 px-2 text-[10px] text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary rounded-sm"
+                              className="h-5 px-2 text-[10px] text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary rounded-sm"
                             >
                               Assign
                             </ToggleGroupItem>
