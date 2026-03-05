@@ -37,7 +37,6 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       icon: AlertTriangle,
       iconBg: 'bg-[hsl(var(--status-warning))]/10',
       iconColor: 'text-[hsl(var(--status-warning))]',
-      tinted: true,
     },
     {
       label: 'Profiles Expired',
@@ -45,7 +44,6 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       icon: XCircle,
       iconBg: 'bg-destructive/10',
       iconColor: 'text-destructive',
-      tinted: true,
     },
   ];
 
@@ -75,7 +73,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       </Card>
 
       {stats.map((stat) => (
-        <Card key={stat.label} className={`border-border/50 ${stat.tinted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`}>
+        <Card key={stat.label} className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
             <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
               <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
