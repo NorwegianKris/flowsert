@@ -174,14 +174,38 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
 
   // Sort by expiry date (soonest first, null/no expiry at the end)
   const sortedCertificates = [...allCertificates].sort((a, b) => {
-    // Handle null expiry dates (no expiry) - put at the end
     if (!a.expiryDate && !b.expiryDate) return 0;
     if (!a.expiryDate) return 1;
     if (!b.expiryDate) return -1;
-    
-    // Sort by expiry date ascending (soonest first)
     return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
   });
+
+  // Derive unique personnel and roles for filter dropdowns
+  const uniquePersonnel = useMemo(() => {
+    const seen = new Map<string, string>();
+    allCertificates.forEach(c => seen.set(c.personnelId, c.personnelName));
+    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allCertificates]);
+
+  const uniqueRoles = useMemo(() => {
+    const roles = new Set(allCertificates.map(c => c.personnelRole));
+    return Array.from(roles).sort();
+  }, [allCertificates]);
+
+  // Apply filters
+  const filteredCertificates = useMemo(() => {
+    return sortedCertificates.filter(cert => {
+      if (filterPersonnel !== 'all' && cert.personnelId !== filterPersonnel) return false;
+      if (filterRole !== 'all' && cert.personnelRole !== filterRole) return false;
+      if (filterStatus !== 'all') {
+        const status = getCertificateStatus(cert.expiryDate);
+        if (filterStatus === 'valid' && status !== 'valid') return false;
+        if (filterStatus === 'expiring' && status !== 'expiring') return false;
+        if (filterStatus === 'expired' && status !== 'expired') return false;
+      }
+      return true;
+    });
+  }, [sortedCertificates, filterPersonnel, filterRole, filterStatus]);
 
   const getInitials = (name: string) => {
     return name
