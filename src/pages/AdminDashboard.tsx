@@ -123,7 +123,7 @@ export default function AdminDashboard() {
   const [highlightedPersonnelIds, setHighlightedPersonnelIds] = useState<string[]>([]);
   const [aiFilteredPersonnelIds, setAiFilteredPersonnelIds] = useState<string[] | null>(null);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
-  const [sortOption, setSortOption] = useState<PersonnelSortOption>('alphabetical');
+  const [sortOption, setSortOption] = useState<PersonnelSortOption>('last_updated');
   const [certificateFilterMode, setCertificateFilterMode] = useState<CertificateFilterMode>('categories');
   const [complianceStatusFilter, setComplianceStatusFilter] = useState<ComplianceStatusFilter>('all');
   // Custom filter state — Overview tab
