@@ -207,7 +207,7 @@ export function CompliancePlanGenerator({
   return (
     <div className="space-y-0">
       {/* Trigger bar */}
-      <div className="flex items-center justify-between p-3 border rounded-lg bg-primary text-primary-foreground">
+      <div className="flex items-center justify-between px-3 py-1.5 border rounded-lg bg-primary text-primary-foreground">
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5" />
           <span className="font-medium text-sm">Generate Compliance Plan</span>
