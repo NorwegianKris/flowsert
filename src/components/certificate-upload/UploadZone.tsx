@@ -118,9 +118,9 @@ export function UploadZone({
           <p className="text-xs text-muted-foreground mt-2">
             Select up to {maxFiles} files • PDF, JPEG, PNG, WebP • Drag & drop or click
           </p>
-          <div className="flex items-center justify-center gap-2 bg-primary rounded-md px-3 py-1.5 mt-2">
+          <div className="flex items-center justify-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5 mt-2">
             <span className="text-sm">💡</span>
-            <span className="text-xs text-primary-foreground">Make sure your upload(s) is a clear photo, scan, or document for best results.</span>
+            <span className="text-xs text-muted-foreground">Make sure your upload(s) is a clear photo, scan, or document for best results.</span>
           </div>
         </div>
       </div>

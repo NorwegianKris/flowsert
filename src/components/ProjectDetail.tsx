@@ -206,7 +206,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
       </div>
 
       {/* Project Header Card */}
-      <Card className={`border-border/50 ${project.isPosted ? 'border-[#C4B5FD]/50 bg-[#C4B5FD]/10' : ''}`}>
+      <Card className={`border-border/50 ${project.isPosted ? 'border-[#C4B5FD]/50 bg-[#C4B5FD]/10' : ''} ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : ''}`}>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             {project.imageUrl ? (
