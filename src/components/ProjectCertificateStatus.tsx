@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   Table,
@@ -14,9 +14,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Certificate, Personnel } from '@/types';
 import {
@@ -51,7 +59,18 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [imgRotation, setImgRotation] = useState(0);
   const [imgZoom, setImgZoom] = useState(1);
+  const [isOpen, setIsOpen] = useState(false);
+  const [filterPersonnel, setFilterPersonnel] = useState<string>('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+
+  // Auto-expand collapsible when a certificate is highlighted from the timeline
+  useEffect(() => {
+    if (highlightedCertificateId) {
+      setIsOpen(true);
+    }
+  }, [highlightedCertificateId]);
 
   // Auto-clear highlight after 3 seconds
   useEffect(() => {
@@ -155,14 +174,38 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
 
   // Sort by expiry date (soonest first, null/no expiry at the end)
   const sortedCertificates = [...allCertificates].sort((a, b) => {
-    // Handle null expiry dates (no expiry) - put at the end
     if (!a.expiryDate && !b.expiryDate) return 0;
     if (!a.expiryDate) return 1;
     if (!b.expiryDate) return -1;
-    
-    // Sort by expiry date ascending (soonest first)
     return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
   });
+
+  // Derive unique personnel and roles for filter dropdowns
+  const uniquePersonnel = useMemo(() => {
+    const seen = new Map<string, string>();
+    allCertificates.forEach(c => seen.set(c.personnelId, c.personnelName));
+    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allCertificates]);
+
+  const uniqueRoles = useMemo(() => {
+    const roles = new Set(allCertificates.map(c => c.personnelRole));
+    return Array.from(roles).sort();
+  }, [allCertificates]);
+
+  // Apply filters
+  const filteredCertificates = useMemo(() => {
+    return sortedCertificates.filter(cert => {
+      if (filterPersonnel !== 'all' && cert.personnelId !== filterPersonnel) return false;
+      if (filterRole !== 'all' && cert.personnelRole !== filterRole) return false;
+      if (filterStatus !== 'all') {
+        const status = getCertificateStatus(cert.expiryDate);
+        if (filterStatus === 'valid' && status !== 'valid') return false;
+        if (filterStatus === 'expiring' && status !== 'expiring') return false;
+        if (filterStatus === 'expired' && status !== 'expired') return false;
+      }
+      return true;
+    });
+  }, [sortedCertificates, filterPersonnel, filterRole, filterStatus]);
 
   const getInitials = (name: string) => {
     return name
@@ -204,19 +247,53 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
 
   return (
     <>
-      <Collapsible>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-border/50">
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" />
-              Certificate Status ({sortedCertificates.length})
+              Certificate Status ({filteredCertificates.length})
               <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=closed]_&]:rotate-[-90deg]" />
             </CardTitle>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
         <CardContent>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Select value={filterPersonnel} onValueChange={setFilterPersonnel}>
+              <SelectTrigger className="w-[180px] bg-background border-input text-sm h-9">
+                <SelectValue placeholder="All Personnel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Personnel</SelectItem>
+                {uniquePersonnel.map(([id, name]) => (
+                  <SelectItem key={id} value={id}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-[160px] bg-background border-input text-sm h-9">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {uniqueRoles.map(role => (
+                  <SelectItem key={role} value={role}>{role}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <ToggleGroup type="single" value={filterStatus} onValueChange={(v) => setFilterStatus(v || 'all')} size="sm">
+              <ToggleGroupItem value="all" className="text-xs px-3">All</ToggleGroupItem>
+              <ToggleGroupItem value="valid" className="text-xs px-3">Valid</ToggleGroupItem>
+              <ToggleGroupItem value="expiring" className="text-xs px-3">Expiring</ToggleGroupItem>
+              <ToggleGroupItem value="expired" className="text-xs px-3">Expired</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
           <div className="rounded-lg border border-border/50 overflow-hidden max-h-[600px] overflow-y-auto">
             <Table className="w-full table-fixed">
               <TableHeader className="sticky top-0 z-10">
@@ -233,7 +310,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedCertificates.map((cert) => {
+                {filteredCertificates.map((cert) => {
                   const status = getCertificateStatus(cert.expiryDate);
                   const daysUntilExpiry = getDaysUntilExpiry(cert.expiryDate);
 

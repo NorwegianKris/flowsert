@@ -72,7 +72,7 @@ export function AvailabilityLane({
           // Add 1 day to end date to make it inclusive
           const endDatePlusOne = new Date(span.endDate + 'T00:00:00');
           endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-          const x2 = dateToX(endDatePlusOne, projectStart, projectEnd, totalWidth);
+          const x2 = Math.min(dateToX(endDatePlusOne, projectStart, projectEnd, totalWidth), totalWidth);
           const width = Math.max(x2 - x1, 4);
 
           return (
