@@ -248,7 +248,7 @@ export function PersonnelFilters({
               >
                 <ToggleGroupItem
                   value="categories"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by categories"
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
@@ -256,7 +256,7 @@ export function PersonnelFilters({
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="types"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by types"
                 >
                   <Tag className="h-3.5 w-3.5" />
@@ -264,7 +264,7 @@ export function PersonnelFilters({
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value="issuers"
-                  className="flex-1 gap-1.5 text-xs text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
+                  className="flex-1 gap-1.5 text-xs text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-primary-foreground data-[state=on]:text-primary"
                   aria-label="Filter by issuers"
                 >
                   <Building2 className="h-3.5 w-3.5" />

@@ -223,7 +223,7 @@ export function CompliancePlanGenerator({
               <ToggleGroupItem
                 key={opt.value}
                 value={opt.value}
-                className="text-xs px-3 h-8 w-[80px] justify-center border border-primary-foreground/30 text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                className="text-xs px-3 h-8 w-[80px] justify-center border border-primary-foreground/30 text-primary-foreground data-[state=on]:bg-primary-foreground data-[state=on]:text-primary hover:bg-primary-foreground/20 transition-all duration-200"
               >
                 {opt.label}
               </ToggleGroupItem>
