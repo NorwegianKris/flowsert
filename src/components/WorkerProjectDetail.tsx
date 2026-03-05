@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +52,7 @@ export function WorkerProjectDetail({ project, personnel, onBack }: WorkerProjec
     if (!myPersonnel) return false;
     return project.assignedPersonnel.includes(myPersonnel.id);
   }, [user, personnel, project.assignedPersonnel]);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const StatusIcon = config.icon;
   
   const assignedPersonnel = project.assignedPersonnel
