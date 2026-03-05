@@ -40,7 +40,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Documents
+              Global Documents
             </TabsTrigger>
           </TabsList>
           
@@ -60,7 +60,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               <TabsContent value="roles">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Define job role categories for personnel. These will appear as options when new workers are added or registers.
+                    Define job role categories for personnel. These will appear as options when new workers are added or register.
                   </p>
                 </div>
                 <WorkerCategoriesManager />

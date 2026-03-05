@@ -69,7 +69,7 @@ export function PersonnelFilters({
   const certificateListItems = certificateFilterMode === 'categories' ? certificateCategories : certificateFilterMode === 'issuers' ? certificateIssuers : certificates;
 
   const sortOptions = [
-    { value: 'recent' as PersonnelSortOption, label: 'Most Recent' },
+    { value: 'recent' as PersonnelSortOption, label: 'Recently Added' },
     { value: 'last_updated' as PersonnelSortOption, label: 'Last Updated' },
     { value: 'alphabetical' as PersonnelSortOption, label: 'Alphabetical' },
   ];

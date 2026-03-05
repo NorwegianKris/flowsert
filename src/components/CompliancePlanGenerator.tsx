@@ -211,6 +211,7 @@ export function CompliancePlanGenerator({
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5" />
           <span className="font-medium text-sm">Generate Compliance Plan</span>
+          <span className="text-xs text-primary-foreground/60 font-normal">For the selected personnel group</span>
         </div>
         <div className="flex items-center gap-3">
           <ToggleGroup
