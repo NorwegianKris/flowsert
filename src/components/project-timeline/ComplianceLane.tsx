@@ -73,7 +73,7 @@ export function ComplianceLane({
                     height: rowHeight,
                   }}
                 >
-                  <span className="text-[9px] text-white px-1 truncate block leading-[16px]">
+                  <span className="text-[10px] text-white px-1 truncate block leading-[16px] overflow-hidden">
                     {[bar.certificate.category, bar.certificate.name, bar.certificate.issuingAuthority]
                       .filter(Boolean)
                       .join(' – ')}
