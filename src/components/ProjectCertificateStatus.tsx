@@ -59,7 +59,18 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [imgRotation, setImgRotation] = useState(0);
   const [imgZoom, setImgZoom] = useState(1);
+  const [isOpen, setIsOpen] = useState(false);
+  const [filterPersonnel, setFilterPersonnel] = useState<string>('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+
+  // Auto-expand collapsible when a certificate is highlighted from the timeline
+  useEffect(() => {
+    if (highlightedCertificateId) {
+      setIsOpen(true);
+    }
+  }, [highlightedCertificateId]);
 
   // Auto-clear highlight after 3 seconds
   useEffect(() => {
