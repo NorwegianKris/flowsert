@@ -608,6 +608,7 @@ export default function AdminDashboard() {
             setSettingsDeepLink('review-queue');
           }}
           onStatClick={(status) => {
+            setPersonnelTabFilter('all');
             setActiveTab('personnel');
             setComplianceStatusFilter(status === 'valid' ? 'valid' : status === 'expiring' ? 'expiring' : 'expired');
           }}

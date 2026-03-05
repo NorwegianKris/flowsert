@@ -1,18 +1,27 @@
 
 
-## Reset Personnel Toggle on Stat Card Click
+## Show Applicant Count for Posted Projects
 
-### Change in `src/pages/AdminDashboard.tsx` (line 610-613)
+Cosmetic only. 🟢
 
-Add `setPersonnelTabFilter('all')` inside the `onStatClick` handler, before setting the compliance filter:
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
 ```tsx
-onStatClick={(status) => {
-  setPersonnelTabFilter('all');
-  setActiveTab('personnel');
-  setComplianceStatusFilter(status === 'valid' ? 'valid' : status === 'expiring' ? 'expiring' : 'expired');
-}}
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
 ```
 
-One line added, one file changed. Pure UI — no anchor needed.
+### File
+- `src/components/ProjectsTab.tsx`
 
