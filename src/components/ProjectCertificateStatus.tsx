@@ -247,19 +247,53 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
 
   return (
     <>
-      <Collapsible>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-border/50">
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" />
-              Certificate Status ({sortedCertificates.length})
+              Certificate Status ({filteredCertificates.length})
               <ChevronDown className="h-4 w-4 ml-auto transition-transform duration-200 [[data-state=closed]_&]:rotate-[-90deg]" />
             </CardTitle>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
         <CardContent>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Select value={filterPersonnel} onValueChange={setFilterPersonnel}>
+              <SelectTrigger className="w-[180px] bg-background border-input text-sm h-9">
+                <SelectValue placeholder="All Personnel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Personnel</SelectItem>
+                {uniquePersonnel.map(([id, name]) => (
+                  <SelectItem key={id} value={id}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-[160px] bg-background border-input text-sm h-9">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {uniqueRoles.map(role => (
+                  <SelectItem key={role} value={role}>{role}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <ToggleGroup type="single" value={filterStatus} onValueChange={(v) => setFilterStatus(v || 'all')} size="sm">
+              <ToggleGroupItem value="all" className="text-xs px-3">All</ToggleGroupItem>
+              <ToggleGroupItem value="valid" className="text-xs px-3">Valid</ToggleGroupItem>
+              <ToggleGroupItem value="expiring" className="text-xs px-3">Expiring</ToggleGroupItem>
+              <ToggleGroupItem value="expired" className="text-xs px-3">Expired</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
           <div className="rounded-lg border border-border/50 overflow-hidden max-h-[600px] overflow-y-auto">
             <Table className="w-full table-fixed">
               <TableHeader className="sticky top-0 z-10">
@@ -276,7 +310,7 @@ export function ProjectCertificateStatus({ personnel, highlightedCertificateId, 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedCertificates.map((cert) => {
+                {filteredCertificates.map((cert) => {
                   const status = getCertificateStatus(cert.expiryDate);
                   const daysUntilExpiry = getDaysUntilExpiry(cert.expiryDate);
 
