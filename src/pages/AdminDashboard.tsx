@@ -607,6 +607,10 @@ export default function AdminDashboard() {
             setSettingsOpen(true);
             setSettingsDeepLink('review-queue');
           }}
+          onStatClick={(status) => {
+            setActiveTab('personnel');
+            setComplianceStatusFilter(status === 'valid' ? 'valid' : status === 'expiring' ? 'expiring' : 'expired');
+          }}
         />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

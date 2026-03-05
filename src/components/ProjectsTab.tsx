@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -196,16 +197,18 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
 
   const isPosted = project.isPosted;
 
-  const [applicantCount, setApplicantCount] = useState(0);
-  useEffect(() => {
-    if (!isPosted) return;
-    supabase
-      .from('project_applications')
-      .select('id', { count: 'exact', head: true })
-      .eq('project_id', project.id)
-      .neq('status', 'rejected')
-      .then(({ count }) => setApplicantCount(count ?? 0));
-  }, [isPosted, project.id]);
+  const { data: applicantCount = 0 } = useQuery({
+    queryKey: ['project-applicant-count', project.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('project_applications')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', project.id)
+        .neq('status', 'rejected');
+      return count ?? 0;
+    },
+    enabled: isPosted,
+  });
 
   return (
     <Card 
