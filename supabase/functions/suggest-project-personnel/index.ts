@@ -383,12 +383,42 @@ serve(async (req) => {
       return true;
     });
 
+    // Extract role/location constraints from the query
+    const constraints = extractConstraints(prompt);
+
     const MAX_CANDIDATES = 50;
-    const cappedPersonnel = filteredPersonnel.length > MAX_CANDIDATES
-      ? [...filteredPersonnel].sort((a, b) => 
-          (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0)
-        ).slice(0, MAX_CANDIDATES)
-      : filteredPersonnel;
+    let cappedPersonnel: PersonnelData[];
+
+    if (filteredPersonnel.length <= MAX_CANDIDATES) {
+      cappedPersonnel = filteredPersonnel;
+    } else if (constraints.roles && constraints.roles.length > 0) {
+      // Split into role-matched (Group A) and others (Group B)
+      const extractedRoles = constraints.roles.map((r: string) => r.toLowerCase());
+      const groupA = filteredPersonnel.filter((p: PersonnelData) => {
+        const title = (p.role || '').toLowerCase();
+        return extractedRoles.some((r: string) => title.includes(r));
+      });
+      const groupB = filteredPersonnel.filter((p: PersonnelData) => {
+        const title = (p.role || '').toLowerCase();
+        return !extractedRoles.some((r: string) => title.includes(r));
+      });
+
+      if (groupA.length >= MAX_CANDIDATES) {
+        cappedPersonnel = groupA
+          .sort((a: PersonnelData, b: PersonnelData) => (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0))
+          .slice(0, MAX_CANDIDATES);
+      } else {
+        const remaining = MAX_CANDIDATES - groupA.length;
+        const fillerB = groupB
+          .sort((a: PersonnelData, b: PersonnelData) => (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0))
+          .slice(0, remaining);
+        cappedPersonnel = [...groupA, ...fillerB];
+      }
+    } else {
+      cappedPersonnel = [...filteredPersonnel]
+        .sort((a: PersonnelData, b: PersonnelData) => (b.profileCompletionPercentage ?? 0) - (a.profileCompletionPercentage ?? 0))
+        .slice(0, MAX_CANDIDATES);
+    }
 
     // Prepare personnel summary for AI
     const extractCountry = (location: string): string => {
