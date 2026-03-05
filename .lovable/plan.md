@@ -1,27 +1,22 @@
 
 
-## Show Applicant Count for Posted Projects
+## Batch A (trimmed): Two Quick Fixes
 
-Cosmetic only. 🟢
+### #65 — Personnel hover in project view should match admin dashboard
+**File:** `src/components/ProjectDetail.tsx` — line 397
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
-
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
-
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
+Replace `transition-colors` with the hover effect from `PersonnelCard.tsx`:
+```
+hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200
 ```
 
-### File
-- `src/components/ProjectsTab.tsx`
+### #112 — Scroll to top when opening project from worker profile
+**File:** `src/components/WorkerProjectDetail.tsx`
+
+Add `useEffect` on mount:
+```ts
+useEffect(() => { window.scrollTo(0, 0); }, []);
+```
+
+No schema changes. Pure UI — anchor optional.
 
