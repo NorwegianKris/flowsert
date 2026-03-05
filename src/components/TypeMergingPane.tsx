@@ -463,7 +463,6 @@ export function TypeMergingPane() {
                                 handleViewDocument(cert.document_url, fileName, {
                                   personnelName: cert.personnel_name,
                                   expiryDate: cert.expiry_date,
-                                  issuingAuthority: cert.issuing_authority,
                                 });
                               }
                             }}
