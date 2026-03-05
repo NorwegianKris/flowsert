@@ -264,10 +264,10 @@ export function BillingSection({ businessId, embedded, subscription: subProp, en
 
           {/* Enterprise callout */}
           {effectiveEntitlement?.is_unlimited && (
-            <div className="rounded-md border border-border/50 bg-muted/30 p-4 space-y-3">
+            <div className="rounded-md bg-primary text-primary-foreground p-4 space-y-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Enterprise Plan — Manual Billing</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-primary-foreground/80">
                   You're on an Enterprise plan with manual billing. Contact us to change your agreement.
                 </p>
               </div>
