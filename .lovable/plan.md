@@ -1,13 +1,27 @@
 
 
-## Fix Sort Button Wrapping
+## Show Applicant Count for Posted Projects
 
-**File: `src/components/PersonnelFilters.tsx`**
+Cosmetic only. 🟢
 
-Two changes:
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-1. **Line ~101**: Add `flex-nowrap` to the outer filter bar div:
-   `className="flex flex-nowrap items-center gap-3 mb-4"`
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-2. **Line ~265**: Update sort button `min-w` from `min-w-[140px]` to `min-w-[180px]` so it accommodates "Recently Added" without shifting.
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
+
+### File
+- `src/components/ProjectsTab.tsx`
 
