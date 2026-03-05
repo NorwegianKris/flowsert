@@ -1,27 +1,12 @@
 
 
-## Show Applicant Count for Posted Projects
+## Make RefreshCw Icon Always Visible & Compact
 
-Cosmetic only. 🟢
+**File:** `src/components/CertificateTable.tsx`
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+1. Change RefreshCw icon classes from `opacity-0 group-hover:opacity-60 hover:!opacity-100` to `opacity-30 hover:opacity-100 transition-opacity cursor-pointer`
+2. Reduce icon size from `h-3.5 w-3.5` (14px) to `h-3 w-3` (12px)
+3. Change the flex container gap from `gap-1.5` to `gap-1`
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
-
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
-
-### File
-- `src/components/ProjectsTab.tsx`
+Pure styling change — no logic affected.
 
