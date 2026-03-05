@@ -126,7 +126,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
 
       // 2. Convert to base64
       const fileName = filePath.split('/').pop() || 'document';
-      const file = new File([fileData], fileName, { type: fileData.type });
+      const file = new window.File([fileData], fileName, { type: fileData.type });
       const { base64, mimeType } = await fileToBase64Image(file);
 
       // 3. Call extract-certificate-data edge function
