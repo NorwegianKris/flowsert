@@ -80,7 +80,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
       {stats.map((stat) => (
         <Card
           key={stat.label}
-          className="border-border/50 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
+          className="border-border/50 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200"
           onClick={() => onStatClick?.(stat.status)}
         >
           <CardContent className="p-4 flex items-center gap-3">
@@ -98,7 +98,7 @@ export function DashboardStats({ personnel, needsReviewCount = 0, onNeedsReviewC
 
       {/* Needs Review card */}
       <Card
-        className={`bg-[#C4B5FD]/10 border-[#C4B5FD]/50 ${onNeedsReviewClick ? 'cursor-pointer hover:shadow-md hover:border-primary/30 transition-all' : ''}`}
+        className={`bg-[#C4B5FD]/10 border-[#C4B5FD]/50 ${onNeedsReviewClick ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all duration-200' : ''}`}
         onClick={onNeedsReviewClick}
       >
         <CardContent className="p-4 flex items-center gap-3">
