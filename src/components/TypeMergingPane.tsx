@@ -54,7 +54,7 @@ import {
 } from "@/hooks/useCertificateTypes";
 import { useCreateAlias } from "@/hooks/useCertificateAliases";
 import { MAX_BATCH_SIZE } from "@/components/BulkUpdateConfirmDialog";
-import { PdfViewer } from "./PdfViewer";
+import { DocumentPreviewDialog } from "./DocumentPreviewDialog";
 import { AISuggestDialog } from "./AISuggestDialog";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -126,45 +126,24 @@ export function TypeMergingPane() {
 
   // Document viewer state
   const [documentViewOpen, setDocumentViewOpen] = useState(false);
-  const [viewingDocument, setViewingDocument] = useState<{ url: string | null; fileName: string } | null>(null);
-  const [documentBlobUrl, setDocumentBlobUrl] = useState<string | null>(null);
-  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
-  const [loadingDocument, setLoadingDocument] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<{
+    url: string | null;
+    fileName: string;
+    personnelName?: string;
+    expiryDate?: string | null;
+    issuingAuthority?: string | null;
+  } | null>(null);
 
   // AI Suggest dialog
   const [aiSuggestOpen, setAiSuggestOpen] = useState(false);
 
-  const handleViewDocument = useCallback(async (documentUrl: string, fileName: string) => {
-    setViewingDocument({ url: documentUrl, fileName });
+  const handleViewDocument = useCallback((documentUrl: string, fileName: string, meta?: {
+    personnelName?: string;
+    expiryDate?: string | null;
+    issuingAuthority?: string | null;
+  }) => {
+    setViewingDocument({ url: documentUrl, fileName, ...meta });
     setDocumentViewOpen(true);
-    setLoadingDocument(true);
-    setDocumentBlobUrl(null);
-    setPdfData(null);
-
-    let path = documentUrl;
-    if (documentUrl.includes('certificate-documents/')) {
-      const match = documentUrl.match(/certificate-documents\/(.+)/);
-      if (match) path = match[1];
-    }
-
-    const { data, error } = await supabase.storage
-      .from('certificate-documents')
-      .download(path);
-
-    if (error) {
-      console.error('Error downloading document:', error);
-      setLoadingDocument(false);
-      return;
-    }
-
-    if (data) {
-      setDocumentBlobUrl(URL.createObjectURL(data));
-      if (/\.pdf$/i.test(documentUrl)) {
-        const buffer = await data.arrayBuffer();
-        setPdfData(buffer);
-      }
-    }
-    setLoadingDocument(false);
   }, []);
 
   // Fetch categories
@@ -870,55 +849,20 @@ export function TypeMergingPane() {
       </AlertDialog>
 
       {/* Document Viewer Dialog */}
-      <Dialog
+      <DocumentPreviewDialog
         open={documentViewOpen}
         onOpenChange={(open) => {
-          if (!open) {
-            if (documentBlobUrl) URL.revokeObjectURL(documentBlobUrl);
-            setDocumentBlobUrl(null);
-            setPdfData(null);
-            setViewingDocument(null);
-          }
+          if (!open) setViewingDocument(null);
           setDocumentViewOpen(open);
         }}
-      >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              {viewingDocument?.fileName || "Document"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="mt-4">
-            {loadingDocument ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">Loading document...</span>
-              </div>
-            ) : pdfData && viewingDocument?.url && /\.pdf$/i.test(viewingDocument.url) ? (
-              <PdfViewer pdfData={pdfData} />
-            ) : documentBlobUrl && viewingDocument?.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(viewingDocument.url) ? (
-              <img
-                src={documentBlobUrl}
-                alt={viewingDocument.fileName}
-                className="max-h-[70vh] w-auto mx-auto object-contain rounded"
-              />
-            ) : documentBlobUrl ? (
-              <iframe
-                src={documentBlobUrl}
-                className="w-full h-[70vh] rounded"
-                title="Document viewer"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <FileText className="h-12 w-12 mb-2 opacity-40" />
-                <p>Unable to load document</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+        documentUrl={viewingDocument?.url || null}
+        title={viewingDocument?.fileName || 'Document'}
+        metadata={viewingDocument ? {
+          personnelName: viewingDocument.personnelName,
+          expiryDate: viewingDocument.expiryDate,
+          issuingAuthority: viewingDocument.issuingAuthority,
+        } : undefined}
+      />
 
       {/* AI Suggest Dialog */}
       {businessId && (
