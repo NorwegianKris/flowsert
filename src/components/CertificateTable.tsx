@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -21,18 +21,26 @@ import {
   getDaysUntilExpiry,
   formatExpiryText,
 } from '@/lib/certificateUtils';
-import { getCertificateDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
+import { getCertificateDocumentUrl, downloadAsBlob, extractStoragePath } from '@/lib/storageUtils';
+import { fileToBase64Image } from '@/lib/pdfUtils';
+import { stringSimilarity } from '@/lib/stringUtils';
 import { format, parseISO } from 'date-fns';
-import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File, Tag, Pencil, Loader2, Lock, Download, RotateCcw, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
+import { FileText, Award, Calendar, MapPin, Building2, ExternalLink, Image, File as FileIcon, Tag, Pencil, Loader2, Lock, Download, RotateCcw, RotateCw, ZoomIn, ZoomOut, RefreshCw, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 import { EditCertificateDialog } from './EditCertificateDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PdfViewer } from './PdfViewer';
 import { supabase } from '@/integrations/supabase/client';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+
+type RowScanStatus = 'scanning' | 'success' | 'error' | 'reclassify';
 
 interface CertificateTableProps {
   certificates: Certificate[];
   onCertificateUpdated?: () => void;
-  isProfileActivated?: boolean; // When false, document access is restricted
+  isProfileActivated?: boolean;
 }
 
 export function CertificateTable({ certificates, onCertificateUpdated, isProfileActivated = true }: CertificateTableProps) {
@@ -45,14 +53,24 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
   const [downloadError, setDownloadError] = useState(false);
   const [imgRotation, setImgRotation] = useState(0);
   const [imgZoom, setImgZoom] = useState(1);
+  const [rowScanStatus, setRowScanStatus] = useState<Record<string, RowScanStatus>>({});
+  const timeoutRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const queryClient = useQueryClient();
+  const { businessId } = useAuth();
 
   // Reset image controls when certificate changes
   useEffect(() => {
     setImgRotation(0);
     setImgZoom(1);
   }, [selectedCertificate?.id]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(timeoutRefs.current).forEach(clearTimeout);
+    };
+  }, []);
   
-  // Only load document URLs if profile is activated
   const canAccessDocuments = isProfileActivated;
 
   const sortedCertificates = [...certificates].sort((a, b) => {
@@ -75,6 +93,113 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     setEditCertificate(cert);
   };
 
+  const setRowStatus = useCallback((certId: string, status: RowScanStatus | null) => {
+    if (status === null) {
+      setRowScanStatus(prev => {
+        const next = { ...prev };
+        delete next[certId];
+        return next;
+      });
+    } else {
+      setRowScanStatus(prev => ({ ...prev, [certId]: status }));
+    }
+  }, []);
+
+  const handleRescan = useCallback(async (cert: Certificate) => {
+    if (!cert.documentUrl) {
+      toast.error('Could not load document');
+      return;
+    }
+
+    setRowStatus(cert.id, 'scanning');
+
+    try {
+      // 1. Download document from storage
+      const filePath = extractStoragePath(cert.documentUrl, 'certificate-documents');
+      const { data: fileData, error: dlError } = await supabase.storage
+        .from('certificate-documents')
+        .download(filePath);
+
+      if (dlError || !fileData) {
+        throw new Error('download_failed');
+      }
+
+      // 2. Convert to base64
+      const fileName = filePath.split('/').pop() || 'document';
+      const file = new window.File([fileData], fileName, { type: fileData.type });
+      const { base64, mimeType } = await fileToBase64Image(file);
+
+      // 3. Call extract-certificate-data edge function
+      const { data: extractResult, error: fnError } = await supabase.functions.invoke('extract-certificate-data', {
+        body: { imageBase64: base64, mimeType, existingCategories: [], existingIssuers: [] },
+      });
+
+      if (fnError) throw new Error('extraction_failed');
+
+      const newTitle = extractResult?.extractedData?.certificateName;
+      if (!newTitle) throw new Error('extraction_failed');
+
+      // 4. Save rollback data
+      const rollbackKey = `rescan_individual_${Date.now()}`;
+      const existingRollback = (await supabase
+        .from('certificates')
+        .select('rescan_previous_data')
+        .eq('id', cert.id)
+        .single())?.data?.rescan_previous_data as Record<string, unknown> | null;
+
+      const rollbackData = {
+        ...(existingRollback || {}),
+        [rollbackKey]: {
+          title_raw: cert.titleRaw,
+          certificate_type_id: cert.certificateTypeId,
+        },
+      };
+
+      // 5. Compare new title against current type name
+      const currentTypeName = cert.titleRaw || cert.name || '';
+      const similarity = stringSimilarity(newTitle, currentTypeName);
+
+      if (similarity >= 0.85) {
+        // Outcome A — verified
+        await supabase.from('certificates').update({ rescan_previous_data: rollbackData as any }).eq('id', cert.id);
+        setRowStatus(cert.id, 'success');
+        toast.success('Document verified — title confirmed');
+        timeoutRefs.current[cert.id] = setTimeout(() => setRowStatus(cert.id, null), 2000);
+      } else if (similarity >= 0.5) {
+        // Outcome B — title updated, type kept
+        await supabase.from('certificates').update({
+          title_raw: newTitle,
+          rescan_previous_data: rollbackData as any,
+        }).eq('id', cert.id);
+        setRowStatus(cert.id, null);
+        toast.success(`Title updated to "${newTitle}"`);
+      } else {
+        // Outcome C — significant change, unassign type
+        await supabase.from('certificates').update({
+          title_raw: newTitle,
+          certificate_type_id: null,
+          category_id: null,
+          rescan_previous_data: rollbackData as any,
+        }).eq('id', cert.id);
+        setRowStatus(cert.id, 'reclassify');
+        toast.warning(`Title changed to "${newTitle}" — moved to triage for re-classification`);
+      }
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      queryClient.invalidateQueries({ queryKey: ['unmapped-certificates'] });
+      queryClient.invalidateQueries({ queryKey: ['needs-review-count'] });
+      onCertificateUpdated?.();
+    } catch (err: any) {
+      const msg = err?.message === 'download_failed'
+        ? 'Could not load document'
+        : 'Re-scan failed — try again';
+      setRowStatus(cert.id, 'error');
+      toast.error(msg);
+      timeoutRefs.current[cert.id] = setTimeout(() => setRowStatus(cert.id, null), 2000);
+    }
+  }, [businessId, queryClient, onCertificateUpdated, setRowStatus]);
+
   // Load PDF data and signed URL when certificate is selected (only if activated)
   useEffect(() => {
     if (selectedCertificate?.documentUrl && canAccessDocuments) {
@@ -83,16 +208,13 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
       setBlobUrl(null);
       setPdfData(null);
       
-      // Load signed URL for fallback/download
       getCertificateDocumentUrl(selectedCertificate.documentUrl)
         .then(url => setSignedUrl(url));
       
-      // Extract file path
       const path = selectedCertificate.documentUrl.includes('certificate-documents/')
         ? selectedCertificate.documentUrl.match(/certificate-documents\/(.+)/)?.[1] || selectedCertificate.documentUrl
         : selectedCertificate.documentUrl;
       
-      // Download file directly using Supabase SDK (bypasses ad blockers completely)
       supabase.storage
         .from('certificate-documents')
         .download(path)
@@ -103,10 +225,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
             return;
           }
           if (data) {
-            // Create blob URL for images
             setBlobUrl(URL.createObjectURL(data));
-            
-            // For PDFs, also get ArrayBuffer for PdfViewer
             if (isPdfFile(selectedCertificate.documentUrl || '')) {
               data.arrayBuffer().then(buffer => {
                 setPdfData(buffer);
@@ -121,7 +240,6 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
       setPdfData(null);
     }
     
-    // Cleanup blob URL when component unmounts or certificate changes
     return () => {
       if (blobUrl) {
         URL.revokeObjectURL(blobUrl);
@@ -132,19 +250,16 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
   const handleOpenDocument = async (documentUrl: string, download = false) => {
     if (!canAccessDocuments) return;
     
-    // Try blob download first (bypasses ad blockers)
     const path = documentUrl.includes('certificate-documents/')
       ? documentUrl.match(/certificate-documents\/(.+)/)?.[1] || documentUrl
       : documentUrl;
     
     const result = await downloadAsBlob('certificate-documents', path);
     if (result) {
-      // Create a temporary link and click it to trigger download/open
       const link = document.createElement('a');
       link.href = result.blobUrl;
       
       if (download) {
-        // Extract filename from path
         const filename = path.split('/').pop() || 'document';
         link.download = filename;
       } else {
@@ -156,12 +271,10 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
       link.click();
       document.body.removeChild(link);
       
-      // Revoke after a delay to allow the download/view to complete
       setTimeout(() => result.revoke(), 60000);
       return;
     }
     
-    // Fallback to signed URL
     const url = await getCertificateDocumentUrl(documentUrl);
     if (url) {
       const link = document.createElement('a');
@@ -174,8 +287,38 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
     }
   };
 
-  // Get the URL to use for display (prefer blob URL)
   const displayUrl = blobUrl || signedUrl;
+
+  const renderRescanIcon = (cert: Certificate) => {
+    const status = rowScanStatus[cert.id];
+
+    if (status === 'success') {
+      return <CheckCircle className="h-3.5 w-3.5 text-green-500 transition-opacity" />;
+    }
+    if (status === 'error') {
+      return <AlertCircle className="h-3.5 w-3.5 text-destructive transition-opacity" />;
+    }
+    if (status === 'scanning') {
+      return <RefreshCw className="h-3.5 w-3.5 text-muted-foreground animate-spin" />;
+    }
+
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <RefreshCw
+              className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRescan(cert);
+              }}
+            />
+          </TooltipTrigger>
+          <TooltipContent side="top">Re-scan with AI</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <>
@@ -197,15 +340,21 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
             {sortedCertificates.map((cert) => {
               const status = getCertificateStatus(cert.expiryDate);
               const daysUntilExpiry = getDaysUntilExpiry(cert.expiryDate);
+              const scanStatus = rowScanStatus[cert.id];
 
               return (
                 <TableRow 
                   key={cert.id} 
-                  className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                  className={`group cursor-pointer hover:bg-muted/50 transition-colors ${scanStatus === 'scanning' ? 'bg-primary/5' : ''}`}
                   onClick={() => setSelectedCertificate(cert)}
                 >
                   <TableCell>
-                    {cert.titleRaw ? (
+                    {scanStatus === 'reclassify' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-medium">
+                        <AlertTriangle className="h-3 w-3" />
+                        Re-classify
+                      </span>
+                    ) : cert.titleRaw ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
                         <Award className="h-3 w-3" />
                         {cert.titleRaw}
@@ -260,11 +409,12 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                   </TableCell>
                   <TableCell>
                     {cert.documentUrl ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
+                        {renderRescanIcon(cert)}
                         {isImageFile(cert.documentUrl) ? (
                           <Image className="h-4 w-4 text-primary" />
                         ) : (
-                          <File className="h-4 w-4 text-primary" />
+                          <FileIcon className="h-4 w-4 text-primary" />
                         )}
                         <span className="text-xs text-primary">Attached</span>
                       </div>
@@ -345,7 +495,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                     ) : downloadError ? (
                       <div className="flex flex-col items-center gap-4 py-8 text-center">
                         <div className="p-4 rounded-full bg-destructive/10">
-                          <File className="h-12 w-12 text-destructive" />
+                          <FileIcon className="h-12 w-12 text-destructive" />
                         </div>
                         <div className="space-y-2">
                           <p className="font-medium text-foreground">Could not load document</p>
@@ -382,7 +532,6 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </div>
                     ) : displayUrl && isImageFile(selectedCertificate.documentUrl) ? (
                       <div className="w-full">
-                        {/* Image controls */}
                         <div className="flex items-center justify-center gap-1 mb-3">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setImgRotation(prev => (prev - 90 + 360) % 360)} title="Rotate left">
                             <RotateCcw className="h-4 w-4" />
@@ -415,7 +564,6 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </div>
                     ) : pdfData && isPdfFile(selectedCertificate.documentUrl) ? (
                       <div className="flex flex-col gap-4 w-full">
-                        {/* Embedded PDF viewer using canvas (bypasses ad blockers) */}
                         <PdfViewer pdfData={pdfData} />
                         <div className="flex justify-center">
                           <Button
@@ -429,7 +577,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </div>
                     ) : displayUrl && isPdfFile(selectedCertificate.documentUrl) ? (
                       <div className="flex flex-col items-center gap-4 py-8">
-                        <File className="h-16 w-16 text-primary" />
+                        <FileIcon className="h-16 w-16 text-primary" />
                         <p className="text-muted-foreground">PDF loading...</p>
                         <Button
                           variant="outline"
@@ -441,7 +589,7 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 py-8">
-                        <File className="h-16 w-16 text-muted-foreground" />
+                        <FileIcon className="h-16 w-16 text-muted-foreground" />
                         <p className="text-muted-foreground">Document available</p>
                         <Button
                           variant="outline"
@@ -456,7 +604,6 @@ export function CertificateTable({ certificates, onCertificateUpdated, isProfile
                   </div>
                 </div>
               ) : (
-                /* Certificate Placeholder when no document */
                 <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-lg p-8 relative overflow-hidden">
                   <div className="absolute top-4 right-4 opacity-10">
                     <Award className="h-24 w-24 text-primary" />
