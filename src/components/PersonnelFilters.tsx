@@ -118,7 +118,7 @@ export function PersonnelFilters({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-4">
+    <div className="flex flex-nowrap items-center gap-3 mb-4">
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Filter by:</span>
       </div>
@@ -396,7 +396,7 @@ export function PersonnelFilters({
 
       <Popover open={sortOpen} onOpenChange={setSortOpen}>
         <PopoverTrigger asChild>
-          <Button className="ml-auto h-9 justify-between min-w-[140px] bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button className="ml-auto h-9 justify-between min-w-[180px] bg-primary text-primary-foreground hover:bg-primary/90">
             <ArrowUpDown className="mr-2 h-4 w-4" />
             <span className="truncate">
               {sortOptions.find(o => o.value === sortOption)?.label || 'Sort'}
