@@ -26,6 +26,7 @@ export function useProjectApplications(projectId?: string) {
   const [applications, setApplications] = useState<ProjectApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
 
   const fetchApplications = useCallback(async () => {
     if (!projectId) {
@@ -125,6 +126,7 @@ export function useProjectApplications(projectId?: string) {
       if (error) throw error;
 
       toast.success(`Application ${status}`);
+      queryClient.invalidateQueries({ queryKey: ['project-applicant-count'] });
       fetchApplications();
       return true;
     } catch (error) {
