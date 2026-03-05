@@ -393,7 +393,8 @@ export function ChatBot({ isAdmin = false }: ChatBotProps) {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(true)}
-          className="h-16 px-6 rounded-full shadow-xl gap-3 text-lg font-bold animate-pulse hover:animate-none"
+          className="h-16 px-6 rounded-full shadow-xl gap-3 text-lg font-bold animate-pulse hover:animate-none hover:translate-y-0 hover:shadow-xl"
+          style={{ animationDuration: '2s' }}
         >
           <MessageCircle className="h-9 w-9" />
           <span>Chat</span>

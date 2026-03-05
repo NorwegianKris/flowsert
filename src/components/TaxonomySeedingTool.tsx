@@ -252,7 +252,7 @@ export function TaxonomySeedingTool() {
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex items-center gap-2 text-sm font-bold cursor-pointer py-2 px-4 rounded-full bg-primary text-primary-foreground shadow-lg transition-colors",
-          !open && "animate-pulse hover:animate-none"
+          !open && "animate-pulse hover:animate-none [animation-duration:2s]"
         )}
       >
         <Sparkles className="h-4 w-4" />
