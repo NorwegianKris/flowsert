@@ -135,6 +135,41 @@ export function CertificateCategoriesManager() {
     setDeleteDialogOpen(true);
   };
 
+  const openEditDialog = (category: CertificateCategory) => {
+    setEditingCategory({ id: category.id, name: category.name });
+    setEditName(category.name);
+  };
+
+  const handleRenameCategory = async () => {
+    if (!editingCategory || !editName.trim() || editName.trim() === editingCategory.name) {
+      setEditingCategory(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('certificate_categories')
+        .update({ name: editName.trim() })
+        .eq('id', editingCategory.id);
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('A category with this name already exists');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      toast.success('Category renamed successfully');
+      setEditingCategory(null);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error renaming category:', error);
+      toast.error('Failed to rename category');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleAddType = async (categoryId: string) => {
     if (!newTypeName.trim()) return;
     await createTypeMutation.mutateAsync({
