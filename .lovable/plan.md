@@ -1,22 +1,27 @@
 
 
-## AI Search Deduplication
+## Show Applicant Count for Posted Projects
 
-**File:** `src/hooks/useSuggestPersonnel.ts`
+Cosmetic only. 🟢
 
-Insert deduplication block between line 152 and line 153 (after `const result = data as SuggestionResult;`, before the threshold filters):
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-```ts
-// Deduplicate by personnel ID — keep highest matchScore
-const seen = new Map<string, PersonnelSuggestion>();
-for (const p of result.suggestedPersonnel) {
-  const existing = seen.get(p.id);
-  if (!existing || p.matchScore > existing.matchScore) {
-    seen.set(p.id, p);
-  }
-}
-result.suggestedPersonnel = Array.from(seen.values());
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
 ```
 
-One insertion, no other changes. Client-side only — anchor optional.
+### File
+- `src/components/ProjectsTab.tsx`
 
