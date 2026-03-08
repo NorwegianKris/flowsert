@@ -37,6 +37,7 @@ import {
 import { format } from 'date-fns';
 import { PersonnelDocuments } from './PersonnelDocuments';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface PersonnelDetailProps {
   personnel: Personnel;
