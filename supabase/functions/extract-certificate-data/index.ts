@@ -271,7 +271,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   expiryDate: {
                     type: "string",
-                    description: "Expiry date in YYYY-MM-DD format. Null if no expiry or not visible",
+                    description: "Only return an expiry date if a SEPARATE, DISTINCT date is visible on the document that is clearly labelled or contextually identifiable as an expiry/validity date. If only one date exists on the document, return null. Format: YYYY-MM-DD.",
                     nullable: true,
                   },
                   placeOfIssue: {
