@@ -68,7 +68,8 @@ export function useLookupAlias(rawTitle: string | null) {
       return {
         ...data,
         certificate_type_name: data.certificate_types?.name || null,
-      } as CertificateAlias & { certificate_type_name: string | null };
+        certificate_type_category_id: data.certificate_types?.category_id || null,
+      } as CertificateAlias & { certificate_type_name: string | null; certificate_type_category_id: string | null };
     },
     enabled: !!businessId && !!normalizedTitle,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
