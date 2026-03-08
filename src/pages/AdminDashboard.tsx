@@ -997,7 +997,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Configure data processing acknowledgements and privacy settings.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Configure data processing acknowledgements and privacy settings.</p>
                       <DataAcknowledgementsManager
                         embedded
                         personnel={personnel}
