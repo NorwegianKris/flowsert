@@ -66,8 +66,9 @@ export function useProjectInvitations() {
 
       const mappedInvitations: ProjectInvitation[] = (data || []).map((inv: any) => {
         // Normalize project payload: handle object, array, or null shapes
-        const rawProject = inv.projects ?? inv.project ?? null;
+        const rawProject = inv.project ?? inv.projects ?? null;
         const project = Array.isArray(rawProject) ? rawProject[0] : rawProject;
+        console.log('invitation mapped:', { projectName: project?.name, projectLocation: project?.location, rawProject });
         const rawPersonnel = inv.personnel ?? inv.person ?? null;
         const person = Array.isArray(rawPersonnel) ? rawPersonnel[0] : rawPersonnel;
 
