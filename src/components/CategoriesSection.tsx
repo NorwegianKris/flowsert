@@ -40,7 +40,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Global Documents
+              Documents
             </TabsTrigger>
           </TabsList>
           
