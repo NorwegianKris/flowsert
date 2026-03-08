@@ -232,7 +232,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                     {project.name}
                   </h1>
                   {project.isPosted ? (
-                    <Badge className="text-sm bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
+                    <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
                       <Megaphone className="h-3 w-3 mr-1" />
                       Posted
                     </Badge>
