@@ -977,7 +977,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Normalize and manage certificate location data.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Normalize and manage certificate location data.</p>
                       <LocationStandardizationTool />
                       <CertificateLocationNormalizationTool />
                     </div>
