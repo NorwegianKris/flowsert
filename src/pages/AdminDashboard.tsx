@@ -959,7 +959,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-6">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                         Manage the official issuing authorities used to organize and group certificates consistently.
                       </p>
                       <IssuerTypesManager />
