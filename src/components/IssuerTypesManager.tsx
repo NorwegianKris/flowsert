@@ -370,7 +370,7 @@ function IssuersManageList() {
             {filteredIssuers.map((issuer) => (
               <div
                 key={issuer.id}
-                className="flex items-center justify-between p-4 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg"
+                className="flex items-center justify-between p-4 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Checkbox
