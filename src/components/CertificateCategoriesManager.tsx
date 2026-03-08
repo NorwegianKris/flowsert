@@ -252,7 +252,15 @@ export function CertificateCategoriesManager() {
                         <Badge variant={types.length > 0 ? "secondary" : "outline"} className={`text-xs ${types.length === 0 ? 'text-muted-foreground' : ''}`}>
                           {types.length} type{types.length !== 1 ? 's' : ''}
                         </Badge>
-                        <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="ml-auto flex items-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(category)}
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
