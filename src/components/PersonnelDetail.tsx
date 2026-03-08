@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,11 @@ import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
 import { EditCertificateSelectDialog } from '@/components/EditCertificateSelectDialog';
 import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
-import { AssignedProjects } from '@/components/AssignedProjects';
+import { AssignedProjects, useAssignedProjects } from '@/components/AssignedProjects';
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
+import { PersonnelProjectsTabs } from '@/components/PersonnelProjectsTabs';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -37,6 +38,7 @@ import {
 import { format } from 'date-fns';
 import { PersonnelDocuments } from './PersonnelDocuments';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface PersonnelDetailProps {
   personnel: Personnel;
@@ -442,11 +444,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </CardContent>
       </Card>
 
-      {/* Pending Invitations Section */}
-      {!hideInvitations && <PersonnelInvitations personnelId={personnel.id} />}
-
-      {/* Assigned Projects Section - hidden for freelancers */}
-      {personnel.category !== 'freelancer' && <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />}
+      {/* Projects & Invitations Tabs */}
+      <PersonnelProjectsTabs
+        personnelId={personnel.id}
+        isFreelancer={personnel.category === 'freelancer'}
+        hideInvitations={hideInvitations}
+        onProjectClick={handleProjectClick}
+      />
 
       {/* Personal Info + Next of Kin + Documents on left, Chat + Calendar on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

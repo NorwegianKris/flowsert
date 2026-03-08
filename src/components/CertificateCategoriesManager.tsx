@@ -8,7 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCertificateTypes, useCreateCertificateType } from '@/hooks/useCertificateTypes';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Award, FileText } from 'lucide-react';
+import { Plus, Trash2, Loader2, Award, FileText, Pencil } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +43,9 @@ export function CertificateCategoriesManager() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CertificateCategory | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
+  const [editName, setEditName] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Inline add-type state per category
   const [addingTypeForCategory, setAddingTypeForCategory] = useState<string | null>(null);
@@ -124,6 +135,41 @@ export function CertificateCategoriesManager() {
     setDeleteDialogOpen(true);
   };
 
+  const openEditDialog = (category: CertificateCategory) => {
+    setEditingCategory({ id: category.id, name: category.name });
+    setEditName(category.name);
+  };
+
+  const handleRenameCategory = async () => {
+    if (!editingCategory || !editName.trim() || editName.trim() === editingCategory.name) {
+      setEditingCategory(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('certificate_categories')
+        .update({ name: editName.trim() })
+        .eq('id', editingCategory.id);
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('A category with this name already exists');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      toast.success('Category renamed successfully');
+      setEditingCategory(null);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error renaming category:', error);
+      toast.error('Failed to rename category');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleAddType = async (categoryId: string) => {
     if (!newTypeName.trim()) return;
     await createTypeMutation.mutateAsync({
@@ -206,7 +252,15 @@ export function CertificateCategoriesManager() {
                         <Badge variant={types.length > 0 ? "secondary" : "outline"} className={`text-xs ${types.length === 0 ? 'text-muted-foreground' : ''}`}>
                           {types.length} type{types.length !== 1 ? 's' : ''}
                         </Badge>
-                        <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="ml-auto flex items-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(category)}
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -358,6 +412,35 @@ export function CertificateCategoriesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Category</DialogTitle>
+            <DialogDescription>
+              Enter a new name for "{editingCategory?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameCategory()}
+            disabled={saving}
+            autoFocus
+            className="bg-white dark:bg-card"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCategory(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameCategory} disabled={saving || !editName.trim() || editName.trim() === editingCategory?.name}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
