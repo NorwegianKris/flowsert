@@ -454,7 +454,11 @@ export function AIIssuerSuggestDialog({
 
   // ─── Approve All (existing issuers only) ──────────────────────
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [bulkDoneMessage, setBulkDoneMessage] = useState<string | null>(null);
   const [newIssuerBulkProcessing, setNewIssuerBulkProcessing] = useState(false);
+  const [newIssuerBulkProgress, setNewIssuerBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [newIssuerBulkDoneMessage, setNewIssuerBulkDoneMessage] = useState<string | null>(null);
   const [newIssuerBulkConfirmOpen, setNewIssuerBulkConfirmOpen] = useState(false);
 
   const handleApproveAll = async () => {
@@ -465,48 +469,58 @@ export function AIIssuerSuggestDialog({
     }
 
     setBulkProcessing(true);
+    setBulkProgress({ current: 0, total: pending.length });
+    setBulkDoneMessage(null);
     let successCount = 0;
 
     try {
-      for (const row of pending) {
+      for (let i = 0; i < pending.length; i++) {
         try {
-          await handleApprove(row);
+          await handleApprove(pending[i]);
           successCount++;
         } catch (e) {
           console.error("Individual approve error:", e);
         }
+        setBulkProgress({ current: i + 1, total: pending.length });
       }
 
-      toast.success(`Approved ${successCount} issuer grouping${successCount !== 1 ? "s" : ""}`);
+      setBulkDoneMessage(`Done — ${successCount} item${successCount !== 1 ? "s" : ""} approved.`);
+      setTimeout(() => setBulkDoneMessage(null), 3000);
     } catch (error) {
       console.error("Bulk approve error:", error);
       toast.error("Some approvals failed");
     } finally {
       setBulkProcessing(false);
+      setBulkProgress(null);
     }
   };
 
   const handleApproveAllNewIssuers = async () => {
     setNewIssuerBulkConfirmOpen(false);
     setNewIssuerBulkProcessing(true);
+    const pending = newIssuerRows.filter((r) => !r.approved && !r.rejected);
+    setNewIssuerBulkProgress({ current: 0, total: pending.length });
+    setNewIssuerBulkDoneMessage(null);
     let successCount = 0;
 
     try {
-      const pending = newIssuerRows.filter((r) => !r.approved && !r.rejected);
-      for (const row of pending) {
+      for (let i = 0; i < pending.length; i++) {
         try {
-          await handleApprove(row);
+          await handleApprove(pending[i]);
           successCount++;
         } catch (e) {
           console.error("Individual new issuer approve error:", e);
         }
+        setNewIssuerBulkProgress({ current: i + 1, total: pending.length });
       }
-      toast.success(`Created & approved ${successCount} new issuer${successCount !== 1 ? "s" : ""}`);
+      setNewIssuerBulkDoneMessage(`Done — ${successCount} item${successCount !== 1 ? "s" : ""} approved.`);
+      setTimeout(() => setNewIssuerBulkDoneMessage(null), 3000);
     } catch (error) {
       console.error("Bulk new issuer approve error:", error);
       toast.error("Some approvals failed");
     } finally {
       setNewIssuerBulkProcessing(false);
+      setNewIssuerBulkProgress(null);
     }
   };
 
@@ -623,24 +637,38 @@ export function AIIssuerSuggestDialog({
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     {pendingExisting.length > 0 && (
-                      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/20">
-                        <span className="text-xs text-muted-foreground">
-                          {pendingExisting.length} pending review
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={handleApproveAll}
-                          disabled={bulkProcessing}
-                        >
-                          {bulkProcessing ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <Check className="h-3 w-3 mr-1" />
-                          )}
-                          Approve All ({pendingExisting.length})
-                        </Button>
+                      <div className="px-3 py-2 border-b bg-muted/20 space-y-2">
+                        {bulkProgress ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                Processing {bulkProgress.current} of {bulkProgress.total}...
+                              </span>
+                            </div>
+                            <Progress value={(bulkProgress.current / bulkProgress.total) * 100} className="h-2" />
+                          </div>
+                        ) : bulkDoneMessage ? (
+                          <div className="flex items-center gap-2 text-xs text-chart-2">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {bulkDoneMessage}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {pendingExisting.length} pending review
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={handleApproveAll}
+                              disabled={bulkProcessing}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Approve All ({pendingExisting.length})
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="max-h-[400px] overflow-y-auto">
@@ -742,24 +770,38 @@ export function AIIssuerSuggestDialog({
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     {pendingNew.length > 0 && (
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
-                        <span className="text-xs text-muted-foreground">
-                          {pendingNew.length} pending review
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => setNewIssuerBulkConfirmOpen(true)}
-                          disabled={newIssuerBulkProcessing}
-                        >
-                          {newIssuerBulkProcessing ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <Check className="h-3 w-3 mr-1" />
-                          )}
-                          Create & Approve All ({pendingNew.length})
-                        </Button>
+                      <div className="px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10 space-y-2">
+                        {newIssuerBulkProgress ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                Processing {newIssuerBulkProgress.current} of {newIssuerBulkProgress.total}...
+                              </span>
+                            </div>
+                            <Progress value={(newIssuerBulkProgress.current / newIssuerBulkProgress.total) * 100} className="h-2" />
+                          </div>
+                        ) : newIssuerBulkDoneMessage ? (
+                          <div className="flex items-center gap-2 text-xs text-chart-2">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {newIssuerBulkDoneMessage}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {pendingNew.length} pending review
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => setNewIssuerBulkConfirmOpen(true)}
+                              disabled={newIssuerBulkProcessing}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Create & Approve All ({pendingNew.length})
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="max-h-[400px] overflow-y-auto">

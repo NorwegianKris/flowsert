@@ -803,12 +803,15 @@ export function AddCertificateDialog({
                               <CertificateTypeSelector
                                 businessId={businessId || undefined}
                                 value={cert.certificateTypeId || null}
-                                onChange={(typeId, typeName) => {
+                              onChange={(typeId, typeName, categoryId) => {
                                   handleFieldChange(cert.id, 'certificateTypeId', typeId);
                                   handleFieldChange(cert.id, 'certificateTypeName', typeName || null);
                                   if (typeId) {
                                     handleFieldChange(cert.id, 'certificateTypeFreeText', '');
                                     handleFieldChange(cert.id, 'aliasAutoMatched', '');
+                                    if (categoryId !== undefined) {
+                                      handleFieldChange(cert.id, 'categoryId', categoryId);
+                                    }
                                   }
                                 }}
                                 required={isAdminOrManager}
@@ -848,6 +851,9 @@ export function AddCertificateDialog({
                                       handleFieldChange(cert.id, 'certificateTypeName', aliasMatch.certificate_type_name);
                                       handleFieldChange(cert.id, 'certificateTypeFreeText', '');
                                       handleFieldChange(cert.id, 'aliasAutoMatched', 'true');
+                                      if (aliasMatch.certificate_type_category_id) {
+                                        handleFieldChange(cert.id, 'categoryId', aliasMatch.certificate_type_category_id);
+                                      }
                                     }}
                                   >
                                     Use this type

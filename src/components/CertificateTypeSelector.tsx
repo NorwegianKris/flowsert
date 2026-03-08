@@ -29,7 +29,7 @@ interface OcrHint {
 
 interface CertificateTypeSelectorProps {
   value: string | null;
-  onChange: (typeId: string | null, typeName?: string) => void;
+  onChange: (typeId: string | null, typeName?: string, categoryId?: string | null) => void;
   disabled?: boolean;
   required?: boolean;
   autoMatched?: boolean;
@@ -130,7 +130,7 @@ export function CertificateTypeSelector({
           if (data?.certificate_type_id) {
             const matchedType = types.find(t => t.id === data.certificate_type_id);
             if (matchedType) {
-              onChange(matchedType.id, matchedType.name);
+              onChange(matchedType.id, matchedType.name, matchedType.category_id || null);
               setOcrAutoSelected(true);
               return;
             }
@@ -154,7 +154,8 @@ export function CertificateTypeSelector({
       if (confidence >= 85 && best && best.score > 0.7) {
         const isClearWinner = !second || (best.score - second.score >= 0.15);
         if (isClearWinner) {
-          onChange(best.id, best.name);
+          const bestType = types.find(t => t.id === best.id);
+          onChange(best.id, best.name, bestType?.category_id || null);
           setOcrAutoSelected(true);
         } else if (showFallbackInput && onFreeTextChange) {
           // Ambiguous match — pre-fill free-text with AI-extracted name
@@ -215,7 +216,7 @@ export function CertificateTypeSelector({
 
   const handleSelect = (typeId: string) => {
     const type = types.find((t) => t.id === typeId);
-    onChange(typeId, type?.name);
+    onChange(typeId, type?.name, type?.category_id || null);
     setOcrAutoSelected(false);
     // Clear free text when selecting from dropdown
     if (onFreeTextChange) {
