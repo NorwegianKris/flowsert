@@ -1,27 +1,26 @@
 
 
-## Show Applicant Count for Posted Projects
+## Fix: Invitation Row Date Clipping
 
-Cosmetic only. 🟢
+### Problem
+In the `InvitationsContent` sub-component of `PersonnelProjectsTabs.tsx`, the invitation date text ("Invited 27.2.2026") is clipped underneath the Decline/Accept buttons. This happens at intermediate widths where `sm:flex-row` activates but horizontal space is tight — the buttons compress the left content area.
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+### Fix (1 line change)
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+**File:** `src/components/PersonnelProjectsTabs.tsx`, line 248
 
+**Current:**
 ```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
+<div className="flex items-center gap-2 w-full sm:w-auto">
 ```
 
-### File
-- `src/components/ProjectsTab.tsx`
+**Replace with:**
+```tsx
+<div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+```
+
+Adding `shrink-0` prevents the buttons container from being compressed, ensuring the left content (including the date) always has room to display fully. The `min-w-0` on the left side already handles text truncation gracefully via `truncate` on the project name — the date line will no longer be squeezed out.
+
+### Risk
+🟢 Single CSS class addition. No logic changes.
 
