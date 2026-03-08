@@ -237,7 +237,7 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                       Posted
                     </Badge>
                   ) : (
-                    <Badge variant={config.variant} className="text-sm">
+                    <Badge variant={config.variant}>
                       <StatusIcon className="h-3 w-3 mr-1" />
                       {config.label}
                     </Badge>
