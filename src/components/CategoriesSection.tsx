@@ -59,7 +59,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               
               <TabsContent value="roles">
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                     Define job role categories for personnel. These will appear as options when new workers are added or register.
                   </p>
                 </div>
