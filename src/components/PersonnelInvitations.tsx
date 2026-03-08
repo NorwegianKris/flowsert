@@ -79,7 +79,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
               <div
                 key={invitation.id}
                 onClick={() => setSelectedInvitation(invitation)}
-                className="flex flex-col gap-2 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                className="flex flex-col p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -112,7 +112,7 @@ export function PersonnelInvitations({ personnelId }: PersonnelInvitationsProps)
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground pl-11">
+                <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
                 </div>

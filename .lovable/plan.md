@@ -1,24 +1,27 @@
 
 
-## Fix: Project Invitation Row Layout (Final)
+## Show Applicant Count for Posted Projects
 
-Both files have identical structure. Two changes needed in each:
+Cosmetic only. 🟢
 
-1. **Outer div** — remove `gap-2` from `className="flex flex-col gap-2 p-3 ..."`
-2. **Date row** — replace `pl-11` with `mt-2`
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-### PersonnelInvitations.tsx (line 82)
-Change `"flex flex-col gap-2 p-3 rounded-lg..."` → `"flex flex-col p-3 rounded-lg..."`
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-### PersonnelInvitations.tsx (line 115)
-Change `"flex items-center gap-1 text-xs text-muted-foreground pl-11"` → `"mt-2 flex items-center gap-1 text-xs text-muted-foreground"`
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
 
-### PersonnelProjectsTabs.tsx (line 232)
-Change `"flex flex-col gap-2 p-3 rounded-lg..."` → `"flex flex-col p-3 rounded-lg..."`
-
-### PersonnelProjectsTabs.tsx (line 254)
-Change `"flex items-center gap-1 text-xs text-muted-foreground pl-11"` → `"mt-2 flex items-center gap-1 text-xs text-muted-foreground"`
-
-### Risk
-CSS class changes only. No logic touched. 🟢
+### File
+- `src/components/ProjectsTab.tsx`
 
