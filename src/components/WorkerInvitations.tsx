@@ -101,7 +101,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                   </div>
                   {/* Bottom row: date left, buttons right */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
                       <Clock className="h-3 w-3" />
                       <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
                     </div>
