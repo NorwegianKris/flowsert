@@ -8,7 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCertificateTypes, useCreateCertificateType } from '@/hooks/useCertificateTypes';
 import { toast } from 'sonner';
-import { Plus, Trash2, Loader2, Award, FileText } from 'lucide-react';
+import { Plus, Trash2, Loader2, Award, FileText, Pencil } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
