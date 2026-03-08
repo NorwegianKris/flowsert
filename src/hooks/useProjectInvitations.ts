@@ -57,7 +57,7 @@ export function useProjectInvitations() {
         .from('project_invitations')
         .select(`
           *,
-          projects:project_id (name, description, start_date, end_date, location, status, project_number, customer, project_manager, work_category),
+          project:project_id (name, description, start_date, end_date, location, status, project_number, customer, project_manager, work_category),
           personnel:personnel_id (name)
         `)
         .order('invited_at', { ascending: false });
