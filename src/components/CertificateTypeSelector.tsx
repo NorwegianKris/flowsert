@@ -130,7 +130,7 @@ export function CertificateTypeSelector({
           if (data?.certificate_type_id) {
             const matchedType = types.find(t => t.id === data.certificate_type_id);
             if (matchedType) {
-              onChange(matchedType.id, matchedType.name);
+              onChange(matchedType.id, matchedType.name, matchedType.category_id || null);
               setOcrAutoSelected(true);
               return;
             }
