@@ -406,6 +406,19 @@ Return the extracted data using the extract_certificate_data function.`;
 
     // Calculate confidence and issues
     const issues: string[] = [];
+
+    // Guard: discard expiry if it matches issue date (single-date misread)
+    if (extractedData.expiryDate && extractedData.dateOfIssue
+        && extractedData.expiryDate === extractedData.dateOfIssue) {
+      extractedData.expiryDate = null;
+      issues.push("Only one date detected — expiry date cleared to avoid misread");
+    }
+    // Guard: discard expiry if it's before issue date
+    if (extractedData.expiryDate && extractedData.dateOfIssue
+        && extractedData.expiryDate < extractedData.dateOfIssue) {
+      extractedData.expiryDate = null;
+      issues.push("Expiry date appears before issue date — cleared");
+    }
     let confidence = extractedRaw.confidence || 0;
     
     // Adjust based on image quality
