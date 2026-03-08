@@ -84,7 +84,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                   className="flex flex-col p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                         <FolderOpen className="h-4 w-4 text-primary" />
                       </div>
