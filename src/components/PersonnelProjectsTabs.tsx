@@ -245,7 +245,7 @@ function InvitationsContent({ invitations, updateInvitationStatus }: {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
               <Button variant="outline" size="sm" onClick={(e) => handleStatusChange(invitation.id, false, e)} disabled={respondingId === invitation.id} className="text-red-600 hover:bg-red-50 hover:text-red-700 flex-1 sm:flex-initial">
                 <X className="h-4 w-4 sm:mr-1" />
                 <span className="hidden sm:inline">Decline</span>
