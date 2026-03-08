@@ -215,7 +215,7 @@ export function CertificateTypeSelector({
 
   const handleSelect = (typeId: string) => {
     const type = types.find((t) => t.id === typeId);
-    onChange(typeId, type?.name);
+    onChange(typeId, type?.name, type?.category_id || null);
     setOcrAutoSelected(false);
     // Clear free text when selecting from dropdown
     if (onFreeTextChange) {
