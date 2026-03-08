@@ -520,8 +520,12 @@ export function AISuggestDialog({
 
   // ─── Approve All (existing types only) ────────────────────────
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [bulkDoneMessage, setBulkDoneMessage] = useState<string | null>(null);
   // ─── Create & Approve All (new types) ─────────────────────────
   const [newTypeBulkProcessing, setNewTypeBulkProcessing] = useState(false);
+  const [newTypeBulkProgress, setNewTypeBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [newTypeBulkDoneMessage, setNewTypeBulkDoneMessage] = useState<string | null>(null);
   const [newTypeBulkConfirmOpen, setNewTypeBulkConfirmOpen] = useState(false);
 
   const handleApproveAll = async () => {
