@@ -45,7 +45,8 @@ export function useLookupAlias(rawTitle: string | null) {
           certificate_types!certificate_aliases_certificate_type_id_fkey (
             id,
             name,
-            is_active
+            is_active,
+            category_id
           )
         `)
         .eq("business_id", businessId)
