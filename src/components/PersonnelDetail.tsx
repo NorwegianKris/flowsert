@@ -10,7 +10,7 @@ import { AddCertificateDialog } from '@/components/AddCertificateDialog';
 import { RemoveCertificateDialog } from '@/components/RemoveCertificateDialog';
 import { EditCertificateSelectDialog } from '@/components/EditCertificateSelectDialog';
 import { EditPersonnelDialog } from '@/components/EditPersonnelDialog';
-import { AssignedProjects } from '@/components/AssignedProjects';
+import { AssignedProjects, useAssignedProjects } from '@/components/AssignedProjects';
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
