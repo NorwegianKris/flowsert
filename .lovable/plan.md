@@ -1,17 +1,27 @@
 
 
-## Tighten Invitation Card Bottom Row
+## Show Applicant Count for Posted Projects
 
-**File:** `src/components/WorkerInvitations.tsx`
+Cosmetic only. 🟢
 
-**Changes:**
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-1. **Line 104**: Add `whitespace-nowrap` to the date container div so the date text stays on one line:
-   ```tsx
-   <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-   ```
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-2. **Buttons**: Both Decline (line 110) and Accept (line 119) already have `size="sm"` — confirmed, no change needed.
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
 
-Single-line class addition. No logic, handler, or color changes.
+### File
+- `src/components/ProjectsTab.tsx`
 
