@@ -29,7 +29,7 @@ interface OcrHint {
 
 interface CertificateTypeSelectorProps {
   value: string | null;
-  onChange: (typeId: string | null, typeName?: string) => void;
+  onChange: (typeId: string | null, typeName?: string, categoryId?: string | null) => void;
   disabled?: boolean;
   required?: boolean;
   autoMatched?: boolean;
