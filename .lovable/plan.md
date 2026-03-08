@@ -1,33 +1,27 @@
 
 
-## Fix: Project Invitation Row Layout
+## Show Applicant Count for Posted Projects
 
-### Problem
-The date text sits inline with the project name inside the left column, causing it to be clipped or hidden behind the buttons at certain widths.
+Cosmetic only. 🟢
 
-### Fix
-Restructure the row into two visual rows inside each card, in **both** `PersonnelInvitations.tsx` (lines 79-121) and `PersonnelProjectsTabs.tsx` (lines 229-258):
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-**Top row:** Folder icon + project name on the left, Decline/Accept buttons on the right (always horizontal via `flex items-center justify-between`).
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-**Bottom row:** Date text left-aligned below, with a small left padding to align under the project name.
-
-The outer container changes from `flex flex-col sm:flex-row` to `flex flex-col` (always stacked), with two inner rows:
-
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
 ```
-Row 1: [icon + name]  ............  [Decline] [Accept]
-Row 2: [date text, left-aligned with indent]
-```
 
-The date `<div>` moves out of the name block and becomes a sibling below the top row. Buttons stay in the top row always visible. No button logic/style changes.
-
-### Files
-
-| File | Lines | Change |
-|------|-------|--------|
-| `PersonnelInvitations.tsx` | 79-121 | Restructure row layout |
-| `PersonnelProjectsTabs.tsx` | 229-258 | Same restructure |
-
-### Risk
-Layout-only. No logic, data, or button styling changes.
+### File
+- `src/components/ProjectsTab.tsx`
 
