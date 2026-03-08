@@ -469,24 +469,29 @@ export function AIIssuerSuggestDialog({
     }
 
     setBulkProcessing(true);
+    setBulkProgress({ current: 0, total: pending.length });
+    setBulkDoneMessage(null);
     let successCount = 0;
 
     try {
-      for (const row of pending) {
+      for (let i = 0; i < pending.length; i++) {
         try {
-          await handleApprove(row);
+          await handleApprove(pending[i]);
           successCount++;
         } catch (e) {
           console.error("Individual approve error:", e);
         }
+        setBulkProgress({ current: i + 1, total: pending.length });
       }
 
-      toast.success(`Approved ${successCount} issuer grouping${successCount !== 1 ? "s" : ""}`);
+      setBulkDoneMessage(`Done — ${successCount} item${successCount !== 1 ? "s" : ""} approved.`);
+      setTimeout(() => setBulkDoneMessage(null), 3000);
     } catch (error) {
       console.error("Bulk approve error:", error);
       toast.error("Some approvals failed");
     } finally {
       setBulkProcessing(false);
+      setBulkProgress(null);
     }
   };
 
