@@ -184,7 +184,7 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
                       <div
                         key={project.id}
                         onClick={() => handleProjectClick(project)}
-                        className="p-3 rounded-lg border border-border/50 bg-muted/30 cursor-pointer group hover:bg-muted/50 transition-colors"
+                        className="p-3 rounded-lg border border-border/50 bg-card cursor-pointer group hover:bg-accent/50 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">

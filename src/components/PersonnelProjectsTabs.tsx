@@ -153,9 +153,7 @@ function ProjectList({ projects, onProjectClick, emptyMessage, variant }: {
         <div
           key={project.id}
           onClick={() => onProjectClick?.(project)}
-          className={`p-3 rounded-lg border border-border/50 cursor-pointer group transition-colors ${
-            variant === 'previous' ? 'bg-muted/30 hover:bg-muted/50' : 'bg-card hover:bg-accent/50'
-          }`}
+          className="p-3 rounded-lg border border-border/50 cursor-pointer group transition-colors bg-card hover:bg-accent/50"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
