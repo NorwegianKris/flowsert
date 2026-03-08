@@ -624,19 +624,24 @@ export function AISuggestDialog({
   const handleApproveAllNewTypes = async () => {
     setNewTypeBulkConfirmOpen(false);
     setNewTypeBulkProcessing(true);
+    setNewTypeBulkProgress({ current: 0, total: pendingNew.length });
+    setNewTypeBulkDoneMessage(null);
     let successCount = 0;
 
     try {
-      for (const row of pendingNew) {
-        await handleApprove(row);
+      for (let i = 0; i < pendingNew.length; i++) {
+        await handleApprove(pendingNew[i]);
         successCount++;
+        setNewTypeBulkProgress({ current: i + 1, total: pendingNew.length });
       }
-      toast.success(`Created & approved ${successCount} new type${successCount !== 1 ? "s" : ""}`);
+      setNewTypeBulkDoneMessage(`Done — ${successCount} item${successCount !== 1 ? "s" : ""} approved.`);
+      setTimeout(() => setNewTypeBulkDoneMessage(null), 3000);
     } catch (error) {
       console.error("Bulk new type approve error:", error);
       toast.error("Some approvals failed");
     } finally {
       setNewTypeBulkProcessing(false);
+      setNewTypeBulkProgress(null);
     }
   };
 
