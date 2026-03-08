@@ -21,7 +21,7 @@ interface CategoriesSectionProps {
 export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSectionProps) {
   return (
     <div className="p-4">
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2 mb-4">
         Manage the categories used throughout your organization for workers, departments, certificates, and documents.
       </p>
         <Tabs defaultValue={defaultTab || "workers"} className="w-full">
