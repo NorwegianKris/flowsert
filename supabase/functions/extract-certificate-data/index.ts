@@ -271,7 +271,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   expiryDate: {
                     type: "string",
-                    description: "Expiry date in YYYY-MM-DD format. Null if no expiry or not visible",
+                    description: "Only return an expiry date if a SEPARATE, DISTINCT date is visible on the document that is clearly labelled or contextually identifiable as an expiry/validity date. If only one date exists on the document, return null. Format: YYYY-MM-DD.",
                     nullable: true,
                   },
                   placeOfIssue: {
@@ -406,6 +406,19 @@ Return the extracted data using the extract_certificate_data function.`;
 
     // Calculate confidence and issues
     const issues: string[] = [];
+
+    // Guard: discard expiry if it matches issue date (single-date misread)
+    if (extractedData.expiryDate && extractedData.dateOfIssue
+        && extractedData.expiryDate === extractedData.dateOfIssue) {
+      extractedData.expiryDate = null;
+      issues.push("Only one date detected — expiry date cleared to avoid misread");
+    }
+    // Guard: discard expiry if it's before issue date
+    if (extractedData.expiryDate && extractedData.dateOfIssue
+        && extractedData.expiryDate < extractedData.dateOfIssue) {
+      extractedData.expiryDate = null;
+      issues.push("Expiry date appears before issue date — cleared");
+    }
     let confidence = extractedRaw.confidence || 0;
     
     // Adjust based on image quality
