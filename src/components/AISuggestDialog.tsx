@@ -536,6 +536,8 @@ export function AISuggestDialog({
     }
 
     setBulkProcessing(true);
+    setBulkProgress({ current: 0, total: pending.length });
+    setBulkDoneMessage(null);
     let successCount = 0;
 
     try {
@@ -546,6 +548,7 @@ export function AISuggestDialog({
         byType.set(row.suggestion.suggested_type_id!, list);
       }
 
+      let processed = 0;
       for (const [typeId, rows] of byType) {
         const ids = rows.map((r) => r.cert.id);
         for (let i = 0; i < ids.length; i += 100) {
@@ -579,6 +582,9 @@ export function AISuggestDialog({
             if (e.code !== "23505") console.error("Alias error:", e);
           }
         }
+
+        processed += rows.length;
+        setBulkProgress({ current: processed, total: pending.length });
       }
 
       const approvedIds = new Set(pending.map((r) => r.cert.id));
@@ -586,12 +592,14 @@ export function AISuggestDialog({
         prev.map((r) => (approvedIds.has(r.cert.id) ? { ...r, approved: true } : r))
       );
 
-      toast.success(`Approved ${successCount} certificate${successCount !== 1 ? "s" : ""}`);
+      setBulkDoneMessage(`Done — ${successCount} item${successCount !== 1 ? "s" : ""} approved.`);
+      setTimeout(() => setBulkDoneMessage(null), 3000);
     } catch (error) {
       console.error("Bulk approve error:", error);
       toast.error("Some approvals failed");
     } finally {
       setBulkProcessing(false);
+      setBulkProgress(null);
     }
   };
 
