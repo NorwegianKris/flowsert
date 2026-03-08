@@ -190,7 +190,7 @@ export function WorkerGroupsManageList() {
                         {members.map((person) => (
                           <button
                             key={person.id}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg"
                             onClick={() => setPreviewPersonnel(person)}
                           >
                             <Avatar className="h-8 w-8">
