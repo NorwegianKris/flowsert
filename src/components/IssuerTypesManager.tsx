@@ -404,7 +404,7 @@ function IssuersManageList() {
                     variant="ghost"
                     size="icon"
                     onClick={() => openEditDialog(issuer)}
-                    className="h-8 w-8"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
