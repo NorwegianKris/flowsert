@@ -498,24 +498,29 @@ export function AIIssuerSuggestDialog({
   const handleApproveAllNewIssuers = async () => {
     setNewIssuerBulkConfirmOpen(false);
     setNewIssuerBulkProcessing(true);
+    const pending = newIssuerRows.filter((r) => !r.approved && !r.rejected);
+    setNewIssuerBulkProgress({ current: 0, total: pending.length });
+    setNewIssuerBulkDoneMessage(null);
     let successCount = 0;
 
     try {
-      const pending = newIssuerRows.filter((r) => !r.approved && !r.rejected);
-      for (const row of pending) {
+      for (let i = 0; i < pending.length; i++) {
         try {
-          await handleApprove(row);
+          await handleApprove(pending[i]);
           successCount++;
         } catch (e) {
           console.error("Individual new issuer approve error:", e);
         }
+        setNewIssuerBulkProgress({ current: i + 1, total: pending.length });
       }
-      toast.success(`Created & approved ${successCount} new issuer${successCount !== 1 ? "s" : ""}`);
+      setNewIssuerBulkDoneMessage(`Done — ${successCount} item${successCount !== 1 ? "s" : ""} approved.`);
+      setTimeout(() => setNewIssuerBulkDoneMessage(null), 3000);
     } catch (error) {
       console.error("Bulk new issuer approve error:", error);
       toast.error("Some approvals failed");
     } finally {
       setNewIssuerBulkProcessing(false);
+      setNewIssuerBulkProgress(null);
     }
   };
 
