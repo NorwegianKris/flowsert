@@ -329,7 +329,7 @@ function InvitationsContent({ invitations, updateInvitationStatus }: {
             </div>
           )}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, false)} disabled={respondingId === selectedInvitation?.id} className="text-red-600 hover:text-red-700">
+            <Button variant="outline" onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, false)} disabled={respondingId === selectedInvitation?.id} className="text-red-600 hover:bg-red-50 hover:text-red-700">
               <X className="h-4 w-4 mr-2" />Decline
             </Button>
             <Button onClick={() => selectedInvitation && handleStatusChange(selectedInvitation.id, true)} disabled={respondingId === selectedInvitation?.id} className="bg-emerald-600 text-white hover:bg-emerald-700">
