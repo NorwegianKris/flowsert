@@ -911,7 +911,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Manage team members, roles, and admin access.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Manage team members, roles, and admin access.</p>
                       <AdminOverview />
                     </div>
                   </CollapsibleContent>
@@ -927,7 +927,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Update your company details, logo, and contact information.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Update your company details, logo, and contact information.</p>
                       <CompanyCard isAdmin mode="inline" onClose={() => refetchBusiness()} />
                     </div>
                   </CollapsibleContent>
@@ -959,7 +959,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-6">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                         Manage the official issuing authorities used to organize and group certificates consistently.
                       </p>
                       <IssuerTypesManager />
@@ -977,7 +977,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Normalize and manage certificate location data.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Normalize and manage certificate location data.</p>
                       <LocationStandardizationTool />
                       <CertificateLocationNormalizationTool />
                     </div>
@@ -997,7 +997,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Configure data processing acknowledgements and privacy settings.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Configure data processing acknowledgements and privacy settings.</p>
                       <DataAcknowledgementsManager
                         embedded
                         personnel={personnel}
@@ -1021,7 +1021,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Manage registration links for freelancer onboarding.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Manage registration links for freelancer onboarding.</p>
                       <RegistrationLinkCard embedded />
                     </div>
                   </CollapsibleContent>
@@ -1040,7 +1040,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">View feedback and improvement suggestions from your team.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">View feedback and improvement suggestions from your team.</p>
                       <FeedbackList embedded open={feedbackOpen} />
                     </div>
                   </CollapsibleContent>

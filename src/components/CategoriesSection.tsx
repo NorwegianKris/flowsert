@@ -21,7 +21,7 @@ interface CategoriesSectionProps {
 export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSectionProps) {
   return (
     <div className="p-4">
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2 mb-4">
         Manage the categories used throughout your organization for workers, departments, certificates, and documents.
       </p>
         <Tabs defaultValue={defaultTab || "workers"} className="w-full">
@@ -40,7 +40,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Global Documents
+              Documents
             </TabsTrigger>
           </TabsList>
           
@@ -59,7 +59,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               
               <TabsContent value="roles">
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                     Define job role categories for personnel. These will appear as options when new workers are added or register.
                   </p>
                 </div>
@@ -68,7 +68,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               
               <TabsContent value="worker-groups">
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                     Organize personnel into custom groups for filtering and team management.
                   </p>
                 </div>
@@ -79,7 +79,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
           
           <TabsContent value="departments">
             <div className="space-y-2 mb-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                 Define departments within your organization. These will appear as options when adding new workers.
               </p>
             </div>
@@ -102,7 +102,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               
               <TabsContent value="categories">
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                     Define broad certificate categories such as Welding, Diving, Inspection, or Safety.
                   </p>
                 </div>
@@ -111,7 +111,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               
               <TabsContent value="types">
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                     Manage the official certificate types used to organize and group certificates consistently.
                   </p>
                 </div>
@@ -144,7 +144,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
           
           <TabsContent value="documents">
             <div className="space-y-2 mb-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                 Define document categories for personnel uploads.
               </p>
             </div>
