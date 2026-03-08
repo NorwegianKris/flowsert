@@ -454,7 +454,11 @@ export function AIIssuerSuggestDialog({
 
   // ─── Approve All (existing issuers only) ──────────────────────
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [bulkDoneMessage, setBulkDoneMessage] = useState<string | null>(null);
   const [newIssuerBulkProcessing, setNewIssuerBulkProcessing] = useState(false);
+  const [newIssuerBulkProgress, setNewIssuerBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [newIssuerBulkDoneMessage, setNewIssuerBulkDoneMessage] = useState<string | null>(null);
   const [newIssuerBulkConfirmOpen, setNewIssuerBulkConfirmOpen] = useState(false);
 
   const handleApproveAll = async () => {
