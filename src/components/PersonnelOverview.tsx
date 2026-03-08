@@ -146,7 +146,7 @@ export function PersonnelOverview({ personnel, onEditPersonnel, onPersonnelRemov
                 {personnel.map((person) => (
                   <div
                     key={person.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 hover:bg-muted/50 transition-colors"
                   >
                     <Avatar className="h-10 w-10 shrink-0">
                       <AvatarImage src={person.avatarUrl} alt={person.name} />

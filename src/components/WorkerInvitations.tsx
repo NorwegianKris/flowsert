@@ -81,7 +81,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                 <div
                   key={invitation.id}
                   onClick={() => setSelectedInvitation(invitation)}
-                  className="flex flex-col gap-2 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors overflow-hidden"
+                  className="flex flex-col gap-2 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors overflow-hidden"
                 >
                   {/* Top row: icon + full name/location */}
                   <div className="flex items-start gap-3">
