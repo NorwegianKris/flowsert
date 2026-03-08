@@ -68,7 +68,7 @@ export function CategoriesSection({ defaultTab, defaultSubTab }: CategoriesSecti
               
               <TabsContent value="worker-groups">
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">
                     Organize personnel into custom groups for filtering and team management.
                   </p>
                 </div>
