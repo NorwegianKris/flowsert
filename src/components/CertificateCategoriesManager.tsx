@@ -412,6 +412,35 @@ export function CertificateCategoriesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Category</DialogTitle>
+            <DialogDescription>
+              Enter a new name for "{editingCategory?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameCategory()}
+            disabled={saving}
+            autoFocus
+            className="bg-white dark:bg-card"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCategory(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameCategory} disabled={saving || !editName.trim() || editName.trim() === editingCategory?.name}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
