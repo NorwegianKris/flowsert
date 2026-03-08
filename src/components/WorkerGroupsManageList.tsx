@@ -143,7 +143,7 @@ export function WorkerGroupsManageList() {
             return (
               <div key={group.id}>
                 <div
-                  className="flex items-center justify-between p-3 bg-white dark:bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all rounded-lg cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg cursor-pointer"
                   onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
                 >
                   <div className="flex items-center gap-3">
