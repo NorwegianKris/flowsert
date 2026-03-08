@@ -1,34 +1,27 @@
 
 
-## Fix: Show Project Name & Location in WorkerInvitations Card
+## Show Applicant Count for Posted Projects
 
-### Change
+Cosmetic only. 🟢
 
-**File:** `WorkerInvitations.tsx`, lines 91-93
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-Replace the single `<p>` with a `<div className="min-w-0">` containing two lines: project name and conditionally-rendered location.
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
 ```tsx
-// Current (lines 91-93):
-<p className="font-medium text-sm truncate">
-  {invitation.projectName || 'Project Invitation'}
-</p>
-
-// New:
-<div className="min-w-0">
-  <p className="font-medium text-sm truncate">
-    {invitation.projectName || 'Project Invitation'}
-  </p>
-  {invitation.projectLocation && (
-    <p className="text-xs text-muted-foreground truncate">
-      {invitation.projectLocation}
-    </p>
-  )}
-</div>
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
 ```
 
-No other changes. Layout structure, buttons, handlers, colours, and logic remain untouched.
-
-### Risk
-Single UI addition. No logic change. 🟢
+### File
+- `src/components/ProjectsTab.tsx`
 
