@@ -443,11 +443,13 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </CardContent>
       </Card>
 
-      {/* Pending Invitations Section */}
-      {!hideInvitations && <PersonnelInvitations personnelId={personnel.id} />}
-
-      {/* Assigned Projects Section - hidden for freelancers */}
-      {personnel.category !== 'freelancer' && <AssignedProjects personnelId={personnel.id} onProjectClick={handleProjectClick} />}
+      {/* Projects & Invitations Tabs */}
+      <PersonnelProjectsTabs
+        personnelId={personnel.id}
+        isFreelancer={personnel.category === 'freelancer'}
+        hideInvitations={hideInvitations}
+        onProjectClick={handleProjectClick}
+      />
 
       {/* Personal Info + Next of Kin + Documents on left, Chat + Calendar on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
