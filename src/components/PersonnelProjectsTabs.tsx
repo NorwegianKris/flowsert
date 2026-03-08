@@ -182,7 +182,7 @@ function ProjectList({ projects, onProjectClick, emptyMessage, variant }: {
 
 function InvitationsContent({ invitations, updateInvitationStatus }: {
   invitations: ProjectInvitation[];
-  updateInvitationStatus: (id: string, status: string) => Promise<void>;
+  updateInvitationStatus: (id: string, status: 'accepted' | 'declined' | 'pending') => Promise<boolean>;
 }) {
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [selectedInvitation, setSelectedInvitation] = useState<ProjectInvitation | null>(null);
