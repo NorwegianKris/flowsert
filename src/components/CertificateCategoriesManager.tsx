@@ -43,6 +43,9 @@ export function CertificateCategoriesManager() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CertificateCategory | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
+  const [editName, setEditName] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Inline add-type state per category
   const [addingTypeForCategory, setAddingTypeForCategory] = useState<string | null>(null);
