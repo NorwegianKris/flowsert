@@ -157,7 +157,7 @@ export function WorkerGroupsManageList() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
                       onClick={() => {
                         setSelectedGroup(group);
                         setEditName(group.name);

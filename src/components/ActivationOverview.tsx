@@ -320,7 +320,7 @@ export function ActivationOverview({ personnel, onRefresh, onEditPersonnel, onPe
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
                           onClick={(e) => {
                             e.stopPropagation();
                             onEditPersonnel(person);
