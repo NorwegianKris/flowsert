@@ -110,7 +110,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                         size="sm"
                         onClick={(e) => handleRespond(invitation.id, false, e)}
                         disabled={respondingId === invitation.id}
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs px-3 py-1.5"
                       >
                         <X className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Decline</span>
