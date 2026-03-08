@@ -88,9 +88,16 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                       <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                         <FolderOpen className="h-4 w-4 text-primary" />
                       </div>
-                      <p className="font-medium text-sm truncate">
-                        {invitation.projectName || 'Project Invitation'}
-                      </p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {invitation.projectName || 'Project Invitation'}
+                        </p>
+                        {invitation.projectLocation && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {invitation.projectLocation}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
