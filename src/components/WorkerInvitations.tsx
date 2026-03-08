@@ -81,25 +81,31 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                 <div
                   key={invitation.id}
                   onClick={() => setSelectedInvitation(invitation)}
-                  className="flex flex-col p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                  className="flex flex-col gap-2 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                        <FolderOpen className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {invitation.projectName || 'Project Invitation'}
-                        </p>
-                        {invitation.projectLocation && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {invitation.projectLocation}
-                          </p>
-                        )}
-                      </div>
+                  {/* Top row: icon + full name/location */}
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                      <FolderOpen className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-col min-w-0">
+                      <p className="font-medium text-sm">
+                        {invitation.projectName || 'Project Invitation'}
+                      </p>
+                      {invitation.projectLocation && (
+                        <p className="text-xs text-muted-foreground">
+                          {invitation.projectLocation}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {/* Bottom row: date left, buttons right */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         onClick={(e) => handleRespond(invitation.id, false, e)}
@@ -119,10 +125,6 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                         <span className="hidden sm:inline">Accept</span>
                       </Button>
                     </div>
-                  </div>
-                  <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
