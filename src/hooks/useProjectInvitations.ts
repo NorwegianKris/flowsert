@@ -64,26 +64,34 @@ export function useProjectInvitations() {
 
       if (error) throw error;
 
-      const mappedInvitations: ProjectInvitation[] = (data || []).map((inv: any) => ({
-        id: inv.id,
-        projectId: inv.project_id,
-        personnelId: inv.personnel_id,
-        status: inv.status as 'pending' | 'accepted' | 'declined',
-        invitedBy: inv.invited_by,
-        invitedAt: inv.invited_at,
-        respondedAt: inv.responded_at,
-        projectName: inv.projects?.name,
-        projectDescription: inv.projects?.description,
-        projectStartDate: inv.projects?.start_date,
-        projectEndDate: inv.projects?.end_date,
-        projectLocation: inv.projects?.location,
-        projectStatus: inv.projects?.status,
-        projectNumber: inv.projects?.project_number,
-        projectCustomer: inv.projects?.customer,
-        projectManager: inv.projects?.project_manager,
-        projectWorkCategory: inv.projects?.work_category,
-        personnelName: inv.personnel?.name,
-      }));
+      const mappedInvitations: ProjectInvitation[] = (data || []).map((inv: any) => {
+        // Normalize project payload: handle object, array, or null shapes
+        const rawProject = inv.projects ?? inv.project ?? null;
+        const project = Array.isArray(rawProject) ? rawProject[0] : rawProject;
+        const rawPersonnel = inv.personnel ?? inv.person ?? null;
+        const person = Array.isArray(rawPersonnel) ? rawPersonnel[0] : rawPersonnel;
+
+        return {
+          id: inv.id,
+          projectId: inv.project_id,
+          personnelId: inv.personnel_id,
+          status: inv.status as 'pending' | 'accepted' | 'declined',
+          invitedBy: inv.invited_by,
+          invitedAt: inv.invited_at,
+          respondedAt: inv.responded_at,
+          projectName: project?.name ?? undefined,
+          projectDescription: project?.description ?? undefined,
+          projectStartDate: project?.start_date ?? undefined,
+          projectEndDate: project?.end_date ?? undefined,
+          projectLocation: project?.location ?? undefined,
+          projectStatus: project?.status ?? undefined,
+          projectNumber: project?.project_number ?? undefined,
+          projectCustomer: project?.customer ?? undefined,
+          projectManager: project?.project_manager ?? undefined,
+          projectWorkCategory: project?.work_category ?? undefined,
+          personnelName: person?.name ?? undefined,
+        };
+      });
 
       setInvitations(mappedInvitations);
     } catch (error) {
