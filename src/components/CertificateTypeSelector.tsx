@@ -154,7 +154,8 @@ export function CertificateTypeSelector({
       if (confidence >= 85 && best && best.score > 0.7) {
         const isClearWinner = !second || (best.score - second.score >= 0.15);
         if (isClearWinner) {
-          onChange(best.id, best.name);
+          const bestType = types.find(t => t.id === best.id);
+          onChange(best.id, best.name, bestType?.category_id || null);
           setOcrAutoSelected(true);
         } else if (showFallbackInput && onFreeTextChange) {
           // Ambiguous match — pre-fill free-text with AI-extracted name

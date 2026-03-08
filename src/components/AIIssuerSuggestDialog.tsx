@@ -770,24 +770,38 @@ export function AIIssuerSuggestDialog({
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     {pendingNew.length > 0 && (
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
-                        <span className="text-xs text-muted-foreground">
-                          {pendingNew.length} pending review
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => setNewIssuerBulkConfirmOpen(true)}
-                          disabled={newIssuerBulkProcessing}
-                        >
-                          {newIssuerBulkProcessing ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <Check className="h-3 w-3 mr-1" />
-                          )}
-                          Create & Approve All ({pendingNew.length})
-                        </Button>
+                      <div className="px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10 space-y-2">
+                        {newIssuerBulkProgress ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                Processing {newIssuerBulkProgress.current} of {newIssuerBulkProgress.total}...
+                              </span>
+                            </div>
+                            <Progress value={(newIssuerBulkProgress.current / newIssuerBulkProgress.total) * 100} className="h-2" />
+                          </div>
+                        ) : newIssuerBulkDoneMessage ? (
+                          <div className="flex items-center gap-2 text-xs text-chart-2">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {newIssuerBulkDoneMessage}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {pendingNew.length} pending review
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => setNewIssuerBulkConfirmOpen(true)}
+                              disabled={newIssuerBulkProcessing}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Create & Approve All ({pendingNew.length})
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="max-h-[400px] overflow-y-auto">

@@ -869,25 +869,39 @@ export function AISuggestDialog({
                   <CollapsibleContent>
                     {/* Create & Approve All bar — new types */}
                     {pendingNew.length > 0 && (
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10">
-                        <span className="text-xs text-muted-foreground">
-                          {pendingNew.length} pending review
-                          {!allNewTypesHaveCategory && " — select categories to enable bulk action"}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => setNewTypeBulkConfirmOpen(true)}
-                          disabled={!allNewTypesHaveCategory || newTypeBulkProcessing}
-                        >
-                          {newTypeBulkProcessing ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <Check className="h-3 w-3 mr-1" />
-                          )}
-                          Create & Approve All ({pendingNew.length})
-                        </Button>
+                      <div className="px-3 py-2 border-b border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/10 space-y-2">
+                        {newTypeBulkProgress ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                Processing {newTypeBulkProgress.current} of {newTypeBulkProgress.total}...
+                              </span>
+                            </div>
+                            <Progress value={(newTypeBulkProgress.current / newTypeBulkProgress.total) * 100} className="h-2" />
+                          </div>
+                        ) : newTypeBulkDoneMessage ? (
+                          <div className="flex items-center gap-2 text-xs text-chart-2">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {newTypeBulkDoneMessage}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {pendingNew.length} pending review
+                              {!allNewTypesHaveCategory && " — select categories to enable bulk action"}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => setNewTypeBulkConfirmOpen(true)}
+                              disabled={!allNewTypesHaveCategory || newTypeBulkProcessing}
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Create & Approve All ({pendingNew.length})
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="max-h-[400px] overflow-y-auto">
