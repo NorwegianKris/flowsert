@@ -119,7 +119,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                         size="sm"
                         onClick={(e) => handleRespond(invitation.id, true, e)}
                         disabled={respondingId === invitation.id}
-                        className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
+                        className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white text-xs px-3 py-1.5"
                       >
                         <Check className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Accept</span>
