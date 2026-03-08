@@ -927,7 +927,7 @@ export default function AdminDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="p-4 space-y-4">
-                      <p className="text-sm text-muted-foreground">Update your company details, logo, and contact information.</p>
+                      <p className="text-sm bg-primary text-primary-foreground rounded-md px-3 py-2">Update your company details, logo, and contact information.</p>
                       <CompanyCard isAdmin mode="inline" onClose={() => refetchBusiness()} />
                     </div>
                   </CollapsibleContent>
