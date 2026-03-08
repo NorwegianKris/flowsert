@@ -150,6 +150,15 @@ export function useSuggestPersonnel() {
       }
 
       const result = data as SuggestionResult;
+      // Deduplicate by personnel ID — keep highest matchScore
+      const seen = new Map<string, PersonnelSuggestion>();
+      for (const p of result.suggestedPersonnel) {
+        const existing = seen.get(p.id);
+        if (!existing || p.matchScore > existing.matchScore) {
+          seen.set(p.id, p);
+        }
+      }
+      result.suggestedPersonnel = Array.from(seen.values());
       // Raise minimum display threshold to 40%
       result.suggestedPersonnel = result.suggestedPersonnel.filter(p => p.matchScore >= 40);
       // If any result scores 90%+, suppress everything below 50%
