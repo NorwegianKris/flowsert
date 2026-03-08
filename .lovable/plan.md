@@ -1,14 +1,27 @@
 
 
-## Constrain Buttons Inside Invitation Card
+## Show Applicant Count for Posted Projects
 
-**File:** `src/components/WorkerInvitations.tsx`
+Cosmetic only. 🟢
 
-**Changes:**
+### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
 
-1. **Line 84**: Add `overflow-hidden` to the outer card container class
-2. **Line 103**: Add `max-w-full` to the bottom row container
-3. **Lines 113, 122**: Add `text-xs px-3 py-1.5` to both button classNames for compact sizing
+Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
 
-No handler, color, or logic changes.
+```tsx
+) : isPosted ? (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+  </span>
+) : (
+  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Users className="h-4 w-4" />
+    No personnel assigned
+  </span>
+)
+```
+
+### File
+- `src/components/ProjectsTab.tsx`
 

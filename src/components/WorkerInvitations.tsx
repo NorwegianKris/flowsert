@@ -81,7 +81,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                 <div
                   key={invitation.id}
                   onClick={() => setSelectedInvitation(invitation)}
-                  className="flex flex-col gap-2 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                  className="flex flex-col gap-2 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors overflow-hidden"
                 >
                   {/* Top row: icon + full name/location */}
                   <div className="flex items-start gap-3">
@@ -100,7 +100,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                     </div>
                   </div>
                   {/* Bottom row: date left, buttons right */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between max-w-full">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
                       <Clock className="h-3 w-3" />
                       <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
@@ -110,7 +110,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                         size="sm"
                         onClick={(e) => handleRespond(invitation.id, false, e)}
                         disabled={respondingId === invitation.id}
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs px-3 py-1.5"
                       >
                         <X className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Decline</span>
@@ -119,7 +119,7 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                         size="sm"
                         onClick={(e) => handleRespond(invitation.id, true, e)}
                         disabled={respondingId === invitation.id}
-                        className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
+                        className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white text-xs px-3 py-1.5"
                       >
                         <Check className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Accept</span>
