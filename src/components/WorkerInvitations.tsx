@@ -81,44 +81,41 @@ export function WorkerInvitations({ personnelId }: WorkerInvitationsProps) {
                 <div
                   key={invitation.id}
                   onClick={() => setSelectedInvitation(invitation)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                  className="flex flex-col p-3 rounded-lg bg-background border border-border/50 cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <FolderOpen className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                        <FolderOpen className="h-4 w-4 text-primary" />
+                      </div>
                       <p className="font-medium text-sm truncate">
                         {invitation.projectName || 'Project Invitation'}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          Invited {new Date(invitation.invitedAt).toLocaleDateString()}
-                        </span>
-                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={(e) => handleRespond(invitation.id, false, e)}
+                        disabled={respondingId === invitation.id}
+                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      >
+                        <X className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Decline</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={(e) => handleRespond(invitation.id, true, e)}
+                        disabled={respondingId === invitation.id}
+                        className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white"
+                      >
+                        <Check className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Accept</span>
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Button
-                      size="sm"
-                      onClick={(e) => handleRespond(invitation.id, false, e)}
-                      disabled={respondingId === invitation.id}
-                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground flex-1 sm:flex-initial"
-                    >
-                      <X className="h-4 w-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Decline</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={(e) => handleRespond(invitation.id, true, e)}
-                      disabled={respondingId === invitation.id}
-                      className="bg-[hsl(var(--status-valid))] hover:bg-[hsl(var(--status-valid))]/90 text-white flex-1 sm:flex-initial"
-                    >
-                      <Check className="h-4 w-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Accept</span>
-                    </Button>
+                  <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
