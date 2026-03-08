@@ -251,7 +251,7 @@ function InvitationsContent({ invitations, updateInvitationStatus }: {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground pl-11">
+            <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               <span>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</span>
             </div>
