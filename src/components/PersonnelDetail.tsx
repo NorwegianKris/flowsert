@@ -14,6 +14,7 @@ import { AssignedProjects, useAssignedProjects } from '@/components/AssignedProj
 import { WorkerProjectDetail } from '@/components/WorkerProjectDetail';
 import { RequestProjectDialog } from '@/components/RequestProjectDialog';
 import { PersonnelInvitations } from '@/components/PersonnelInvitations';
+import { PersonnelProjectsTabs } from '@/components/PersonnelProjectsTabs';
 import { DirectMessageChat } from '@/components/DirectMessageChat';
 import { SendProfileInvitationDialog } from '@/components/SendProfileInvitationDialog';
 import { NotificationBell } from '@/components/NotificationBell';
