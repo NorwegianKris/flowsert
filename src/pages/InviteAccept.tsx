@@ -55,6 +55,9 @@ export default function InviteAccept() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         console.log('[InviteAccept] session: none');
+        // Check if the invited email already has an account
+        const { data: exists } = await supabase.rpc('check_invite_email_exists', { p_email: invite.invited_email });
+        setHasExistingAccount(exists === true);
         setState('not_logged_in');
         return;
       }
