@@ -138,6 +138,9 @@ async function syncEntitlements(
         is_active: true,
         profile_cap: mapped.profile_cap,
         is_unlimited: mapped.is_unlimited,
+        monthly_ocr_cap: mapped.monthly_ocr_cap,
+        monthly_chat_cap: mapped.monthly_chat_cap,
+        monthly_search_cap: mapped.monthly_search_cap,
       },
       { onConflict: "business_id" }
     );
