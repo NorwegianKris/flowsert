@@ -31,6 +31,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
     name: '',
     email: '',
     role: '',
+    category: 'employee' as 'employee' | 'freelancer',
   });
 
   const copyToClipboard = async () => {
@@ -41,7 +42,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', role: '' });
+    setFormData({ name: '', email: '', role: '', category: 'employee' });
     setSendInvitation(true);
     setInviteLink('');
     setCopied(false);
@@ -74,6 +75,8 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
         email: formData.email.trim(),
         phone: '',
         role: formData.role.trim(),
+        category: formData.category,
+        is_freelancer: formData.category === 'freelancer',
         business_id: businessId,
         activated: false,
       }).select('id').single();
@@ -252,6 +255,21 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
                   No job roles defined. Please add worker categories in Settings → Categories → Workers first.
                 </p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Employment Type *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value as 'employee' | 'freelancer' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select employment type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="freelancer">Freelancer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
