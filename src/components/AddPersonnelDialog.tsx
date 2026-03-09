@@ -75,6 +75,8 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
         email: formData.email.trim(),
         phone: '',
         role: formData.role.trim(),
+        category: formData.category,
+        is_freelancer: formData.category === 'freelancer',
         business_id: businessId,
         activated: false,
       }).select('id').single();
