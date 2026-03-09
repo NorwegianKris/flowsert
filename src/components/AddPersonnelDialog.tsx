@@ -256,6 +256,21 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
                 </p>
               )}
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Employment Type *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value as 'employee' | 'freelancer' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select employment type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="freelancer">Freelancer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Invite Worker Section */}
