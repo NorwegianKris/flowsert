@@ -25,6 +25,7 @@ export default function InviteAccept() {
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [hasExistingAccount, setHasExistingAccount] = useState<boolean | null>(null);
 
   console.log('[InviteAccept] token:', token ? 'present' : 'missing');
 
@@ -54,6 +55,9 @@ export default function InviteAccept() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         console.log('[InviteAccept] session: none');
+        // Check if the invited email already has an account
+        const { data: exists } = await supabase.rpc('check_invite_email_exists', { p_email: invite.invited_email });
+        setHasExistingAccount(exists === true);
         setState('not_logged_in');
         return;
       }
@@ -156,14 +160,25 @@ export default function InviteAccept() {
             </p>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
-            <Button className="w-full" onClick={() => navigate(loginUrl)}>
-              <LogIn className="h-4 w-4 mr-2" />
-              Log in to accept
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => navigate(signupUrl)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create account to accept
-            </Button>
+            {hasExistingAccount !== false && (
+              <>
+                {hasExistingAccount === true && (
+                  <p className="text-sm text-muted-foreground text-center mb-1">
+                    You already have a FlowSert account — log in to accept this invitation.
+                  </p>
+                )}
+                <Button className="w-full" onClick={() => navigate(loginUrl)}>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Log in to accept
+                </Button>
+              </>
+            )}
+            {hasExistingAccount !== true && (
+              <Button variant={hasExistingAccount === false ? "default" : "outline"} className="w-full" onClick={() => navigate(signupUrl)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create account to accept
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>

@@ -1904,6 +1904,7 @@ export type Database = {
         Args: { p_business_id: string; p_event_type: string }
         Returns: Json
       }
+      check_invite_email_exists: { Args: { p_email: string }; Returns: boolean }
       deactivate_personnel: { Args: { p_personnel_id: string }; Returns: Json }
       enforce_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number }
