@@ -21,6 +21,7 @@ interface AddPersonnelDialogProps {
 export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: AddPersonnelDialogProps) {
   const { businessId, user } = useAuth();
   const { categories: workerCategories, loading: categoriesLoading } = useWorkerCategories();
+  const { business } = useBusinessInfo();
   const [loading, setLoading] = useState(false);
   
   // Invitation state
