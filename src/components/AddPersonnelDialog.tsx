@@ -42,7 +42,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', role: '' });
+    setFormData({ name: '', email: '', role: '', category: 'employee' });
     setSendInvitation(true);
     setInviteLink('');
     setCopied(false);
