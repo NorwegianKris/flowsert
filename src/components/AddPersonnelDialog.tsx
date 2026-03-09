@@ -10,6 +10,7 @@ import { Loader2, Mail, Copy, Check, Link } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 
 interface AddPersonnelDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface AddPersonnelDialogProps {
 export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: AddPersonnelDialogProps) {
   const { businessId, user } = useAuth();
   const { categories: workerCategories, loading: categoriesLoading } = useWorkerCategories();
+  const { business } = useBusinessInfo();
   const [loading, setLoading] = useState(false);
   
   // Invitation state
@@ -131,6 +133,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
               to: formData.email.toLowerCase().trim(),
               workerName: formData.name.trim(),
               inviteLink: signupUrl,
+              businessName: business?.name,
             },
           });
 
