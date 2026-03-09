@@ -10,6 +10,7 @@ import { Loader2, Mail, Copy, Check, Link } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWorkerCategories } from '@/hooks/useWorkerCategories';
+import { useBusinessInfo } from '@/hooks/useBusinessInfo';
 
 interface AddPersonnelDialogProps {
   open: boolean;
