@@ -133,6 +133,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
               to: formData.email.toLowerCase().trim(),
               workerName: formData.name.trim(),
               inviteLink: signupUrl,
+              businessName: business?.name,
             },
           });
 
