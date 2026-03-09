@@ -950,8 +950,7 @@ export default function Auth() {
               {inviteToken && invitationDetails && (
                 <div className="rounded-lg bg-primary/10 p-4 text-center">
                   <p className="text-sm text-foreground">
-                    You're joining <strong>{invitationDetails.businessName}</strong> as{' '}
-                    <span className="capitalize">{invitationDetails.role}</span>
+                    You're joining <strong>{invitationDetails.businessName}</strong>
                   </p>
                 </div>
               )}
