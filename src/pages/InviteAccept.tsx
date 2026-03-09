@@ -156,7 +156,11 @@ export default function InviteAccept() {
               Invitation for: <strong>{preview.invited_email}</strong>
             </p>
             <p className="text-sm text-muted-foreground">
-              Log in or create an account to accept this invitation.
+              {hasExistingAccount === false
+                ? `Create your account to join ${preview.business_name}.`
+                : hasExistingAccount === true
+                ? `Log in to accept your invitation to join ${preview.business_name}.`
+                : 'Log in or create an account to accept this invitation.'}
             </p>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
