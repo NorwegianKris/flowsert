@@ -16,16 +16,16 @@ const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 // ──────────────────────────────────────────────
 // TIER_MAP — Update with your actual Stripe IDs
 // ──────────────────────────────────────────────
-const TIER_MAP: Record<string, { tier: string; profile_cap: number; is_unlimited: boolean }> = {
+const TIER_MAP: Record<string, { tier: string; profile_cap: number; is_unlimited: boolean; monthly_ocr_cap: number; monthly_chat_cap: number; monthly_search_cap: number }> = {
   // Starter
-  "price_1T4TiBCTVQHwswgoMCQBB0Kv": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Monthly
-  "price_1T4TipCTVQHwswgo3i7Wxi0p": { tier: "starter",      profile_cap: 25,  is_unlimited: false }, // Annual
+  "price_1T4TiBCTVQHwswgoMCQBB0Kv": { tier: "starter",      profile_cap: 25,  is_unlimited: false, monthly_ocr_cap: 50,  monthly_chat_cap: 200,    monthly_search_cap: 50 },     // Monthly
+  "price_1T4TipCTVQHwswgo3i7Wxi0p": { tier: "starter",      profile_cap: 25,  is_unlimited: false, monthly_ocr_cap: 50,  monthly_chat_cap: 200,    monthly_search_cap: 50 },     // Annual
   // Growth
-  "price_1T4TjxCTVQHwswgobYyRRe10": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Monthly
-  "price_1T4TkFCTVQHwswgop7yCPQRM": { tier: "growth",       profile_cap: 75,  is_unlimited: false }, // Annual
+  "price_1T4TjxCTVQHwswgobYyRRe10": { tier: "growth",       profile_cap: 75,  is_unlimited: false, monthly_ocr_cap: 200, monthly_chat_cap: 500,    monthly_search_cap: 200 },    // Monthly
+  "price_1T4TkFCTVQHwswgop7yCPQRM": { tier: "growth",       profile_cap: 75,  is_unlimited: false, monthly_ocr_cap: 200, monthly_chat_cap: 500,    monthly_search_cap: 200 },    // Annual
   // Professional
-  "price_1T4TksCTVQHwswgoItMP8J6n": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Monthly
-  "price_1T4Tl8CTVQHwswgoHkYuB2S9": { tier: "professional", profile_cap: 200, is_unlimited: false }, // Annual
+  "price_1T4TksCTVQHwswgoItMP8J6n": { tier: "professional", profile_cap: 200, is_unlimited: false, monthly_ocr_cap: 500, monthly_chat_cap: 999999, monthly_search_cap: 999999 }, // Monthly
+  "price_1T4Tl8CTVQHwswgoHkYuB2S9": { tier: "professional", profile_cap: 200, is_unlimited: false, monthly_ocr_cap: 500, monthly_chat_cap: 999999, monthly_search_cap: 999999 }, // Annual
 };
 
 const DEFAULT_ENTITLEMENT = {
@@ -33,6 +33,9 @@ const DEFAULT_ENTITLEMENT = {
   is_active: false,
   profile_cap: 25,
   is_unlimited: false,
+  monthly_ocr_cap: 0,
+  monthly_chat_cap: 0,
+  monthly_search_cap: 0,
 };
 
 const log = (step: string, details?: unknown) => {
