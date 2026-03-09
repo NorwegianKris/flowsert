@@ -1,27 +1,33 @@
 
 
-## Show Applicant Count for Posted Projects
+## Two UI Text Changes
 
-Cosmetic only. 🟢
+Item 3 (Employment Type dropdown) already exists in `AddPersonnelDialog.tsx` — no work needed there.
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+### Change 1: Conditional subtitle on invitation landing page
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+**File:** `src/pages/InviteAccept.tsx`, lines 158-160
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
+Replace the static text `"Log in or create an account to accept this invitation."` with conditional text based on `hasExistingAccount`:
+
+- `false` → `"Create your account to join {preview.business_name}."`
+- `true` → `"Log in to accept your invitation to join {preview.business_name}."`
+- `null` → Keep existing fallback text
+
+### Change 2: Remove role from registration banner
+
+**File:** `src/pages/Auth.tsx`, lines 951-955
+
+Change:
+```
+You're joining <strong>{invitationDetails.businessName}</strong> as <span className="capitalize">{invitationDetails.role}</span>
+```
+To:
+```
+You're joining <strong>{invitationDetails.businessName}</strong>
 ```
 
-### File
-- `src/components/ProjectsTab.tsx`
+### Risk assessment
+- Both changes are purely UI text/layout — **🟢 no anchor required**.
+- No SQL, no RLS, no auth changes.
 
