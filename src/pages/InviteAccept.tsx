@@ -25,6 +25,7 @@ export default function InviteAccept() {
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [hasExistingAccount, setHasExistingAccount] = useState<boolean | null>(null);
 
   console.log('[InviteAccept] token:', token ? 'present' : 'missing');
 
