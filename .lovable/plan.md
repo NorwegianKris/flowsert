@@ -1,27 +1,29 @@
 
 
-## Show Applicant Count for Posted Projects
+## Finding: `employment_type` column does not exist
 
-Cosmetic only. 🟢
+The `personnel` table has no `employment_type` column. However, it does have two related fields:
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+- **`category`** (text, nullable, default `'employee'`) — stores values like `'employee'` or `'freelancer'`
+- **`is_freelancer`** (boolean, default `false`)
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+These already represent employment type. The codebase uses `category` as the canonical field (the `PersonnelCategory` type in `src/types/index.ts` is `'employee' | 'freelancer'`).
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
+### Recommended approach
 
-### File
-- `src/components/ProjectsTab.tsx`
+Instead of creating a new `employment_type` column, use the existing `category` column:
+
+**Single file change: `src/components/AddPersonnelDialog.tsx`**
+
+1. Add `category: 'employee'` to `formData` initial state (line 33)
+2. Add it to the validation check (line 65) — though it has a default so it will always be valid
+3. Write `category: formData.category` in the insert (line 72–79), and set `is_freelancer: formData.category === 'freelancer'` to keep both fields in sync
+4. Add the dropdown field between Job Role and the invitation checkbox (~after line 225), with:
+   - Label: "Employment Type *"
+   - Options: Employee (`employee`), Freelancer (`freelancer`)
+   - Default: `employee`
+   - Same `Select` component styling as Job Role
+5. Add `category: 'employee'` to `resetForm`
+
+### Risk: 🟢 UI-only change, writes to existing column with existing RLS policies.
 
