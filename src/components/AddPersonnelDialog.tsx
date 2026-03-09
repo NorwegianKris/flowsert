@@ -31,6 +31,7 @@ export function AddPersonnelDialog({ open, onOpenChange, onPersonnelAdded }: Add
     name: '',
     email: '',
     role: '',
+    category: 'employee' as 'employee' | 'freelancer',
   });
 
   const copyToClipboard = async () => {
