@@ -122,7 +122,7 @@ async function syncEntitlements(
     await supabase
       .from("entitlements")
       .upsert(
-        { business_id: businessId, tier: "starter", is_active: true, profile_cap: 25, is_unlimited: false },
+        { business_id: businessId, tier: "starter", is_active: true, profile_cap: 25, is_unlimited: false, monthly_ocr_cap: 50, monthly_chat_cap: 200, monthly_search_cap: 50 },
         { onConflict: "business_id" }
       );
     return;
