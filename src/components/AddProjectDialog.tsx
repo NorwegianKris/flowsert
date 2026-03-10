@@ -201,7 +201,24 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       recurringNextDate: isRecurring
         ? new Date(Date.now() + recurringIntervalDays * 86400000).toISOString()
         : undefined,
-    };
+      // Rotation fields
+      rotationOnDays: isRecurring ? rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) : undefined,
+      rotationOffDays: isRecurring ? rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1) : undefined,
+      rotationCount: isRecurring ? rotationCount : undefined,
+      rotationsCompleted: 0,
+      autoCloseEnabled: isRecurring ? autoCloseEnabled : false,
+      nextCloseDate: isRecurring && autoCloseEnabled && startDate
+        ? new Date(new Date(startDate).getTime() + rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) * 86400000).toISOString()
+        : undefined,
+      nextOpenDate: isRecurring && autoCloseEnabled && startDate
+        ? new Date(new Date(startDate).getTime() + (rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) + rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1)) * 86400000).toISOString()
+        : undefined,
+      // Shift fields
+      isShiftParent: isRecurring && isBackToBack ? true : false,
+      shiftNumber: isRecurring && isBackToBack ? 1 : undefined,
+      shiftGroupId: undefined, // Set by hook after insert
+      _shiftCount: isRecurring && isBackToBack ? shiftCount : undefined,
+    } as any;
 
     const createdProject = await onProjectAdded(newProject);
 
