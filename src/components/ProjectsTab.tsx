@@ -160,7 +160,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
                 <div
                   key={group.groupId}
                   className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pl-3"
-                  style={{ borderLeft: `3px solid ${group.color || '#94a3b8'}` }}
+                  style={{ borderLeft: '1px dashed #cbd5e1' }}
                 >
                   {group.projects.map(project => (
                     <ProjectCard
