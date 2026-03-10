@@ -435,6 +435,10 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
           {/* Rotation info (read-only) */}
           {project.isRecurring && project.rotationOnDays && (
             <div className="p-3 bg-teal-500/10 rounded-lg border border-teal-500/50">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Set at creation — cannot be changed</p>
+              </div>
               <p className="text-sm font-medium text-foreground">
                 Rotation: {project.rotationOnDays} days on / {project.rotationOffDays} days off
               </p>
