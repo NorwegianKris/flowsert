@@ -85,6 +85,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   // Back-to-back shifts
   const [isBackToBack, setIsBackToBack] = useState(false);
   const [shiftCount, setShiftCount] = useState(2);
+  const [shiftGroupColor, setShiftGroupColor] = useState('#94a3b8');
   // Per-shift personnel selections (used when isBackToBack is true)
   const [shiftPersonnelSelections, setShiftPersonnelSelections] = useState<Record<number, PersonnelSelection[]>>({});
   const [activeShiftTab, setActiveShiftTab] = useState(1);
