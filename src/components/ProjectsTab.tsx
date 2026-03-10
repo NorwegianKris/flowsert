@@ -19,9 +19,9 @@ interface ProjectsTabProps {
 }
 
 const statusConfig = {
-  active: { label: 'Active', variant: 'active' as const, icon: Clock },
-  completed: { label: 'Completed', variant: 'completed' as const, icon: CheckCircle },
-  pending: { label: 'Pending', variant: 'outline' as const, icon: Clock },
+  active: { label: 'Active', variant: 'active' as const, icon: Clock, badgeClass: 'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/50' },
+  completed: { label: 'Completed', variant: 'completed' as const, icon: CheckCircle, badgeClass: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/50' },
+  pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, badgeClass: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/50' },
 };
 
 type ProjectFilterValue = 'all' | 'active' | 'recurring' | 'posted';
