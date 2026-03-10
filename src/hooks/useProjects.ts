@@ -358,6 +358,7 @@ export function useProjects() {
         await supabase.from('projects').update({
           shift_group_id: shiftGroupId,
           name: `${parentName} — Shift 1`,
+          group_color: project.groupColor || null,
         }).eq('id', newProject.id);
 
         newProject.shiftGroupId = shiftGroupId;

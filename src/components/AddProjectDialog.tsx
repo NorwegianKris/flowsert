@@ -1062,6 +1062,20 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                               />
                             </div>
 
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground">Shift group colour</p>
+                              <p className="text-xs text-muted-foreground">Tint applied to shift cards in the project list</p>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={shiftGroupColor}
+                                  onChange={e => setShiftGroupColor(e.target.value)}
+                                  className="h-8 w-8 rounded border border-border cursor-pointer"
+                                />
+                                <span className="text-xs text-muted-foreground font-mono">{shiftGroupColor}</span>
+                              </div>
+                            </div>
+
                             {/* Naming preview */}
                             {name.trim() && (
                               <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2 space-y-0.5">
