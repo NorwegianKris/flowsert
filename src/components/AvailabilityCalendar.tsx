@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO, addDays, differenceInDays } from 'date-fns';
-import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink } from 'lucide-react';
+import { format, isSameDay, eachDayOfInterval, parseISO, addDays, differenceInDays, addMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Certificate } from '@/types';
@@ -109,10 +110,12 @@ function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectO
 export function AvailabilityCalendar({ personnelId, personnelName, certificates = [] }: AvailabilityCalendarProps) {
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
+  const [expandedSelectedRange, setExpandedSelectedRange] = useState<DateRange | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<AvailabilityStatus>('available');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -208,6 +211,74 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return projectDates;
   };
 
+  // Upcoming events for the expanded modal — next 3 months
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    const threeMonthsLater = addMonths(now, 3);
+    const events: { date: Date; endDate?: Date; name: string; type: string; color: string }[] = [];
+
+    // Add project on-periods as events (grouped by unique period)
+    const seenPeriods = new Set<string>();
+    for (const p of allProjectOnPeriods) {
+      const key = `${p.project.id}-${p.periodStart.toISOString()}`;
+      if (seenPeriods.has(key)) continue;
+      seenPeriods.add(key);
+      if (p.periodStart >= now && p.periodStart <= threeMonthsLater) {
+        events.push({
+          date: p.periodStart,
+          endDate: p.periodEnd,
+          name: p.project.name,
+          type: 'Assigned Project',
+          color: 'hsl(240 60% 60%)',
+        });
+      }
+    }
+
+    // Add availability entries
+    for (const a of availability) {
+      const d = new Date(a.date);
+      if (d >= now && d <= threeMonthsLater) {
+        const cfg = statusConfig[a.status];
+        events.push({
+          date: d,
+          name: cfg.label,
+          type: cfg.label,
+          color:
+            a.status === 'available' ? 'hsl(142 76% 36%)' :
+            a.status === 'unavailable' ? 'hsl(0 72% 50%)' :
+            a.status === 'partial' ? 'hsl(38 92% 50%)' :
+            'hsl(210 100% 50%)',
+        });
+      }
+    }
+
+    // Add certificate expiry dates
+    for (const cert of certificateExpiryDates) {
+      if (cert.date >= now && cert.date <= threeMonthsLater) {
+        events.push({
+          date: cert.date,
+          name: cert.name,
+          type: 'Certificate Expiry',
+          color: 'hsl(280 70% 50%)',
+        });
+      }
+    }
+
+    events.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return events;
+  }, [allProjectOnPeriods, availability, certificateExpiryDates]);
+
+  const eventsByMonth = useMemo(() => {
+    const grouped = new Map<string, typeof upcomingEvents>();
+    for (const event of upcomingEvents) {
+      const monthKey = format(event.date, 'MMMM yyyy');
+      const existing = grouped.get(monthKey) || [];
+      existing.push(event);
+      grouped.set(monthKey, existing);
+    }
+    return grouped;
+  }, [upcomingEvents]);
+
   useEffect(() => {
     fetchAvailability();
   }, [personnelId]);
@@ -241,8 +312,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     }
   };
 
+  const activeRange = isExpanded ? expandedSelectedRange : selectedRange;
+
   const handleRangeSelect = (range: DateRange | undefined) => {
-    setSelectedRange(range);
+    if (isExpanded) {
+      setExpandedSelectedRange(range);
+    } else {
+      setSelectedRange(range);
+    }
     if (range?.from) {
       if (!range.to || isSameDay(range.from, range.to)) {
         const existing = availability.find((a) => isSameDay(new Date(a.date), range.from!));
@@ -261,13 +338,13 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const getDatesInRange = (): Date[] => {
-    if (!selectedRange?.from) return [];
-    if (!selectedRange.to) return [selectedRange.from];
-    return eachDayOfInterval({ start: selectedRange.from, end: selectedRange.to });
+    if (!activeRange?.from) return [];
+    if (!activeRange.to) return [activeRange.from];
+    return eachDayOfInterval({ start: activeRange.from, end: activeRange.to });
   };
 
   const handleSave = async () => {
-    if (!selectedRange?.from) return;
+    if (!activeRange?.from) return;
     const datesToSave = getDatesInRange();
     if (datesToSave.length === 0) return;
     setIsSaving(true);
@@ -293,7 +370,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         : `Availability for ${format(datesToSave[0], 'MMM d')} - ${format(datesToSave[datesToSave.length - 1], 'MMM d, yyyy')} updated`;
       toast({ title: 'Saved', description });
       fetchAvailability();
-      setSelectedRange(undefined);
+      if (isExpanded) {
+        setExpandedSelectedRange(undefined);
+      } else {
+        setSelectedRange(undefined);
+      }
     } catch (error) {
       console.error('Error saving availability:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to save availability' });
@@ -303,7 +384,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const handleRemove = async () => {
-    if (!selectedRange?.from) return;
+    if (!activeRange?.from) return;
     const datesToRemove = getDatesInRange();
     const existingEntries = datesToRemove
       .map((date) => availability.find((a) => isSameDay(new Date(a.date), date)))
@@ -322,7 +403,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         : `Availability for ${datesToRemove.length} days removed`;
       toast({ title: 'Removed', description });
       fetchAvailability();
-      setSelectedRange(undefined);
+      if (isExpanded) {
+        setExpandedSelectedRange(undefined);
+      } else {
+        setSelectedRange(undefined);
+      }
     } catch (error) {
       console.error('Error removing availability:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove availability' });
@@ -358,218 +443,333 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     certExpiryWarning: { boxShadow: 'inset 0 -2px 0 0 hsl(38 92% 50%)' },
   };
 
-  return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" />
-          Personal Calendar
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Compact Legend */}
-            <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
-              {Object.entries(statusConfig).map(([status, config]) => (
-                <div key={status} className="flex items-center gap-1.5 text-sm">
-                  <span className={cn('h-3 w-3 rounded-full', config.className)} />
-                  <span className="text-muted-foreground">{config.label}</span>
+  const calendarClassNames = {
+    months: "flex flex-col w-full",
+    month: "space-y-4 w-full",
+    caption: "flex justify-center pt-1 relative items-center",
+    caption_label: "text-sm font-medium",
+    nav: "space-x-1 flex items-center",
+    nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
+    nav_button_previous: "absolute left-1",
+    nav_button_next: "absolute right-1",
+    table: "w-full border-collapse space-y-1",
+    head_row: "flex w-full",
+    head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
+    row: "flex w-full mt-2",
+    cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
+    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
+    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+    day_today: "bg-accent text-accent-foreground",
+    day_outside: "text-muted-foreground opacity-50",
+    day_disabled: "text-muted-foreground opacity-50",
+    day_hidden: "invisible",
+  };
+
+  const expandedCalendarClassNames = {
+    ...calendarClassNames,
+    cell: "flex-1 h-11 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
+    day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center text-sm",
+  };
+
+  const legendRow = (
+    <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
+      {Object.entries(statusConfig).map(([status, config]) => (
+        <div key={status} className="flex items-center gap-1.5 text-sm">
+          <span className={cn('h-3 w-3 rounded-full', config.className)} />
+          <span className="text-muted-foreground">{config.label}</span>
+        </div>
+      ))}
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="h-3 w-3 rounded-full border-2 border-[hsl(280_70%_50%)]" />
+        <span className="text-muted-foreground">Certificate Expiry</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="h-3 w-3 rounded-sm" style={{ borderBottom: '3px solid hsl(240 60% 60%)', width: 12, height: 12 }} />
+        <span className="text-muted-foreground">Assigned Project</span>
+      </div>
+    </div>
+  );
+
+  // Detail panel content — used in the expanded modal right column
+  const renderDetailPanel = () => {
+    const range = expandedSelectedRange;
+    if (!range?.from) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground text-sm text-center px-4">
+          Select a day or period to set availability
+        </div>
+      );
+    }
+
+    const isSingle = !range.to || isSameDay(range.from, range.to);
+
+    return (
+      <div className="space-y-5">
+        {/* Date heading */}
+        <div>
+          <h3 className="text-base font-semibold text-foreground">
+            {isSingle
+              ? format(range.from, 'EEEE, MMMM d, yyyy')
+              : `${format(range.from, 'MMMM d')} – ${format(range.to!, 'MMMM d, yyyy')}`
+            }
+          </h3>
+          <p className="text-sm text-muted-foreground">{personnelName}</p>
+        </div>
+
+        {/* Assigned Projects */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned Projects</h4>
+          {isSingle && getProjectsOnDate(range.from).length > 0 ? (
+            <div className="space-y-2">
+              {getProjectsOnDate(range.from).map((item, idx) => (
+                <div key={idx} className="p-2.5 rounded-md border border-border bg-muted/30 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5 text-[hsl(240_60%_60%)]" />
+                    <button
+                      onClick={() => navigate(`/admin/projects/${item.project.id}`)}
+                      className="text-sm font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
+                    >
+                      {item.project.name}
+                    </button>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-0.5 pl-5">
+                    {item.project.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {item.project.location}
+                      </div>
+                    )}
+                    <div>
+                      On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
+                    </div>
+                    {item.project.shiftNumber && (
+                      <div>Shift {item.project.shiftNumber}</div>
+                    )}
+                  </div>
+                  {getCertExpiryWarningsForDate(range.from!).filter(w => w.projectName === item.project.name).map((warning, wIdx) => (
+                    <div key={wIdx} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 pl-5">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>{warning.certName} expires in {warning.daysUntil}d</span>
+                    </div>
+                  ))}
                 </div>
               ))}
-              <div className="flex items-center gap-1.5 text-sm">
-                <span className="h-3 w-3 rounded-full border-2 border-[hsl(280_70%_50%)]" />
-                <span className="text-muted-foreground">Certificate Expiry</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-sm">
-                <span className="h-3 w-3 rounded-sm" style={{ borderBottom: '3px solid hsl(240 60% 60%)', width: 12, height: 12 }} />
-                <span className="text-muted-foreground">Assigned Project</span>
-              </div>
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              {isSingle ? 'No projects assigned' : 'No projects in this period'}
+            </p>
+          )}
 
-            {/* Tip banner */}
-            <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
-              <span className="text-sm">💡</span>
-              <span className="text-xs text-muted-foreground">Tip: Click the start date, then click the end date to select a period.</span>
+          {isSingle && getProjectEventsOnDate(range.from).length > 0 && (
+            <div className="space-y-1 pt-1">
+              {getProjectEventsOnDate(range.from).map((event, idx) => (
+                <div key={idx} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(210_100%_50%)] mt-1 shrink-0" />
+                  <span><span className="font-medium">{event.projectName}:</span> {event.description}</span>
+                </div>
+              ))}
             </div>
+          )}
 
-            {/* Calendar — full width */}
-            <Calendar
-              mode="range"
-              selected={selectedRange}
-              onSelect={handleRangeSelect}
-              modifiers={modifiers}
-              modifiersStyles={modifiersStyles}
-              className="rounded-md border border-border p-3 pointer-events-auto w-full"
-              classNames={{
-                months: "flex flex-col w-full",
-                month: "space-y-4 w-full",
-                caption: "flex justify-center pt-1 relative items-center",
-                caption_label: "text-sm font-medium",
-                nav: "space-x-1 flex items-center",
-                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
-                nav_button_previous: "absolute left-1",
-                nav_button_next: "absolute right-1",
-                table: "w-full border-collapse space-y-1",
-                head_row: "flex w-full",
-                head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
-                row: "flex w-full mt-2",
-                cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
-                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
-                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground",
-                day_outside: "text-muted-foreground opacity-50",
-                day_disabled: "text-muted-foreground opacity-50",
-                day_hidden: "invisible",
-              }}
-              numberOfMonths={1}
-            />
+          {isSingle && getCertificatesExpiringOnDate(range.from).length > 0 && (
+            <div className="space-y-1 pt-1">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-[hsl(280_70%_50%)]">
+                <Award className="h-3 w-3" />
+                Certificates Expiring
+              </div>
+              {getCertificatesExpiringOnDate(range.from).map((certName, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground pl-4">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(280_70%_50%)]" />
+                  {certName}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-            {/* Day detail modal */}
-            <Dialog open={!!selectedRange?.from} onOpenChange={(open) => { if (!open) setSelectedRange(undefined); }}>
-              <DialogContent className="max-w-[420px]">
-                {selectedRange?.from && (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
-                          `${format(selectedRange.from, 'MMM d')} – ${format(selectedRange.to, 'MMM d, yyyy')}`
-                        ) : (
-                          format(selectedRange.from, 'EEEE, MMMM d, yyyy')
-                        )}
-                      </DialogTitle>
-                      <DialogDescription>{personnelName}</DialogDescription>
-                    </DialogHeader>
-
-                    {/* Assigned Projects */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned Projects</h4>
-                      {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getProjectsOnDate(selectedRange.from).length > 0 ? (
-                        <div className="space-y-2">
-                          {getProjectsOnDate(selectedRange.from).map((item, idx) => (
-                            <div key={idx} className="p-2.5 rounded-md border border-border bg-muted/30 space-y-1.5">
-                              <div className="flex items-center gap-1.5">
-                                <Briefcase className="h-3.5 w-3.5 text-[hsl(240_60%_60%)]" />
-                                <button
-                                  onClick={() => navigate(`/admin/projects/${item.project.id}`)}
-                                  className="text-sm font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
-                                >
-                                  {item.project.name}
-                                </button>
-                                <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                              </div>
-                              <div className="text-xs text-muted-foreground space-y-0.5 pl-5">
-                                {item.project.location && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {item.project.location}
-                                  </div>
-                                )}
-                                <div>
-                                  On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
-                                </div>
-                                {item.project.shiftNumber && (
-                                  <div>Shift {item.project.shiftNumber}</div>
-                                )}
-                              </div>
-                              {getCertExpiryWarningsForDate(selectedRange.from!).filter(w => w.projectName === item.project.name).map((warning, wIdx) => (
-                                <div key={wIdx} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 pl-5">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  <span>{warning.certName} expires in {warning.daysUntil}d</span>
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">No projects assigned</p>
-                      )}
-
-                      {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getProjectEventsOnDate(selectedRange.from).length > 0 && (
-                        <div className="space-y-1 pt-1">
-                          {getProjectEventsOnDate(selectedRange.from).map((event, idx) => (
-                            <div key={idx} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(210_100%_50%)] mt-1 shrink-0" />
-                              <span><span className="font-medium">{event.projectName}:</span> {event.description}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
-                        <div className="space-y-1 pt-1">
-                          <div className="flex items-center gap-1.5 text-xs font-medium text-[hsl(280_70%_50%)]">
-                            <Award className="h-3 w-3" />
-                            Certificates Expiring
-                          </div>
-                          {getCertificatesExpiringOnDate(selectedRange.from).map((certName, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground pl-4">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(280_70%_50%)]" />
-                              {certName}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Set Availability */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['available', 'partial', 'unavailable', 'other'] as AvailabilityStatus[]).map((status) => {
-                          const config = statusConfig[status];
-                          const Icon = config.icon;
-                          return (
-                            <Button
-                              key={status}
-                              variant={selectedStatus === status ? 'default' : 'outline'}
-                              onClick={() => setSelectedStatus(status)}
-                              className={cn(
-                                'h-10',
-                                selectedStatus === status && config.className
-                              )}
-                            >
-                              <Icon className="h-4 w-4 mr-1.5" />
-                              {config.label}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                      <Textarea
-                        placeholder="Add notes (optional)..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={2}
-                      />
-                      <Button onClick={handleSave} disabled={isSaving} className="w-full">
-                        {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
-                        )}
-                      </Button>
-                      {hasExistingEntriesInRange() && (
-                        <Button
-                          variant="outline"
-                          onClick={handleRemove}
-                          disabled={isSaving}
-                          className="w-full"
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </DialogContent>
-            </Dialog>
+        {/* Set Availability */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {(['available', 'partial', 'unavailable', 'other'] as AvailabilityStatus[]).map((status) => {
+              const config = statusConfig[status];
+              const Icon = config.icon;
+              return (
+                <Button
+                  key={status}
+                  variant={selectedStatus === status ? 'default' : 'outline'}
+                  onClick={() => setSelectedStatus(status)}
+                  className={cn(
+                    'h-10',
+                    selectedStatus === status && config.className
+                  )}
+                >
+                  <Icon className="h-4 w-4 mr-1.5" />
+                  {config.label}
+                </Button>
+              );
+            })}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <Textarea
+            placeholder="Add notes (optional)..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+          />
+          <Button onClick={handleSave} disabled={isSaving} className="w-full">
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
+            )}
+          </Button>
+          {hasExistingEntriesInRange() && (
+            <Button
+              variant="outline"
+              onClick={handleRemove}
+              disabled={isSaving}
+              className="w-full"
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Card className="border-border/50">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-primary" />
+            Personal Calendar
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setExpandedSelectedRange(undefined);
+              setIsExpanded(true);
+            }}
+          >
+            <Maximize2 className="h-4 w-4 mr-1.5" />
+            Expand
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {legendRow}
+
+              {/* Tip banner */}
+              <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+                <span className="text-sm">💡</span>
+                <span className="text-xs text-muted-foreground">Tip: Click the start date, then click the end date to select a period.</span>
+              </div>
+
+              {/* Compact calendar — visual only, no dialog on click */}
+              <Calendar
+                mode="range"
+                selected={selectedRange}
+                onSelect={(range) => setSelectedRange(range)}
+                modifiers={modifiers}
+                modifiersStyles={modifiersStyles}
+                className="rounded-md border border-border p-3 pointer-events-auto w-full"
+                classNames={calendarClassNames}
+                numberOfMonths={1}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Expanded Modal */}
+      <Dialog open={isExpanded} onOpenChange={(open) => { if (!open) { setIsExpanded(false); setExpandedSelectedRange(undefined); } }}>
+        <DialogContent className="max-w-[860px] max-h-[90vh] overflow-hidden p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Personal Calendar — {personnelName}</DialogTitle>
+            <DialogDescription>Expanded calendar view with availability management</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col md:flex-row h-full max-h-[90vh]">
+            {/* Left Column — Calendar + Events */}
+            <div className="flex-1 min-w-0 border-r border-border overflow-y-auto p-5 space-y-5">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-primary" />
+                <h2 className="text-base font-semibold text-foreground">Personal Calendar</h2>
+              </div>
+
+              {/* Tip banner */}
+              <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
+                <span className="text-sm">💡</span>
+                <span className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</span>
+              </div>
+
+              <Calendar
+                mode="range"
+                selected={expandedSelectedRange}
+                onSelect={handleRangeSelect}
+                modifiers={modifiers}
+                modifiersStyles={modifiersStyles}
+                className="rounded-md border border-border p-3 pointer-events-auto w-full"
+                classNames={expandedCalendarClassNames}
+                numberOfMonths={1}
+              />
+
+              {/* Legend */}
+              {legendRow}
+
+              {/* Upcoming Events */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Upcoming Events</h3>
+                <ScrollArea className="h-[200px]">
+                  {eventsByMonth.size === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">No upcoming events</p>
+                  ) : (
+                    <div className="space-y-4 pr-3">
+                      {Array.from(eventsByMonth.entries()).map(([month, events]) => (
+                        <div key={month}>
+                          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{month}</h4>
+                          <div className="space-y-1.5">
+                            {events.map((event, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-sm">
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: event.color }}
+                                />
+                                <span className="text-foreground font-medium truncate flex-1">{event.name}</span>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {format(event.date, 'MMM d')}
+                                  {event.endDate && !isSameDay(event.date, event.endDate) && ` – ${format(event.endDate, 'MMM d')}`}
+                                </span>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                  {event.type}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+
+            {/* Right Column — Detail Panel */}
+            <div className="w-full md:w-[320px] shrink-0 overflow-y-auto p-5">
+              {renderDetailPanel()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
