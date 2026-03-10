@@ -1618,19 +1618,28 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               )}
             </ScrollArea>
 
-            {personnelSelections.length > 0 && (
+            {(isBackToBack ? totalShiftSelections > 0 : currentSelections.length > 0) && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                {inviteCount > 0 && (
+                {isBackToBack ? (
                   <span className="flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {inviteCount} invitation{inviteCount > 1 ? 's' : ''}
+                    <Users className="h-3 w-3" />
+                    {totalShiftSelections} total across {shiftCount} shifts
                   </span>
-                )}
-                {assignCount > 0 && (
-                  <span className="flex items-center gap-1">
-                    <UserPlus className="h-3 w-3" />
-                    {assignCount} direct assignment{assignCount > 1 ? 's' : ''}
-                  </span>
+                ) : (
+                  <>
+                    {inviteCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {inviteCount} invitation{inviteCount > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {assignCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <UserPlus className="h-3 w-3" />
+                        {assignCount} direct assignment{assignCount > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             )}
