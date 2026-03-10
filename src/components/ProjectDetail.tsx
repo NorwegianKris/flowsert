@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjectApplications } from '@/hooks/useProjectApplications';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ import {
   Pencil,
   Inbox,
   Megaphone,
+  Layers,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import {
@@ -51,10 +52,12 @@ import { toast } from 'sonner';
 interface ProjectDetailProps {
   project: Project;
   personnel: Personnel[];
+  allProjects?: Project[];
   onBack: () => void;
   onUpdateProject?: (project: Project) => void;
   onPersonnelClick?: (person: Personnel) => void;
   businessName?: string;
+  onSelectProject?: (project: Project) => void;
 }
 
 const statusConfig = {
@@ -63,7 +66,7 @@ const statusConfig = {
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, color: 'bg-amber-500' },
 };
 
-export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick, businessName }: ProjectDetailProps) {
+export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdateProject, onPersonnelClick, businessName, onSelectProject }: ProjectDetailProps) {
   const { businessId } = useAuth();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isAddPhaseOpen, setIsAddPhaseOpen] = useState(false);
@@ -242,6 +245,12 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
                       {config.label}
                     </Badge>
                   )}
+                  {project.shiftGroupId && project.shiftNumber && (
+                    <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                      <Layers className="h-3 w-3 mr-1" />
+                      Shift {project.shiftNumber}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-muted-foreground">{project.description}</p>
               </div>
@@ -272,6 +281,32 @@ export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onP
               </div>
             </div>
           </div>
+
+          {/* Shift siblings navigation */}
+          {project.shiftGroupId && allProjects && onSelectProject && (() => {
+            const siblings = allProjects
+              .filter(p => p.shiftGroupId === project.shiftGroupId)
+              .sort((a, b) => (a.shiftNumber || 0) - (b.shiftNumber || 0));
+            if (siblings.length <= 1) return null;
+            return (
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <span className="text-xs text-muted-foreground font-medium">Shifts:</span>
+                {siblings.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => s.id !== project.id && onSelectProject(s)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      s.id === project.id
+                        ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/50'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/50'
+                    }`}
+                  >
+                    Shift {s.shiftNumber}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

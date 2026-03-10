@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, Search } from 'lucide-react';
+import { FolderOpen, Clock, CheckCircle, ChevronDown, Megaphone, Users, MapPin, Repeat, Search, Layers } from 'lucide-react';
 import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { InvitationLog } from '@/components/InvitationLog';
@@ -26,10 +26,19 @@ const statusConfig = {
 
 type ProjectFilterValue = 'all' | 'active' | 'recurring' | 'posted';
 
+// Group projects by shift_group_id
+interface ShiftGroup {
+  groupId: string;
+  projects: Project[];
+  parentName: string;
+  dateRange: string;
+}
+
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
   const [previousOpen, setPreviousOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState<ProjectFilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedShiftGroups, setExpandedShiftGroups] = useState<Set<string>>(new Set());
   
   // Filter projects based on search
   const searchedProjects = projects.filter(p => {
@@ -54,6 +63,36 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   const activeProjects = filteredProjects.filter((p) => p.status === 'active' || p.status === 'pending');
   const completedProjects = filteredProjects.filter((p) => p.status === 'completed');
 
+  // Group shift projects
+  const { shiftGroups, standaloneProjects } = useMemo(() => {
+    const groups = new Map<string, Project[]>();
+    const standalone: Project[] = [];
+
+    activeProjects.forEach(p => {
+      if (p.shiftGroupId) {
+        const existing = groups.get(p.shiftGroupId) || [];
+        existing.push(p);
+        groups.set(p.shiftGroupId, existing);
+      } else {
+        standalone.push(p);
+      }
+    });
+
+    const shiftGroups: ShiftGroup[] = [];
+    groups.forEach((prjs, groupId) => {
+      prjs.sort((a, b) => (a.shiftNumber || 0) - (b.shiftNumber || 0));
+      const parent = prjs.find(p => p.isShiftParent) || prjs[0];
+      // Extract base name (remove " — Shift N" suffix)
+      const baseName = parent.name.replace(/ — Shift \d+$/, '');
+      const firstStart = prjs[0]?.startDate;
+      const lastEnd = prjs[prjs.length - 1]?.endDate;
+      const dateRange = `${firstStart ? new Date(firstStart).toLocaleDateString() : '—'} → ${lastEnd ? new Date(lastEnd).toLocaleDateString() : '—'}`;
+      shiftGroups.push({ groupId, projects: prjs, parentName: baseName, dateRange });
+    });
+
+    return { shiftGroups, standaloneProjects: standalone };
+  }, [activeProjects]);
+
   const getPersonnelById = (id: string) => personnel.find((p) => p.id === id);
 
   const getInitials = (name: string) => {
@@ -63,6 +102,15 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const toggleShiftGroup = (groupId: string) => {
+    setExpandedShiftGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
   };
 
   return (
@@ -89,7 +137,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           <ToggleGroupItem
             value="all"
             aria-label="All projects"
-            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             <FolderOpen className="h-4 w-4 mr-1.5" />
             All
@@ -97,21 +145,21 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
           <ToggleGroupItem
             value="active"
             aria-label="Active projects"
-            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             Active
           </ToggleGroupItem>
           <ToggleGroupItem
             value="recurring"
             aria-label="Recurring projects"
-            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             Recurring
           </ToggleGroupItem>
           <ToggleGroupItem
             value="posted"
             aria-label="Posted projects"
-            className="text-white hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
+            className="text-primary-foreground hover:bg-primary-foreground/20 data-[state=on]:bg-background data-[state=on]:text-primary data-[state=on]:shadow-sm px-3 py-1.5 text-sm"
           >
             Posted
           </ToggleGroupItem>
@@ -126,8 +174,27 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
               {{ all: 'All Projects', active: 'Active Projects', recurring: 'Recurring Projects', posted: 'Posted Projects' }[projectFilter]}
             </h2>
           </div>
+
+          {/* Shift Group Cards */}
+          {shiftGroups.length > 0 && (
+            <div className="space-y-4 mb-4">
+              {shiftGroups.map(group => (
+                <ShiftGroupCard
+                  key={group.groupId}
+                  group={group}
+                  personnel={personnel}
+                  expanded={expandedShiftGroups.has(group.groupId)}
+                  onToggle={() => toggleShiftGroup(group.groupId)}
+                  onSelectProject={onSelectProject}
+                  getPersonnelById={getPersonnelById}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Standalone Project Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {activeProjects.map((project) => (
+            {standaloneProjects.map((project) => (
               <ProjectCard 
                 key={project.id} 
                 project={project} 
@@ -138,7 +205,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
               />
             ))}
           </div>
-          {activeProjects.length === 0 && (
+          {standaloneProjects.length === 0 && shiftGroups.length === 0 && (
             <div className="text-center py-8">
               <div className="text-4xl mb-3">🚀</div>
               <p className="text-muted-foreground">No active projects</p>
@@ -186,6 +253,70 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   );
 }
 
+// Shift Group Card Component
+interface ShiftGroupCardProps {
+  group: ShiftGroup;
+  personnel: Personnel[];
+  expanded: boolean;
+  onToggle: () => void;
+  onSelectProject: (project: Project) => void;
+  getPersonnelById: (id: string) => Personnel | undefined;
+}
+
+function ShiftGroupCard({ group, personnel, expanded, onToggle, onSelectProject, getPersonnelById }: ShiftGroupCardProps) {
+  return (
+    <Card className="border-teal-500/50 bg-teal-500/5">
+      <CardContent className="p-4">
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-3 w-full text-left"
+        >
+          <Layers className="h-5 w-5 text-teal-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-foreground">{group.parentName}</h3>
+              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                {group.projects.length} shifts
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{group.dateRange}</p>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {expanded && (
+          <div className="mt-3 space-y-2 pl-8">
+            {group.projects.map(shift => {
+              const assignedCount = shift.assignedPersonnel.length;
+              const statusLabel = shift.status === 'active' ? '● Active' : shift.status === 'pending' ? '○ Upcoming' : '✓ Completed';
+              const statusColor = shift.status === 'active' ? 'text-emerald-500' : shift.status === 'pending' ? 'text-muted-foreground' : 'text-muted-foreground';
+
+              return (
+                <button
+                  key={shift.id}
+                  onClick={() => onSelectProject(shift)}
+                  className="flex items-center gap-4 w-full text-left p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm font-medium w-16 shrink-0">Shift {shift.shiftNumber}</span>
+                  <span className="text-xs text-muted-foreground w-40 shrink-0">
+                    {shift.startDate ? new Date(shift.startDate).toLocaleDateString() : '—'}
+                    –{shift.endDate ? new Date(shift.endDate).toLocaleDateString() : '—'}
+                  </span>
+                  <span className={`text-xs font-medium w-20 shrink-0 ${statusColor}`}>{statusLabel}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {assignedCount > 0 ? `${assignedCount} assigned` : '— Not staffed'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Single Project Card
 interface ProjectCardProps {
   project: Project;
   personnel: Personnel[];
@@ -216,6 +347,25 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
     enabled: isPosted,
   });
 
+  // Rotation status text
+  const rotationStatusText = (() => {
+    if (!project.isRecurring || !project.autoCloseEnabled || !project.rotationOnDays) return null;
+    const completed = project.rotationsCompleted || 0;
+    const total = project.rotationCount || 1;
+    if (project.status === 'active' && project.nextCloseDate) {
+      const daysUntilClose = Math.ceil((new Date(project.nextCloseDate).getTime() - Date.now()) / 86400000);
+      return `Rotation ${completed + 1} of ${total} · Auto-closes in ${daysUntilClose} day${daysUntilClose !== 1 ? 's' : ''}`;
+    }
+    if (project.status === 'pending' && project.nextOpenDate) {
+      const daysUntilOpen = Math.ceil((new Date(project.nextOpenDate).getTime() - Date.now()) / 86400000);
+      return `Next rotation starts in ${daysUntilOpen} day${daysUntilOpen !== 1 ? 's' : ''}`;
+    }
+    if (project.status === 'completed' && total > 1) {
+      return `All ${total} rotations completed`;
+    }
+    return null;
+  })();
+
   return (
     <Card 
       className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
@@ -233,23 +383,36 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
             )}
             <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
           </div>
-          {isPosted && (
-            <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD] shrink-0">
-              <Megaphone className="h-3 w-3 mr-1" />
-              Posted
-            </Badge>
-          )}
-          {project.isRecurring && (
-            <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50 shrink-0">
-              <Repeat className="h-3 w-3 mr-1" />
-              Every {project.recurringIntervalLabel || `${project.recurringIntervalDays} days`}
-            </Badge>
-          )}
+          <div className="flex flex-col gap-1 items-end shrink-0">
+            {isPosted && (
+              <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
+                <Megaphone className="h-3 w-3 mr-1" />
+                Posted
+              </Badge>
+            )}
+            {project.isRecurring && (
+              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                <Repeat className="h-3 w-3 mr-1" />
+                Every {project.recurringIntervalLabel || `${project.recurringIntervalDays} days`}
+              </Badge>
+            )}
+            {project.shiftGroupId && project.shiftNumber && (
+              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                <Layers className="h-3 w-3 mr-1" />
+                Shift {project.shiftNumber}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col flex-1 gap-1.5">
           <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
         
+          {/* Rotation status */}
+          {rotationStatusText && (
+            <p className="text-xs font-medium text-teal-600 dark:text-teal-400">{rotationStatusText}</p>
+          )}
+
           {/* Personnel row: avatars + counts OR placeholder — fixed height */}
           <div className="flex items-center gap-1 h-10">
             {assignedPersonnel.length > 0 ? (

@@ -74,6 +74,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [recurringIntervalDays, setRecurringIntervalDays] = useState<number>(14);
   const [recurringIntervalLabel, setRecurringIntervalLabel] = useState('14 days');
   const [customInterval, setCustomInterval] = useState(false);
+  // Rotation schedule
+  const [rotationOnValue, setRotationOnValue] = useState(14);
+  const [rotationOnUnit, setRotationOnUnit] = useState<'days' | 'weeks'>('days');
+  const [rotationOffValue, setRotationOffValue] = useState(28);
+  const [rotationOffUnit, setRotationOffUnit] = useState<'days' | 'weeks'>('days');
+  const [rotationCount, setRotationCount] = useState(1);
+  const [autoCloseEnabled, setAutoCloseEnabled] = useState(true);
+  // Back-to-back shifts
+  const [isBackToBack, setIsBackToBack] = useState(false);
+  const [shiftCount, setShiftCount] = useState(2);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Search & filter state
@@ -191,7 +201,24 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       recurringNextDate: isRecurring
         ? new Date(Date.now() + recurringIntervalDays * 86400000).toISOString()
         : undefined,
-    };
+      // Rotation fields
+      rotationOnDays: isRecurring ? rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) : undefined,
+      rotationOffDays: isRecurring ? rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1) : undefined,
+      rotationCount: isRecurring ? rotationCount : undefined,
+      rotationsCompleted: 0,
+      autoCloseEnabled: isRecurring ? autoCloseEnabled : false,
+      nextCloseDate: isRecurring && autoCloseEnabled && startDate
+        ? new Date(new Date(startDate).getTime() + rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) * 86400000).toISOString()
+        : undefined,
+      nextOpenDate: isRecurring && autoCloseEnabled && startDate
+        ? new Date(new Date(startDate).getTime() + (rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) + rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1)) * 86400000).toISOString()
+        : undefined,
+      // Shift fields
+      isShiftParent: isRecurring && isBackToBack ? true : false,
+      shiftNumber: isRecurring && isBackToBack ? 1 : undefined,
+      shiftGroupId: undefined, // Set by hook after insert
+      _shiftCount: isRecurring && isBackToBack ? shiftCount : undefined,
+    } as any;
 
     const createdProject = await onProjectAdded(newProject);
 
@@ -271,6 +298,14 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setRecurringIntervalDays(14);
     setRecurringIntervalLabel('14 days');
     setCustomInterval(false);
+    setRotationOnValue(14);
+    setRotationOnUnit('days');
+    setRotationOffValue(28);
+    setRotationOffUnit('days');
+    setRotationCount(1);
+    setAutoCloseEnabled(true);
+    setIsBackToBack(false);
+    setShiftCount(2);
     clearSuggestions();
   };
 
@@ -734,7 +769,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
             <div className="flex items-start gap-3 pt-3 border-t border-border/40">
               <Switch
                 checked={isRecurring}
-                onCheckedChange={setIsRecurring}
+                onCheckedChange={(val) => {
+                  setIsRecurring(val);
+                  if (!val) {
+                    setIsBackToBack(false);
+                    setAutoCloseEnabled(true);
+                  }
+                }}
                 className="mt-0.5"
               />
               <div className="flex-1 min-w-0">
@@ -747,57 +788,170 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 </p>
 
                 {isRecurring && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs text-muted-foreground">Repeat every:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {[7, 14, 21, 28].map(days => (
-                        <button
-                          key={days}
-                          type="button"
-                          onClick={() => {
-                            setRecurringIntervalDays(days);
-                            setRecurringIntervalLabel(`${days} days`);
-                            setCustomInterval(false);
-                          }}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                            recurringIntervalDays === days && !customInterval
-                              ? 'bg-teal-500/20 border-teal-500/50 text-teal-700 dark:text-teal-300'
-                              : 'border-border/50 text-muted-foreground hover:border-teal-500/30 hover:text-teal-600'
-                          }`}
-                        >
-                          {days} days
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setCustomInterval(true)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                          customInterval
-                            ? 'bg-teal-500/20 border-teal-500/50 text-teal-700 dark:text-teal-300'
-                            : 'border-border/50 text-muted-foreground hover:border-teal-500/30'
-                        }`}
-                      >
-                        Custom
-                      </button>
-                    </div>
-
-                    {customInterval && (
+                  <div className="mt-3 space-y-4">
+                    {/* On period */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">On period (working)</p>
                       <div className="flex items-center gap-2">
-                        <input
+                        <Input
                           type="number"
                           min={1}
                           max={365}
-                          value={recurringIntervalDays}
+                          value={rotationOnValue}
                           onChange={e => {
                             const val = parseInt(e.target.value);
-                            if (!isNaN(val) && val > 0) {
-                              setRecurringIntervalDays(val);
-                              setRecurringIntervalLabel(`${val} days`);
-                            }
+                            if (!isNaN(val) && val > 0) setRotationOnValue(val);
                           }}
-                          className="w-20 px-2 py-1 text-sm border border-border rounded-md bg-background"
+                          className="w-20"
                         />
-                        <span className="text-xs text-muted-foreground">days between recurrences</span>
+                        <select
+                          value={rotationOnUnit}
+                          onChange={e => setRotationOnUnit(e.target.value as 'days' | 'weeks')}
+                          className="px-2 py-2 text-sm border border-input rounded-md bg-background"
+                        >
+                          <option value="days">Days</option>
+                          <option value="weeks">Weeks</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Off period */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Off period (rest)</p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={365}
+                          value={rotationOffValue}
+                          onChange={e => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val > 0) setRotationOffValue(val);
+                          }}
+                          className="w-20"
+                        />
+                        <select
+                          value={rotationOffUnit}
+                          onChange={e => setRotationOffUnit(e.target.value as 'days' | 'weeks')}
+                          className="px-2 py-2 text-sm border border-input rounded-md bg-background"
+                        >
+                          <option value="days">Days</option>
+                          <option value="weeks">Weeks</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Number of rotations */}
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Number of rotations</p>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={52}
+                        value={rotationCount}
+                        onChange={e => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val > 0) setRotationCount(val);
+                        }}
+                        className="w-20"
+                      />
+                    </div>
+
+                    {/* Helper text */}
+                    {(() => {
+                      const onDays = rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1);
+                      const offDays = rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1);
+                      const fullCycle = onDays + offDays;
+                      const totalDays = rotationCount * fullCycle;
+                      const endDateCalc = startDate
+                        ? new Date(new Date(startDate).getTime() + totalDays * 86400000).toLocaleDateString()
+                        : '—';
+                      return (
+                        <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2 space-y-0.5">
+                          <p>Full cycle: <span className="font-medium">{fullCycle} days</span> ({onDays} on + {offDays} off)</p>
+                          <p>Total duration: <span className="font-medium">{totalDays} days</span> ({rotationCount} rotation{rotationCount > 1 ? 's' : ''})</p>
+                          {startDate && <p>Project ends: <span className="font-medium">{endDateCalc}</span></p>}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Auto-close toggle */}
+                    <div className="flex items-center gap-3 pt-2 border-t border-border/30">
+                      <Switch
+                        checked={autoCloseEnabled}
+                        onCheckedChange={(val) => {
+                          setAutoCloseEnabled(val);
+                          if (!val) setIsBackToBack(false);
+                        }}
+                      />
+                      <div>
+                        <p className="text-sm font-medium">Auto-close rotations</p>
+                        <p className="text-xs text-muted-foreground">Automatically close and reopen the project at the end of each on-period</p>
+                      </div>
+                    </div>
+
+                    {/* Back-to-back shifts */}
+                    {autoCloseEnabled && (
+                      <div className="space-y-3 pt-2 border-t border-border/30">
+                        <div className="flex items-center gap-3">
+                          <Switch
+                            checked={isBackToBack}
+                            onCheckedChange={setIsBackToBack}
+                          />
+                          <div>
+                            <p className="text-sm font-medium">Set up back-to-back shifts</p>
+                            <p className="text-xs text-muted-foreground">Create multiple crews running the same rotation in sequence</p>
+                          </div>
+                        </div>
+
+                        {isBackToBack && (
+                          <div className="space-y-3 pl-6">
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground">Number of shifts</p>
+                              <Input
+                                type="number"
+                                min={2}
+                                max={6}
+                                value={shiftCount}
+                                onChange={e => {
+                                  const val = parseInt(e.target.value);
+                                  if (!isNaN(val) && val >= 2 && val <= 6) setShiftCount(val);
+                                }}
+                                className="w-20"
+                              />
+                            </div>
+
+                            {/* Naming preview */}
+                            {name.trim() && (
+                              <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2 space-y-0.5">
+                                <p className="font-medium">Projects will be created as:</p>
+                                {Array.from({ length: shiftCount }, (_, i) => (
+                                  <p key={i} className="pl-2">• {name} — Shift {i + 1}</p>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Shift schedule preview */}
+                            {startDate && (() => {
+                              const onDays = rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1);
+                              return (
+                                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2 space-y-0.5">
+                                  <p className="font-medium">Shift schedule:</p>
+                                  {Array.from({ length: shiftCount }, (_, i) => {
+                                    const offsetDays = i * onDays;
+                                    const shiftStart = new Date(new Date(startDate).getTime() + offsetDays * 86400000);
+                                    const shiftEnd = new Date(shiftStart.getTime() + onDays * 86400000);
+                                    return (
+                                      <p key={i} className="pl-2">
+                                        Shift {i + 1}: {shiftStart.toLocaleDateString()} → {shiftEnd.toLocaleDateString()}
+                                      </p>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
