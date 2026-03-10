@@ -140,6 +140,7 @@ function mapDbToProject(p: DbProject, calendarItems: DbCalendarItem[]): Project 
     isShiftParent: p.is_shift_parent,
     shiftGroupId: p.shift_group_id || undefined,
     shiftNumber: p.shift_number || undefined,
+    groupColor: p.group_color || undefined,
     calendarItems: calendarItems
       .filter(item => item.project_id === p.id)
       .map(item => ({
