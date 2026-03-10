@@ -320,8 +320,28 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     onOpenChange(isOpen);
   };
 
+  // --- Per-shift personnel helpers ---
+  // Get current selections based on mode
+  const getCurrentSelections = useCallback((): PersonnelSelection[] => {
+    if (isBackToBack) {
+      return shiftPersonnelSelections[activeShiftTab] || [];
+    }
+    return personnelSelections;
+  }, [isBackToBack, shiftPersonnelSelections, activeShiftTab, personnelSelections]);
+
+  const setCurrentSelections = useCallback((updater: (prev: PersonnelSelection[]) => PersonnelSelection[]) => {
+    if (isBackToBack) {
+      setShiftPersonnelSelections(prev => ({
+        ...prev,
+        [activeShiftTab]: updater(prev[activeShiftTab] || []),
+      }));
+    } else {
+      setPersonnelSelections(updater);
+    }
+  }, [isBackToBack, activeShiftTab]);
+
   const togglePersonnel = (personnelId: string) => {
-    setPersonnelSelections((prev) => {
+    setCurrentSelections((prev) => {
       const existing = prev.find(s => s.id === personnelId);
       if (existing) {
         return prev.filter(s => s.id !== personnelId);
@@ -331,7 +351,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const setPersonnelMode = (personnelId: string, mode: PersonnelMode) => {
-    setPersonnelSelections((prev) => {
+    setCurrentSelections((prev) => {
       const existing = prev.find(s => s.id === personnelId);
       if (existing) {
         return prev.map(s => s.id === personnelId ? { ...s, mode } : s);
@@ -342,18 +362,19 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const selectAllPersonnel = () => {
     const selectable = getFilteredPersonnel();
-    setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: 'invite' })));
+    setCurrentSelections(() => selectable.map(p => ({ id: p.id, mode: 'invite' })));
   };
 
   const deselectAllPersonnel = () => {
-    setPersonnelSelections([]);
+    setCurrentSelections(() => []);
   };
 
   // Check if all selectable personnel are currently selected
   const allSelected = () => {
     const selectable = getFilteredPersonnel();
+    const current = getCurrentSelections();
     if (selectable.length === 0) return false;
-    return selectable.every(p => personnelSelections.some(s => s.id === p.id));
+    return selectable.every(p => current.some(s => s.id === p.id));
   };
 
   const selectSuggestedPersonnel = () => {
@@ -362,7 +383,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     const selectableIds = personnel
       .filter(p => suggestedIds.includes(p.id) && (p.category !== 'freelancer' || p.activated))
       .map(p => p.id);
-    setPersonnelSelections(selectableIds.map(id => ({ id, mode: 'invite' })));
+    setCurrentSelections(() => selectableIds.map(id => ({ id, mode: 'invite' })));
   };
 
   // Sort personnel: suggested first (by score), then apply sort option
