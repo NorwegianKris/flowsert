@@ -256,6 +256,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       isShiftParent: isShiftMode ? true : false,
       shiftNumber: isShiftMode ? 1 : undefined,
       shiftGroupId: undefined, // Set by hook after insert
+      groupColor: isShiftMode ? shiftGroupColor : undefined,
       _shiftCount: isShiftMode ? shiftCount : undefined,
       _shiftPersonnel: isShiftMode ? shiftPersonnelMap : undefined,
     } as any;
