@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO, addDays, differenceInDays } from 'date-fns';
 import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Certificate } from '@/types';
 import { useAssignedProjects, AssignedProjectWithRotation } from '@/components/AssignedProjects';
 import type { DateRange } from 'react-day-picker';
