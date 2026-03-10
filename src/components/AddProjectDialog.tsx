@@ -850,8 +850,15 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 <div className="space-y-2">
                   <Label htmlFor="endDate" className="flex items-center gap-1">
                     End Date
-                    {suggestions?.suggestedFields?.endDate && !endDate && (
-                      <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                    {isRecurring ? (
+                      <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground font-normal ml-1">
+                        <Lock className="h-3 w-3" />
+                        Auto
+                      </span>
+                    ) : (
+                      suggestions?.suggestedFields?.endDate && !endDate && (
+                        <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                      )
                     )}
                   </Label>
                   <Input
@@ -859,6 +866,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    readOnly={isRecurring}
+                    className={isRecurring ? 'bg-muted cursor-not-allowed' : ''}
                   />
                 </div>
               </div>
