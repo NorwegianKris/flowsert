@@ -306,7 +306,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     if (!selectedRange?.from) return;
     const datesToRemove = getDatesInRange();
     const existingEntries = datesToRemove
-      .map((date) => availability.find((a) => isSameDay(new Date(a.date), date)))\\
+      .map((date) => availability.find((a) => isSameDay(new Date(a.date), date)))
       .filter(Boolean);
     if (existingEntries.length === 0) return;
     setIsSaving(true);
