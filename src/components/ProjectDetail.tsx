@@ -66,7 +66,7 @@ const statusConfig = {
   pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, color: 'bg-amber-500' },
 };
 
-export function ProjectDetail({ project, personnel, onBack, onUpdateProject, onPersonnelClick, businessName }: ProjectDetailProps) {
+export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdateProject, onPersonnelClick, businessName, onSelectProject }: ProjectDetailProps) {
   const { businessId } = useAuth();
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isAddPhaseOpen, setIsAddPhaseOpen] = useState(false);
