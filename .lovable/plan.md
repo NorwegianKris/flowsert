@@ -1,27 +1,28 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Replace Drawer with Centered Modal Dialog
 
-**Status: Implemented**
+### Changes — `src/components/AvailabilityCalendar.tsx`
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+**1. Add Dialog import** — import `Dialog, DialogContent, DialogHeader, DialogTitle` from `@/components/ui/dialog`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**2. Restore full-width calendar layout** — remove the `flex flex-col md:flex-row` wrapper (lines 522-709). Calendar goes back to full-width inside `space-y-4`.
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+**3. Replace drawer with Dialog** — the drawer div (lines 557-708) becomes a `<Dialog>` controlled by `selectedRange?.from`:
+- `open={!!selectedRange?.from}`, `onOpenChange` clears selection when closed
+- `<DialogContent className="max-w-[420px]">` (shadcn dialog already centers + overlays + animates)
+- Move all drawer content (date heading, assigned projects, availability section) into `DialogContent`
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**4. Modal content layout** (same sections, reusing existing JSX):
+1. **Date heading** — `DialogTitle` with formatted date, `DialogDescription` with `personnelName`
+2. **Assigned Projects** — existing project cards, cert expiry warnings, project events (unchanged JSX)
+3. **Set Availability** — 2x2 grid buttons, notes textarea, Save + Remove buttons (unchanged JSX)
+
+**5. No bottom panel** — already removed in previous iteration, stays removed.
+
+### What stays unchanged
+- Legend, tip banner, calendar component, modifiers, styles, all data logic
+
+### File
+- `src/components/AvailabilityCalendar.tsx`
+
