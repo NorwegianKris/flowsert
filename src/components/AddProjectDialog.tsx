@@ -991,7 +991,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                         <div className="flex items-center gap-3">
                           <Switch
                             checked={isBackToBack}
-                            onCheckedChange={setIsBackToBack}
+                            onCheckedChange={(val) => {
+                              setIsBackToBack(val);
+                              if (!val) {
+                                setShiftPersonnelSelections({});
+                                setActiveShiftTab(1);
+                              }
+                            }}
                           />
                           <div>
                             <p className="text-sm font-medium">Set up back-to-back shifts</p>
