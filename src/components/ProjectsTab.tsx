@@ -304,12 +304,16 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            {project.imageUrl && (
+            {project.imageUrl ? (
               <img
                 src={project.imageUrl}
                 alt={project.name}
                 className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
               />
+            ) : (
+              <div className="h-10 w-10 rounded-lg border border-border shrink-0 bg-muted flex items-center justify-center text-lg">
+                📋
+              </div>
             )}
             <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
           </div>
