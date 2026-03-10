@@ -288,6 +288,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
       onClick={onClick}
       style={tintStyle}
     >
+      {/* ZONE 1: Header — image + name + badges (reserved 2-badge-row height) */}
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
@@ -304,7 +305,8 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
             )}
             <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
           </div>
-          <div className="flex flex-col gap-1 items-end shrink-0">
+          {/* Badge rail — fixed min-h for 2 badge rows so all cards match */}
+          <div className="flex flex-col gap-0.5 items-end shrink-0 min-h-[3.25rem]">
             {isPosted && (
               <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
                 <Megaphone className="h-3 w-3 mr-1" />
@@ -312,7 +314,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
               </Badge>
             )}
             {project.isRecurring && project.rotationOnDays && (
-              <div className="flex flex-col gap-0.5 items-end">
+              <>
                 <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
                   <Repeat className="h-3 w-3 mr-1" />
                   {project.rotationOnDays} days on
@@ -321,7 +323,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
                   <Repeat className="h-3 w-3 mr-1" />
                   {project.rotationOffDays} days off
                 </Badge>
-              </div>
+              </>
             )}
             {project.shiftGroupId && project.shiftNumber && (
               <Badge
@@ -335,64 +337,74 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col flex-1 gap-1.5">
-          <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-        
-          {/* Rotation status */}
-          {rotationStatusText && (
-            <p className="text-xs font-medium text-teal-600 dark:text-teal-400">{rotationStatusText}</p>
-          )}
 
-          {/* Personnel row: avatars + counts OR placeholder — fixed height */}
-          <div className="flex items-center gap-1 h-10">
-            {assignedPersonnel.length > 0 ? (
-              <>
-                <div className="flex -space-x-2">
-                  {assignedPersonnel.slice(0, 5).map((person) => (
-                    <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
-                      <AvatarImage src={person.avatarUrl} alt={person.name} />
-                      <AvatarFallback className="text-[10px]">
-                        {getInitials(person.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                </div>
-                {assignedPersonnel.length > 5 && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    +{assignedPersonnel.length - 5} more
-                  </span>
-                )}
-                <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
-                  <span className="text-border">|</span>
-                  <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
-                  {isPosted && (
-                    <>
-                      <span className="text-border">|</span>
-                      <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
-                    </>
-                  )}
+      <CardContent className="flex flex-col flex-1">
+        {/* ZONE 2: Description — always 1 line reserved */}
+        <div className="h-5 mb-1.5">
+          <p className="text-sm text-muted-foreground truncate">{project.description}</p>
+        </div>
+
+        {/* ZONE 3: Rotation status — always 1 line reserved */}
+        <div className="h-4 mb-1.5">
+          {rotationStatusText && (
+            <p className="text-xs font-medium text-teal-600 dark:text-teal-400 truncate">{rotationStatusText}</p>
+          )}
+        </div>
+
+        {/* ZONE 4: Personnel row — always fixed height reserved */}
+        <div className="flex items-center gap-1 h-8 mb-1.5">
+          {assignedPersonnel.length > 0 ? (
+            <>
+              <div className="flex -space-x-2">
+                {assignedPersonnel.slice(0, 5).map((person) => (
+                  <Avatar key={person.id} className="h-6 w-6 border-2 border-background">
+                    <AvatarImage src={person.avatarUrl} alt={person.name} />
+                    <AvatarFallback className="text-[10px]">
+                      {getInitials(person.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+              {assignedPersonnel.length > 5 && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  +{assignedPersonnel.length - 5} more
                 </span>
-              </>
-            ) : isPosted ? (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Users className="h-4 w-4" />
-                {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+              )}
+              <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span>{assignedPersonnel.filter(p => p.category !== 'freelancer').length} Employees</span>
+                <span className="text-border">|</span>
+                <span>{assignedPersonnel.filter(p => p.category === 'freelancer').length} Freelancers</span>
+                {isPosted && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span>{applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}</span>
+                  </>
+                )}
               </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Users className="h-4 w-4" />
-                No personnel assigned
-              </span>
-            )}
+            </>
+          ) : isPosted ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="h-4 w-4" />
+              {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="h-4 w-4" />
+              No personnel assigned
+            </span>
+          )}
+        </div>
+
+        {/* ZONE 5: Footer — dates + location, always 1 line reserved */}
+        <div className="h-4 mt-auto">
+          <div className="text-xs text-muted-foreground flex items-center gap-x-3 truncate">
+            <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
+            <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {project.projectLocationLabel || project.location || '—'}
+            </span>
           </div>
-        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
-          <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
-          <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
-          <span className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            {project.projectLocationLabel || project.location || '—'}
-          </span>
         </div>
       </CardContent>
     </Card>
