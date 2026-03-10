@@ -1499,6 +1499,41 @@ export type Database = {
           },
         ]
       }
+      project_events: {
+        Row: {
+          created_at: string
+          event_time: string
+          event_type: string
+          id: string
+          metadata: Json
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_time?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          event_time?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_invitations: {
         Row: {
           created_at: string
@@ -1632,6 +1667,7 @@ export type Database = {
       projects: {
         Row: {
           assigned_personnel: string[] | null
+          auto_close_enabled: boolean
           business_id: string
           created_at: string
           customer: string | null
@@ -1643,8 +1679,11 @@ export type Database = {
           include_countries: string[] | null
           is_posted: boolean
           is_recurring: boolean
+          is_shift_parent: boolean
           location: string | null
           name: string
+          next_close_date: string | null
+          next_open_date: string | null
           project_country: string | null
           project_location_label: string | null
           project_manager: string | null
@@ -1652,6 +1691,12 @@ export type Database = {
           recurring_interval_days: number | null
           recurring_interval_label: string | null
           recurring_next_date: string | null
+          rotation_count: number | null
+          rotation_off_days: number | null
+          rotation_on_days: number | null
+          rotations_completed: number | null
+          shift_group_id: string | null
+          shift_number: number | null
           start_date: string
           status: string
           updated_at: string
@@ -1660,6 +1705,7 @@ export type Database = {
         }
         Insert: {
           assigned_personnel?: string[] | null
+          auto_close_enabled?: boolean
           business_id: string
           created_at?: string
           customer?: string | null
@@ -1671,8 +1717,11 @@ export type Database = {
           include_countries?: string[] | null
           is_posted?: boolean
           is_recurring?: boolean
+          is_shift_parent?: boolean
           location?: string | null
           name: string
+          next_close_date?: string | null
+          next_open_date?: string | null
           project_country?: string | null
           project_location_label?: string | null
           project_manager?: string | null
@@ -1680,6 +1729,12 @@ export type Database = {
           recurring_interval_days?: number | null
           recurring_interval_label?: string | null
           recurring_next_date?: string | null
+          rotation_count?: number | null
+          rotation_off_days?: number | null
+          rotation_on_days?: number | null
+          rotations_completed?: number | null
+          shift_group_id?: string | null
+          shift_number?: number | null
           start_date: string
           status?: string
           updated_at?: string
@@ -1688,6 +1743,7 @@ export type Database = {
         }
         Update: {
           assigned_personnel?: string[] | null
+          auto_close_enabled?: boolean
           business_id?: string
           created_at?: string
           customer?: string | null
@@ -1699,8 +1755,11 @@ export type Database = {
           include_countries?: string[] | null
           is_posted?: boolean
           is_recurring?: boolean
+          is_shift_parent?: boolean
           location?: string | null
           name?: string
+          next_close_date?: string | null
+          next_open_date?: string | null
           project_country?: string | null
           project_location_label?: string | null
           project_manager?: string | null
@@ -1708,6 +1767,12 @@ export type Database = {
           recurring_interval_days?: number | null
           recurring_interval_label?: string | null
           recurring_next_date?: string | null
+          rotation_count?: number | null
+          rotation_off_days?: number | null
+          rotation_on_days?: number | null
+          rotations_completed?: number | null
+          shift_group_id?: string | null
+          shift_number?: number | null
           start_date?: string
           status?: string
           updated_at?: string
