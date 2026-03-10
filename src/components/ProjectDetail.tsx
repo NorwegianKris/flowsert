@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjectApplications } from '@/hooks/useProjectApplications';
 import { Badge } from '@/components/ui/badge';
