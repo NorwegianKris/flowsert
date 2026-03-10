@@ -7,6 +7,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { format } from 'date-fns';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 
+export interface AssignedProjectWithRotation extends Project {
+  rotationOnDays?: number | null;
+  rotationOffDays?: number | null;
+  rotationCount?: number | null;
+  rotationsCompleted?: number | null;
+  shiftNumber?: number | null;
+  shiftGroupId?: string | null;
+  isShiftParent?: boolean;
+  location?: string | null;
+  customer?: string | null;
+}
+
 interface AssignedProjectsProps {
   personnelId: string;
   onProjectClick?: (project: Project) => void;
