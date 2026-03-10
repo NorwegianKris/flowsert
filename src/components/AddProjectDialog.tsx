@@ -172,11 +172,30 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     
     setIsSubmitting(true);
 
-    // Separate personnel by mode
-    const assignedPersonnelIds = personnelSelections
+    // Build per-shift personnel map for back-to-back shifts
+    const isShiftMode = isRecurring && isBackToBack;
+    let shift1Selections: PersonnelSelection[];
+    let shiftPersonnelMap: Record<number, { assigned: string[]; invited: string[] }> | undefined;
+
+    if (isShiftMode) {
+      shift1Selections = shiftPersonnelSelections[1] || [];
+      shiftPersonnelMap = {};
+      for (let n = 1; n <= shiftCount; n++) {
+        const sels = shiftPersonnelSelections[n] || [];
+        shiftPersonnelMap[n] = {
+          assigned: sels.filter(s => s.mode === 'assign').map(s => s.id),
+          invited: sels.filter(s => s.mode === 'invite').map(s => s.id),
+        };
+      }
+    } else {
+      shift1Selections = personnelSelections;
+    }
+
+    // Separate personnel by mode (shift 1 or standard)
+    const assignedPersonnelIds = shift1Selections
       .filter(s => s.mode === 'assign')
       .map(s => s.id);
-    const invitedPersonnelIds = personnelSelections
+    const invitedPersonnelIds = shift1Selections
       .filter(s => s.mode === 'invite')
       .map(s => s.id);
 
@@ -218,16 +237,59 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
         ? new Date(new Date(startDate).getTime() + (rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) + rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1)) * 86400000).toISOString()
         : undefined,
       // Shift fields
-      isShiftParent: isRecurring && isBackToBack ? true : false,
-      shiftNumber: isRecurring && isBackToBack ? 1 : undefined,
+      isShiftParent: isShiftMode ? true : false,
+      shiftNumber: isShiftMode ? 1 : undefined,
       shiftGroupId: undefined, // Set by hook after insert
-      _shiftCount: isRecurring && isBackToBack ? shiftCount : undefined,
+      _shiftCount: isShiftMode ? shiftCount : undefined,
+      _shiftPersonnel: isShiftMode ? shiftPersonnelMap : undefined,
     } as any;
 
     const createdProject = await onProjectAdded(newProject);
 
-    // Send invitations to personnel marked for invitation
-    if (createdProject && invitedPersonnelIds.length > 0) {
+    // Send invitations — for shift mode, iterate all shifts
+    if (createdProject && isShiftMode && shiftPersonnelMap) {
+      const createdShifts: { shiftNumber: number; projectId: string }[] =
+        (createdProject as any)._createdShifts || [{ shiftNumber: 1, projectId: createdProject.id }];
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+
+      for (const shift of createdShifts) {
+        const shiftInvited = shiftPersonnelMap[shift.shiftNumber]?.invited || [];
+        if (shiftInvited.length === 0) continue;
+
+        const invitedData = shiftInvited.map(id => {
+          const person = personnel.find(p => p.id === id);
+          return { id, email: person?.email || '', name: person?.name || '' };
+        }).filter(p => p.email);
+
+        const projectDetails = {
+          name: `${name} — Shift ${shift.shiftNumber}`,
+          description: createdProject.description,
+          startDate: createdProject.startDate,
+          endDate: createdProject.endDate,
+          location: createdProject.location,
+          projectManager: createdProject.projectManager,
+        };
+
+        const result = await sendBulkInvitations(
+          shift.projectId,
+          shiftInvited,
+          invitedData,
+          projectDetails
+        );
+        totalSuccess += result.success;
+        totalFailed += result.failed;
+      }
+
+      if (totalSuccess > 0) {
+        toast.success(`Sent ${totalSuccess} project invitation${totalSuccess > 1 ? 's' : ''} across shifts`);
+      }
+      if (totalFailed > 0) {
+        toast.error(`Failed to send ${totalFailed} invitation${totalFailed > 1 ? 's' : ''}`);
+      }
+    } else if (createdProject && invitedPersonnelIds.length > 0) {
+      // Standard (non-shift) invitations
       const invitedPersonnelData = invitedPersonnelIds.map(id => {
         const person = personnel.find(p => p.id === id);
         return {
