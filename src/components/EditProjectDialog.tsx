@@ -422,11 +422,12 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
           {/* Shift info (read-only) */}
           {project.shiftGroupId && (
             <div className="p-3 bg-teal-500/10 rounded-lg border border-teal-500/50">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Set at creation — cannot be changed</p>
+              </div>
               <p className="text-sm font-medium text-foreground">
-                This project is Shift {project.shiftNumber} in a back-to-back group
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Shift structure cannot be changed after creation.
+                Shift {project.shiftNumber} in a back-to-back group
               </p>
             </div>
           )}
