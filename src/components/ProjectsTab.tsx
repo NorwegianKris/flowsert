@@ -334,6 +334,12 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
                 Shift {project.shiftNumber}
               </Badge>
             )}
+            {!project.isRecurring && !isPosted && (
+              <Badge className={config.badgeClass}>
+                <StatusIcon className="h-3 w-3 mr-1" />
+                {config.label}
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
