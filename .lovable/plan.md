@@ -1,27 +1,18 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Bug Fix: Assigned Projects overlap logic for period selection
 
-**Status: Implemented**
+### Problem
+Line 522 only checks projects for the `isSingle` case. When a date range is selected, the code falls through to the else branch and always shows "No projects in this period" — there's no range overlap query at all.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Fix — `src/components/AvailabilityCalendar.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**1. Add a `getProjectsInRange` helper** (after `getProjectsOnDate`, ~line 190):
+- Takes `startDate` and `endDate` parameters
+- Iterates `allProjectOnPeriods`, collects unique projects where the on-period intersects the selected range using standard interval overlap: `periodStart <= endDate && periodEnd >= startDate`
+- Returns same shape as `getProjectsOnDate`
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+**2. Update the JSX** (lines 522-563):
+- Compute projects list: if `isSingle`, use `getProjectsOnDate(range.from)`; otherwise use `getProjectsInRange(range.from, range.to)`
+- Render the project cards for both cases (not just single), showing "No projects assigned" / "No projects in this period" only when the list is truly empty
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
