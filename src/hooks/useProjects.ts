@@ -427,6 +427,11 @@ export function useProjects() {
         );
       }
 
+      // Attach created shift info for dialog to send per-shift invitations
+      if (createdShifts.length > 1) {
+        (newProject as any)._createdShifts = createdShifts;
+      }
+
       return newProject;
     } catch (error) {
       console.error('Error adding project:', error);
