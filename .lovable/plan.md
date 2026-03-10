@@ -1,27 +1,21 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Equal-Height Project Cards
 
-**Status: Implemented**
+CSS Grid already makes items in the same row equal height — the issue is the `Card` component inside each grid cell isn't stretching to fill its cell. The grid containers need `items-stretch` (default) but each `Card` needs `h-full` to fill the cell.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Changes — `src/components/ProjectsTab.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+1. **Shift group grid (line 162)**: Already has `grid` — no change needed, grid stretches by default.
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+2. **Standalone grid (line 181)**: Same — already correct.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+3. **Completed projects grid (line 210-ish)**: Same.
+
+4. **ProjectCard root `<Card>` (line 298-299)**: Add `h-full` to the className so it stretches to fill its grid cell. The card already has `flex flex-col` so content aligns top, empty space goes to bottom.
+
+Single line change — add `h-full` to the Card className on line 299.
+
+### File changed
+- `src/components/ProjectsTab.tsx` — add `h-full` to ProjectCard's root Card element
+
