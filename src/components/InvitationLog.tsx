@@ -148,8 +148,6 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
                 </SelectContent>
               </Select>
             </div>
-          </CardHeader>
-          <CardContent>
             {filteredInvitations.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-3">📨</div>
