@@ -391,6 +391,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAutoCloseEnabled(true);
     setIsBackToBack(false);
     setShiftCount(2);
+    setShiftGroupColor('#94a3b8');
     clearSuggestions();
   };
 
