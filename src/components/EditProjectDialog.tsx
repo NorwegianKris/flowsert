@@ -14,7 +14,7 @@ import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ImagePlus, X, Loader2 } from 'lucide-react';
+import { ImagePlus, X, Loader2, Lock } from 'lucide-react';
 import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 
 interface EditProjectDialogProps {
@@ -331,14 +331,24 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="endDate" className="flex items-center gap-1.5">
+                End Date
+                {project.isRecurring && project.rotationOnDays && (
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </Label>
               <Input
                 id="endDate"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate}
+                disabled={!!(project.isRecurring && project.rotationOnDays)}
+                className={project.isRecurring && project.rotationOnDays ? "bg-muted cursor-not-allowed" : ""}
               />
+              {project.isRecurring && project.rotationOnDays && (
+                <p className="text-xs text-muted-foreground">Auto-calculated from rotation schedule</p>
+              )}
             </div>
           </div>
 
@@ -412,11 +422,12 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
           {/* Shift info (read-only) */}
           {project.shiftGroupId && (
             <div className="p-3 bg-teal-500/10 rounded-lg border border-teal-500/50">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Set at creation — cannot be changed</p>
+              </div>
               <p className="text-sm font-medium text-foreground">
-                This project is Shift {project.shiftNumber} in a back-to-back group
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Shift structure cannot be changed after creation.
+                Shift {project.shiftNumber} in a back-to-back group
               </p>
             </div>
           )}
@@ -424,6 +435,10 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
           {/* Rotation info (read-only) */}
           {project.isRecurring && project.rotationOnDays && (
             <div className="p-3 bg-teal-500/10 rounded-lg border border-teal-500/50">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Set at creation — cannot be changed</p>
+              </div>
               <p className="text-sm font-medium text-foreground">
                 Rotation: {project.rotationOnDays} days on / {project.rotationOffDays} days off
               </p>
