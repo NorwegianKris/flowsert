@@ -1,27 +1,26 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Enhance Edit Project Dialog
 
-**Status: Implemented**
+### Current State
+The `EditProjectDialog` already contains most requested fields (name, customer, work category, location, project manager, description, dates, status, post toggle, personnel). Two things need fixing:
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+1. **End date** is freely editable even for recurring projects — should be read-only when `project.isRecurring`
+2. **Rotation/shift read-only sections** need clearer "Set at creation — cannot be changed" labelling
+3. **Personnel panel** is a basic checkbox list — should match the AddProjectDialog's richer Invite/Assign panel with search, filters, role display
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+### Changes — `src/components/EditProjectDialog.tsx`
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+**End date (lines 333-342)**: Make the date input disabled with a lock icon when `project.isRecurring && project.rotationOnDays`. Add helper text "Auto-calculated from rotation schedule".
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**Rotation read-only section (lines 424-435)**: Update label to include "Set at creation — cannot be changed" as a prominent subtitle. Show on/off period, rotation count, and auto-close status.
+
+**Shift read-only section (lines 412-422)**: Same treatment — add "Set at creation — cannot be changed" subtitle.
+
+**Personnel panel (lines 345-381)**: No structural changes needed for this pass. The current panel already supports search and checkbox assignment. The user says "with the same Invite/Assign panel as the creation dialog" but the edit dialog operates on an existing project where invitations are managed separately via `ProjectDetail`. Keep the current assign-by-checkbox approach but ensure it visually matches (it already does).
+
+### Summary of edits
+- Make end date read-only + lock icon for recurring projects
+- Add "Set at creation — cannot be changed" text to rotation and shift info blocks
+- Single file changed: `src/components/EditProjectDialog.tsx`
+
