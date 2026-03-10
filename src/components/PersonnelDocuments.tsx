@@ -526,8 +526,11 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                   return (
                     <TableRow 
                       key={doc.id} 
-                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => setSelectedDocument(doc)}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/50 transition-colors",
+                        highlightedDoc?.id === doc.id && "bg-primary/10 hover:bg-primary/15"
+                      )}
+                      onClick={() => setHighlightedDoc(highlightedDoc?.id === doc.id ? null : doc)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
