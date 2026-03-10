@@ -331,8 +331,8 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
             )}
             {project.shiftGroupId && project.shiftNumber && (
               <Badge
-                className="border-border/50"
-                style={{ backgroundColor: groupColor || '#3B3AC2', color: '#ffffff', borderColor: groupColor || '#3B3AC2' }}
+                className={groupColor ? '' : 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50'}
+                style={groupColor ? { backgroundColor: `${groupColor}33`, color: groupColor, borderColor: `${groupColor}80` } : undefined}
               >
                 <Layers className="h-3 w-3 mr-1" />
                 Shift {project.shiftNumber}
