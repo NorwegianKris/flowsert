@@ -505,11 +505,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const isSelected = (personnelId: string) => {
-    return personnelSelections.some(s => s.id === personnelId);
+    return getCurrentSelections().some(s => s.id === personnelId);
   };
 
   const getPersonnelMode = (personnelId: string): PersonnelMode => {
-    const selection = personnelSelections.find(s => s.id === personnelId);
+    const selection = getCurrentSelections().find(s => s.id === personnelId);
     return selection?.mode || 'invite';
   };
 
@@ -527,9 +527,15 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
   };
 
-  const inviteCount = personnelSelections.filter(s => s.mode === 'invite').length;
-  const assignCount = personnelSelections.filter(s => s.mode === 'assign').length;
+  const currentSelections = getCurrentSelections();
+  const inviteCount = currentSelections.filter(s => s.mode === 'invite').length;
+  const assignCount = currentSelections.filter(s => s.mode === 'assign').length;
   const suggestedCount = suggestions?.suggestedPersonnel?.length || 0;
+
+  // Total selections across all shifts (for summary)
+  const totalShiftSelections = isBackToBack
+    ? Object.values(shiftPersonnelSelections).reduce((sum, arr) => sum + arr.length, 0)
+    : currentSelections.length;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
