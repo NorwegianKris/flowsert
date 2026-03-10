@@ -1,25 +1,27 @@
 
 
-## Fix Documents Section — Row Selection + Top Action Buttons
+## Rotation Schedule + Back-to-Back Shifts
 
-### Changes — `src/components/PersonnelDocuments.tsx`
+**Status: Implemented**
 
-**1. Add `highlightedDoc` state** for row selection (separate from `selectedDocument` which drives the preview dialog).
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**2. Remove Actions column** — delete the `<TableHead>Actions</TableHead>` (line 487) and the entire `<TableCell>` with inline action buttons (lines 529-579).
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**3. Change row click behavior** — instead of `onClick={() => setSelectedDocument(doc)}`, toggle `highlightedDoc`: click to select, click again to deselect.
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**4. Add highlight styling** — selected row gets `bg-primary/10` background.
-
-**5. Update top buttons:**
-- **Add** — always enabled (unchanged)
-- **Edit** — enabled only when `highlightedDoc` is set; clicks `openEditDialog(highlightedDoc)` directly (removes the edit-select dialog flow)
-- **Download** — new button, enabled only when `highlightedDoc` is set; triggers file download via `getPersonnelDocumentUrl`
-- **Remove** — enabled only when `highlightedDoc` is set; opens delete confirmation for `highlightedDoc` directly (removes the remove-select dialog flow)
-
-Button order: `[ + Add ] [ ✏ Edit ] [ ⬇ Download ] [ 🗑 Remove ]`
-
-### File
-- `src/components/PersonnelDocuments.tsx`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

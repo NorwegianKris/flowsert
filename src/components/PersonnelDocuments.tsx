@@ -39,6 +39,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { getPersonnelDocumentUrl, downloadAsBlob } from '@/lib/storageUtils';
+import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PdfViewer } from '@/components/PdfViewer';
 import {
@@ -94,6 +95,7 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<PersonnelDocument | null>(null);
+  const [highlightedDoc, setHighlightedDoc] = useState<PersonnelDocument | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<PersonnelDocument | null>(null);
   const [documentToEdit, setDocumentToEdit] = useState<PersonnelDocument | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -423,9 +425,11 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsEditSelectOpen(true)}
+            onClick={() => {
+              if (highlightedDoc) openEditDialog(highlightedDoc);
+            }}
             className="gap-1"
-            disabled={documents.length === 0}
+            disabled={!highlightedDoc}
           >
             <Pencil className="h-4 w-4" />
             Edit
@@ -433,9 +437,38 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsRemoveSelectOpen(true)}
+            onClick={async () => {
+              if (!highlightedDoc) return;
+              const url = await getPersonnelDocumentUrl(highlightedDoc.fileUrl);
+              if (url) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = highlightedDoc.name;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              } else {
+                toast.error('Failed to download document');
+              }
+            }}
+            className="gap-1"
+            disabled={!highlightedDoc}
+          >
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (highlightedDoc) {
+                setDocumentToDelete(highlightedDoc);
+                setIsDeleteDialogOpen(true);
+              }
+            }}
             className="gap-1 text-destructive hover:text-destructive"
-            disabled={documents.length === 0}
+            disabled={!highlightedDoc}
           >
             <Trash2 className="h-4 w-4" />
             Remove
@@ -484,7 +517,7 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                   <TableHead className="font-semibold text-white">Date Uploaded</TableHead>
                   <TableHead className="font-semibold text-white">Size</TableHead>
                   <TableHead className="font-semibold text-white">Type</TableHead>
-                  <TableHead className="font-semibold text-white w-28">Actions</TableHead>
+                  
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -494,8 +527,11 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                   return (
                     <TableRow 
                       key={doc.id} 
-                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => setSelectedDocument(doc)}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/50 transition-colors",
+                        highlightedDoc?.id === doc.id && "bg-primary/10 hover:bg-primary/15"
+                      )}
+                      onClick={() => setHighlightedDoc(highlightedDoc?.id === doc.id ? null : doc)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -525,57 +561,6 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {doc.fileType ? doc.fileType.split('/')[1]?.toUpperCase() || doc.fileType : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {canAccessDocuments ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const url = await getPersonnelDocumentUrl(doc.fileUrl);
-                                if (url) window.open(url, '_blank');
-                              }}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 cursor-not-allowed"
-                              disabled
-                              title="Document access locked - activate profile first"
-                            >
-                              <Lock className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditDialog(doc);
-                            }}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDocumentToDelete(doc);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </TableCell>
                     </TableRow>
                   );
