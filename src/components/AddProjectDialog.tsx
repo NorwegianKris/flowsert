@@ -131,32 +131,6 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     return map;
   }, [personnel]);
 
-            {/* Shift Tabs — when back-to-back shifts are enabled */}
-            {isRecurring && isBackToBack && (
-              <Tabs
-                value={String(activeShiftTab)}
-                onValueChange={(val) => setActiveShiftTab(Number(val))}
-                className="w-full"
-              >
-                <TabsList className="w-full flex overflow-x-auto">
-                  {Array.from({ length: shiftCount }, (_, i) => {
-                    const n = i + 1;
-                    const tabLabel = name.trim() ? `${name} — Shift ${n}` : `Shift ${n}`;
-                    const tabCount = (shiftPersonnelSelections[n] || []).length;
-                    return (
-                      <TabsTrigger key={n} value={String(n)} className="flex-1 min-w-0 text-xs truncate gap-1">
-                        <span className="truncate">{tabLabel}</span>
-                        {tabCount > 0 && (
-                          <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] ml-1 shrink-0">
-                            {tabCount}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-              </Tabs>
-            )}
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -1170,6 +1144,33 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 </Button>
               </div>
             </div>
+
+            {/* Shift Tabs — when back-to-back shifts are enabled */}
+            {isRecurring && isBackToBack && (
+              <Tabs
+                value={String(activeShiftTab)}
+                onValueChange={(val) => setActiveShiftTab(Number(val))}
+                className="w-full"
+              >
+                <TabsList className="w-full flex overflow-x-auto">
+                  {Array.from({ length: shiftCount }, (_, i) => {
+                    const n = i + 1;
+                    const tabLabel = name.trim() ? `${name} — Shift ${n}` : `Shift ${n}`;
+                    const tabCount = (shiftPersonnelSelections[n] || []).length;
+                    return (
+                      <TabsTrigger key={n} value={String(n)} className="flex-1 min-w-0 text-xs truncate gap-1">
+                        <span className="truncate">{tabLabel}</span>
+                        {tabCount > 0 && (
+                          <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] ml-1 shrink-0">
+                            {tabCount}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </Tabs>
+            )}
 
             <FreelancerFilters
               personnelFilter={projectPersonnelFilter}

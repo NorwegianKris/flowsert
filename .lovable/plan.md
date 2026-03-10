@@ -1,22 +1,27 @@
 
 
-## Fix: Move Shift Tabs to Correct Location in Personnel Panel
+## Rotation Schedule + Back-to-Back Shifts
 
-### Problem
+**Status: Implemented**
 
-The shift tabs JSX (lines 134-159) is placed in the middle of hook/variable declarations — outside the component's `return` statement. It never renders.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-### Fix
-
-1. **Remove the misplaced tabs block** from lines 134-159 (between `useMemo` and AI suggestions state)
-
-2. **Insert the tabs block inside the JSX return**, directly above the `FreelancerFilters` component at line 1174, so it sits above the All/Employees/Freelancers/Custom filter row
-
-The tabs markup stays identical — just relocated to the correct position in the render tree.
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
 ### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-| File | Change |
-|------|--------|
-| `src/components/AddProjectDialog.tsx` | Remove misplaced tabs block from lines 134-159; insert same block at line 1173 (above `FreelancerFilters`) |
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
