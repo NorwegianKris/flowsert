@@ -296,7 +296,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
 
   return (
     <Card 
-      className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring && !groupColor ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
+      className={`h-full hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring && !groupColor ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
       onClick={onClick}
       style={tintStyle}
     >
