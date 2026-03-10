@@ -1,40 +1,27 @@
 
 
-## Add Status Badge for Non-Recurring Project Cards
+## Rotation Schedule + Back-to-Back Shifts
 
-### What
-Add a status badge (Active/Completed/Pending) to non-recurring, non-posted project cards so every card has at least one badge in the badge rail.
+**Status: Implemented**
 
-### Changes — `src/components/ProjectsTab.tsx`
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**1. Expand `statusConfig` (line 21-25)** to include badge color classes:
-```ts
-const statusConfig = {
-  active: { label: 'Active', variant: 'active' as const, icon: Clock, badgeClass: 'bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/50' },
-  completed: { label: 'Completed', variant: 'completed' as const, icon: CheckCircle, badgeClass: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/50' },
-  pending: { label: 'Pending', variant: 'outline' as const, icon: Clock, badgeClass: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/50' },
-};
-```
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**2. Badge rail (lines 309-340)** — after the existing Posted/Recurring/Shift badge blocks, add a new conditional that renders a status badge for non-recurring cards that aren't posted:
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-```tsx
-{/* Status badge for non-recurring, non-posted cards */}
-{!project.isRecurring && !isPosted && (
-  <Badge className={config.badgeClass}>
-    <StatusIcon className="h-3 w-3 mr-1" />
-    {config.label}
-  </Badge>
-)}
-```
-
-This uses the already-extracted `config` and `StatusIcon` variables (line 240-241) which are currently unused in the card UI.
-
-### What stays unchanged
-- Recurring project badges (rotation on/off, shift) — untouched
-- Posted badge — untouched  
-- Card structure, zones, heights — untouched
-
-### File
-- `src/components/ProjectsTab.tsx`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
