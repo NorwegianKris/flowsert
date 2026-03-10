@@ -160,7 +160,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
                 <div
                   key={group.groupId}
                   className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pl-3"
-                  style={{ borderLeft: `3px solid ${group.color || '#94a3b8'}` }}
+                  style={{ borderLeft: '1px dashed #cbd5e1' }}
                 >
                   {group.projects.map(project => (
                     <ProjectCard
@@ -333,7 +333,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
             {project.shiftGroupId && project.shiftNumber && (
               <Badge
                 className="border-border/50"
-                style={groupColor ? { backgroundColor: `${groupColor}33`, color: groupColor, borderColor: `${groupColor}66` } : undefined}
+                style={{ backgroundColor: groupColor || '#3B3AC2', color: '#ffffff', borderColor: groupColor || '#3B3AC2' }}
               >
                 <Layers className="h-3 w-3 mr-1" />
                 Shift {project.shiftNumber}
