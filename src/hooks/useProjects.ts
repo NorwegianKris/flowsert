@@ -48,6 +48,7 @@ export interface Project {
   isShiftParent?: boolean;
   shiftGroupId?: string;
   shiftNumber?: number;
+  groupColor?: string;
 }
 
 interface DbProject {
@@ -89,6 +90,7 @@ interface DbProject {
   is_shift_parent: boolean;
   shift_group_id: string | null;
   shift_number: number | null;
+  group_color: string | null;
 }
 
 interface DbCalendarItem {
@@ -138,6 +140,7 @@ function mapDbToProject(p: DbProject, calendarItems: DbCalendarItem[]): Project 
     isShiftParent: p.is_shift_parent,
     shiftGroupId: p.shift_group_id || undefined,
     shiftNumber: p.shift_number || undefined,
+    groupColor: p.group_color || undefined,
     calendarItems: calendarItems
       .filter(item => item.project_id === p.id)
       .map(item => ({
@@ -191,6 +194,7 @@ function buildInsertPayload(
     is_shift_parent: project.isShiftParent || false,
     shift_group_id: project.shiftGroupId || null,
     shift_number: project.shiftNumber || null,
+    group_color: project.groupColor || null,
     ...overrides,
   };
 }
@@ -354,6 +358,7 @@ export function useProjects() {
         await supabase.from('projects').update({
           shift_group_id: shiftGroupId,
           name: `${parentName} — Shift 1`,
+          group_color: project.groupColor || null,
         }).eq('id', newProject.id);
 
         newProject.shiftGroupId = shiftGroupId;

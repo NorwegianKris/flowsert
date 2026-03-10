@@ -85,6 +85,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   // Back-to-back shifts
   const [isBackToBack, setIsBackToBack] = useState(false);
   const [shiftCount, setShiftCount] = useState(2);
+  const [shiftGroupColor, setShiftGroupColor] = useState('#94a3b8');
   // Per-shift personnel selections (used when isBackToBack is true)
   const [shiftPersonnelSelections, setShiftPersonnelSelections] = useState<Record<number, PersonnelSelection[]>>({});
   const [activeShiftTab, setActiveShiftTab] = useState(1);
@@ -255,6 +256,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
       isShiftParent: isShiftMode ? true : false,
       shiftNumber: isShiftMode ? 1 : undefined,
       shiftGroupId: undefined, // Set by hook after insert
+      groupColor: isShiftMode ? shiftGroupColor : undefined,
       _shiftCount: isShiftMode ? shiftCount : undefined,
       _shiftPersonnel: isShiftMode ? shiftPersonnelMap : undefined,
     } as any;
@@ -389,6 +391,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setAutoCloseEnabled(true);
     setIsBackToBack(false);
     setShiftCount(2);
+    setShiftGroupColor('#94a3b8');
     clearSuggestions();
   };
 
@@ -1057,6 +1060,20 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                                 }}
                                 className="w-20"
                               />
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground">Shift group colour</p>
+                              <p className="text-xs text-muted-foreground">Tint applied to shift cards in the project list</p>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={shiftGroupColor}
+                                  onChange={e => setShiftGroupColor(e.target.value)}
+                                  className="h-8 w-8 rounded border border-border cursor-pointer"
+                                />
+                                <span className="text-xs text-muted-foreground font-mono">{shiftGroupColor}</span>
+                              </div>
                             </div>
 
                             {/* Naming preview */}
