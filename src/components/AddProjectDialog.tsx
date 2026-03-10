@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe, Repeat } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe, Repeat, Lock } from 'lucide-react';
 import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
@@ -141,6 +141,21 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [previewPersonnel, setPreviewPersonnel] = useState<Personnel | null>(null);
 
   const { sendBulkInvitations } = useProjectInvitations();
+
+  // Auto-calculate end date for recurring projects
+  useEffect(() => {
+    if (isRecurring && startDate) {
+      const onDays = rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1);
+      const offDays = rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1);
+      const totalDays = (onDays + offDays) * rotationCount;
+      const start = new Date(startDate);
+      const end = new Date(start.getTime() + totalDays * 86400000);
+      const yyyy = end.getFullYear();
+      const mm = String(end.getMonth() + 1).padStart(2, '0');
+      const dd = String(end.getDate()).padStart(2, '0');
+      setEndDate(`${yyyy}-${mm}-${dd}`);
+    }
+  }, [isRecurring, startDate, rotationOnValue, rotationOnUnit, rotationOffValue, rotationOffUnit, rotationCount]);
 
   // Apply suggested fields when suggestions change
   useEffect(() => {
@@ -835,8 +850,15 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                 <div className="space-y-2">
                   <Label htmlFor="endDate" className="flex items-center gap-1">
                     End Date
-                    {suggestions?.suggestedFields?.endDate && !endDate && (
-                      <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                    {isRecurring ? (
+                      <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground font-normal ml-1">
+                        <Lock className="h-3 w-3" />
+                        Auto
+                      </span>
+                    ) : (
+                      suggestions?.suggestedFields?.endDate && !endDate && (
+                        <Badge variant="outline" className="text-[10px] ml-1 text-primary">AI</Badge>
+                      )
                     )}
                   </Label>
                   <Input
@@ -844,6 +866,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    readOnly={isRecurring}
+                    className={isRecurring ? 'bg-muted cursor-not-allowed' : ''}
                   />
                 </div>
               </div>
@@ -869,6 +893,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   if (!val) {
                     setIsBackToBack(false);
                     setAutoCloseEnabled(true);
+                    setEndDate('');
                   }
                 }}
                 className="mt-0.5"
