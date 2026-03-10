@@ -147,6 +147,18 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
       visibilityMode,
       includeCountries: includeCountries.length > 0 ? includeCountries : undefined,
       excludeCountries: excludeCountries.length > 0 ? excludeCountries : undefined,
+      // Preserve rotation/shift fields from original project
+      isRecurring: project.isRecurring,
+      rotationOnDays: project.rotationOnDays,
+      rotationOffDays: project.rotationOffDays,
+      rotationCount: project.rotationCount,
+      rotationsCompleted: project.rotationsCompleted,
+      autoCloseEnabled: project.autoCloseEnabled,
+      nextCloseDate: project.nextCloseDate,
+      nextOpenDate: project.nextOpenDate,
+      isShiftParent: project.isShiftParent,
+      shiftGroupId: project.shiftGroupId,
+      shiftNumber: project.shiftNumber,
     });
     onOpenChange(false);
     toast.success('Project updated successfully');
