@@ -494,7 +494,8 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-3 mb-4">
+            {/* Compact Legend */}
+            <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
               {Object.entries(statusConfig).map(([status, config]) => (
                 <div key={status} className="flex items-center gap-1.5 text-sm">
                   <span className={cn('h-3 w-3 rounded-full', config.className)} />
@@ -506,269 +507,203 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <span className="text-muted-foreground">Certificate Expiry</span>
               </div>
               <div className="flex items-center gap-1.5 text-sm">
-                <span className="h-3 w-3 rounded-full border-2 border-[hsl(210_100%_50%)]" />
-                <span className="text-muted-foreground">Project Event</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-sm">
                 <span className="h-3 w-3 rounded-sm" style={{ borderBottom: '3px solid hsl(240 60% 60%)', width: 12, height: 12 }} />
                 <span className="text-muted-foreground">Assigned Project</span>
               </div>
             </div>
 
-            <Calendar
-              mode="range"
-              selected={selectedRange}
-              onSelect={handleRangeSelect}
-              modifiers={modifiers}
-              modifiersStyles={modifiersStyles}
-              className="rounded-md border border-border p-3 pointer-events-auto w-full"
-              classNames={{
-                months: "flex flex-col w-full",
-                month: "space-y-4 w-full",
-                caption: "flex justify-center pt-1 relative items-center",
-                caption_label: "text-sm font-medium",
-                nav: "space-x-1 flex items-center",
-                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
-                nav_button_previous: "absolute left-1",
-                nav_button_next: "absolute right-1",
-                table: "w-full border-collapse space-y-1",
-                head_row: "flex w-full",
-                head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
-                row: "flex w-full mt-2",
-                cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
-                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
-                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground",
-                day_outside: "text-muted-foreground opacity-50",
-                day_disabled: "text-muted-foreground opacity-50",
-                day_hidden: "invisible",
-              }}
-              numberOfMonths={1}
-            />
-
+            {/* Tip banner */}
             <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
               <span className="text-sm">💡</span>
               <span className="text-xs text-muted-foreground">Tip: Click the start date, then click the end date to select a period.</span>
             </div>
 
-            {selectedRange?.from && (
-              <Card className="mt-4 border-border/50">
-                <CardContent className="p-4 space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-1">
-                      {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
-                        `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d, yyyy')}`
-                      ) : (
-                        format(selectedRange.from, 'EEEE, MMMM d, yyyy')
-                      )}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) 
-                        ? `Set availability for ${getDatesInRange().length} days`
-                        : `Set availability for ${personnelName}`
-                      }
-                    </p>
-                  </div>
+            {/* Calendar + Drawer layout */}
+            <div className="flex flex-col md:flex-row gap-0 overflow-hidden">
+              {/* Calendar — left side */}
+              <div className="flex-1 min-w-0">
+                <Calendar
+                  mode="range"
+                  selected={selectedRange}
+                  onSelect={handleRangeSelect}
+                  modifiers={modifiers}
+                  modifiersStyles={modifiersStyles}
+                  className="rounded-md border border-border p-3 pointer-events-auto w-full"
+                  classNames={{
+                    months: "flex flex-col w-full",
+                    month: "space-y-4 w-full",
+                    caption: "flex justify-center pt-1 relative items-center",
+                    caption_label: "text-sm font-medium",
+                    nav: "space-x-1 flex items-center",
+                    nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse space-y-1",
+                    head_row: "flex w-full",
+                    head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
+                    row: "flex w-full mt-2",
+                    cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
+                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
+                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                    day_today: "bg-accent text-accent-foreground",
+                    day_outside: "text-muted-foreground opacity-50",
+                    day_disabled: "text-muted-foreground opacity-50",
+                    day_hidden: "invisible",
+                  }}
+                  numberOfMonths={1}
+                />
+              </div>
 
-                  {/* Assigned Project Blocks on selected date */}
-                  {!selectedRange.to && getProjectsOnDate(selectedRange.from).length > 0 && (
-                    <div className="p-3 rounded-lg bg-[hsl(240_60%_60%)]/10 border border-[hsl(240_60%_60%)]/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Briefcase className="h-4 w-4 text-[hsl(240_60%_60%)]" />
-                        <span className="text-sm font-medium text-foreground">Assigned Projects</span>
-                      </div>
-                      <ul className="text-sm space-y-2">
-                        {getProjectsOnDate(selectedRange.from).map((item, idx) => (
-                          <li key={idx} className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(240_60%_60%)]" />
-                              <button
-                                onClick={() => navigate(`/admin/projects/${item.project.id}`)}
-                                className="font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
-                              >
-                                {item.project.name}
-                              </button>
-                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                            <div className="pl-4 text-xs text-muted-foreground space-y-0.5">
-                              {item.project.shiftNumber && (
-                                <div>Shift {item.project.shiftNumber}</div>
-                              )}
-                              {item.project.location && (
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {item.project.location}
-                                </div>
-                              )}
-                              <div>
-                                On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Certificate expiry warnings near project start */}
-                  {!selectedRange.to && getCertExpiryWarningsForDate(selectedRange.from).length > 0 && (
-                    <div className="p-3 rounded-lg bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
-                        <span className="text-sm font-medium text-foreground">Certificate Expiry Warnings</span>
-                      </div>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {getCertExpiryWarningsForDate(selectedRange.from).map((warning, idx) => (
-                          <li key={idx} className="flex items-start gap-1">
-                            <span className="text-amber-500 mt-0.5">⚠</span>
-                            <span>
-                              <span className="font-medium">{warning.certName}</span> expires{' '}
-                              {warning.daysUntil === 0 
-                                ? 'on this project start date' 
-                                : `${warning.daysUntil} day${warning.daysUntil !== 1 ? 's' : ''} after this project starts`
-                              }
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Project calendar events */}
-                  {!selectedRange.to && getProjectEventsOnDate(selectedRange.from).length > 0 && (
-                    <div className="p-3 rounded-lg bg-[hsl(210_100%_50%)]/10 border border-[hsl(210_100%_50%)]/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Briefcase className="h-4 w-4 text-[hsl(210_100%_50%)]" />
-                        <span className="text-sm font-medium text-foreground">Project Events</span>
-                      </div>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {getProjectEventsOnDate(selectedRange.from).map((event, idx) => (
-                          <li key={idx} className="flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(210_100%_50%)]" />
-                            <span className="font-medium">{event.projectName}:</span> {event.description}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {!selectedRange.to && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
-                    <div className="p-3 rounded-lg bg-[hsl(280_70%_50%)]/10 border border-[hsl(280_70%_50%)]/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Award className="h-4 w-4 text-[hsl(280_70%_50%)]" />
-                        <span className="text-sm font-medium text-foreground">Certificate Expiries</span>
-                      </div>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {getCertificatesExpiringOnDate(selectedRange.from).map((certName, idx) => (
-                          <li key={idx} className="flex items-center gap-1">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(280_70%_50%)]" />
-                            {certName}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      {(['available', 'partial', 'unavailable'] as AvailabilityStatus[]).map((status) => {
-                        const config = statusConfig[status];
-                        const Icon = config.icon;
-                        return (
-                          <Button
-                            key={status}
-                            variant={selectedStatus === status ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSelectedStatus(status)}
-                            className={cn(
-                              'flex-1',
-                              selectedStatus === status && config.className
-                            )}
-                          >
-                            <Icon className="h-3.5 w-3.5 mr-1" />
-                            {config.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={selectedStatus === 'other' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setSelectedStatus('other')}
-                        className={cn(
-                          'flex-1',
-                          selectedStatus === 'other' && statusConfig.other.className
+              {/* Right-side Drawer */}
+              <div
+                className={cn(
+                  "transition-all duration-150 ease-in-out shrink-0 overflow-hidden",
+                  selectedRange?.from ? "w-full md:w-[320px] opacity-100" : "w-0 opacity-0"
+                )}
+              >
+                {selectedRange?.from && (
+                  <div className="w-full md:w-[320px] border-t md:border-t-0 md:border-l border-border p-4 space-y-5 h-full">
+                    {/* Close button */}
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
+                          `${format(selectedRange.from, 'MMM d')} – ${format(selectedRange.to, 'MMM d, yyyy')}`
+                        ) : (
+                          format(selectedRange.from, 'EEEE, MMMM d')
                         )}
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => setSelectedRange(undefined)}
                       >
-                        <Circle className="h-3.5 w-3.5 mr-1" />
-                        {statusConfig.other.label}
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
 
-                  <div>
-                    <Textarea
-                      placeholder="Add notes (optional)..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={handleSave} disabled={isSaving} className="flex-1">
-                      {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                    {/* Section 1: Assigned Projects */}
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned Projects</h4>
+                      {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getProjectsOnDate(selectedRange.from).length > 0 ? (
+                        <div className="space-y-2">
+                          {getProjectsOnDate(selectedRange.from).map((item, idx) => (
+                            <div key={idx} className="p-2.5 rounded-md border border-border bg-muted/30 space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <Briefcase className="h-3.5 w-3.5 text-[hsl(240_60%_60%)]" />
+                                <button
+                                  onClick={() => navigate(`/admin/projects/${item.project.id}`)}
+                                  className="text-sm font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
+                                >
+                                  {item.project.name}
+                                </button>
+                                <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-0.5 pl-5">
+                                {item.project.location && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {item.project.location}
+                                  </div>
+                                )}
+                                <div>
+                                  On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
+                                </div>
+                                {item.project.shiftNumber && (
+                                  <div>Shift {item.project.shiftNumber}</div>
+                                )}
+                              </div>
+                              {/* Inline cert expiry warning for this project */}
+                              {getCertExpiryWarningsForDate(selectedRange.from!).filter(w => w.projectName === item.project.name).map((warning, wIdx) => (
+                                <div key={wIdx} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 pl-5">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  <span>{warning.certName} expires in {warning.daysUntil}d</span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
                       ) : (
-                        `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
+                        <p className="text-sm text-muted-foreground italic">No projects assigned</p>
                       )}
-                    </Button>
-                    {hasExistingEntriesInRange() && (
-                      <Button
-                        variant="outline"
-                        onClick={handleRemove}
-                        disabled={isSaving}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      onClick={() => setSelectedRange(undefined)}
-                      disabled={isSaving}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
-            <div className="pt-4 border-t border-border/50">
-              <h4 className="text-sm font-medium mb-2">Upcoming Availability</h4>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {availability
-                  .filter((a) => new Date(a.date) >= new Date())
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                  .slice(0, 5)
-                  .map((entry) => {
-                    const config = statusConfig[entry.status as AvailabilityStatus];
-                    return (
-                      <div key={entry.id} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          {format(new Date(entry.date), 'EEE, MMM d')}
-                        </span>
-                        <Badge className={cn('text-xs', config.className)}>
-                          {config.label}
-                        </Badge>
+                      {/* Project events */}
+                      {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getProjectEventsOnDate(selectedRange.from).length > 0 && (
+                        <div className="space-y-1 pt-1">
+                          {getProjectEventsOnDate(selectedRange.from).map((event, idx) => (
+                            <div key={idx} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(210_100%_50%)] mt-1 shrink-0" />
+                              <span><span className="font-medium">{event.projectName}:</span> {event.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Certificate expiries on this date */}
+                      {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
+                        <div className="space-y-1 pt-1">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-[hsl(280_70%_50%)]">
+                            <Award className="h-3 w-3" />
+                            Certificates Expiring
+                          </div>
+                          {getCertificatesExpiringOnDate(selectedRange.from).map((certName, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground pl-4">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(280_70%_50%)]" />
+                              {certName}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 2: Set Availability */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['available', 'partial', 'unavailable', 'other'] as AvailabilityStatus[]).map((status) => {
+                          const config = statusConfig[status];
+                          const Icon = config.icon;
+                          return (
+                            <Button
+                              key={status}
+                              variant={selectedStatus === status ? 'default' : 'outline'}
+                              onClick={() => setSelectedStatus(status)}
+                              className={cn(
+                                'h-10',
+                                selectedStatus === status && config.className
+                              )}
+                            >
+                              <Icon className="h-4 w-4 mr-1.5" />
+                              {config.label}
+                            </Button>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                {availability.filter((a) => new Date(a.date) >= new Date()).length === 0 && (
-                  <p className="text-sm text-muted-foreground italic">
-                    No upcoming availability set
-                  </p>
+                      <Textarea
+                        placeholder="Add notes (optional)..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={2}
+                      />
+                      <Button onClick={handleSave} disabled={isSaving} className="w-full">
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
+                        )}
+                      </Button>
+                      {hasExistingEntriesInRange() && (
+                        <Button
+                          variant="outline"
+                          onClick={handleRemove}
+                          disabled={isSaving}
+                          className="w-full"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
