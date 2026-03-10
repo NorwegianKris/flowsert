@@ -96,13 +96,11 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
   if (loading) {
     return (
       <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-purple-500" />
-            Invitation Log
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">Invitation Log</h2>
+          </div>
           <p className="text-center text-muted-foreground py-8">Loading...</p>
         </CardContent>
       </Card>
