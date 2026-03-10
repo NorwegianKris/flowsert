@@ -1,27 +1,49 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Expandable Personal Calendar — Compact + Full Modal
 
-**Status: Implemented**
+### Overview
+Keep the compact calendar card as-is in the worker profile. Add an "Expand" button to open a large two-column modal with full calendar on the left and detail panel on the right. Remove the existing small dialog that opens on day click. Day clicks in compact view do nothing (or just highlight); all interaction happens in the expanded modal.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Changes — `src/components/AvailabilityCalendar.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**1. New state**
+- `isExpanded` boolean to control the large modal
+- `expandedSelectedRange` separate range state for the modal calendar (so compact view doesn't trigger dialogs)
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+**2. Compact view changes**
+- Add "Expand" button in `CardHeader` top-right: `<Button variant="outline" size="sm" onClick={() => setIsExpanded(true)}><Maximize2 /> Expand</Button>`
+- Remove the existing `<Dialog>` that opens on day click (lines 433-569) — no interaction on compact calendar day clicks beyond visual modifiers
+- Keep legend, tip banner, calendar with modifiers/styles unchanged
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**3. Expanded Modal** — new `<Dialog open={isExpanded}>` with `<DialogContent className="max-w-[860px] max-h-[90vh] overflow-y-auto p-0">`
+
+Layout: `flex flex-row` inside DialogContent
+
+**Left column (flex-1, ~500px):**
+- Full Calendar component with `mode="range"`, same modifiers/styles but with larger cell sizing via classNames overrides
+- Month navigation arrows (already built into Calendar)
+- Range selection updates `expandedSelectedRange`
+- Legend row below calendar (same 6 indicators)
+
+**Right column (w-[320px], border-l, p-5, overflow-y-auto):**
+- Empty state: "Select a day or period to set availability" centered text
+- When `expandedSelectedRange.from` is set:
+  - **Date heading** — formatted date or range
+  - **Assigned Projects** — reuse existing `getProjectsOnDate` / cert expiry warning logic
+  - **Set Availability** — 2x2 grid, notes, Save, Remove (same JSX as current dialog)
+
+**4. Event Overview section** — below the calendar in the left column:
+- Heading: "Upcoming Events"
+- Query next 3 months of data from `allProjectOnPeriods` + `availability` + `certificateExpiryDates`
+- Group by month, each month as a subheading
+- Each row: color dot, event name, date range, type badge
+- Wrapped in `ScrollArea` with max-height ~200px
+
+**5. Cleanup**
+- Remove the old `<Dialog open={!!selectedRange?.from}>` entirely
+- Compact calendar keeps `selectedRange` for visual highlight only (no dialog trigger)
+
+### File
+- `src/components/AvailabilityCalendar.tsx`
+
