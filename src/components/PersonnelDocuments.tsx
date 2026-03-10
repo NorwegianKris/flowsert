@@ -94,6 +94,7 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<PersonnelDocument | null>(null);
+  const [highlightedDoc, setHighlightedDoc] = useState<PersonnelDocument | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<PersonnelDocument | null>(null);
   const [documentToEdit, setDocumentToEdit] = useState<PersonnelDocument | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
