@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO, addDays, differenceInDays } from 'date-fns';
 import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Certificate } from '@/types';
 import { useAssignedProjects, AssignedProjectWithRotation } from '@/components/AssignedProjects';
 import type { DateRange } from 'react-day-picker';
@@ -66,35 +67,25 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
   },
 };
 
-/**
- * Compute on-period dates for a project, accounting for rotation schedules.
- * For non-rotation projects: all dates between startDate and endDate.
- * For rotation projects: compute on-period windows using rotationOnDays/OffDays.
- */
 function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectOnPeriod[] {
   const startDate = parseISO(project.startDate);
   const endDate = project.endDate ? parseISO(project.endDate) : null;
   const results: ProjectOnPeriod[] = [];
 
-  // Only show blocks for active/pending projects
   if (project.status === 'completed') return results;
 
   const onDays = project.rotationOnDays;
   const offDays = project.rotationOffDays;
 
   if (onDays && offDays && onDays > 0 && offDays > 0) {
-    // Rotation-based project: compute on-period windows
     const cycleLength = onDays + offDays;
-    const maxRotations = project.rotationCount || 52; // default cap
+    const maxRotations = project.rotationCount || 52;
     let currentStart = startDate;
 
     for (let i = 0; i < maxRotations; i++) {
       const periodStart = currentStart;
       const periodEnd = addDays(periodStart, onDays - 1);
-
-      // Clamp to project end date
       const clampedEnd = endDate && periodEnd > endDate ? endDate : periodEnd;
-
       if (endDate && periodStart > endDate) break;
 
       const days = eachDayOfInterval({ start: periodStart, end: clampedEnd });
@@ -105,8 +96,7 @@ function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectO
       currentStart = addDays(periodStart, cycleLength);
     }
   } else {
-    // Non-rotation project: all dates in range
-    const finalEnd = endDate || addDays(startDate, 30); // show 30 days if no end date
+    const finalEnd = endDate || addDays(startDate, 30);
     const days = eachDayOfInterval({ start: startDate, end: finalEnd });
     for (const day of days) {
       results.push({ date: day, project, periodStart: startDate, periodEnd: finalEnd });
@@ -126,10 +116,8 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Fetch assigned projects for this personnel
   const { projects: assignedProjects } = useAssignedProjects(personnelId);
 
-  // Compute all project on-period dates
   const allProjectOnPeriods = useMemo(() => {
     return assignedProjects.flatMap(getProjectOnPeriodDates);
   }, [assignedProjects]);
@@ -138,7 +126,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return allProjectOnPeriods.map((p) => p.date);
   }, [allProjectOnPeriods]);
 
-  // Get certificate expiry dates
   const certificateExpiryDates = certificates
     .filter((cert) => cert.expiryDate)
     .map((cert) => ({
@@ -152,46 +139,30 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       .map((cert) => cert.name);
   };
 
-  // Get certificates expiring within 30 days of a project on-period start
   const getCertExpiryWarningsForDate = (date: Date): { certName: string; daysUntil: number; projectName: string }[] => {
     const warnings: { certName: string; daysUntil: number; projectName: string }[] = [];
-    
-    // Find unique project period starts on this date
-    const periodStarts = allProjectOnPeriods.filter(
-      (p) => isSameDay(p.periodStart, date)
-    );
-    
-    // De-duplicate by project id
+    const periodStarts = allProjectOnPeriods.filter((p) => isSameDay(p.periodStart, date));
     const seenProjects = new Set<string>();
     for (const ps of periodStarts) {
       if (seenProjects.has(ps.project.id)) continue;
       seenProjects.add(ps.project.id);
-      
       for (const cert of certificateExpiryDates) {
         const daysUntil = differenceInDays(cert.date, date);
         if (daysUntil >= 0 && daysUntil <= 30) {
-          warnings.push({
-            certName: cert.name,
-            daysUntil,
-            projectName: ps.project.name,
-          });
+          warnings.push({ certName: cert.name, daysUntil, projectName: ps.project.name });
         }
       }
     }
-    
     return warnings;
   };
 
-  // Compute cert expiry warning dates (project start dates where certs expire within 30 days)
   const certExpiryWarningDates = useMemo(() => {
     const warningDates: Date[] = [];
     const checked = new Set<string>();
-    
     for (const p of allProjectOnPeriods) {
       const key = `${p.project.id}-${p.periodStart.toISOString()}`;
       if (checked.has(key)) continue;
       checked.add(key);
-      
       for (const cert of certificateExpiryDates) {
         const daysUntil = differenceInDays(cert.date, p.periodStart);
         if (daysUntil >= 0 && daysUntil <= 30) {
@@ -200,55 +171,40 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         }
       }
     }
-    
     return warningDates;
   }, [allProjectOnPeriods, certificateExpiryDates]);
 
-  // Get projects active on a specific date
   const getProjectsOnDate = (date: Date): { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] => {
     const seen = new Set<string>();
     const results: { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] = [];
-    
     for (const p of allProjectOnPeriods) {
       if (isSameDay(p.date, date) && !seen.has(p.project.id)) {
         seen.add(p.project.id);
         results.push({ project: p.project, periodStart: p.periodStart, periodEnd: p.periodEnd });
       }
     }
-    
     return results;
   };
 
-  // Get project events for a specific date (calendar items/milestones)
   const getProjectEventsOnDate = (date: Date): ProjectEvent[] => {
     const events: ProjectEvent[] = [];
-    
     for (const project of assignedProjects) {
       for (const item of project.calendarItems || []) {
         if (isSameDay(parseISO(item.date), date)) {
-          events.push({
-            date,
-            projectName: project.name,
-            description: item.description,
-            type: 'event',
-          });
+          events.push({ date, projectName: project.name, description: item.description, type: 'event' });
         }
       }
     }
-    
     return events;
   };
 
-  // Get all project event dates for calendar modifiers (calendar items only)
   const getProjectEventDates = () => {
     const projectDates: Date[] = [];
-    
     for (const project of assignedProjects) {
       for (const item of project.calendarItems || []) {
         projectDates.push(parseISO(item.date));
       }
     }
-    
     return projectDates;
   };
 
@@ -287,12 +243,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   const handleRangeSelect = (range: DateRange | undefined) => {
     setSelectedRange(range);
-    
     if (range?.from) {
       if (!range.to || isSameDay(range.from, range.to)) {
-        const existing = availability.find((a) =>
-          isSameDay(new Date(a.date), range.from!)
-        );
+        const existing = availability.find((a) => isSameDay(new Date(a.date), range.from!));
         if (existing) {
           setSelectedStatus(existing.status as AvailabilityStatus);
           setNotes(existing.notes || '');
@@ -315,57 +268,35 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   const handleSave = async () => {
     if (!selectedRange?.from) return;
-    
     const datesToSave = getDatesInRange();
     if (datesToSave.length === 0) return;
-    
     setIsSaving(true);
     try {
       for (const date of datesToSave) {
         const dateStr = format(date, 'yyyy-MM-dd');
-        const existing = availability.find((a) =>
-          isSameDay(new Date(a.date), date)
-        );
-
+        const existing = availability.find((a) => isSameDay(new Date(a.date), date));
         if (existing) {
           const { error } = await supabase
             .from('availability')
             .update({ status: selectedStatus, notes: notes || null })
             .eq('id', existing.id);
-
           if (error) throw error;
         } else {
           const { error } = await supabase
             .from('availability')
-            .insert({
-              personnel_id: personnelId,
-              date: dateStr,
-              status: selectedStatus,
-              notes: notes || null,
-            });
-
+            .insert({ personnel_id: personnelId, date: dateStr, status: selectedStatus, notes: notes || null });
           if (error) throw error;
         }
       }
-
       const description = datesToSave.length === 1
         ? `Availability for ${format(datesToSave[0], 'PPP')} updated`
         : `Availability for ${format(datesToSave[0], 'MMM d')} - ${format(datesToSave[datesToSave.length - 1], 'MMM d, yyyy')} updated`;
-
-      toast({
-        title: 'Saved',
-        description,
-      });
-      
+      toast({ title: 'Saved', description });
       fetchAvailability();
       setSelectedRange(undefined);
     } catch (error) {
       console.error('Error saving availability:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save availability',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save availability' });
     } finally {
       setIsSaving(false);
     }
@@ -373,45 +304,28 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   const handleRemove = async () => {
     if (!selectedRange?.from) return;
-    
     const datesToRemove = getDatesInRange();
     const existingEntries = datesToRemove
       .map((date) => availability.find((a) => isSameDay(new Date(a.date), date)))
       .filter(Boolean);
-    
     if (existingEntries.length === 0) return;
-
     setIsSaving(true);
     try {
       for (const entry of existingEntries) {
         if (entry) {
-          const { error } = await supabase
-            .from('availability')
-            .delete()
-            .eq('id', entry.id);
-
+          const { error } = await supabase.from('availability').delete().eq('id', entry.id);
           if (error) throw error;
         }
       }
-
       const description = datesToRemove.length === 1
         ? `Availability for ${format(datesToRemove[0], 'PPP')} removed`
         : `Availability for ${datesToRemove.length} days removed`;
-
-      toast({
-        title: 'Removed',
-        description,
-      });
-      
+      toast({ title: 'Removed', description });
       fetchAvailability();
       setSelectedRange(undefined);
     } catch (error) {
       console.error('Error removing availability:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to remove availability',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove availability' });
     } finally {
       setIsSaving(false);
     }
@@ -423,18 +337,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const modifiers = {
-    available: availability
-      .filter((a) => a.status === 'available')
-      .map((a) => new Date(a.date)),
-    unavailable: availability
-      .filter((a) => a.status === 'unavailable')
-      .map((a) => new Date(a.date)),
-    partial: availability
-      .filter((a) => a.status === 'partial')
-      .map((a) => new Date(a.date)),
-    other: availability
-      .filter((a) => a.status === 'other')
-      .map((a) => new Date(a.date)),
+    available: availability.filter((a) => a.status === 'available').map((a) => new Date(a.date)),
+    unavailable: availability.filter((a) => a.status === 'unavailable').map((a) => new Date(a.date)),
+    partial: availability.filter((a) => a.status === 'partial').map((a) => new Date(a.date)),
+    other: availability.filter((a) => a.status === 'other').map((a) => new Date(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
     projectEvent: getProjectEventDates(),
     projectBlock: projectBlockDates,
@@ -442,41 +348,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const modifiersStyles = {
-    available: {
-      backgroundColor: 'hsl(142 76% 36%)',
-      color: 'white',
-      borderRadius: '50%',
-    },
-    unavailable: {
-      backgroundColor: 'hsl(0 72% 50%)',
-      color: 'white',
-      borderRadius: '50%',
-    },
-    partial: {
-      backgroundColor: 'hsl(38 92% 50%)',
-      color: 'white',
-      borderRadius: '50%',
-    },
-    other: {
-      backgroundColor: 'hsl(210 100% 50%)',
-      color: 'white',
-      borderRadius: '50%',
-    },
-    certificateExpiry: {
-      border: '2px solid hsl(280 70% 50%)',
-      borderRadius: '50%',
-    },
-    projectEvent: {
-      border: '2px solid hsl(210 100% 50%)',
-      borderRadius: '50%',
-    },
-    projectBlock: {
-      borderBottom: '3px solid hsl(240 60% 60%)',
-      borderRadius: '4px',
-    },
-    certExpiryWarning: {
-      boxShadow: 'inset 0 -2px 0 0 hsl(38 92% 50%)',
-    },
+    available: { backgroundColor: 'hsl(142 76% 36%)', color: 'white', borderRadius: '50%' },
+    unavailable: { backgroundColor: 'hsl(0 72% 50%)', color: 'white', borderRadius: '50%' },
+    partial: { backgroundColor: 'hsl(38 92% 50%)', color: 'white', borderRadius: '50%' },
+    other: { backgroundColor: 'hsl(210 100% 50%)', color: 'white', borderRadius: '50%' },
+    certificateExpiry: { border: '2px solid hsl(280 70% 50%)', borderRadius: '50%' },
+    projectEvent: { border: '2px solid hsl(210 100% 50%)', borderRadius: '50%' },
+    projectBlock: { borderBottom: '3px solid hsl(240 60% 60%)', borderRadius: '4px' },
+    certExpiryWarning: { boxShadow: 'inset 0 -2px 0 0 hsl(38 92% 50%)' },
   };
 
   return (
@@ -518,71 +397,55 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               <span className="text-xs text-muted-foreground">Tip: Click the start date, then click the end date to select a period.</span>
             </div>
 
-            {/* Calendar + Drawer layout */}
-            <div className="flex flex-col md:flex-row gap-0 overflow-hidden">
-              {/* Calendar — left side */}
-              <div className="flex-1 min-w-0">
-                <Calendar
-                  mode="range"
-                  selected={selectedRange}
-                  onSelect={handleRangeSelect}
-                  modifiers={modifiers}
-                  modifiersStyles={modifiersStyles}
-                  className="rounded-md border border-border p-3 pointer-events-auto w-full"
-                  classNames={{
-                    months: "flex flex-col w-full",
-                    month: "space-y-4 w-full",
-                    caption: "flex justify-center pt-1 relative items-center",
-                    caption_label: "text-sm font-medium",
-                    nav: "space-x-1 flex items-center",
-                    nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
-                    nav_button_previous: "absolute left-1",
-                    nav_button_next: "absolute right-1",
-                    table: "w-full border-collapse space-y-1",
-                    head_row: "flex w-full",
-                    head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
-                    row: "flex w-full mt-2",
-                    cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
-                    day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
-                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                    day_today: "bg-accent text-accent-foreground",
-                    day_outside: "text-muted-foreground opacity-50",
-                    day_disabled: "text-muted-foreground opacity-50",
-                    day_hidden: "invisible",
-                  }}
-                  numberOfMonths={1}
-                />
-              </div>
+            {/* Calendar — full width */}
+            <Calendar
+              mode="range"
+              selected={selectedRange}
+              onSelect={handleRangeSelect}
+              modifiers={modifiers}
+              modifiersStyles={modifiersStyles}
+              className="rounded-md border border-border p-3 pointer-events-auto w-full"
+              classNames={{
+                months: "flex flex-col w-full",
+                month: "space-y-4 w-full",
+                caption: "flex justify-center pt-1 relative items-center",
+                caption_label: "text-sm font-medium",
+                nav: "space-x-1 flex items-center",
+                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-input",
+                nav_button_previous: "absolute left-1",
+                nav_button_next: "absolute right-1",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex w-full",
+                head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center",
+                row: "flex w-full mt-2",
+                cell: "flex-1 h-9 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
+                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center",
+                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                day_today: "bg-accent text-accent-foreground",
+                day_outside: "text-muted-foreground opacity-50",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_hidden: "invisible",
+              }}
+              numberOfMonths={1}
+            />
 
-              {/* Right-side Drawer */}
-              <div
-                className={cn(
-                  "transition-all duration-150 ease-in-out shrink-0 overflow-hidden",
-                  selectedRange?.from ? "w-full md:w-[320px] opacity-100" : "w-0 opacity-0"
-                )}
-              >
+            {/* Day detail modal */}
+            <Dialog open={!!selectedRange?.from} onOpenChange={(open) => { if (!open) setSelectedRange(undefined); }}>
+              <DialogContent className="max-w-[420px]">
                 {selectedRange?.from && (
-                  <div className="w-full md:w-[320px] border-t md:border-t-0 md:border-l border-border p-4 space-y-5 h-full">
-                    {/* Close button */}
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">
+                  <>
+                    <DialogHeader>
+                      <DialogTitle>
                         {selectedRange.to && !isSameDay(selectedRange.from, selectedRange.to) ? (
                           `${format(selectedRange.from, 'MMM d')} – ${format(selectedRange.to, 'MMM d, yyyy')}`
                         ) : (
-                          format(selectedRange.from, 'EEEE, MMMM d')
+                          format(selectedRange.from, 'EEEE, MMMM d, yyyy')
                         )}
-                      </h3>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => setSelectedRange(undefined)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                      </DialogTitle>
+                      <DialogDescription>{personnelName}</DialogDescription>
+                    </DialogHeader>
 
-                    {/* Section 1: Assigned Projects */}
+                    {/* Assigned Projects */}
                     <div className="space-y-2">
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned Projects</h4>
                       {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getProjectsOnDate(selectedRange.from).length > 0 ? (
@@ -613,7 +476,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                                   <div>Shift {item.project.shiftNumber}</div>
                                 )}
                               </div>
-                              {/* Inline cert expiry warning for this project */}
                               {getCertExpiryWarningsForDate(selectedRange.from!).filter(w => w.projectName === item.project.name).map((warning, wIdx) => (
                                 <div key={wIdx} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 pl-5">
                                   <AlertTriangle className="h-3 w-3" />
@@ -627,7 +489,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                         <p className="text-sm text-muted-foreground italic">No projects assigned</p>
                       )}
 
-                      {/* Project events */}
                       {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getProjectEventsOnDate(selectedRange.from).length > 0 && (
                         <div className="space-y-1 pt-1">
                           {getProjectEventsOnDate(selectedRange.from).map((event, idx) => (
@@ -639,7 +500,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                         </div>
                       )}
 
-                      {/* Certificate expiries on this date */}
                       {(!selectedRange.to || isSameDay(selectedRange.from, selectedRange.to!)) && getCertificatesExpiringOnDate(selectedRange.from).length > 0 && (
                         <div className="space-y-1 pt-1">
                           <div className="flex items-center gap-1.5 text-xs font-medium text-[hsl(280_70%_50%)]">
@@ -656,7 +516,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                       )}
                     </div>
 
-                    {/* Section 2: Set Availability */}
+                    {/* Set Availability */}
                     <div className="space-y-3">
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
                       <div className="grid grid-cols-2 gap-2">
@@ -703,10 +563,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                         </Button>
                       )}
                     </div>
-                  </div>
+                  </>
                 )}
-              </div>
-            </div>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </CardContent>
