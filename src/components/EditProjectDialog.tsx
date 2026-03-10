@@ -408,6 +408,31 @@ export function EditProjectDialog({ open, onOpenChange, project, personnel, onSa
               />
             )}
           </div>
+
+          {/* Shift info (read-only) */}
+          {project.shiftGroupId && (
+            <div className="p-3 bg-teal-500/10 rounded-lg border border-teal-500/50">
+              <p className="text-sm font-medium text-foreground">
+                This project is Shift {project.shiftNumber} in a back-to-back group
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Shift structure cannot be changed after creation.
+              </p>
+            </div>
+          )}
+
+          {/* Rotation info (read-only) */}
+          {project.isRecurring && project.rotationOnDays && (
+            <div className="p-3 bg-teal-500/10 rounded-lg border border-teal-500/50">
+              <p className="text-sm font-medium text-foreground">
+                Rotation: {project.rotationOnDays} days on / {project.rotationOffDays} days off
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {project.rotationsCompleted || 0} of {project.rotationCount || 1} rotations completed
+                {project.autoCloseEnabled && ' · Auto-close enabled'}
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
