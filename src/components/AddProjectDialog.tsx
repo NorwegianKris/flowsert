@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe, Repeat } from 'lucide-react';
+import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe, Repeat, Lock } from 'lucide-react';
 import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
