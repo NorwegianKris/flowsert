@@ -298,6 +298,14 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setRecurringIntervalDays(14);
     setRecurringIntervalLabel('14 days');
     setCustomInterval(false);
+    setRotationOnValue(14);
+    setRotationOnUnit('days');
+    setRotationOffValue(28);
+    setRotationOffUnit('days');
+    setRotationCount(1);
+    setAutoCloseEnabled(true);
+    setIsBackToBack(false);
+    setShiftCount(2);
     clearSuggestions();
   };
 
