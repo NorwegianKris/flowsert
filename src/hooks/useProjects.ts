@@ -194,6 +194,7 @@ function buildInsertPayload(
     is_shift_parent: project.isShiftParent || false,
     shift_group_id: project.shiftGroupId || null,
     shift_number: project.shiftNumber || null,
+    group_color: project.groupColor || null,
     ...overrides,
   };
 }
