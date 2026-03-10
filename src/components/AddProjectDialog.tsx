@@ -1016,7 +1016,18 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                                 value={shiftCount}
                                 onChange={e => {
                                   const val = parseInt(e.target.value);
-                                  if (!isNaN(val) && val >= 2 && val <= 6) setShiftCount(val);
+                                  if (!isNaN(val) && val >= 2 && val <= 6) {
+                                    setShiftCount(val);
+                                    // Trim shift personnel selections beyond new count
+                                    setShiftPersonnelSelections(prev => {
+                                      const trimmed: Record<number, PersonnelSelection[]> = {};
+                                      for (let n = 1; n <= val; n++) {
+                                        if (prev[n]) trimmed[n] = prev[n];
+                                      }
+                                      return trimmed;
+                                    });
+                                    if (activeShiftTab > val) setActiveShiftTab(val);
+                                  }
                                 }}
                                 className="w-20"
                               />
