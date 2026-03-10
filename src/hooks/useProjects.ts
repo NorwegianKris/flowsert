@@ -48,6 +48,7 @@ export interface Project {
   isShiftParent?: boolean;
   shiftGroupId?: string;
   shiftNumber?: number;
+  groupColor?: string;
 }
 
 interface DbProject {
