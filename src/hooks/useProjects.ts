@@ -90,6 +90,7 @@ interface DbProject {
   is_shift_parent: boolean;
   shift_group_id: string | null;
   shift_number: number | null;
+  group_color: string | null;
 }
 
 interface DbCalendarItem {
