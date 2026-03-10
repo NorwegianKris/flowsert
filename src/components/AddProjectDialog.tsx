@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Mail, UserPlus, ShieldOff, Sparkles, Loader2, Users, ImagePlus, X, Search, Filter, CalendarIcon, Award, Building2, Tag, FolderOpen, ChevronRight, ArrowUpDown, Briefcase, Globe, Repeat } from 'lucide-react';
 import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
@@ -84,6 +85,9 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   // Back-to-back shifts
   const [isBackToBack, setIsBackToBack] = useState(false);
   const [shiftCount, setShiftCount] = useState(2);
+  // Per-shift personnel selections (used when isBackToBack is true)
+  const [shiftPersonnelSelections, setShiftPersonnelSelections] = useState<Record<number, PersonnelSelection[]>>({});
+  const [activeShiftTab, setActiveShiftTab] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Search & filter state
@@ -127,6 +131,32 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     return map;
   }, [personnel]);
 
+            {/* Shift Tabs — when back-to-back shifts are enabled */}
+            {isRecurring && isBackToBack && (
+              <Tabs
+                value={String(activeShiftTab)}
+                onValueChange={(val) => setActiveShiftTab(Number(val))}
+                className="w-full"
+              >
+                <TabsList className="w-full flex overflow-x-auto">
+                  {Array.from({ length: shiftCount }, (_, i) => {
+                    const n = i + 1;
+                    const tabLabel = name.trim() ? `${name} — Shift ${n}` : `Shift ${n}`;
+                    const tabCount = (shiftPersonnelSelections[n] || []).length;
+                    return (
+                      <TabsTrigger key={n} value={String(n)} className="flex-1 min-w-0 text-xs truncate gap-1">
+                        <span className="truncate">{tabLabel}</span>
+                        {tabCount > 0 && (
+                          <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px] ml-1 shrink-0">
+                            {tabCount}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </Tabs>
+            )}
 
   // AI Suggestions state
   const [aiPrompt, setAiPrompt] = useState('');
@@ -168,11 +198,30 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     
     setIsSubmitting(true);
 
-    // Separate personnel by mode
-    const assignedPersonnelIds = personnelSelections
+    // Build per-shift personnel map for back-to-back shifts
+    const isShiftMode = isRecurring && isBackToBack;
+    let shift1Selections: PersonnelSelection[];
+    let shiftPersonnelMap: Record<number, { assigned: string[]; invited: string[] }> | undefined;
+
+    if (isShiftMode) {
+      shift1Selections = shiftPersonnelSelections[1] || [];
+      shiftPersonnelMap = {};
+      for (let n = 1; n <= shiftCount; n++) {
+        const sels = shiftPersonnelSelections[n] || [];
+        shiftPersonnelMap[n] = {
+          assigned: sels.filter(s => s.mode === 'assign').map(s => s.id),
+          invited: sels.filter(s => s.mode === 'invite').map(s => s.id),
+        };
+      }
+    } else {
+      shift1Selections = personnelSelections;
+    }
+
+    // Separate personnel by mode (shift 1 or standard)
+    const assignedPersonnelIds = shift1Selections
       .filter(s => s.mode === 'assign')
       .map(s => s.id);
-    const invitedPersonnelIds = personnelSelections
+    const invitedPersonnelIds = shift1Selections
       .filter(s => s.mode === 'invite')
       .map(s => s.id);
 
@@ -214,16 +263,59 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
         ? new Date(new Date(startDate).getTime() + (rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1) + rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1)) * 86400000).toISOString()
         : undefined,
       // Shift fields
-      isShiftParent: isRecurring && isBackToBack ? true : false,
-      shiftNumber: isRecurring && isBackToBack ? 1 : undefined,
+      isShiftParent: isShiftMode ? true : false,
+      shiftNumber: isShiftMode ? 1 : undefined,
       shiftGroupId: undefined, // Set by hook after insert
-      _shiftCount: isRecurring && isBackToBack ? shiftCount : undefined,
+      _shiftCount: isShiftMode ? shiftCount : undefined,
+      _shiftPersonnel: isShiftMode ? shiftPersonnelMap : undefined,
     } as any;
 
     const createdProject = await onProjectAdded(newProject);
 
-    // Send invitations to personnel marked for invitation
-    if (createdProject && invitedPersonnelIds.length > 0) {
+    // Send invitations — for shift mode, iterate all shifts
+    if (createdProject && isShiftMode && shiftPersonnelMap) {
+      const createdShifts: { shiftNumber: number; projectId: string }[] =
+        (createdProject as any)._createdShifts || [{ shiftNumber: 1, projectId: createdProject.id }];
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+
+      for (const shift of createdShifts) {
+        const shiftInvited = shiftPersonnelMap[shift.shiftNumber]?.invited || [];
+        if (shiftInvited.length === 0) continue;
+
+        const invitedData = shiftInvited.map(id => {
+          const person = personnel.find(p => p.id === id);
+          return { id, email: person?.email || '', name: person?.name || '' };
+        }).filter(p => p.email);
+
+        const projectDetails = {
+          name: `${name} — Shift ${shift.shiftNumber}`,
+          description: createdProject.description,
+          startDate: createdProject.startDate,
+          endDate: createdProject.endDate,
+          location: createdProject.location,
+          projectManager: createdProject.projectManager,
+        };
+
+        const result = await sendBulkInvitations(
+          shift.projectId,
+          shiftInvited,
+          invitedData,
+          projectDetails
+        );
+        totalSuccess += result.success;
+        totalFailed += result.failed;
+      }
+
+      if (totalSuccess > 0) {
+        toast.success(`Sent ${totalSuccess} project invitation${totalSuccess > 1 ? 's' : ''} across shifts`);
+      }
+      if (totalFailed > 0) {
+        toast.error(`Failed to send ${totalFailed} invitation${totalFailed > 1 ? 's' : ''}`);
+      }
+    } else if (createdProject && invitedPersonnelIds.length > 0) {
+      // Standard (non-shift) invitations
       const invitedPersonnelData = invitedPersonnelIds.map(id => {
         const person = personnel.find(p => p.id === id);
         return {
@@ -271,6 +363,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setStartDate('');
     setEndDate('');
     setPersonnelSelections([]);
+    setShiftPersonnelSelections({});
+    setActiveShiftTab(1);
     setCustomer('');
     setWorkCategory('');
     setProjectNumber('');
@@ -316,8 +410,28 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     onOpenChange(isOpen);
   };
 
+  // --- Per-shift personnel helpers ---
+  // Get current selections based on mode
+  const getCurrentSelections = useCallback((): PersonnelSelection[] => {
+    if (isBackToBack) {
+      return shiftPersonnelSelections[activeShiftTab] || [];
+    }
+    return personnelSelections;
+  }, [isBackToBack, shiftPersonnelSelections, activeShiftTab, personnelSelections]);
+
+  const setCurrentSelections = useCallback((updater: (prev: PersonnelSelection[]) => PersonnelSelection[]) => {
+    if (isBackToBack) {
+      setShiftPersonnelSelections(prev => ({
+        ...prev,
+        [activeShiftTab]: updater(prev[activeShiftTab] || []),
+      }));
+    } else {
+      setPersonnelSelections(updater);
+    }
+  }, [isBackToBack, activeShiftTab]);
+
   const togglePersonnel = (personnelId: string) => {
-    setPersonnelSelections((prev) => {
+    setCurrentSelections((prev) => {
       const existing = prev.find(s => s.id === personnelId);
       if (existing) {
         return prev.filter(s => s.id !== personnelId);
@@ -327,7 +441,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const setPersonnelMode = (personnelId: string, mode: PersonnelMode) => {
-    setPersonnelSelections((prev) => {
+    setCurrentSelections((prev) => {
       const existing = prev.find(s => s.id === personnelId);
       if (existing) {
         return prev.map(s => s.id === personnelId ? { ...s, mode } : s);
@@ -338,18 +452,19 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const selectAllPersonnel = () => {
     const selectable = getFilteredPersonnel();
-    setPersonnelSelections(selectable.map(p => ({ id: p.id, mode: 'invite' })));
+    setCurrentSelections(() => selectable.map(p => ({ id: p.id, mode: 'invite' })));
   };
 
   const deselectAllPersonnel = () => {
-    setPersonnelSelections([]);
+    setCurrentSelections(() => []);
   };
 
   // Check if all selectable personnel are currently selected
   const allSelected = () => {
     const selectable = getFilteredPersonnel();
+    const current = getCurrentSelections();
     if (selectable.length === 0) return false;
-    return selectable.every(p => personnelSelections.some(s => s.id === p.id));
+    return selectable.every(p => current.some(s => s.id === p.id));
   };
 
   const selectSuggestedPersonnel = () => {
@@ -358,7 +473,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     const selectableIds = personnel
       .filter(p => suggestedIds.includes(p.id) && (p.category !== 'freelancer' || p.activated))
       .map(p => p.id);
-    setPersonnelSelections(selectableIds.map(id => ({ id, mode: 'invite' })));
+    setCurrentSelections(() => selectableIds.map(id => ({ id, mode: 'invite' })));
   };
 
   // Sort personnel: suggested first (by score), then apply sort option
@@ -480,11 +595,11 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   };
 
   const isSelected = (personnelId: string) => {
-    return personnelSelections.some(s => s.id === personnelId);
+    return getCurrentSelections().some(s => s.id === personnelId);
   };
 
   const getPersonnelMode = (personnelId: string): PersonnelMode => {
-    const selection = personnelSelections.find(s => s.id === personnelId);
+    const selection = getCurrentSelections().find(s => s.id === personnelId);
     return selection?.mode || 'invite';
   };
 
@@ -502,9 +617,15 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
   };
 
-  const inviteCount = personnelSelections.filter(s => s.mode === 'invite').length;
-  const assignCount = personnelSelections.filter(s => s.mode === 'assign').length;
+  const currentSelections = getCurrentSelections();
+  const inviteCount = currentSelections.filter(s => s.mode === 'invite').length;
+  const assignCount = currentSelections.filter(s => s.mode === 'assign').length;
   const suggestedCount = suggestions?.suggestedPersonnel?.length || 0;
+
+  // Total selections across all shifts (for summary)
+  const totalShiftSelections = isBackToBack
+    ? Object.values(shiftPersonnelSelections).reduce((sum, arr) => sum + arr.length, 0)
+    : currentSelections.length;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -896,7 +1017,13 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                         <div className="flex items-center gap-3">
                           <Switch
                             checked={isBackToBack}
-                            onCheckedChange={setIsBackToBack}
+                            onCheckedChange={(val) => {
+                              setIsBackToBack(val);
+                              if (!val) {
+                                setShiftPersonnelSelections({});
+                                setActiveShiftTab(1);
+                              }
+                            }}
                           />
                           <div>
                             <p className="text-sm font-medium">Set up back-to-back shifts</p>
@@ -915,7 +1042,18 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                                 value={shiftCount}
                                 onChange={e => {
                                   const val = parseInt(e.target.value);
-                                  if (!isNaN(val) && val >= 2 && val <= 6) setShiftCount(val);
+                                  if (!isNaN(val) && val >= 2 && val <= 6) {
+                                    setShiftCount(val);
+                                    // Trim shift personnel selections beyond new count
+                                    setShiftPersonnelSelections(prev => {
+                                      const trimmed: Record<number, PersonnelSelection[]> = {};
+                                      for (let n = 1; n <= val; n++) {
+                                        if (prev[n]) trimmed[n] = prev[n];
+                                      }
+                                      return trimmed;
+                                    });
+                                    if (activeShiftTab > val) setActiveShiftTab(val);
+                                  }
                                 }}
                                 className="w-20"
                               />
@@ -1480,19 +1618,28 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
               )}
             </ScrollArea>
 
-            {personnelSelections.length > 0 && (
+            {(isBackToBack ? totalShiftSelections > 0 : currentSelections.length > 0) && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                {inviteCount > 0 && (
+                {isBackToBack ? (
                   <span className="flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {inviteCount} invitation{inviteCount > 1 ? 's' : ''}
+                    <Users className="h-3 w-3" />
+                    {totalShiftSelections} total across {shiftCount} shifts
                   </span>
-                )}
-                {assignCount > 0 && (
-                  <span className="flex items-center gap-1">
-                    <UserPlus className="h-3 w-3" />
-                    {assignCount} direct assignment{assignCount > 1 ? 's' : ''}
-                  </span>
+                ) : (
+                  <>
+                    {inviteCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {inviteCount} invitation{inviteCount > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {assignCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <UserPlus className="h-3 w-3" />
+                        {assignCount} direct assignment{assignCount > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             )}

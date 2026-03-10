@@ -337,15 +337,13 @@ export function useProjects() {
       const newProject = mapDbToProject(data as DbProject, []);
 
       // If back-to-back shifts enabled, create sibling shift projects
-      const shiftCount = project.shiftNumber === 1 && project.isShiftParent
-        ? (project.rotationCount || 1) // Will be passed as shiftCount from form
-        : 0;
-
-      // Actually, shiftCount is encoded differently. Let's check the metadata.
-      // The form will set isShiftParent=true, shiftNumber=1, and pass shiftCount via a custom field.
-      // We handle this by checking if shiftGroupId should generate siblings.
+      const shiftPersonnel: Record<number, { assigned: string[]; invited: string[] }> | undefined =
+        (project as any)._shiftPersonnel;
       
       const createdProjects: Project[] = [newProject];
+      const createdShifts: { shiftNumber: number; projectId: string }[] = [
+        { shiftNumber: 1, projectId: newProject.id },
+      ];
 
       // Create sibling shifts if this is a shift parent
       if (project.isShiftParent && project.shiftNumber === 1 && project.rotationOnDays) {
@@ -361,11 +359,6 @@ export function useProjects() {
         newProject.shiftGroupId = shiftGroupId;
         newProject.name = `${parentName} — Shift 1`;
 
-        // Determine how many siblings to create from the metadata
-        // The form stores the total shift count. We need to figure out the total.
-        // Since we can't pass extra fields, we use rotationCount field temporarily.
-        // Actually, let's use a different approach: the form will call addProject
-        // with a special _shiftCount property. We'll use a type assertion.
         const totalShifts = (project as any)._shiftCount || 2;
 
         for (let n = 2; n <= totalShifts; n++) {
@@ -376,13 +369,16 @@ export function useProjects() {
             ? addDays(new Date(project.endDate), offsetDays).toISOString().split('T')[0]
             : null;
 
+          // Get per-shift personnel if provided
+          const shiftAssigned = shiftPersonnel?.[n]?.assigned || [];
+
           const siblingPayload = buildInsertPayload(
             {
               ...project,
               name: `${parentName} — Shift ${n}`,
               startDate: shiftStartDate,
               endDate: shiftEndDate || undefined,
-              assignedPersonnel: [], // Sibling shifts start unassigned
+              assignedPersonnel: shiftAssigned,
               isShiftParent: false,
               shiftGroupId: shiftGroupId,
               shiftNumber: n,
@@ -410,7 +406,9 @@ export function useProjects() {
           if (siblingError) {
             console.error(`Failed to create shift ${n}:`, siblingError);
           } else {
-            createdProjects.push(mapDbToProject(siblingData as DbProject, []));
+            const siblingProject = mapDbToProject(siblingData as DbProject, []);
+            createdProjects.push(siblingProject);
+            createdShifts.push({ shiftNumber: n, projectId: siblingProject.id });
           }
         }
       }
@@ -427,6 +425,11 @@ export function useProjects() {
           newProject.projectCountry, newProject.visibilityMode || 'same_country',
           newProject.includeCountries, newProject.excludeCountries,
         );
+      }
+
+      // Attach created shift info for dialog to send per-shift invitations
+      if (createdShifts.length > 1) {
+        (newProject as any)._createdShifts = createdShifts;
       }
 
       return newProject;
