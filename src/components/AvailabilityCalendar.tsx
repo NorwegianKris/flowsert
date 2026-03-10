@@ -189,6 +189,18 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return results;
   };
 
+  const getProjectsInRange = (startDate: Date, endDate: Date): { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] => {
+    const seen = new Set<string>();
+    const results: { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] = [];
+    for (const p of allProjectOnPeriods) {
+      if (!seen.has(p.project.id) && p.periodStart <= endDate && p.periodEnd >= startDate) {
+        seen.add(p.project.id);
+        results.push({ project: p.project, periodStart: p.periodStart, periodEnd: p.periodEnd });
+      }
+    }
+    return results;
+  };
+
   const getProjectEventsOnDate = (date: Date): ProjectEvent[] => {
     const events: ProjectEvent[] = [];
     for (const project of assignedProjects) {
