@@ -248,8 +248,8 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
                 </div>
               </ScrollArea>
             )}
-          </CardContent>
-        </CollapsibleContent>
+          </CollapsibleContent>
+        </CardContent>
       </Card>
     </Collapsible>
   );

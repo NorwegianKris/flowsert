@@ -186,9 +186,9 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
         </CardContent>
       </Card>
 
-      <Card className="border-border/50">
-        <CardContent className="p-6">
-          <Collapsible open={previousOpen} onOpenChange={setPreviousOpen}>
+      <Collapsible open={previousOpen} onOpenChange={setPreviousOpen}>
+        <Card className="border-border/50">
+          <CardContent className="p-6">
             <CollapsibleTrigger className="flex items-center gap-2 mb-4 w-full group">
               <CheckCircle className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-lg font-semibold text-foreground">Previous Projects</h2>
@@ -196,28 +196,29 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
               <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {completedProjects.map((project) => (
-                  <ProjectCard 
-                    key={project.id} 
-                    project={project}
-                    personnel={personnel}
-                    getPersonnelById={getPersonnelById}
-                    getInitials={getInitials}
-                    onClick={() => onSelectProject(project)}
-                  />
-                ))}
-              </div>
-              {completedProjects.length === 0 && (
+              {completedProjects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {completedProjects.map((project) => (
+                    <ProjectCard 
+                      key={project.id} 
+                      project={project}
+                      personnel={personnel}
+                      getPersonnelById={getPersonnelById}
+                      getInitials={getInitials}
+                      onClick={() => onSelectProject(project)}
+                    />
+                  ))}
+                </div>
+              ) : (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">✅</div>
                   <p className="text-muted-foreground">No completed projects</p>
                 </div>
               )}
             </CollapsibleContent>
-          </Collapsible>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Collapsible>
 
       {/* Invitation Log Section */}
       <InvitationLog projects={projects} personnel={personnel} />
