@@ -424,9 +424,11 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsEditSelectOpen(true)}
+            onClick={() => {
+              if (highlightedDoc) openEditDialog(highlightedDoc);
+            }}
             className="gap-1"
-            disabled={documents.length === 0}
+            disabled={!highlightedDoc}
           >
             <Pencil className="h-4 w-4" />
             Edit
@@ -434,9 +436,38 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsRemoveSelectOpen(true)}
+            onClick={async () => {
+              if (!highlightedDoc) return;
+              const url = await getPersonnelDocumentUrl(highlightedDoc.fileUrl);
+              if (url) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = highlightedDoc.name;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              } else {
+                toast.error('Failed to download document');
+              }
+            }}
+            className="gap-1"
+            disabled={!highlightedDoc}
+          >
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (highlightedDoc) {
+                setDocumentToDelete(highlightedDoc);
+                setIsDeleteDialogOpen(true);
+              }
+            }}
             className="gap-1 text-destructive hover:text-destructive"
-            disabled={documents.length === 0}
+            disabled={!highlightedDoc}
           >
             <Trash2 className="h-4 w-4" />
             Remove
