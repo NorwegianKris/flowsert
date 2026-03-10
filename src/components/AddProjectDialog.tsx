@@ -275,6 +275,8 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
     setStartDate('');
     setEndDate('');
     setPersonnelSelections([]);
+    setShiftPersonnelSelections({});
+    setActiveShiftTab(1);
     setCustomer('');
     setWorkCategory('');
     setProjectNumber('');
