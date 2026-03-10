@@ -14,7 +14,7 @@ import { Project } from '@/hooks/useProjects';
 import { Personnel } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ImagePlus, X, Loader2 } from 'lucide-react';
+import { ImagePlus, X, Loader2, Lock } from 'lucide-react';
 import { ProjectVisibilityControls } from '@/components/ProjectVisibilityControls';
 
 interface EditProjectDialogProps {
