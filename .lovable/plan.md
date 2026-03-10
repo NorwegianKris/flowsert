@@ -1,27 +1,27 @@
 
 
-## Show Applicant Count for Posted Projects
+## Rotation Schedule + Back-to-Back Shifts
 
-Cosmetic only. 🟢
+**Status: Implemented**
 
-### Change — `src/components/ProjectsTab.tsx`, personnel row (lines 246-280)
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-Update the empty-personnel branch (line 275-279) to check if the project is posted. If posted, show `"X Applicants"` with Users icon instead of "No personnel assigned".
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-```tsx
-) : isPosted ? (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    {applicantCount} Applicant{applicantCount !== 1 ? 's' : ''}
-  </span>
-) : (
-  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-    <Users className="h-4 w-4" />
-    No personnel assigned
-  </span>
-)
-```
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-### File
-- `src/components/ProjectsTab.tsx`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

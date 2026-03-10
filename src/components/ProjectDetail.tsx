@@ -281,6 +281,32 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
               </div>
             </div>
           </div>
+
+          {/* Shift siblings navigation */}
+          {project.shiftGroupId && allProjects && onSelectProject && (() => {
+            const siblings = allProjects
+              .filter(p => p.shiftGroupId === project.shiftGroupId)
+              .sort((a, b) => (a.shiftNumber || 0) - (b.shiftNumber || 0));
+            if (siblings.length <= 1) return null;
+            return (
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <span className="text-xs text-muted-foreground font-medium">Shifts:</span>
+                {siblings.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => s.id !== project.id && onSelectProject(s)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      s.id === project.id
+                        ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/50'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/50'
+                    }`}
+                  >
+                    Shift {s.shiftNumber}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
