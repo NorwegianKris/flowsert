@@ -247,6 +247,18 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                       Shift {project.shiftNumber}
                     </Badge>
                   )}
+                  {project.isRecurring && project.rotationOnDays && (
+                    <>
+                      <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                        <Repeat className="h-3 w-3 mr-1" />
+                        {project.rotationOnDays} days on
+                      </Badge>
+                      <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                        <Repeat className="h-3 w-3 mr-1" />
+                        {project.rotationOffDays} days off
+                      </Badge>
+                    </>
+                  )}
                 </div>
                 <p className="text-muted-foreground">{project.description}</p>
               </div>

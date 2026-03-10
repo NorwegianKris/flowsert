@@ -323,11 +323,17 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
                 Posted
               </Badge>
             )}
-            {project.isRecurring && (
-              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
-                <Repeat className="h-3 w-3 mr-1" />
-                Every {project.recurringIntervalLabel || `${project.recurringIntervalDays} days`}
-              </Badge>
+            {project.isRecurring && project.rotationOnDays && (
+              <div className="flex flex-col gap-0.5 items-end">
+                <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                  <Repeat className="h-3 w-3 mr-1" />
+                  {project.rotationOnDays} days on
+                </Badge>
+                <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                  <Repeat className="h-3 w-3 mr-1" />
+                  {project.rotationOffDays} days off
+                </Badge>
+              </div>
             )}
             {project.shiftGroupId && project.shiftNumber && (
               <Badge
