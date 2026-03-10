@@ -142,6 +142,21 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
 
   const { sendBulkInvitations } = useProjectInvitations();
 
+  // Auto-calculate end date for recurring projects
+  useEffect(() => {
+    if (isRecurring && startDate) {
+      const onDays = rotationOnValue * (rotationOnUnit === 'weeks' ? 7 : 1);
+      const offDays = rotationOffValue * (rotationOffUnit === 'weeks' ? 7 : 1);
+      const totalDays = (onDays + offDays) * rotationCount;
+      const start = new Date(startDate);
+      const end = new Date(start.getTime() + totalDays * 86400000);
+      const yyyy = end.getFullYear();
+      const mm = String(end.getMonth() + 1).padStart(2, '0');
+      const dd = String(end.getDate()).padStart(2, '0');
+      setEndDate(`${yyyy}-${mm}-${dd}`);
+    }
+  }, [isRecurring, startDate, rotationOnValue, rotationOnUnit, rotationOffValue, rotationOffUnit, rotationCount]);
+
   // Apply suggested fields when suggestions change
   useEffect(() => {
     if (suggestions?.suggestedFields) {
