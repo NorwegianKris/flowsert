@@ -893,6 +893,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                   if (!val) {
                     setIsBackToBack(false);
                     setAutoCloseEnabled(true);
+                    setEndDate('');
                   }
                 }}
                 className="mt-0.5"
