@@ -245,6 +245,12 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                       {config.label}
                     </Badge>
                   )}
+                  {project.shiftGroupId && project.shiftNumber && (
+                    <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                      <Layers className="h-3 w-3 mr-1" />
+                      Shift {project.shiftNumber}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-muted-foreground">{project.description}</p>
               </div>
