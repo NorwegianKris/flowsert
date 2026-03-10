@@ -74,6 +74,16 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
   const [recurringIntervalDays, setRecurringIntervalDays] = useState<number>(14);
   const [recurringIntervalLabel, setRecurringIntervalLabel] = useState('14 days');
   const [customInterval, setCustomInterval] = useState(false);
+  // Rotation schedule
+  const [rotationOnValue, setRotationOnValue] = useState(14);
+  const [rotationOnUnit, setRotationOnUnit] = useState<'days' | 'weeks'>('days');
+  const [rotationOffValue, setRotationOffValue] = useState(28);
+  const [rotationOffUnit, setRotationOffUnit] = useState<'days' | 'weeks'>('days');
+  const [rotationCount, setRotationCount] = useState(1);
+  const [autoCloseEnabled, setAutoCloseEnabled] = useState(true);
+  // Back-to-back shifts
+  const [isBackToBack, setIsBackToBack] = useState(false);
+  const [shiftCount, setShiftCount] = useState(2);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Search & filter state

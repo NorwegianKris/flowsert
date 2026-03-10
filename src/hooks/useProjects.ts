@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { addDays } from 'date-fns';
 
 export interface ProjectCalendarItem {
   id: string;
@@ -35,6 +36,18 @@ export interface Project {
   recurringIntervalDays?: number;
   recurringIntervalLabel?: string;
   recurringNextDate?: string;
+  // Rotation schedule fields
+  rotationOnDays?: number;
+  rotationOffDays?: number;
+  rotationCount?: number;
+  rotationsCompleted?: number;
+  autoCloseEnabled?: boolean;
+  nextCloseDate?: string;
+  nextOpenDate?: string;
+  // Back-to-back shift fields
+  isShiftParent?: boolean;
+  shiftGroupId?: string;
+  shiftNumber?: number;
 }
 
 interface DbProject {
@@ -64,6 +77,18 @@ interface DbProject {
   recurring_interval_days: number | null;
   recurring_interval_label: string | null;
   recurring_next_date: string | null;
+  // Rotation
+  rotation_on_days: number | null;
+  rotation_off_days: number | null;
+  rotation_count: number | null;
+  rotations_completed: number | null;
+  auto_close_enabled: boolean;
+  next_close_date: string | null;
+  next_open_date: string | null;
+  // Shifts
+  is_shift_parent: boolean;
+  shift_group_id: string | null;
+  shift_number: number | null;
 }
 
 interface DbCalendarItem {
@@ -76,6 +101,100 @@ interface DbCalendarItem {
   updated_at: string;
 }
 
+function mapDbToProject(p: DbProject, calendarItems: DbCalendarItem[]): Project {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    status: p.status as 'active' | 'completed' | 'pending',
+    startDate: p.start_date,
+    endDate: p.end_date || undefined,
+    assignedPersonnel: p.assigned_personnel || [],
+    customer: p.customer || undefined,
+    workCategory: p.work_category || undefined,
+    projectNumber: p.project_number || undefined,
+    location: p.location || undefined,
+    projectManager: p.project_manager || undefined,
+    isPosted: p.is_posted,
+    imageUrl: p.image_url || undefined,
+    projectCountry: p.project_country || undefined,
+    projectLocationLabel: p.project_location_label || undefined,
+    visibilityMode: (p.visibility_mode as 'same_country' | 'all') || 'same_country',
+    includeCountries: p.include_countries || undefined,
+    excludeCountries: p.exclude_countries || undefined,
+    isRecurring: p.is_recurring,
+    recurringIntervalDays: p.recurring_interval_days || undefined,
+    recurringIntervalLabel: p.recurring_interval_label || undefined,
+    recurringNextDate: p.recurring_next_date || undefined,
+    // Rotation
+    rotationOnDays: p.rotation_on_days || undefined,
+    rotationOffDays: p.rotation_off_days || undefined,
+    rotationCount: p.rotation_count || undefined,
+    rotationsCompleted: p.rotations_completed || undefined,
+    autoCloseEnabled: p.auto_close_enabled,
+    nextCloseDate: p.next_close_date || undefined,
+    nextOpenDate: p.next_open_date || undefined,
+    // Shifts
+    isShiftParent: p.is_shift_parent,
+    shiftGroupId: p.shift_group_id || undefined,
+    shiftNumber: p.shift_number || undefined,
+    calendarItems: calendarItems
+      .filter(item => item.project_id === p.id)
+      .map(item => ({
+        id: item.id,
+        date: item.date,
+        description: item.description,
+        isMilestone: item.is_milestone,
+      })),
+  };
+}
+
+function buildInsertPayload(
+  project: Omit<Project, 'id' | 'calendarItems'>,
+  businessId: string,
+  overrides?: Partial<Record<string, unknown>>
+) {
+  const dedup = (arr: string[]) => [...new Set(arr.map(x => x.toLowerCase().trim()).filter(Boolean))];
+  return {
+    business_id: businessId,
+    name: project.name,
+    description: project.description,
+    status: project.status,
+    start_date: project.startDate,
+    end_date: project.endDate || null,
+    assigned_personnel: project.assignedPersonnel,
+    customer: project.customer || null,
+    work_category: project.workCategory || null,
+    project_number: project.projectNumber || null,
+    location: project.location || null,
+    project_manager: project.projectManager || null,
+    is_posted: project.isPosted || false,
+    image_url: project.imageUrl || null,
+    project_country: project.projectCountry?.toLowerCase().trim() || null,
+    project_location_label: project.projectLocationLabel || null,
+    visibility_mode: project.visibilityMode || 'same_country',
+    include_countries: project.includeCountries ? dedup(project.includeCountries) : null,
+    exclude_countries: project.excludeCountries ? dedup(project.excludeCountries) : null,
+    is_recurring: project.isRecurring || false,
+    recurring_interval_days: project.isRecurring ? (project.recurringIntervalDays || null) : null,
+    recurring_interval_label: project.isRecurring ? (project.recurringIntervalLabel || null) : null,
+    recurring_next_date: project.isRecurring ? (project.recurringNextDate || null) : null,
+    // Rotation
+    rotation_on_days: project.rotationOnDays || null,
+    rotation_off_days: project.rotationOffDays || null,
+    rotation_count: project.rotationCount || null,
+    rotations_completed: project.rotationsCompleted || 0,
+    auto_close_enabled: project.autoCloseEnabled || false,
+    next_close_date: project.nextCloseDate || null,
+    next_open_date: project.nextOpenDate || null,
+    // Shifts
+    is_shift_parent: project.isShiftParent || false,
+    shift_group_id: project.shiftGroupId || null,
+    shift_number: project.shiftNumber || null,
+    ...overrides,
+  };
+}
+
 async function notifyWorkersAboutPostedProject(
   projectId: string,
   projectName: string,
@@ -86,7 +205,6 @@ async function notifyWorkersAboutPostedProject(
   excludeCountries: string[] | undefined,
 ) {
   try {
-    // Fetch all activated personnel (workers) in the business
     const { data: allPersonnel, error: personnelError } = await supabase
       .from('personnel')
       .select('id, country, user_id')
@@ -103,14 +221,10 @@ async function notifyWorkersAboutPostedProject(
     const normalizedInclude = (includeCountries || []).map(c => normalize(c));
     const normalizedProjectCountry = normalize(projectCountry);
 
-    // Filter personnel matching visibility rules (mirrors can_worker_see_posted_project)
     const eligiblePersonnel = allPersonnel.filter(p => {
       const workerCountry = normalize(p.country);
-      // Exclude check
       if (workerCountry && normalizedExclude.includes(workerCountry)) return false;
-      // Visibility mode
       if (visibilityMode === 'all') return true;
-      // same_country mode
       if (workerCountry === normalizedProjectCountry) return true;
       if (workerCountry && normalizedInclude.includes(workerCountry)) return true;
       return false;
@@ -118,7 +232,6 @@ async function notifyWorkersAboutPostedProject(
 
     if (eligiblePersonnel.length === 0) return;
 
-    // Create notification
     const { data: { user } } = await supabase.auth.getUser();
     const { data: notification, error: notifError } = await supabase
       .from('notifications')
@@ -136,7 +249,6 @@ async function notifyWorkersAboutPostedProject(
       return;
     }
 
-    // Insert recipients
     const recipients = eligiblePersonnel.map(p => ({
       notification_id: notification.id,
       personnel_id: p.id,
@@ -171,7 +283,6 @@ export function useProjects() {
     try {
       setLoading(true);
       
-      // Fetch projects and calendar items in parallel (no waterfall)
       const [projectsResult, calendarResult] = await Promise.all([
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('project_calendar_items').select('*')
@@ -181,7 +292,7 @@ export function useProjects() {
       if (calendarResult.error) throw calendarResult.error;
 
       const projectsData = projectsResult.data;
-      const calendarItemsData = calendarResult.data;
+      const calendarItemsData = calendarResult.data || [];
 
       if (!projectsData || projectsData.length === 0) {
         setProjects([]);
@@ -189,42 +300,9 @@ export function useProjects() {
         return;
       }
 
-      const projectIds = new Set(projectsData.map((p: DbProject) => p.id));
-
-      // Map to frontend format
-      const mappedProjects: Project[] = projectsData.map((p: DbProject) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        status: p.status as 'active' | 'completed' | 'pending',
-        startDate: p.start_date,
-        endDate: p.end_date || undefined,
-        assignedPersonnel: p.assigned_personnel || [],
-        customer: p.customer || undefined,
-        workCategory: p.work_category || undefined,
-        projectNumber: p.project_number || undefined,
-        location: p.location || undefined,
-        projectManager: p.project_manager || undefined,
-        isPosted: p.is_posted,
-        imageUrl: p.image_url || undefined,
-        projectCountry: p.project_country || undefined,
-        projectLocationLabel: p.project_location_label || undefined,
-        visibilityMode: (p.visibility_mode as 'same_country' | 'all') || 'same_country',
-        includeCountries: p.include_countries || undefined,
-        excludeCountries: p.exclude_countries || undefined,
-        isRecurring: p.is_recurring,
-        recurringIntervalDays: p.recurring_interval_days || undefined,
-        recurringIntervalLabel: p.recurring_interval_label || undefined,
-        recurringNextDate: p.recurring_next_date || undefined,
-        calendarItems: (calendarItemsData || [])
-          .filter((item: DbCalendarItem) => projectIds.has(item.project_id) && item.project_id === p.id)
-          .map((item: DbCalendarItem) => ({
-            id: item.id,
-            date: item.date,
-            description: item.description,
-            isMilestone: item.is_milestone,
-          })),
-      }));
+      const mappedProjects: Project[] = projectsData.map((p: DbProject) =>
+        mapDbToProject(p, calendarItemsData as DbCalendarItem[])
+      );
 
       setProjects(mappedProjects);
     } catch (error) {
@@ -245,70 +323,102 @@ export function useProjects() {
       return null;
     }
 
-    const dedup = (arr: string[]) => [...new Set(arr.map(x => x.toLowerCase().trim()).filter(Boolean))];
-
     try {
+      const payload = buildInsertPayload(project, profile.business_id);
+
       const { data, error } = await supabase
         .from('projects')
-        .insert({
-          business_id: profile.business_id,
-          name: project.name,
-          description: project.description,
-          status: project.status,
-          start_date: project.startDate,
-          end_date: project.endDate || null,
-          assigned_personnel: project.assignedPersonnel,
-          customer: project.customer || null,
-          work_category: project.workCategory || null,
-          project_number: project.projectNumber || null,
-          location: project.location || null,
-          project_manager: project.projectManager || null,
-          is_posted: project.isPosted || false,
-          image_url: project.imageUrl || null,
-          project_country: project.projectCountry?.toLowerCase().trim() || null,
-          project_location_label: project.projectLocationLabel || null,
-          visibility_mode: project.visibilityMode || 'same_country',
-          include_countries: project.includeCountries ? dedup(project.includeCountries) : null,
-          exclude_countries: project.excludeCountries ? dedup(project.excludeCountries) : null,
-          is_recurring: project.isRecurring || false,
-          recurring_interval_days: project.isRecurring ? (project.recurringIntervalDays || null) : null,
-          recurring_interval_label: project.isRecurring ? (project.recurringIntervalLabel || null) : null,
-          recurring_next_date: project.isRecurring ? (project.recurringNextDate || null) : null,
-        })
+        .insert(payload)
         .select()
         .single();
 
       if (error) throw error;
 
-      const newProject: Project = {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        status: data.status as 'active' | 'completed' | 'pending',
-        startDate: data.start_date,
-        endDate: data.end_date || undefined,
-        assignedPersonnel: data.assigned_personnel || [],
-        customer: data.customer || undefined,
-        workCategory: data.work_category || undefined,
-        projectNumber: data.project_number || undefined,
-        location: data.location || undefined,
-        projectManager: data.project_manager || undefined,
-        isPosted: data.is_posted,
-        imageUrl: data.image_url || undefined,
-        projectCountry: data.project_country || undefined,
-        projectLocationLabel: data.project_location_label || undefined,
-        visibilityMode: (data.visibility_mode as 'same_country' | 'all') || 'same_country',
-        includeCountries: data.include_countries || undefined,
-        excludeCountries: data.exclude_countries || undefined,
-        isRecurring: data.is_recurring,
-        recurringIntervalDays: data.recurring_interval_days || undefined,
-        recurringIntervalLabel: data.recurring_interval_label || undefined,
-        recurringNextDate: data.recurring_next_date || undefined,
-        calendarItems: [],
-      };
+      const newProject = mapDbToProject(data as DbProject, []);
 
-      setProjects((prev) => [newProject, ...prev]);
-      toast.success('Project created successfully');
+      // If back-to-back shifts enabled, create sibling shift projects
+      const shiftCount = project.shiftNumber === 1 && project.isShiftParent
+        ? (project.rotationCount || 1) // Will be passed as shiftCount from form
+        : 0;
+
+      // Actually, shiftCount is encoded differently. Let's check the metadata.
+      // The form will set isShiftParent=true, shiftNumber=1, and pass shiftCount via a custom field.
+      // We handle this by checking if shiftGroupId should generate siblings.
+      
+      const createdProjects: Project[] = [newProject];
+
+      // Create sibling shifts if this is a shift parent
+      if (project.isShiftParent && project.shiftNumber === 1 && project.rotationOnDays) {
+        // Update parent with shift_group_id = its own id and name suffix
+        const parentName = project.name;
+        const shiftGroupId = newProject.id;
+        
+        await supabase.from('projects').update({
+          shift_group_id: shiftGroupId,
+          name: `${parentName} — Shift 1`,
+        }).eq('id', newProject.id);
+
+        newProject.shiftGroupId = shiftGroupId;
+        newProject.name = `${parentName} — Shift 1`;
+
+        // Determine how many siblings to create from the metadata
+        // The form stores the total shift count. We need to figure out the total.
+        // Since we can't pass extra fields, we use rotationCount field temporarily.
+        // Actually, let's use a different approach: the form will call addProject
+        // with a special _shiftCount property. We'll use a type assertion.
+        const totalShifts = (project as any)._shiftCount || 2;
+
+        for (let n = 2; n <= totalShifts; n++) {
+          const offsetDays = (n - 1) * project.rotationOnDays;
+          const shiftStartDate = addDays(new Date(project.startDate), offsetDays)
+            .toISOString().split('T')[0];
+          const shiftEndDate = project.endDate
+            ? addDays(new Date(project.endDate), offsetDays).toISOString().split('T')[0]
+            : null;
+
+          const siblingPayload = buildInsertPayload(
+            {
+              ...project,
+              name: `${parentName} — Shift ${n}`,
+              startDate: shiftStartDate,
+              endDate: shiftEndDate || undefined,
+              assignedPersonnel: [], // Sibling shifts start unassigned
+              isShiftParent: false,
+              shiftGroupId: shiftGroupId,
+              shiftNumber: n,
+              nextCloseDate: project.autoCloseEnabled && project.rotationOnDays
+                ? addDays(new Date(shiftStartDate), project.rotationOnDays).toISOString()
+                : undefined,
+              nextOpenDate: project.autoCloseEnabled && project.rotationOnDays && project.rotationOffDays
+                ? addDays(new Date(shiftStartDate), project.rotationOnDays + project.rotationOffDays).toISOString()
+                : undefined,
+            },
+            profile.business_id,
+            {
+              shift_group_id: shiftGroupId,
+              shift_number: n,
+              is_shift_parent: false,
+            }
+          );
+
+          const { data: siblingData, error: siblingError } = await supabase
+            .from('projects')
+            .insert(siblingPayload)
+            .select()
+            .single();
+
+          if (siblingError) {
+            console.error(`Failed to create shift ${n}:`, siblingError);
+          } else {
+            createdProjects.push(mapDbToProject(siblingData as DbProject, []));
+          }
+        }
+      }
+
+      setProjects((prev) => [...createdProjects, ...prev]);
+      toast.success(createdProjects.length > 1
+        ? `Created ${createdProjects.length} shift projects`
+        : 'Project created successfully');
 
       // Send notifications if project is posted
       if (newProject.isPosted && profile.business_id) {
@@ -355,6 +465,13 @@ export function useProjects() {
           recurring_interval_days: project.isRecurring ? (project.recurringIntervalDays || null) : null,
           recurring_interval_label: project.isRecurring ? (project.recurringIntervalLabel || null) : null,
           recurring_next_date: project.isRecurring ? (project.recurringNextDate || null) : null,
+          // Rotation
+          rotation_on_days: project.rotationOnDays || null,
+          rotation_off_days: project.rotationOffDays || null,
+          rotation_count: project.rotationCount || null,
+          auto_close_enabled: project.autoCloseEnabled || false,
+          next_close_date: project.nextCloseDate || null,
+          next_open_date: project.nextOpenDate || null,
         })
         .eq('id', project.id);
 
@@ -364,7 +481,6 @@ export function useProjects() {
         prev.map((p) => (p.id === project.id ? project : p))
       );
 
-      // Send notifications if project was just posted (not previously posted)
       if (project.isPosted && !previouslyPosted && profile?.business_id) {
         notifyWorkersAboutPostedProject(
           project.id, project.name, profile.business_id,
