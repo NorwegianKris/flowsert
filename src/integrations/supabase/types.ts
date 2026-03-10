@@ -1674,6 +1674,7 @@ export type Database = {
           description: string
           end_date: string | null
           exclude_countries: string[] | null
+          group_color: string | null
           id: string
           image_url: string | null
           include_countries: string[] | null
@@ -1712,6 +1713,7 @@ export type Database = {
           description: string
           end_date?: string | null
           exclude_countries?: string[] | null
+          group_color?: string | null
           id?: string
           image_url?: string | null
           include_countries?: string[] | null
@@ -1750,6 +1752,7 @@ export type Database = {
           description?: string
           end_date?: string | null
           exclude_countries?: string[] | null
+          group_color?: string | null
           id?: string
           image_url?: string | null
           include_countries?: string[] | null
