@@ -516,7 +516,7 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                   <TableHead className="font-semibold text-white">Date Uploaded</TableHead>
                   <TableHead className="font-semibold text-white">Size</TableHead>
                   <TableHead className="font-semibold text-white">Type</TableHead>
-                  <TableHead className="font-semibold text-white w-28">Actions</TableHead>
+                  
                 </TableRow>
               </TableHeader>
               <TableBody>
