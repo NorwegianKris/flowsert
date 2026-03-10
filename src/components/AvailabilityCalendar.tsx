@@ -189,6 +189,18 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return results;
   };
 
+  const getProjectsInRange = (startDate: Date, endDate: Date): { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] => {
+    const seen = new Set<string>();
+    const results: { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] = [];
+    for (const p of allProjectOnPeriods) {
+      if (!seen.has(p.project.id) && p.periodStart <= endDate && p.periodEnd >= startDate) {
+        seen.add(p.project.id);
+        results.push({ project: p.project, periodStart: p.periodStart, periodEnd: p.periodEnd });
+      }
+    }
+    return results;
+  };
+
   const getProjectEventsOnDate = (date: Date): ProjectEvent[] => {
     const events: ProjectEvent[] = [];
     for (const project of assignedProjects) {
@@ -519,48 +531,53 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         {/* Assigned Projects */}
         <div className="space-y-2">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned Projects</h4>
-          {isSingle && getProjectsOnDate(range.from).length > 0 ? (
-            <div className="space-y-2">
-              {getProjectsOnDate(range.from).map((item, idx) => (
-                <div key={idx} className="p-2.5 rounded-md border border-border bg-muted/30 space-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Briefcase className="h-3.5 w-3.5 text-[hsl(240_60%_60%)]" />
-                    <button
-                      onClick={() => navigate(`/admin/projects/${item.project.id}`)}
-                      className="text-sm font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
-                    >
-                      {item.project.name}
-                    </button>
-                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-0.5 pl-5">
-                    {item.project.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {item.project.location}
+          {(() => {
+            const projectsList = isSingle
+              ? getProjectsOnDate(range.from)
+              : getProjectsInRange(range.from, range.to!);
+            return projectsList.length > 0 ? (
+              <div className="space-y-2">
+                {projectsList.map((item, idx) => (
+                  <div key={idx} className="p-2.5 rounded-md border border-border bg-muted/30 space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Briefcase className="h-3.5 w-3.5 text-[hsl(240_60%_60%)]" />
+                      <button
+                        onClick={() => navigate(`/admin/projects/${item.project.id}`)}
+                        className="text-sm font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
+                      >
+                        {item.project.name}
+                      </button>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5 pl-5">
+                      {item.project.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {item.project.location}
+                        </div>
+                      )}
+                      <div>
+                        On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
                       </div>
-                    )}
-                    <div>
-                      On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
+                      {item.project.shiftNumber && (
+                        <div>Shift {item.project.shiftNumber}</div>
+                      )}
                     </div>
-                    {item.project.shiftNumber && (
-                      <div>Shift {item.project.shiftNumber}</div>
-                    )}
+                    {getCertExpiryWarningsForDate(range.from!).filter(w => w.projectName === item.project.name).map((warning, wIdx) => (
+                      <div key={wIdx} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 pl-5">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span>{warning.certName} expires in {warning.daysUntil}d</span>
+                      </div>
+                    ))}
                   </div>
-                  {getCertExpiryWarningsForDate(range.from!).filter(w => w.projectName === item.project.name).map((warning, wIdx) => (
-                    <div key={wIdx} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 pl-5">
-                      <AlertTriangle className="h-3 w-3" />
-                      <span>{warning.certName} expires in {warning.daysUntil}d</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">
-              {isSingle ? 'No projects assigned' : 'No projects in this period'}
-            </p>
-          )}
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                {isSingle ? 'No projects assigned' : 'No projects in this period'}
+              </p>
+            );
+          })()}
 
           {isSingle && getProjectEventsOnDate(range.from).length > 0 && (
             <div className="space-y-1 pt-1">
