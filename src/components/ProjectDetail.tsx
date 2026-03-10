@@ -219,12 +219,8 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                 className="h-20 w-20 rounded-xl object-cover border border-border"
               />
             ) : (
-              <div className={`p-4 rounded-xl ${project.isPosted ? 'bg-[#C4B5FD]/10' : `${config.color}/10`}`}>
-                {project.isPosted ? (
-                  <Megaphone className="h-12 w-12 text-[#C4B5FD]" />
-                ) : (
-                  <StatusIcon className={`h-12 w-12 ${config.color === 'bg-active' ? 'text-active' : config.color === 'bg-muted-foreground' ? 'text-muted-foreground' : 'text-amber-500'}`} />
-                )}
+              <div className="h-20 w-20 rounded-xl border border-border bg-muted flex items-center justify-center text-4xl">
+                📋
               </div>
             )}
 

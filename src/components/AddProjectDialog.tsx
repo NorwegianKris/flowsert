@@ -723,17 +723,21 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                       const tempId = crypto.randomUUID();
                       const filePath = `${tempId}/project-image.${ext}`;
                       const { error: uploadError } = await supabase.storage
-                        .from('project-documents')
+                        .from('project-images')
                         .upload(filePath, file, { upsert: true });
-                      if (uploadError) throw uploadError;
-                      const { data: signedData } = await supabase.storage
-                        .from('project-documents')
-                        .createSignedUrl(filePath, 60 * 60 * 24 * 365);
-                      setImageUrl(signedData?.signedUrl || filePath);
+                      if (uploadError) {
+                        console.error('Storage upload error:', uploadError);
+                        toast.error(`Upload failed: ${uploadError.message}`);
+                        return;
+                      }
+                      const { data: publicUrlData } = supabase.storage
+                        .from('project-images')
+                        .getPublicUrl(filePath);
+                      setImageUrl(publicUrlData?.publicUrl || filePath);
                       toast.success('Image uploaded');
-                    } catch (error) {
+                    } catch (error: any) {
                       console.error('Upload error:', error);
-                      toast.error('Failed to upload image');
+                      toast.error(`Failed to upload image: ${error?.message || 'Unknown error'}`);
                     } finally {
                       setUploading(false);
                     }
