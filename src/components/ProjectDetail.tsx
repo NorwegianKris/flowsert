@@ -52,10 +52,12 @@ import { toast } from 'sonner';
 interface ProjectDetailProps {
   project: Project;
   personnel: Personnel[];
+  allProjects?: Project[];
   onBack: () => void;
   onUpdateProject?: (project: Project) => void;
   onPersonnelClick?: (person: Personnel) => void;
   businessName?: string;
+  onSelectProject?: (project: Project) => void;
 }
 
 const statusConfig = {
