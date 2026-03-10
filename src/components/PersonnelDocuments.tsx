@@ -561,57 +561,6 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
                       <TableCell className="text-muted-foreground">
                         {doc.fileType ? doc.fileType.split('/')[1]?.toUpperCase() || doc.fileType : '—'}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {canAccessDocuments ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const url = await getPersonnelDocumentUrl(doc.fileUrl);
-                                if (url) window.open(url, '_blank');
-                              }}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 cursor-not-allowed"
-                              disabled
-                              title="Document access locked - activate profile first"
-                            >
-                              <Lock className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditDialog(doc);
-                            }}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDocumentToDelete(doc);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   );
                 })}
