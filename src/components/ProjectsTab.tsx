@@ -26,19 +26,10 @@ const statusConfig = {
 
 type ProjectFilterValue = 'all' | 'active' | 'recurring' | 'posted';
 
-// Group projects by shift_group_id
-interface ShiftGroup {
-  groupId: string;
-  projects: Project[];
-  parentName: string;
-  dateRange: string;
-}
-
 export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTabProps) {
   const [previousOpen, setPreviousOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState<ProjectFilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedShiftGroups, setExpandedShiftGroups] = useState<Set<string>>(new Set());
   
   // Filter projects based on search
   const searchedProjects = projects.filter(p => {
@@ -63,7 +54,7 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   const activeProjects = filteredProjects.filter((p) => p.status === 'active' || p.status === 'pending');
   const completedProjects = filteredProjects.filter((p) => p.status === 'completed');
 
-  // Group shift projects
+  // Group shift projects and build ordered list
   const { shiftGroups, standaloneProjects } = useMemo(() => {
     const groups = new Map<string, Project[]>();
     const standalone: Project[] = [];
@@ -78,16 +69,12 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
       }
     });
 
-    const shiftGroups: ShiftGroup[] = [];
+    // Sort each group by shift number
+    const shiftGroups: { groupId: string; projects: Project[]; color: string | undefined }[] = [];
     groups.forEach((prjs, groupId) => {
       prjs.sort((a, b) => (a.shiftNumber || 0) - (b.shiftNumber || 0));
-      const parent = prjs.find(p => p.isShiftParent) || prjs[0];
-      // Extract base name (remove " — Shift N" suffix)
-      const baseName = parent.name.replace(/ — Shift \d+$/, '');
-      const firstStart = prjs[0]?.startDate;
-      const lastEnd = prjs[prjs.length - 1]?.endDate;
-      const dateRange = `${firstStart ? new Date(firstStart).toLocaleDateString() : '—'} → ${lastEnd ? new Date(lastEnd).toLocaleDateString() : '—'}`;
-      shiftGroups.push({ groupId, projects: prjs, parentName: baseName, dateRange });
+      const color = prjs[0]?.groupColor;
+      shiftGroups.push({ groupId, projects: prjs, color });
     });
 
     return { shiftGroups, standaloneProjects: standalone };
@@ -102,15 +89,6 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
       .join('')
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  const toggleShiftGroup = (groupId: string) => {
-    setExpandedShiftGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
   };
 
   return (
@@ -175,19 +153,27 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
             </h2>
           </div>
 
-          {/* Shift Group Cards */}
+          {/* Shift Group Cards — rendered as individual cards with left border connector */}
           {shiftGroups.length > 0 && (
             <div className="space-y-4 mb-4">
               {shiftGroups.map(group => (
-                <ShiftGroupCard
+                <div
                   key={group.groupId}
-                  group={group}
-                  personnel={personnel}
-                  expanded={expandedShiftGroups.has(group.groupId)}
-                  onToggle={() => toggleShiftGroup(group.groupId)}
-                  onSelectProject={onSelectProject}
-                  getPersonnelById={getPersonnelById}
-                />
+                  className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pl-3"
+                  style={{ borderLeft: `3px solid ${group.color || '#94a3b8'}` }}
+                >
+                  {group.projects.map(project => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      personnel={personnel}
+                      getPersonnelById={getPersonnelById}
+                      getInitials={getInitials}
+                      onClick={() => onSelectProject(project)}
+                      groupColor={group.color}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
           )}
@@ -253,69 +239,6 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
   );
 }
 
-// Shift Group Card Component
-interface ShiftGroupCardProps {
-  group: ShiftGroup;
-  personnel: Personnel[];
-  expanded: boolean;
-  onToggle: () => void;
-  onSelectProject: (project: Project) => void;
-  getPersonnelById: (id: string) => Personnel | undefined;
-}
-
-function ShiftGroupCard({ group, personnel, expanded, onToggle, onSelectProject, getPersonnelById }: ShiftGroupCardProps) {
-  return (
-    <Card className="border-teal-500/50 bg-teal-500/5">
-      <CardContent className="p-4">
-        <button
-          onClick={onToggle}
-          className="flex items-center gap-3 w-full text-left"
-        >
-          <Layers className="h-5 w-5 text-teal-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-foreground">{group.parentName}</h3>
-              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
-                {group.projects.length} shifts
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">{group.dateRange}</p>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        </button>
-
-        {expanded && (
-          <div className="mt-3 space-y-2 pl-8">
-            {group.projects.map(shift => {
-              const assignedCount = shift.assignedPersonnel.length;
-              const statusLabel = shift.status === 'active' ? '● Active' : shift.status === 'pending' ? '○ Upcoming' : '✓ Completed';
-              const statusColor = shift.status === 'active' ? 'text-emerald-500' : shift.status === 'pending' ? 'text-muted-foreground' : 'text-muted-foreground';
-
-              return (
-                <button
-                  key={shift.id}
-                  onClick={() => onSelectProject(shift)}
-                  className="flex items-center gap-4 w-full text-left p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <span className="text-sm font-medium w-16 shrink-0">Shift {shift.shiftNumber}</span>
-                  <span className="text-xs text-muted-foreground w-40 shrink-0">
-                    {shift.startDate ? new Date(shift.startDate).toLocaleDateString() : '—'}
-                    –{shift.endDate ? new Date(shift.endDate).toLocaleDateString() : '—'}
-                  </span>
-                  <span className={`text-xs font-medium w-20 shrink-0 ${statusColor}`}>{statusLabel}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {assignedCount > 0 ? `${assignedCount} assigned` : '— Not staffed'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // Single Project Card
 interface ProjectCardProps {
   project: Project;
@@ -323,9 +246,10 @@ interface ProjectCardProps {
   getPersonnelById: (id: string) => Personnel | undefined;
   getInitials: (name: string) => string;
   onClick: () => void;
+  groupColor?: string;
 }
 
-function ProjectCard({ project, getPersonnelById, getInitials, onClick }: ProjectCardProps) {
+function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupColor }: ProjectCardProps) {
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
   const assignedPersonnel = project.assignedPersonnel
@@ -366,10 +290,16 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
     return null;
   })();
 
+  // Build background tint style for shift group cards
+  const tintStyle: React.CSSProperties | undefined = groupColor
+    ? { backgroundColor: `${groupColor}1A` }
+    : undefined;
+
   return (
     <Card 
-      className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
+      className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring && !groupColor ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
       onClick={onClick}
+      style={tintStyle}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
@@ -397,7 +327,10 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick }: Projec
               </Badge>
             )}
             {project.shiftGroupId && project.shiftNumber && (
-              <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+              <Badge
+                className="border-border/50"
+                style={groupColor ? { backgroundColor: `${groupColor}33`, color: groupColor, borderColor: `${groupColor}66` } : undefined}
+              >
                 <Layers className="h-3 w-3 mr-1" />
                 Shift {project.shiftNumber}
               </Badge>
