@@ -7,6 +7,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { format } from 'date-fns';
 import { Project, ProjectCalendarItem } from '@/hooks/useProjects';
 
+export interface AssignedProjectWithRotation extends Project {
+  rotationOnDays?: number | null;
+  rotationOffDays?: number | null;
+  rotationCount?: number | null;
+  rotationsCompleted?: number | null;
+  shiftNumber?: number | null;
+  shiftGroupId?: string | null;
+  isShiftParent?: boolean;
+  location?: string | null;
+  customer?: string | null;
+}
+
 interface AssignedProjectsProps {
   personnelId: string;
   onProjectClick?: (project: Project) => void;
@@ -218,7 +230,7 @@ export function AssignedProjects({ personnelId, onProjectClick }: AssignedProjec
 
 // Export a hook for fetching assigned projects data (for use in AvailabilityCalendar)
 export function useAssignedProjects(personnelId: string) {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<AssignedProjectWithRotation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -247,7 +259,7 @@ export function useAssignedProjects(personnelId: string) {
 
         if (calendarError) throw calendarError;
 
-        const mapped: Project[] = projectsData.map((p) => ({
+        const mapped: AssignedProjectWithRotation[] = projectsData.map((p) => ({
           id: p.id,
           name: p.name,
           status: p.status as 'active' | 'completed' | 'pending',
@@ -255,6 +267,15 @@ export function useAssignedProjects(personnelId: string) {
           startDate: p.start_date,
           endDate: p.end_date || undefined,
           assignedPersonnel: p.assigned_personnel || [],
+          rotationOnDays: p.rotation_on_days,
+          rotationOffDays: p.rotation_off_days,
+          rotationCount: p.rotation_count,
+          rotationsCompleted: p.rotations_completed,
+          shiftNumber: p.shift_number,
+          shiftGroupId: p.shift_group_id,
+          isShiftParent: p.is_shift_parent,
+          location: p.location,
+          customer: p.customer,
           calendarItems: (calendarItemsData || [])
             .filter((item) => item.project_id === p.id)
             .map((item) => ({

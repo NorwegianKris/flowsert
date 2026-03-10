@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO } from 'date-fns';
-import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle } from 'lucide-react';
+import { format, isSameDay, eachDayOfInterval, isWithinInterval, parseISO, addDays, differenceInDays } from 'date-fns';
+import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Certificate } from '@/types';
-import { useAssignedProjects } from '@/components/AssignedProjects';
+import { useAssignedProjects, AssignedProjectWithRotation } from '@/components/AssignedProjects';
 import type { DateRange } from 'react-day-picker';
+import { useNavigate } from 'react-router-dom';
 
 type AvailabilityStatus = 'available' | 'unavailable' | 'partial' | 'other';
 
@@ -20,6 +21,13 @@ interface AvailabilityEntry {
   date: string;
   status: AvailabilityStatus;
   notes: string | null;
+}
+
+interface ProjectOnPeriod {
+  date: Date;
+  project: AssignedProjectWithRotation;
+  periodStart: Date;
+  periodEnd: Date;
 }
 
 interface ProjectEvent {
@@ -58,6 +66,56 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
   },
 };
 
+/**
+ * Compute on-period dates for a project, accounting for rotation schedules.
+ * For non-rotation projects: all dates between startDate and endDate.
+ * For rotation projects: compute on-period windows using rotationOnDays/OffDays.
+ */
+function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectOnPeriod[] {
+  const startDate = parseISO(project.startDate);
+  const endDate = project.endDate ? parseISO(project.endDate) : null;
+  const results: ProjectOnPeriod[] = [];
+
+  // Only show blocks for active/pending projects
+  if (project.status === 'completed') return results;
+
+  const onDays = project.rotationOnDays;
+  const offDays = project.rotationOffDays;
+
+  if (onDays && offDays && onDays > 0 && offDays > 0) {
+    // Rotation-based project: compute on-period windows
+    const cycleLength = onDays + offDays;
+    const maxRotations = project.rotationCount || 52; // default cap
+    let currentStart = startDate;
+
+    for (let i = 0; i < maxRotations; i++) {
+      const periodStart = currentStart;
+      const periodEnd = addDays(periodStart, onDays - 1);
+
+      // Clamp to project end date
+      const clampedEnd = endDate && periodEnd > endDate ? endDate : periodEnd;
+
+      if (endDate && periodStart > endDate) break;
+
+      const days = eachDayOfInterval({ start: periodStart, end: clampedEnd });
+      for (const day of days) {
+        results.push({ date: day, project, periodStart, periodEnd: clampedEnd });
+      }
+
+      currentStart = addDays(periodStart, cycleLength);
+    }
+  } else {
+    // Non-rotation project: all dates in range
+    const finalEnd = endDate || addDays(startDate, 30); // show 30 days if no end date
+    const days = eachDayOfInterval({ start: startDate, end: finalEnd });
+    for (const day of days) {
+      results.push({ date: day, project, periodStart: startDate, periodEnd: finalEnd });
+    }
+  }
+
+  return results;
+}
+
 export function AvailabilityCalendar({ personnelId, personnelName, certificates = [] }: AvailabilityCalendarProps) {
   const [availability, setAvailability] = useState<AvailabilityEntry[]>([]);
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
@@ -66,9 +124,19 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Fetch assigned projects for this personnel
   const { projects: assignedProjects } = useAssignedProjects(personnelId);
+
+  // Compute all project on-period dates
+  const allProjectOnPeriods = useMemo(() => {
+    return assignedProjects.flatMap(getProjectOnPeriodDates);
+  }, [assignedProjects]);
+
+  const projectBlockDates = useMemo(() => {
+    return allProjectOnPeriods.map((p) => p.date);
+  }, [allProjectOnPeriods]);
 
   // Get certificate expiry dates
   const certificateExpiryDates = certificates
@@ -84,44 +152,78 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       .map((cert) => cert.name);
   };
 
-  // Get project events for a specific date
+  // Get certificates expiring within 30 days of a project on-period start
+  const getCertExpiryWarningsForDate = (date: Date): { certName: string; daysUntil: number; projectName: string }[] => {
+    const warnings: { certName: string; daysUntil: number; projectName: string }[] = [];
+    
+    // Find unique project period starts on this date
+    const periodStarts = allProjectOnPeriods.filter(
+      (p) => isSameDay(p.periodStart, date)
+    );
+    
+    // De-duplicate by project id
+    const seenProjects = new Set<string>();
+    for (const ps of periodStarts) {
+      if (seenProjects.has(ps.project.id)) continue;
+      seenProjects.add(ps.project.id);
+      
+      for (const cert of certificateExpiryDates) {
+        const daysUntil = differenceInDays(cert.date, date);
+        if (daysUntil >= 0 && daysUntil <= 30) {
+          warnings.push({
+            certName: cert.name,
+            daysUntil,
+            projectName: ps.project.name,
+          });
+        }
+      }
+    }
+    
+    return warnings;
+  };
+
+  // Compute cert expiry warning dates (project start dates where certs expire within 30 days)
+  const certExpiryWarningDates = useMemo(() => {
+    const warningDates: Date[] = [];
+    const checked = new Set<string>();
+    
+    for (const p of allProjectOnPeriods) {
+      const key = `${p.project.id}-${p.periodStart.toISOString()}`;
+      if (checked.has(key)) continue;
+      checked.add(key);
+      
+      for (const cert of certificateExpiryDates) {
+        const daysUntil = differenceInDays(cert.date, p.periodStart);
+        if (daysUntil >= 0 && daysUntil <= 30) {
+          warningDates.push(p.periodStart);
+          break;
+        }
+      }
+    }
+    
+    return warningDates;
+  }, [allProjectOnPeriods, certificateExpiryDates]);
+
+  // Get projects active on a specific date
+  const getProjectsOnDate = (date: Date): { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] => {
+    const seen = new Set<string>();
+    const results: { project: AssignedProjectWithRotation; periodStart: Date; periodEnd: Date }[] = [];
+    
+    for (const p of allProjectOnPeriods) {
+      if (isSameDay(p.date, date) && !seen.has(p.project.id)) {
+        seen.add(p.project.id);
+        results.push({ project: p.project, periodStart: p.periodStart, periodEnd: p.periodEnd });
+      }
+    }
+    
+    return results;
+  };
+
+  // Get project events for a specific date (calendar items/milestones)
   const getProjectEventsOnDate = (date: Date): ProjectEvent[] => {
     const events: ProjectEvent[] = [];
     
     for (const project of assignedProjects) {
-      // Check if date is within project duration
-      const startDate = parseISO(project.startDate);
-      const endDate = project.endDate ? parseISO(project.endDate) : null;
-      
-      if (endDate) {
-        if (isWithinInterval(date, { start: startDate, end: endDate })) {
-          // Only add duration marker for start and end dates
-          if (isSameDay(date, startDate)) {
-            events.push({
-              date,
-              projectName: project.name,
-              description: 'Project Start',
-              type: 'duration',
-            });
-          } else if (isSameDay(date, endDate)) {
-            events.push({
-              date,
-              projectName: project.name,
-              description: 'Project End',
-              type: 'duration',
-            });
-          }
-        }
-      } else if (isSameDay(date, startDate)) {
-        events.push({
-          date,
-          projectName: project.name,
-          description: 'Project Start',
-          type: 'duration',
-        });
-      }
-      
-      // Check calendar items
       for (const item of project.calendarItems || []) {
         if (isSameDay(parseISO(item.date), date)) {
           events.push({
@@ -137,18 +239,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return events;
   };
 
-  // Get all project-related dates for calendar modifiers
-  const getProjectDates = () => {
+  // Get all project event dates for calendar modifiers (calendar items only)
+  const getProjectEventDates = () => {
     const projectDates: Date[] = [];
     
     for (const project of assignedProjects) {
-      const startDate = parseISO(project.startDate);
-      projectDates.push(startDate);
-      
-      if (project.endDate) {
-        projectDates.push(parseISO(project.endDate));
-      }
-      
       for (const item of project.calendarItems || []) {
         projectDates.push(parseISO(item.date));
       }
@@ -193,7 +288,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const handleRangeSelect = (range: DateRange | undefined) => {
     setSelectedRange(range);
     
-    // When selecting dates, update defaults based on existing entries
     if (range?.from) {
       if (!range.to || isSameDay(range.from, range.to)) {
         const existing = availability.find((a) =>
@@ -207,7 +301,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           setNotes('');
         }
       } else {
-        // For range selection, reset to defaults
         setSelectedStatus('available');
         setNotes('');
       }
@@ -228,7 +321,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     
     setIsSaving(true);
     try {
-      // For each date in the range, upsert availability
       for (const date of datesToSave) {
         const dateStr = format(date, 'yyyy-MM-dd');
         const existing = availability.find((a) =>
@@ -330,11 +422,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return dates.some((date) => availability.find((a) => isSameDay(new Date(a.date), date)));
   };
 
-  const getDateStatus = (date: Date): AvailabilityStatus | null => {
-    const entry = availability.find((a) => isSameDay(new Date(a.date), date));
-    return entry ? (entry.status as AvailabilityStatus) : null;
-  };
-
   const modifiers = {
     available: availability
       .filter((a) => a.status === 'available')
@@ -349,7 +436,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       .filter((a) => a.status === 'other')
       .map((a) => new Date(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
-    projectEvent: getProjectDates(),
+    projectEvent: getProjectEventDates(),
+    projectBlock: projectBlockDates,
+    certExpiryWarning: certExpiryWarningDates,
   };
 
   const modifiersStyles = {
@@ -381,6 +470,13 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       border: '2px solid hsl(210 100% 50%)',
       borderRadius: '50%',
     },
+    projectBlock: {
+      borderBottom: '3px solid hsl(240 60% 60%)',
+      borderRadius: '4px',
+    },
+    certExpiryWarning: {
+      boxShadow: 'inset 0 -2px 0 0 hsl(38 92% 50%)',
+    },
   };
 
   return (
@@ -388,7 +484,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-primary" />
-          Availability Calendar
+          Personal Calendar
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -412,6 +508,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               <div className="flex items-center gap-1.5 text-sm">
                 <span className="h-3 w-3 rounded-full border-2 border-[hsl(210_100%_50%)]" />
                 <span className="text-muted-foreground">Project Event</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <span className="h-3 w-3 rounded-sm" style={{ borderBottom: '3px solid hsl(240 60% 60%)', width: 12, height: 12 }} />
+                <span className="text-muted-foreground">Assigned Project</span>
               </div>
             </div>
 
@@ -470,6 +570,71 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                     </p>
                   </div>
 
+                  {/* Assigned Project Blocks on selected date */}
+                  {!selectedRange.to && getProjectsOnDate(selectedRange.from).length > 0 && (
+                    <div className="p-3 rounded-lg bg-[hsl(240_60%_60%)]/10 border border-[hsl(240_60%_60%)]/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Briefcase className="h-4 w-4 text-[hsl(240_60%_60%)]" />
+                        <span className="text-sm font-medium text-foreground">Assigned Projects</span>
+                      </div>
+                      <ul className="text-sm space-y-2">
+                        {getProjectsOnDate(selectedRange.from).map((item, idx) => (
+                          <li key={idx} className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(240_60%_60%)]" />
+                              <button
+                                onClick={() => navigate(`/admin/projects/${item.project.id}`)}
+                                className="font-medium text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline text-left"
+                              >
+                                {item.project.name}
+                              </button>
+                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                            <div className="pl-4 text-xs text-muted-foreground space-y-0.5">
+                              {item.project.shiftNumber && (
+                                <div>Shift {item.project.shiftNumber}</div>
+                              )}
+                              {item.project.location && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {item.project.location}
+                                </div>
+                              )}
+                              <div>
+                                On-period: {format(item.periodStart, 'MMM d')} – {format(item.periodEnd, 'MMM d, yyyy')}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Certificate expiry warnings near project start */}
+                  {!selectedRange.to && getCertExpiryWarningsForDate(selectedRange.from).length > 0 && (
+                    <div className="p-3 rounded-lg bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm font-medium text-foreground">Certificate Expiry Warnings</span>
+                      </div>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        {getCertExpiryWarningsForDate(selectedRange.from).map((warning, idx) => (
+                          <li key={idx} className="flex items-start gap-1">
+                            <span className="text-amber-500 mt-0.5">⚠</span>
+                            <span>
+                              <span className="font-medium">{warning.certName}</span> expires{' '}
+                              {warning.daysUntil === 0 
+                                ? 'on this project start date' 
+                                : `${warning.daysUntil} day${warning.daysUntil !== 1 ? 's' : ''} after this project starts`
+                              }
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Project calendar events */}
                   {!selectedRange.to && getProjectEventsOnDate(selectedRange.from).length > 0 && (
                     <div className="p-3 rounded-lg bg-[hsl(210_100%_50%)]/10 border border-[hsl(210_100%_50%)]/30">
                       <div className="flex items-center gap-2 mb-2">
