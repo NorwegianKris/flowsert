@@ -153,44 +153,31 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
             </h2>
           </div>
 
-          {/* Shift Group Cards — rendered as individual cards with left border connector */}
-          {shiftGroups.length > 0 && (
-            <div className="space-y-4 mb-4">
-              {shiftGroups.map(group => (
-                <div
-                  key={group.groupId}
-                  className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-                >
-                  {group.projects.map(project => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      personnel={personnel}
-                      getPersonnelById={getPersonnelById}
-                      getInitials={getInitials}
-                      onClick={() => onSelectProject(project)}
-                      groupColor={group.color}
-                    />
-                  ))}
-                </div>
+          {(standaloneProjects.length > 0 || shiftGroups.length > 0) ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {shiftGroups.flatMap(group => group.projects.map(project => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  personnel={personnel}
+                  getPersonnelById={getPersonnelById}
+                  getInitials={getInitials}
+                  onClick={() => onSelectProject(project)}
+                  groupColor={group.color}
+                />
+              )))}
+              {standaloneProjects.map((project) => (
+                <ProjectCard 
+                  key={project.id} 
+                  project={project} 
+                  personnel={personnel}
+                  getPersonnelById={getPersonnelById}
+                  getInitials={getInitials}
+                  onClick={() => onSelectProject(project)}
+                />
               ))}
             </div>
-          )}
-
-          {/* Standalone Project Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {standaloneProjects.map((project) => (
-              <ProjectCard 
-                key={project.id} 
-                project={project} 
-                personnel={personnel}
-                getPersonnelById={getPersonnelById}
-                getInitials={getInitials}
-                onClick={() => onSelectProject(project)}
-              />
-            ))}
-          </div>
-          {standaloneProjects.length === 0 && shiftGroups.length === 0 && (
+          ) : (
             <div className="text-center py-8">
               <div className="text-4xl mb-3">🚀</div>
               <p className="text-muted-foreground">No active projects</p>
