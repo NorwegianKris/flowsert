@@ -964,6 +964,7 @@ export function AddProjectDialog({ open, onOpenChange, personnel, onProjectAdded
                     {/* Number of rotations */}
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground">Number of rotations</p>
+                      <p className="text-xs text-muted-foreground">How many times this crew repeats the full on/off cycle</p>
                       <Input
                         type="number"
                         min={1}
