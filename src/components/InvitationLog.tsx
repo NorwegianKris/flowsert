@@ -112,21 +112,15 @@ export function InvitationLog({ projects, personnel }: InvitationLogProps) {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-border/50">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="pb-3 cursor-pointer hover:bg-white dark:hover:bg-card transition-colors">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-purple-500" />
-                Invitation Log
-                <Badge variant="secondary" className="ml-1">{invitations.length}</Badge>
-              </CardTitle>
-              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardHeader className="pt-0 pb-3">
-            <div className="flex items-center gap-2">
+        <CardContent className="p-6">
+          <CollapsibleTrigger className="flex items-center gap-2 mb-4 w-full group">
+            <ClipboardList className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">Invitation Log</h2>
+            <Badge variant="secondary" className="ml-1">{invitations.length}</Badge>
+            <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="flex items-center gap-2 mb-3">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={filterProject} onValueChange={setFilterProject}>
                 <SelectTrigger className="w-[180px] h-8 text-sm">
