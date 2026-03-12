@@ -22,7 +22,7 @@ export function PublicHeader({ onLogin }: PublicHeaderProps) {
   return (
     <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative">
           <div className="flex items-center gap-8">
             <div className="cursor-pointer" onClick={() => navigate('/auth')}>
               <Logo />
@@ -51,11 +51,12 @@ export function PublicHeader({ onLogin }: PublicHeaderProps) {
               </NavLink>
             </nav>
           </div>
+
+          <p className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground absolute left-1/2 -translate-x-1/2">
+            Rooted in Norwegian industry and safety culture <img src={norwegianFlag} alt="Norwegian flag" className="inline-block h-4 w-auto" />
+          </p>
           
           <div className="flex items-center gap-3">
-            <p className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
-              Rooted in Norwegian industry and safety culture <img src={norwegianFlag} alt="Norwegian flag" className="inline-block h-4 w-auto" />
-            </p>
             <Button variant="ghost" onClick={handleLogin}>
               Log In
             </Button>
