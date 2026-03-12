@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '@/components/Logo';
 import { NavLink } from '@/components/NavLink';
+import norwegianFlag from '@/assets/norwegian-flag.svg';
 
 interface PublicHeaderProps {
   onLogin?: () => void;
