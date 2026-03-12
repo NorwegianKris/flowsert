@@ -27,7 +27,6 @@ export function PublicFooter() {
             </nav>
           </div>
         </div>
-      </div>
     </footer>
   );
 }
