@@ -8,6 +8,9 @@ export function PublicFooter() {
           <p className="text-sm text-muted-foreground">
             &copy; 2026 FlowSert. All rights reserved.
           </p>
+          <p className="text-base text-muted-foreground">
+            We are a Norwegian company! 🇳🇴
+          </p>
           <nav className="flex flex-wrap items-center gap-4 md:gap-6">
             <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Terms
