@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '@/components/Logo';
 import { NavLink } from '@/components/NavLink';
+import norwegianFlag from '@/assets/norwegian-flag.svg';
 
 interface PublicHeaderProps {
   onLogin?: () => void;
@@ -52,6 +53,9 @@ export function PublicHeader({ onLogin }: PublicHeaderProps) {
           </div>
           
           <div className="flex items-center gap-3">
+            <p className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
+              Rooted in Norwegian industry and safety culture <img src={norwegianFlag} alt="Norwegian flag" className="inline-block h-4 w-auto" />
+            </p>
             <Button variant="ghost" onClick={handleLogin}>
               Log In
             </Button>

@@ -1,14 +1,9 @@
 import { Link } from 'react-router-dom';
-import norwegianFlag from '@/assets/norwegian-flag.svg';
 
 export function PublicFooter() {
   return (
     <footer className="border-t border-border/50 bg-card/80 py-8">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-base text-muted-foreground flex items-center gap-2">
-            We are a Norwegian company! <img src={norwegianFlag} alt="Norwegian flag" className="inline-block h-5 w-auto" />
-          </p>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
             <p className="text-sm text-muted-foreground">
               &copy; 2026 FlowSert. All rights reserved.
@@ -32,7 +27,6 @@ export function PublicFooter() {
             </nav>
           </div>
         </div>
-      </div>
     </footer>
   );
 }
