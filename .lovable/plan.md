@@ -1,15 +1,27 @@
 
 
-## Align Bottom Edges of Both Columns
+## Rotation Schedule + Back-to-Back Shifts
 
-The Calendly widget is set to 900px but the actual calendar content is much shorter (~500px). The form stretches to match that 900px, creating excessive whitespace.
+**Status: Implemented**
 
-### Change — `src/pages/Contact.tsx`
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-Reduce the height of both the Calendly widget and the form container from `900px` to `580px`. This fits the calendar content (date picker + time zone) without internal scrolling, and the form box will align with the calendar's bottom edge as shown in the reference image.
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-- Line 96: Change Calendly widget height from `900px` to `580px`
-- Line 100: Change form container height from `900px` to `580px`
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-Single file: `src/pages/Contact.tsx`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
