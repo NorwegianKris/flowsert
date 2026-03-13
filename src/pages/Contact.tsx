@@ -93,7 +93,7 @@ export default function Contact() {
               <div
                 className="calendly-inline-widget rounded-xl overflow-hidden"
                 data-url="https://calendly.com/kmu-7-vf/30min?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff"
-                style={{ minWidth: '320px', height: '900px' }}
+                style={{ minWidth: '320px', height: '580px' }}
               />
 
               {/* Right: Contact Form — stretch to match Calendly height */}
