@@ -69,10 +69,10 @@ export default function Contact() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold font-rajdhani text-foreground mb-6">
-              Contact Us
+              Get in touch
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Have a question or need help? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              Book a demo directly or send us a message and we'll get back to you within 1 business day.
             </p>
           </div>
         </div>
