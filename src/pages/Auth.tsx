@@ -710,7 +710,7 @@ export default function Auth() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">AI-assisted support</h4>
-                  <p className="text-sm text-muted-foreground mt-1">AI extracts data from document uploads and a chatbot assists with certificate handling, while keeping a human in control.</p>
+                  <p className="text-sm text-muted-foreground mt-1">When setting up, you teach the system by uploading your organisation's certificates — the AI learns your certificate landscape and establishes types automatically. From there, AI extracts data from new uploads and a chatbot assists with certificate handling, while keeping a human in control.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
