@@ -1,22 +1,27 @@
 
 
-## Redesign Contact Page Layout
+## Rotation Schedule + Back-to-Back Shifts
 
-### Changes — `src/pages/Contact.tsx`
+**Status: Implemented**
 
-**Hero section**: Change heading to "Get in touch", subheading to "Book a demo directly or send us a message and we'll get back to you within 1 business day."
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**Left column** — Calendly only:
-- Column heading: "Book a 15-minute demo"
-- Calendly widget height increased to 900px
-- URL updated: `?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff`
-- Remove the old "Get in Touch" email block and "Or book a meeting directly" heading
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**Right column** — Contact form:
-- Column heading: "Send a message"
-- Remove Subject field from form and state
-- Keep Name, Email, Message fields (Name and Email side by side, Message below)
-- Below the form card, add a subtle muted line: mail icon + "hello@flowsert.com"
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**State cleanup**: Remove `subject` from `formData` state and from the edge function call body.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

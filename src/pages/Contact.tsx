@@ -23,7 +23,6 @@ export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    subject: '',
     message: ''
   });
 
@@ -36,7 +35,7 @@ export default function Contact() {
         body: {
           name: formData.name,
           email: formData.email,
-          subject: formData.subject,
+          subject: 'Contact Form Submission',
           message: formData.message
         }
       });
@@ -44,7 +43,7 @@ export default function Contact() {
       if (error) throw error;
 
       toast.success('Message sent successfully! We\'ll get back to you soon.');
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', message: '' });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message. Please try again or email us directly.');
@@ -70,10 +69,10 @@ export default function Contact() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold font-rajdhani text-foreground mb-6">
-              Contact Us
+              Get in touch
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Have a question or need help? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              Book a demo directly or send us a message and we'll get back to you within 1 business day.
             </p>
           </div>
         </div>
@@ -84,37 +83,20 @@ export default function Contact() {
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12">
-              {/* Left: Contact Info + Calendly */}
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Get in Touch</h2>
-                  <div className="space-y-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                        <Mail className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-foreground">Email</h3>
-                        <p className="text-muted-foreground text-sm">hello@flowsert.com</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground mb-4">Or book a meeting directly</h2>
-                  <div
-                    className="calendly-inline-widget rounded-xl overflow-hidden"
-                    data-url="https://calendly.com/kmu-7-vf/30min?background_color=faf5ff&hide_gdpr_banner=1"
-                    style={{ minWidth: '320px', height: '700px' }}
-                  />
-                </div>
+              {/* Left: Calendly */}
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-4">Book a 15-minute demo</h2>
+                <div
+                  className="calendly-inline-widget rounded-xl overflow-hidden"
+                  data-url="https://calendly.com/kmu-7-vf/30min?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff"
+                  style={{ minWidth: '320px', height: '900px' }}
+                />
               </div>
 
-              {/* Contact Form */}
+              {/* Right: Contact Form */}
               <div>
                 <div className="bg-card border border-border/50 rounded-xl p-8 shadow-sm">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Send a Message</h2>
+                  <h2 className="text-xl font-semibold text-foreground mb-6">Send a message</h2>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
@@ -140,16 +122,6 @@ export default function Contact() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="subject">Subject</Label>
-                      <Input
-                        id="subject"
-                        placeholder="What is this about?"
-                        value={formData.subject}
-                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="message">Message</Label>
                       <Textarea
                         id="message"
@@ -160,10 +132,14 @@ export default function Contact() {
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSubmitting}>
                       {isSubmitting ? 'Sending...' : 'Send Message'}
                     </Button>
                   </form>
+                </div>
+                <div className="flex items-center justify-center gap-2 mt-4 text-muted-foreground text-sm">
+                  <Mail className="h-4 w-4" />
+                  <span>hello@flowsert.com</span>
                 </div>
               </div>
             </div>
