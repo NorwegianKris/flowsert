@@ -35,7 +35,7 @@ export default function Contact() {
         body: {
           name: formData.name,
           email: formData.email,
-          subject: formData.subject,
+          subject: 'Contact Form Submission',
           message: formData.message
         }
       });
@@ -43,7 +43,7 @@ export default function Contact() {
       if (error) throw error;
 
       toast.success('Message sent successfully! We\'ll get back to you soon.');
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', message: '' });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message. Please try again or email us directly.');
