@@ -61,7 +61,7 @@ export default function About() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Upload Certificates</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Workers upload their certificates and documentation to their personal profiles.
+                  Workers upload their certificates to their personal profiles. The AI categorizes each upload, auto-matches certificate types, and generates accurate titles — no manual input required.
                 </p>
               </div>
               <div className="text-center group">
