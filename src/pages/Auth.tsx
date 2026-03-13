@@ -73,6 +73,7 @@ export default function Auth() {
   const [selectedRole, setSelectedRole] = useState('');
   const [invitationLoading, setInvitationLoading] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
+  const [challengesExpanded, setChallengesExpanded] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
