@@ -553,22 +553,28 @@ export default function Auth() {
               {/* Content - Right */}
               <div className="order-2 md:order-2">
                 <h2 className="text-2xl md:text-3xl font-bold font-rajdhani text-foreground mb-6 leading-tight">
-                  Workforce compliance is a universal need
+                  Built for How Industrial SMEs Actually Operate
                 </h2>
                 <div className="space-y-4 text-muted-foreground">
                   <p>
-                    Sourcing the right people, in the right place, at the right time is a universal operational need.
+                    Sourcing the right people, in the right place, at the right time is a universal operational need. In project-based industries, that depends on knowing exactly who is certified, available, and compliant — at any moment.
                   </p>
                   <p>
-                    In project-based industries, that depends on knowing exactly who is certified, available, and compliant — at any moment.
+                    But compliance isn't a single problem. It's a set of overlapping dynamics that most tools aren't built to handle together:
                   </p>
+                  <ul className="space-y-2 list-none pl-0">
+                    <li><span className="font-medium text-foreground">A hybrid workforce</span> — managing employees and freelancers across the same operation</li>
+                    <li><span className="font-medium text-foreground">Personnel turnover</span> — keeping overview as people join and leave</li>
+                    <li><span className="font-medium text-foreground">Regulatory demands</span> — staying audit-ready and meeting client compliance requirements at all times</li>
+                    <li><span className="font-medium text-foreground">Document sharing</span> — receiving different file formats and handling external sharing requests back-and-forth</li>
+                    <li><span className="font-medium text-foreground">Up-to-date personal documentation</span> — ensuring workers maintain accurate, current profiles</li>
+                    <li><span className="font-medium text-foreground">Incoming job seekers</span> — incoming inquiries from candidates through scattered emails and calls</li>
+                  </ul>
                   <p>
-                    FlowSert gives you instant control over workforce credentials, AI-assisted structured search across personnel, and efficient project staffing — all in one system.
+                    FlowSert gives you instant control over workforce credentials, AI-assisted search across personnel, and efficient project staffing — all in one system.
                   </p>
                   <p className="font-medium text-foreground">
-                     No scattered emails and cold calls.<br />
-                     No Excel tracking and unstructured files.<br />
-                     No last-minute certificate surprises.
+                    No Excel tracking. No unstructured files. No last-minute certificate surprises.
                   </p>
                 </div>
               </div>
