@@ -584,7 +584,7 @@ export default function Auth() {
                         <li><span className="font-bold text-foreground">Regulatory demands</span> — staying audit-ready and meeting client compliance requirements at all times</li>
                         <li><span className="font-bold text-foreground">Document sharing</span> — receiving different file formats and handling external sharing requests back-and-forth</li>
                         <li><span className="font-bold text-foreground">Up-to-date personal documentation</span> — ensuring workers maintain accurate, current profiles</li>
-                        <li><span className="font-bold text-foreground">Incoming job seekers</span> — incoming inquiries from candidates through scattered emails and calls</li>
+                        <li><span className="font-bold text-foreground">Incoming job seekers</span> — inquiries from candidates through scattered emails and calls</li>
                       </ul>
                       <p>
                         <span className="font-bold text-foreground">FlowSert</span> gives you instant control over workforce credentials, AI-assisted search across personnel, and efficient project staffing — all in one system.
