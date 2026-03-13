@@ -104,7 +104,7 @@ export default function Contact() {
               </div>
 
               {/* Contact Form */}
-              <div className="md:col-span-2">
+              <div>
                 <div className="bg-card border border-border/50 rounded-xl p-8 shadow-sm">
                   <h2 className="text-xl font-semibold text-foreground mb-6">Send a Message</h2>
                   <form onSubmit={handleSubmit} className="space-y-6">
