@@ -1,27 +1,16 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Update "How It Works" Text
 
-**Status: Implemented**
+### Change — `src/pages/About.tsx`
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+Update the description paragraphs for each of the three steps:
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+- **Line 53-55** (Step 1): Replace with "Create your business account and invite your personnel to join the platform. As an admin, you upload the certificates that circulate in your organisation — the AI reads them, establishes certificate types, and structures the system automatically."
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+- **Line 63-65** (Step 2): Replace with "Workers upload their certificates to their personal profiles. The AI categorizes each upload, auto-matches certificate types, and generates accurate titles — no manual input required."
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+- **Line 73-75** (Step 3): Replace with "Get full visibility into certification status across your organisation — both on projects and daily operations. Automatic reminders flag upcoming expiries, and the system continues to improve with every upload."
+
+Single file edit, text-only change.
+
