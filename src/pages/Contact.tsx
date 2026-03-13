@@ -11,6 +11,14 @@ import { PublicFooter } from '@/components/PublicFooter';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 export default function Contact() {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://assets.calendly.com/assets/external/widget.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
