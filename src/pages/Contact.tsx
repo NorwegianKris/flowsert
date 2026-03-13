@@ -97,7 +97,7 @@ export default function Contact() {
               />
 
               {/* Right: Contact Form — stretch to match Calendly height */}
-              <div className="flex flex-col" style={{ height: '900px' }}>
+              <div className="flex flex-col" style={{ height: '580px' }}>
                 <div className="bg-card border border-border/50 rounded-xl p-8 shadow-sm flex-1 flex flex-col">
                   <form onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col">
                     <div className="grid sm:grid-cols-2 gap-6">
