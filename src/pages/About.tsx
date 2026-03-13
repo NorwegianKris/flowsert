@@ -71,7 +71,7 @@ export default function About() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Stay Compliant</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Get full visibility into certification status and never miss a renewal.
+                  Get full visibility into certification status across your organisation — both on projects and daily operations. Automatic reminders flag upcoming expiries, and the system continues to improve with every upload.
                 </p>
               </div>
             </div>
