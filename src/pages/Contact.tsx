@@ -82,22 +82,24 @@ export default function Contact() {
       <section className="py-8 pb-24 bg-primary/5">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
+            {/* Column headings on the same row */}
+            <div className="grid md:grid-cols-2 gap-12 mb-4">
+              <h2 className="text-xl font-semibold text-foreground">Book a 15-minute demo</h2>
+              <h2 className="text-xl font-semibold text-foreground">Send a message</h2>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-12">
               {/* Left: Calendly */}
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-4">Book a 15-minute demo</h2>
-                <div
-                  className="calendly-inline-widget rounded-xl overflow-hidden"
-                  data-url="https://calendly.com/kmu-7-vf/30min?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff"
-                  style={{ minWidth: '320px', height: '900px' }}
-                />
-              </div>
+              <div
+                className="calendly-inline-widget rounded-xl overflow-hidden"
+                data-url="https://calendly.com/kmu-7-vf/30min?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff"
+                style={{ minWidth: '320px', height: '900px' }}
+              />
 
-              {/* Right: Contact Form */}
-              <div>
-                <div className="bg-card border border-border/50 rounded-xl p-8 shadow-sm">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Send a message</h2>
-                  <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Right: Contact Form — stretch to match Calendly height */}
+              <div className="flex flex-col" style={{ height: '900px' }}>
+                <div className="bg-card border border-border/50 rounded-xl p-8 shadow-sm flex-1 flex flex-col">
+                  <form onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col">
                     <div className="grid sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="name">Name</Label>
@@ -121,12 +123,12 @@ export default function Contact() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex-1 flex flex-col">
                       <Label htmlFor="message">Message</Label>
                       <Textarea
                         id="message"
                         placeholder="Tell us more about your inquiry..."
-                        rows={5}
+                        className="flex-1 min-h-[120px]"
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                         required
