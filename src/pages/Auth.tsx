@@ -73,6 +73,7 @@ export default function Auth() {
   const [selectedRole, setSelectedRole] = useState('');
   const [invitationLoading, setInvitationLoading] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
+  const [challengesExpanded, setChallengesExpanded] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -562,20 +563,48 @@ export default function Auth() {
                   <p>
                     But compliance isn't a single problem. It's a set of overlapping dynamics that most tools aren't built to handle together:
                   </p>
-                  <ul className="space-y-2 list-none pl-0">
-                    <li><span className="font-medium text-foreground">A hybrid workforce</span> — managing employees and freelancers across the same operation</li>
-                    <li><span className="font-medium text-foreground">Personnel turnover</span> — keeping overview as people join and leave</li>
-                    <li><span className="font-medium text-foreground">Regulatory demands</span> — staying audit-ready and meeting client compliance requirements at all times</li>
-                    <li><span className="font-medium text-foreground">Document sharing</span> — receiving different file formats and handling external sharing requests back-and-forth</li>
-                    <li><span className="font-medium text-foreground">Up-to-date personal documentation</span> — ensuring workers maintain accurate, current profiles</li>
-                    <li><span className="font-medium text-foreground">Incoming job seekers</span> — incoming inquiries from candidates through scattered emails and calls</li>
-                  </ul>
-                  <p>
-                    FlowSert gives you instant control over workforce credentials, AI-assisted search across personnel, and efficient project staffing — all in one system.
-                  </p>
-                  <p className="font-medium text-foreground">
-                    No Excel tracking. No unstructured files. No last-minute certificate surprises.
-                  </p>
+                  {!challengesExpanded && (
+                    <div className="flex justify-end">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setChallengesExpanded(true)}
+                        className="text-primary hover:text-primary/80 gap-1"
+                      >
+                        Read more
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  {challengesExpanded && (
+                    <>
+                      <ul className="space-y-2 list-disc pl-5">
+                        <li><span className="font-medium text-foreground">A hybrid workforce</span> — managing employees and freelancers across the same operation</li>
+                        <li><span className="font-medium text-foreground">Personnel turnover</span> — keeping overview as people join and leave</li>
+                        <li><span className="font-medium text-foreground">Regulatory demands</span> — staying audit-ready and meeting client compliance requirements at all times</li>
+                        <li><span className="font-medium text-foreground">Document sharing</span> — receiving different file formats and handling external sharing requests back-and-forth</li>
+                        <li><span className="font-medium text-foreground">Up-to-date personal documentation</span> — ensuring workers maintain accurate, current profiles</li>
+                        <li><span className="font-medium text-foreground">Incoming job seekers</span> — incoming inquiries from candidates through scattered emails and calls</li>
+                      </ul>
+                      <p>
+                        FlowSert gives you instant control over workforce credentials, AI-assisted search across personnel, and efficient project staffing — all in one system.
+                      </p>
+                      <p className="font-medium text-foreground">
+                        No Excel tracking. No unstructured files. No last-minute certificate surprises.
+                      </p>
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setChallengesExpanded(false)}
+                          className="text-primary hover:text-primary/80 gap-1"
+                        >
+                          Show less
+                          <ChevronDown className="h-4 w-4 rotate-180" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
