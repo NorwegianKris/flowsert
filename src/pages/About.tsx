@@ -51,7 +51,7 @@ export default function About() {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">Set Up Your Team</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Create your business account and invite your personnel to join the platform.
+                  Create your business account and invite your personnel to join the platform. As an admin, you upload the certificates that circulate in your organisation — the AI reads them, establishes certificate types, and structures the system automatically.
                 </p>
               </div>
               <div className="text-center group">
