@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,14 @@ import { PublicFooter } from '@/components/PublicFooter';
 import heroBgPattern from '@/assets/hero-bg-pattern.png';
 
 export default function Contact() {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://assets.calendly.com/assets/external/widget.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -75,8 +83,8 @@ export default function Contact() {
       <section className="py-8 pb-24 bg-primary/5">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-12">
-              {/* Contact Info */}
+            <div className="grid md:grid-cols-2 gap-12">
+              {/* Left: Contact Info + Calendly */}
               <div className="space-y-8">
                 <div>
                   <h2 className="text-xl font-semibold text-foreground mb-6">Get in Touch</h2>
@@ -92,10 +100,19 @@ export default function Contact() {
                     </div>
                   </div>
                 </div>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-4">Or book a meeting directly</h2>
+                  <div
+                    className="calendly-inline-widget rounded-xl overflow-hidden"
+                    data-url="https://calendly.com/kmu-7-vf/30min?background_color=faf5ff&hide_gdpr_banner=1"
+                    style={{ minWidth: '320px', height: '700px' }}
+                  />
+                </div>
               </div>
 
               {/* Contact Form */}
-              <div className="md:col-span-2">
+              <div>
                 <div className="bg-card border border-border/50 rounded-xl p-8 shadow-sm">
                   <h2 className="text-xl font-semibold text-foreground mb-6">Send a Message</h2>
                   <form onSubmit={handleSubmit} className="space-y-6">

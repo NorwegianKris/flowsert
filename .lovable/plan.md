@@ -1,25 +1,27 @@
 
 
-## Add Calendly Inline Embed to Contact Page
+## Rotation Schedule + Back-to-Back Shifts
 
-### Layout Change
+**Status: Implemented**
 
-Current layout: 3-column grid — 1 col (contact info) + 2 col (form).
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-New layout: Keep the same 3-column grid but reorganize:
-- **Left column (1 col)**: Email contact info, then below it "Or book a meeting directly" heading + Calendly inline widget
-- **Right column (2 col)**: Contact form (unchanged)
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### Implementation — `src/pages/Contact.tsx`
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-1. Add a `useEffect` to load the Calendly widget script (`https://assets.calendly.com/assets/external/widget.js`) on mount
-2. Below the email contact info in the left column, add:
-   - A heading: "Or book a meeting directly"
-   - A `<div className="calendly-inline-widget">` with `data-url="https://calendly.com/kmu-7-vf/30min"` and `style={{ minWidth: '320px', height: '700px' }}`
-3. Adjust grid from `md:grid-cols-3` to a 2-column layout (`md:grid-cols-2`) so both sides get equal space, making the Calendly embed wide enough to render properly
-4. Match the Calendly embed background by appending `?background_color=faf5ff` (or similar matching the `bg-primary/5` tone) to the data-url
-5. Add the Calendly CSS link in the head via the same useEffect
-
-### File
-- `src/pages/Contact.tsx` — single file edit
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
