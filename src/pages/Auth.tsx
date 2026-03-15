@@ -879,7 +879,7 @@ export default function Auth() {
             <Button size="lg" onClick={() => navigate('/contact')} className="h-12 px-8">
               Get in Touch
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/contact')} className="h-12 px-8">
+            <Button size="lg" variant="outline" onClick={() => window.open('https://calendly.com/kmu-7-vf/30min', '_blank')} className="h-12 px-8">
               Book a Demo
             </Button>
           </div>
