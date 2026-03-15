@@ -543,7 +543,7 @@ export default function Auth() {
 
       <HeroSection
         onGetInTouch={() => navigate('/contact')}
-        onBookDemo={() => setDemoDialogOpen(true)}
+        onBookDemo={() => window.open('https://calendly.com/kmu-7-vf/30min', '_blank')}
       />
 
       {/* Workforce Compliance Section */}
