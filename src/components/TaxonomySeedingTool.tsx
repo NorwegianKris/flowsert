@@ -398,13 +398,17 @@ export function TaxonomySeedingTool() {
                           {s.status === 'pending' ? (
                             <div className="flex-1 min-w-0">
                               <Input
+                                ref={(el) => { inputRefs.current[s.id] = el; }}
                                 value={s.extractedName}
                                 onChange={(e) => setSuggestions(prev => prev.map(x =>
                                   x.id === s.id ? { ...x, extractedName: e.target.value } : x
                                 ))}
                                 className="h-8 text-sm font-medium"
                               />
-                              <Badge className="mt-1 flex items-center gap-1 w-fit bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              <Badge
+                                className="mt-1 flex items-center gap-1 w-fit cursor-pointer bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                onClick={() => inputRefs.current[s.id]?.focus()}
+                              >
                                 <Sparkles className="h-3 w-3" />
                                 AI-suggested type
                               </Badge>
