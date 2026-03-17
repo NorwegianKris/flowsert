@@ -798,7 +798,7 @@ export function AddCertificateDialog({
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Certificate Type {isAdminOrManager && '*'}
                                 {cert.aliasAutoMatched && (
-                                  <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                                  <span className="text-xs text-emerald-700 dark:text-emerald-400 ml-1 inline-flex items-center gap-0.5"><Sparkles className="h-3 w-3" /> Auto-matched</span>
                                 )}
                               </Label>
                               <CertificateTypeSelector

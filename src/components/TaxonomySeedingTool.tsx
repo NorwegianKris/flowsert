@@ -403,7 +403,10 @@ export function TaxonomySeedingTool() {
                                 ))}
                                 className="h-8 text-sm font-medium"
                               />
-                              <p className="text-xs text-muted-foreground mt-1">AI-suggested name — click to edit</p>
+                              <Badge className="mt-1 flex items-center gap-1 w-fit bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                <Sparkles className="h-3 w-3" />
+                                AI-suggested type
+                              </Badge>
                             </div>
                           ) : (
                             <span className="font-medium text-sm">{s.extractedName}</span>

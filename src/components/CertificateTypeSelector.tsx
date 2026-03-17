@@ -414,7 +414,7 @@ export function CertificateTypeSelector({
           <>
             {/* Free text input */}
             {freeTextFromOcr && freeTextValue && (
-              <Badge variant="secondary" className="flex items-center gap-1 w-fit bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300">
+              <Badge variant="secondary" className="flex items-center gap-1 w-fit bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
                 <Sparkles className="h-3 w-3" />
                 Suggested
               </Badge>
