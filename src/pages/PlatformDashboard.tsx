@@ -154,7 +154,7 @@ export default function PlatformDashboard() {
                 </TableHeader>
                 <TableBody>
                   {businesses.map((biz) => (
-                    <TableRow key={biz.id}>
+                    <TableRow key={biz.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedBusiness(biz)}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
