@@ -53,7 +53,7 @@ export function SmartCertificateUpload({
             issues: ['Unable to verify your OCR allowance. Please try again later.'],
           };
         }
-        if (allowance && !allowance.allowed) {
+        if (allowance && !(allowance as any).allowed) {
           return {
             status: 'red',
             confidence: 0,
