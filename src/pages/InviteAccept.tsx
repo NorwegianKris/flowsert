@@ -26,6 +26,7 @@ export default function InviteAccept() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasExistingAccount, setHasExistingAccount] = useState<boolean | null>(null);
+  const [currentBusinessName, setCurrentBusinessName] = useState<string | null>(null);
 
   // Guard to prevent the initial useEffect and onAuthStateChange from competing
   const evaluatingRef = useRef(false);
