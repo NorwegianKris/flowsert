@@ -189,9 +189,9 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    if (claimsError || !claimsData?.claims) {
+    if (authError || !user) {
       console.error(`[${sendId}] auth verification failed`);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Invalid token" }),
@@ -199,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
