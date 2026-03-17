@@ -349,11 +349,10 @@ export function CertificateTypeSelector({
           {selectedType.name}
           {(autoMatched || ocrAutoSelected) && (
             <Badge variant="secondary" className={cn(
-              "ml-1 text-xs",
-              ocrAutoSelected && "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300"
+              "ml-1 text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
             )}>
               <Sparkles className="h-3 w-3 mr-1" />
-              {ocrAutoSelected ? "AI suggested" : "Auto-matched"}
+              {ocrAutoSelected ? "AI-suggested type" : "Auto-matched"}
             </Badge>
           )}
         </>
