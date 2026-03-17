@@ -950,15 +950,16 @@ export default function AdminDashboard() {
                 </Collapsible>
 
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-dashed border-border/50 bg-muted/30 hover:bg-muted/50 transition-all group">
-                    <div className="flex items-center gap-2">
-                      <Settings2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">Advanced — data standardisation tools</span>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-6 rounded-xl border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Settings2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <span className="font-semibold text-lg">Advanced — data standardisation tools</span>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-3 space-y-3">
-                    <p className="text-xs text-muted-foreground px-1">Rarely used tools for issuer taxonomy and location standardisation.</p>
 
                     <Collapsible>
                       <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
