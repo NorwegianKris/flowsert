@@ -63,7 +63,7 @@ const SetupPlatformAdmin = () => {
 
           {status === "created" && (
             <div className="flex flex-col items-center gap-3">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-active" />
               <p className="text-foreground font-medium">Account created successfully!</p>
               <p className="text-sm text-muted-foreground">Redirecting to login…</p>
             </div>
