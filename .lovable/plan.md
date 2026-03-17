@@ -1,28 +1,27 @@
 
 
-## Fix Teach the System Upload Flow — 3 Issues
+## Rotation Schedule + Back-to-Back Shifts
 
-### 1. "Upload More Samples" should append, not reset
+**Status: Implemented**
 
-**Current:** Line 449 calls `reset()` which clears all files and suggestions.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**Fix:** Replace `reset` call with a new function that:
-- Sets `processed = false` to re-show the upload zone
-- Keeps existing `files` and `suggestions` intact
-- The `addFiles` callback (line 54) already appends via `setFiles(prev => [...prev, ...toAdd])`, but it also clears suggestions on line 69 — need to remove that `setSuggestions([])` call
-- The `processFiles` function (line 86) already skips non-pending files (`if (item.status !== 'pending') continue`), so re-analyzing works correctly
-- Change `setSuggestions` on line 189 from replacing to appending: `setSuggestions(prev => [...prev, ...newSuggestions])`
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### 2. Make suggested type name editable
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**Current:** Line 397 renders `s.extractedName` as plain `<span>`.
-
-**Fix:** For pending suggestions, replace the `<span>` with an `<Input>` component (from `@/components/ui/input`). On change, update the suggestion's `extractedName` in state via `setSuggestions`. The `approveSuggestion` function already uses `suggestion.extractedName` for creating the type, so edits flow through automatically.
-
-### 3. Add AI-suggested helper text
-
-**Fix:** Below the editable input, add: `<p className="text-xs text-muted-foreground">AI-suggested name — click to edit</p>`
-
-### Files modified
-- `src/components/TaxonomySeedingTool.tsx` — all 3 changes in this single file
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

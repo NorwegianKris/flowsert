@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Sparkles, Loader2, CheckCircle2, AlertTriangle, XCircle, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -66,7 +67,6 @@ export function TaxonomySeedingTool() {
     if (toAdd.length > 0) {
       setFiles(prev => [...prev, ...toAdd]);
       setProcessed(false);
-      setSuggestions([]);
     }
   }, [files.length]);
 
@@ -186,7 +186,7 @@ export function TaxonomySeedingTool() {
       }
     }
 
-    setSuggestions(newSuggestions);
+    setSuggestions(prev => [...prev, ...newSuggestions]);
     setProcessing(false);
     setProcessed(true);
   };
@@ -394,7 +394,20 @@ export function TaxonomySeedingTool() {
                     {suggestions.map(s => (
                       <div key={s.id} className="p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-sm">{s.extractedName}</span>
+                          {s.status === 'pending' ? (
+                            <div className="flex-1 min-w-0">
+                              <Input
+                                value={s.extractedName}
+                                onChange={(e) => setSuggestions(prev => prev.map(x =>
+                                  x.id === s.id ? { ...x, extractedName: e.target.value } : x
+                                ))}
+                                className="h-8 text-sm font-medium"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">AI-suggested name — click to edit</p>
+                            </div>
+                          ) : (
+                            <span className="font-medium text-sm">{s.extractedName}</span>
+                          )}
                           {s.status === 'approved' && (
                             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                               <Check className="h-3 w-3 mr-1" />Approved
@@ -446,7 +459,7 @@ export function TaxonomySeedingTool() {
                 </div>
               )}
 
-              <Button variant="outline" size="sm" onClick={reset}>Upload More Samples</Button>
+              <Button variant="outline" size="sm" onClick={() => setProcessed(false)}>Upload More Samples</Button>
             </div>
           )}
         </div>
