@@ -264,8 +264,41 @@ export default function InviteAccept() {
       </div>
     );
   }
+  if (state === 'existing_business' && preview) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <ArrowRightLeft className="h-12 w-12 text-primary mx-auto mb-2" />
+            <CardTitle>Switch Organization</CardTitle>
+            <CardDescription>
+              You are currently a member of <strong>{currentBusinessName}</strong>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Accepting this invitation will switch you to <strong>{preview.business_name}</strong> as a{' '}
+              <strong>{preview.invited_role}</strong>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You will lose access to <strong>{currentBusinessName}</strong>.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-2">
+            <Button className="w-full" onClick={handleAccept}>
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Accept and Switch
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/admin')}>
+              Cancel
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
-  if (state === 'success') {
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
