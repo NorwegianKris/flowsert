@@ -29,6 +29,7 @@ interface PlatformBusiness {
   is_test: boolean;
   tier: string;
   active_personnel_count: number;
+  admin_email: string | null;
 }
 
 export default function PlatformDashboard() {
