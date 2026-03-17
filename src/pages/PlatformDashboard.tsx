@@ -101,13 +101,15 @@ export default function PlatformDashboard() {
       <main className="container py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold text-foreground">Businesses</h2>
-          <Button
-            onClick={() => toast.info('Add Business form coming soon')}
-            className="gap-2"
-          >
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Business
           </Button>
+          <CreateBusinessDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            onCreated={fetchBusinesses}
+          />
         </div>
 
         <Card className="rounded-xl border bg-card shadow-sm">
