@@ -315,7 +315,7 @@ export function TaxonomySeedingTool() {
           </div>
 
           {/* Upload zone */}
-          {!processing && !processed && (
+          {(!processing && !processed) || addingMore ? (
             <>
               <input
                 ref={fileInputRef}
