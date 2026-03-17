@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,8 +83,11 @@ export default function Auth() {
   const businessNameParam = searchParams.get('business_name');
   const isPasswordReset = searchParams.get('type') === 'recovery';
 
+  // Track whether handleSignIn already navigated to prevent double navigation
+  const hasNavigatedRef = useRef(false);
+
   useEffect(() => {
-    if (!loading && user && !isPasswordReset) {
+    if (!loading && user && !isPasswordReset && !hasNavigatedRef.current) {
       const redirect = searchParams.get('redirect');
       const safeRedirect =
         redirect && (redirect === '/invite' || redirect.startsWith('/invite?'))
@@ -273,6 +276,7 @@ export default function Auth() {
           ? redirect
           : null;
       if (safeRedirect) {
+        hasNavigatedRef.current = true;
         navigate(safeRedirect, { replace: true });
       }
       setAuthDialogOpen(false);
