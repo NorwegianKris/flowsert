@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
 
     if (invError) throw invError;
 
-    const invitationUrl = `https://flowsert.lovable.app/invite?token=${inviteToken}`;
+    const invitationUrl = `https://flowsert.com/invite?token=${inviteToken}`;
 
     return new Response(
       JSON.stringify({ business_id: businessId, invitation_url: invitationUrl }),
