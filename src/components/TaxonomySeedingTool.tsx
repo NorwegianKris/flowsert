@@ -191,6 +191,7 @@ export function TaxonomySeedingTool() {
     setSuggestions(prev => [...prev, ...newSuggestions]);
     setProcessing(false);
     setProcessed(true);
+    setAddingMore(false);
   };
 
   const showApprovalSummaryAndReset = (approvedItems: Array<{name: string; categoryId: string}>) => {
