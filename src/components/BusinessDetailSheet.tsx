@@ -259,22 +259,18 @@ export default function BusinessDetailSheet({
               </div>
             </div>
 
-            {/* Delete (test only) */}
-            {localIsTest && (
-              <>
-                <Separator />
-                <div className="pt-2">
-                  <Button
-                    variant="destructive"
-                    className="w-full gap-2"
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete Business
-                  </Button>
-                </div>
-              </>
-            )}
+            {/* Delete */}
+            <Separator />
+            <div className="pt-2">
+              <Button
+                variant="destructive"
+                className="w-full gap-2"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Business
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -290,7 +286,7 @@ export default function BusinessDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{business.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this test business and all associated data
+              This will permanently delete this business and all associated data
               including personnel, certificates, projects, and invitations. This
               action cannot be undone.
             </AlertDialogDescription>

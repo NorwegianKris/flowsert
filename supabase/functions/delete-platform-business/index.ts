@@ -23,8 +23,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_ANON_KEY")!
     );
 
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
@@ -69,12 +68,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!business.is_test) {
-      return new Response(JSON.stringify({ error: "Only test businesses can be deleted" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Get personnel IDs for this business
     const { data: personnelRows } = await adminClient
