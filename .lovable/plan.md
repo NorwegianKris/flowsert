@@ -1,49 +1,27 @@
 
 
-## Plan: Create Business Form + Edge Function
+## Rotation Schedule + Back-to-Back Shifts
 
-### 1. New Edge Function: `supabase/functions/create-platform-business/index.ts`
+**Status: Implemented**
 
-Same auth pattern as `create-portal-session` — uses `supabase.auth.getUser(token)` (not `getClaims`):
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-- Authenticates via `getUser(token)`, checks email is `hello@flowsert.com`
-- Reads `name`, `tier`, `is_test`, `admin_name`, `admin_email` from request body
-- Uses service role client to:
-  1. INSERT `businesses` — `name`, `is_test`, `company_code` (random 6-char uppercase alphanumeric)
-  2. INSERT `entitlements` — `business_id`, `tier`, `profile_cap` from `get_tier_profile_limit()` logic (starter=25, growth=75, professional=200), `is_active = true`
-  3. INSERT `personnel` — admin record with `activated = false`
-  4. INSERT `invitations` — `business_id`, `email`, `role = 'admin'`, `status = 'pending'`, `token = crypto.randomUUID()`, `expires_at = now + 7 days`, `personnel_id`
-- Returns `{ business_id, invitation_url }` where URL is `https://flowsert.lovable.app/invite?token={token}`
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### 2. Config: `supabase/config.toml`
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-Add `[functions.create-platform-business]` with `verify_jwt = false`.
-
-### 3. New Component: `src/components/CreateBusinessDialog.tsx`
-
-Dialog with form fields:
-- Business name (required, text)
-- Admin full name (required, text)
-- Admin email (required, email)
-- Plan tier (Select: Starter/Growth/Professional mapping to starter/growth/professional)
-- Mark as test (Switch, default off)
-
-Two states:
-- **Form view**: submit calls edge function with session token
-- **Success view**: shows invitation URL in a read-only input with copy button; dialog stays open; `onCreated()` callback fires to refresh list
-
-### 4. Updated: `src/pages/PlatformDashboard.tsx`
-
-- Extract `fetchBusinesses` out of `useEffect` so it can be called on demand
-- Import and render `CreateBusinessDialog`, passing `onCreated={fetchBusinesses}`
-- Replace the placeholder toast button with dialog trigger
-
-### Files
-
-| File | Change |
-|------|--------|
-| `supabase/functions/create-platform-business/index.ts` | New edge function |
-| `supabase/config.toml` | Register function |
-| `src/components/CreateBusinessDialog.tsx` | New dialog component |
-| `src/pages/PlatformDashboard.tsx` | Wire up dialog + refetch |
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

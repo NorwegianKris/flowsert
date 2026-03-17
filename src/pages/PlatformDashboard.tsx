@@ -14,10 +14,11 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Building2, LogOut, Plus, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import dashboardBg from '@/assets/dashboard-bg-pattern.png';
+import CreateBusinessDialog from '@/components/CreateBusinessDialog';
 
 interface PlatformBusiness {
   id: string;
@@ -33,32 +34,33 @@ export default function PlatformDashboard() {
   const { signOut, session } = useAuth();
   const [businesses, setBusinesses] = useState<PlatformBusiness[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const fetchBusinesses = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'list-platform-businesses',
+        {
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+        }
+      );
+      if (error) throw error;
+      setBusinesses(data || []);
+    } catch (err) {
+      console.error('Failed to fetch businesses:', err);
+      toast.error('Failed to load businesses');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.access_token]);
 
   useEffect(() => {
-    async function fetchBusinesses() {
-      try {
-        const { data, error } = await supabase.functions.invoke(
-          'list-platform-businesses',
-          {
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-          }
-        );
-        if (error) throw error;
-        setBusinesses(data || []);
-      } catch (err) {
-        console.error('Failed to fetch businesses:', err);
-        toast.error('Failed to load businesses');
-      } finally {
-        setLoading(false);
-      }
-    }
-
     if (session?.access_token) {
       fetchBusinesses();
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, fetchBusinesses]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -99,13 +101,15 @@ export default function PlatformDashboard() {
       <main className="container py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-semibold text-foreground">Businesses</h2>
-          <Button
-            onClick={() => toast.info('Add Business form coming soon')}
-            className="gap-2"
-          >
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Business
           </Button>
+          <CreateBusinessDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            onCreated={fetchBusinesses}
+          />
         </div>
 
         <Card className="rounded-xl border bg-card shadow-sm">
