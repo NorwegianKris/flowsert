@@ -127,7 +127,7 @@ export default function BusinessDetailSheet({
     }
   };
 
-
+  const handleDelete = async () => {
     setDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke(
