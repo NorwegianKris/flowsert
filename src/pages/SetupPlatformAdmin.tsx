@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle, AlertCircle, ShieldCheck } from "lucide-react";
-import Logo from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 
 const SetupPlatformAdmin = () => {
   const navigate = useNavigate();
