@@ -14,7 +14,7 @@ interface InvitePreview {
   status: string;
 }
 
-type PageState = 'loading' | 'invalid' | 'not_logged_in' | 'wrong_account' | 'ready' | 'accepting' | 'success' | 'error';
+type PageState = 'loading' | 'invalid' | 'not_logged_in' | 'wrong_account' | 'existing_business' | 'ready' | 'accepting' | 'success' | 'error';
 
 export default function InviteAccept() {
   const [searchParams] = useSearchParams();
