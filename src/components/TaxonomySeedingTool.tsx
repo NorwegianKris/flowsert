@@ -435,7 +435,7 @@ export function TaxonomySeedingTool() {
           )}
 
           {/* Summary + Approval */}
-          {processed && !addingMore && (
+          {processed && (
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
                 {files.length} files analyzed. {newCount} new type{newCount !== 1 ? 's' : ''} suggested. {matchedCount} already matched.
