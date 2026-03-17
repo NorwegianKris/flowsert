@@ -244,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: role === 'admin',
     isWorker: role === 'worker',
     isSuperadmin,
+    isPlatformAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

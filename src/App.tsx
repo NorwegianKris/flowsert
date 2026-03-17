@@ -53,6 +53,9 @@ const App = () => (
             <Route path="/security" element={<SecurityPage />} />
             <Route path="/trust" element={<Trust />} />
             
+            {/* Platform admin */}
+            <Route path="/platform" element={<PlatformAdminRoute><PlatformDashboard /></PlatformAdminRoute>} />
+            
             {/* Role-based redirect */}
             <Route path="/" element={<RoleRedirect />} />
             
