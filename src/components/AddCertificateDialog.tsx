@@ -735,7 +735,7 @@ export function AddCertificateDialog({
                                 Issuing Authority
                                 {renderFieldIndicator(cert.fieldConfidence?.issuingAuthority)}
                                 {cert.issuerAliasAutoMatched && (
-                                  <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                                  <span className="text-xs text-emerald-700 dark:text-emerald-400 ml-1 inline-flex items-center gap-0.5"><Sparkles className="h-3 w-3" /> Auto-matched</span>
                                 )}
                               </Label>
                               <IssuerTypeSelector
