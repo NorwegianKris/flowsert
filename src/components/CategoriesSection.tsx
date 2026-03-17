@@ -313,7 +313,7 @@ function CertificateCategoriesInner() {
               const types = getTypesForCategory(category.id);
               return (
                 <AccordionItem key={category.id} value={category.id} className="border-b last:border-b-0">
-                  <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-accent/50 transition-colors [&>svg]:hidden">
+                  <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-2 flex-1 mr-2">
                       <span className="font-medium">{category.name}</span>
                       <Badge variant={types.length > 0 ? "secondary" : "outline"} className={types.length === 0 ? "text-muted-foreground" : ""}>
