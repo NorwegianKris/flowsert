@@ -44,12 +44,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (user.email !== "hello@flowsert.com") {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const { business_id } = await req.json();
     if (!business_id) {
