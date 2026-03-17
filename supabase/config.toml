@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.list-platform-businesses]
 verify_jwt = false
+
+[functions.update-platform-business]
+verify_jwt = false
+
+[functions.delete-platform-business]
+verify_jwt = false

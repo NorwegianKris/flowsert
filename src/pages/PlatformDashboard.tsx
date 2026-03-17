@@ -200,6 +200,21 @@ export default function PlatformDashboard() {
             )}
           </CardContent>
         </Card>
+
+        <BusinessDetailSheet
+          business={selectedBusiness}
+          open={!!selectedBusiness}
+          onClose={() => setSelectedBusiness(null)}
+          onUpdated={() => {
+            fetchBusinesses();
+            // Update local state to reflect changes immediately
+            setSelectedBusiness(null);
+          }}
+          onDeleted={() => {
+            setSelectedBusiness(null);
+            fetchBusinesses();
+          }}
+        />
       </main>
     </div>
   );
