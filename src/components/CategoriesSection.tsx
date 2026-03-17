@@ -199,9 +199,9 @@ function CertificateCategoriesInner() {
   const [loading, setLoading] = useState(true);
   const { data: certificateTypes } = useCertificateTypes({ includeInactive: false });
 
-  const getTypeCount = (categoryId: string) => {
-    if (!certificateTypes) return 0;
-    return certificateTypes.filter(t => t.category_id === categoryId).length;
+  const getTypesForCategory = (categoryId: string) => {
+    if (!certificateTypes) return [];
+    return certificateTypes.filter(t => t.category_id === categoryId).sort((a, b) => a.name.localeCompare(b.name));
   };
   const [newCategoryName, setNewCategoryName] = useState('');
   const [adding, setAdding] = useState(false);
