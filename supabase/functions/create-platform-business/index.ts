@@ -45,23 +45,24 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // Verify caller identity using getUser (stable pattern)
-    const supabaseAuth = createClient(
+    // Verify caller identity using getClaims (JWT-based, no session dependency)
+    const authClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: userData, error: userError } =
-      await supabaseAuth.auth.getUser(token);
+    const { data: claimsData, error: claimsError } =
+      await authClient.auth.getClaims(token);
 
-    if (userError || !userData?.user) {
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (userData.user.email !== "hello@flowsert.com") {
+    if (claimsData.claims.email !== "hello@flowsert.com") {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
