@@ -1,27 +1,69 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Platform Admin Dashboard for hello@flowsert.com
 
-**Status: Implemented**
+### Route path: `/platform`
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+Per user feedback, the route will be `/platform` (not `/superadmin`) to match the component naming.
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+### Visual style
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+PlatformDashboard will match the existing admin dashboard: navy `#1E1B4B` and indigo `#3B3AC2` palette, same card styles (`rounded-xl border bg-card shadow-sm`), Inter font stack, consistent spacing. It will feel like a natural part of FlowSert, not a separate tool.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+### Changes
+
+#### 1. Database Migration
+
+Update `handle_new_user` to add a platform admin bypass at the top:
+- If email is `hello@flowsert.com`, insert profile with `business_id = NULL`, insert `user_roles` row with `admin` role, return early (no invitation required)
+
+Update `is_superadmin` to include `hello@flowsert.com` in the email check.
+
+#### 2. AuthContext (`src/contexts/AuthContext.tsx`)
+
+- Update `isSuperadmin` to match both `kmu@live.no` and `hello@flowsert.com`
+- Add `isPlatformAdmin: boolean` (true only for `hello@flowsert.com`)
+- Export in context type and value
+
+#### 3. RoleRedirect (`src/pages/RoleRedirect.tsx`)
+
+- Add platform admin check as the **first condition** before any role check:
+  ```
+  if (profile?.email === 'hello@flowsert.com') {
+    navigate('/platform', { replace: true });
+    return;
+  }
+  ```
+
+#### 4. New: PlatformAdminRoute (`src/components/PlatformAdminRoute.tsx`)
+
+- Reads `profile` and `loading` from AuthContext
+- If loading: spinner
+- If `profile?.email !== 'hello@flowsert.com'`: redirect to `/auth`
+- Otherwise: render children
+
+#### 5. New: PlatformDashboard (`src/pages/PlatformDashboard.tsx`)
+
+Standalone page matching FlowSert admin visual style:
+- Background pattern (same `dashboard-bg-pattern.png`)
+- FlowSert logo + "FlowSert Platform" heading in navy
+- Single card: "Businesses — coming soon" with Building2 icon
+- Sign out button in top-right
+- No shared admin components, no sidebar, no tabs
+
+#### 6. App.tsx
+
+- Import PlatformAdminRoute and PlatformDashboard
+- Add route: `<Route path="/platform" element={<PlatformAdminRoute><PlatformDashboard /></PlatformAdminRoute>} />`
+
+### Files
+
+| File | Change |
+|------|--------|
+| SQL migration | Update `handle_new_user` + `is_superadmin` |
+| `src/contexts/AuthContext.tsx` | Add `isPlatformAdmin`, update `isSuperadmin` |
+| `src/pages/RoleRedirect.tsx` | Platform admin redirect first |
+| `src/components/PlatformAdminRoute.tsx` | New route guard |
+| `src/pages/PlatformDashboard.tsx` | New standalone page |
+| `src/App.tsx` | Add `/platform` route |
+
