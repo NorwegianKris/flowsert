@@ -103,7 +103,31 @@ export default function BusinessDetailSheet({
     }
   };
 
-  const handleDelete = async () => {
+  const handleTestToggle = async (checked: boolean) => {
+    setLocalIsTest(checked);
+    setUpdatingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'update-platform-business',
+        {
+          body: { business_id: business.id, is_test: checked },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        }
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(checked ? 'Marked as test' : 'Marked as active');
+      onUpdated();
+    } catch (err: any) {
+      setLocalIsTest(!checked);
+      console.error('Failed to update test status:', err);
+      toast.error(err.message || 'Failed to update status');
+    } finally {
+      setUpdatingTest(false);
+    }
+  };
+
+
     setDeleting(true);
     try {
       const { data, error } = await supabase.functions.invoke(
