@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "flowsert"
+const SITE_NAME = "FlowSert"
 const SENDER_DOMAIN = "notify.flowsert.com"
 const ROOT_DOMAIN = "flowsert.com"
 const FROM_DOMAIN = "flowsert.com" // Domain shown in From address (may be root or sender subdomain)
