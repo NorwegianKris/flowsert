@@ -70,5 +70,5 @@ const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#0f172a', ma
 const text = { fontSize: '14px', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 20px' }
 const link = { color: '#0f172a', textDecoration: 'underline' }
 const buttonSection = { margin: '28px 0' }
-const button = { backgroundColor: 'hsl(243, 75%, 41%)', color: '#ffffff', fontSize: '14px', fontWeight: '600' as const, borderRadius: '8px', padding: '12px 24px', textDecoration: 'none' }
+const button = { backgroundColor: '#3219a8', color: '#ffffff', fontSize: '14px', fontWeight: '600' as const, borderRadius: '8px', padding: '12px 24px', textDecoration: 'none' }
 const footer = { fontSize: '12px', color: '#94a3b8', margin: '30px 0 0' }
