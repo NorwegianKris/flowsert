@@ -46,6 +46,7 @@ export function TaxonomySeedingTool() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
+  const [addingMore, setAddingMore] = useState(false);
   const [open, setOpen] = useState(false);
 
   const { data: certificateTypes } = useCertificateTypes();
