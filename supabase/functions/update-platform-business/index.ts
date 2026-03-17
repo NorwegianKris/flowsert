@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (tier !== undefined && !["starter", "growth", "professional"].includes(tier)) {
+    if (tier !== undefined && !["starter", "growth", "professional", "enterprise"].includes(tier)) {
       return new Response(JSON.stringify({ error: "Invalid tier" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -201,6 +201,7 @@ export default function BusinessDetailSheet({
                   <SelectItem value="starter">Starter</SelectItem>
                   <SelectItem value="growth">Growth</SelectItem>
                   <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
                 </SelectContent>
               </Select>
             </div>
