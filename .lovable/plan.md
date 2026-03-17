@@ -1,27 +1,26 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Fix create-platform-business Edge Function
 
-**Status: Implemented**
+### Root Cause
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+Two issues found:
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+1. **Missing config.toml entry**: `create-platform-business` is not registered in `supabase/config.toml`. Every other platform function (`list-platform-businesses`, `update-platform-business`, `delete-platform-business`, `setup-platform-admin`) has `verify_jwt = false`, but `create-platform-business` is missing entirely. This means the deployed version may be stale or using default JWT verification (incompatible with Lovable Cloud's ES256 signing).
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+2. **Constraint violation in deployed code**: The edge function logs confirm the error:
+   ```
+   new row for relation "invitations" violates check constraint "invitations_personnel_id_only_when_accepted"
+   ```
+   The failing rows show a `personnel_id` value being inserted with `status = 'pending'`, violating the check constraint that requires `personnel_id` to be NULL unless status is `'accepted'`. The current code file already omits `personnel_id` from the insert (lines 139-146), but the deployed version appears to be an older copy that still includes it.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+### Fix
+
+Add the missing config.toml entry to trigger a proper redeployment of the current (already-fixed) code:
+
+| File | Change |
+|------|--------|
+| `supabase/config.toml` | Add `[functions.create-platform-business]` with `verify_jwt = false` |
+
+No code changes needed — the `index.ts` file already has the correct insert without `personnel_id`.
+
