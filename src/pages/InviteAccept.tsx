@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,44 @@ export default function InviteAccept() {
   const [errorMessage, setErrorMessage] = useState('');
   const [hasExistingAccount, setHasExistingAccount] = useState<boolean | null>(null);
 
+  // Guard to prevent the initial useEffect and onAuthStateChange from competing
+  const evaluatingRef = useRef(false);
+  const previewRef = useRef<InvitePreview | null>(null);
+
   console.log('[InviteAccept] token:', token ? 'present' : 'missing');
 
+  // Evaluate session against the invite preview
+  const evaluateSession = async (invite: InvitePreview) => {
+    if (evaluatingRef.current) return;
+    evaluatingRef.current = true;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        console.log('[InviteAccept] evaluateSession: no session');
+        const { data: exists } = await supabase.rpc('check_invite_email_exists', { p_email: invite.invited_email });
+        setHasExistingAccount(exists === true);
+        setState('not_logged_in');
+        return;
+      }
+
+      const userEmail = session.user.email?.toLowerCase() ?? '';
+      const invitedEmail = invite.invited_email.toLowerCase();
+      const match = userEmail === invitedEmail;
+      console.log('[InviteAccept] evaluateSession email:', userEmail, '| invited:', invitedEmail, '| match:', match);
+      setSessionEmail(userEmail);
+
+      if (!match) {
+        setState('wrong_account');
+      } else {
+        setState('ready');
+      }
+    } finally {
+      evaluatingRef.current = false;
+    }
+  };
+
+  // Initial load: fetch preview, then evaluate session
   useEffect(() => {
     if (!token) {
       setState('invalid');
@@ -38,7 +74,6 @@ export default function InviteAccept() {
     const load = async () => {
       setState('loading');
 
-      // Fetch preview
       const { data, error } = await supabase.rpc('preview_invite', { p_token: token });
 
       if (error || !data || (Array.isArray(data) && data.length === 0)) {
@@ -50,33 +85,29 @@ export default function InviteAccept() {
       const invite: InvitePreview = Array.isArray(data) ? data[0] : data;
       console.log('[InviteAccept] preview result: valid');
       setPreview(invite);
+      previewRef.current = invite;
 
-      // Check session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        console.log('[InviteAccept] session: none');
-        // Check if the invited email already has an account
-        const { data: exists } = await supabase.rpc('check_invite_email_exists', { p_email: invite.invited_email });
-        setHasExistingAccount(exists === true);
-        setState('not_logged_in');
-        return;
-      }
-
-      const userEmail = session.user.email?.toLowerCase() ?? '';
-      const invitedEmail = invite.invited_email.toLowerCase();
-      const match = userEmail === invitedEmail;
-      console.log('[InviteAccept] session email:', userEmail, '| invited email:', invitedEmail, '| match:', match);
-      setSessionEmail(userEmail);
-
-      if (!match) {
-        setState('wrong_account');
-      } else {
-        setState('ready');
-      }
+      await evaluateSession(invite);
     };
 
     load();
   }, [token]);
+
+  // Listen for auth state changes (handles redirect back from /auth after login)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[InviteAccept] onAuthStateChange:', event);
+      
+      if (event === 'SIGNED_IN' && previewRef.current) {
+        // User just signed in — re-evaluate against the invite
+        evaluateSession(previewRef.current);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleAccept = async () => {
     if (!token) return;
@@ -94,8 +125,11 @@ export default function InviteAccept() {
     } else {
       console.log('[InviteAccept] accept_invite success');
       setState('success');
+
+      // Redirect to role-appropriate dashboard
+      const targetPath = preview?.invited_role === 'worker' ? '/worker' : '/admin';
       setTimeout(() => {
-        window.location.assign('/');
+        window.location.assign(targetPath);
       }, 2000);
     }
   };

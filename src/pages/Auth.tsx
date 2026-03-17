@@ -83,8 +83,11 @@ export default function Auth() {
   const businessNameParam = searchParams.get('business_name');
   const isPasswordReset = searchParams.get('type') === 'recovery';
 
+  // Track whether handleSignIn already navigated to prevent double navigation
+  const hasNavigatedRef = useRef(false);
+
   useEffect(() => {
-    if (!loading && user && !isPasswordReset) {
+    if (!loading && user && !isPasswordReset && !hasNavigatedRef.current) {
       const redirect = searchParams.get('redirect');
       const safeRedirect =
         redirect && (redirect === '/invite' || redirect.startsWith('/invite?'))
