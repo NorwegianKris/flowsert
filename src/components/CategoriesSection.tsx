@@ -5,6 +5,7 @@ import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManage
 import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
 import { WorkerGroupsManager } from '@/components/WorkerGroupsManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
 
@@ -198,9 +199,9 @@ function CertificateCategoriesInner() {
   const [loading, setLoading] = useState(true);
   const { data: certificateTypes } = useCertificateTypes({ includeInactive: false });
 
-  const getTypeCount = (categoryId: string) => {
-    if (!certificateTypes) return 0;
-    return certificateTypes.filter(t => t.category_id === categoryId).length;
+  const getTypesForCategory = (categoryId: string) => {
+    if (!certificateTypes) return [];
+    return certificateTypes.filter(t => t.category_id === categoryId).sort((a, b) => a.name.localeCompare(b.name));
   };
   const [newCategoryName, setNewCategoryName] = useState('');
   const [adding, setAdding] = useState(false);
@@ -307,31 +308,46 @@ function CertificateCategoriesInner() {
             <p className="text-sm">Add your first category above.</p>
           </div>
         ) : (
-          <div className="border rounded-lg divide-y">
-            {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between p-3 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{category.name}</span>
-                  {(() => {
-                    const count = getTypeCount(category.id);
-                    return (
-                      <Badge variant={count > 0 ? "secondary" : "outline"} className={count === 0 ? "text-muted-foreground" : ""}>
-                        {count} {count === 1 ? 'type' : 'types'}
+          <Accordion type="multiple" className="border rounded-lg">
+            {categories.map((category) => {
+              const types = getTypesForCategory(category.id);
+              return (
+                <AccordionItem key={category.id} value={category.id} className="border-b last:border-b-0">
+                  <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-accent/50 transition-colors [&>svg]:hidden">
+                    <div className="flex items-center gap-2 flex-1 mr-2">
+                      <span className="font-medium">{category.name}</span>
+                      <Badge variant={types.length > 0 ? "secondary" : "outline"} className={types.length === 0 ? "text-muted-foreground" : ""}>
+                        {types.length} {types.length === 1 ? 'type' : 'types'}
                       </Badge>
-                    );
-                  })()}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => { setCategoryToDelete(category); setDeleteDialogOpen(true); }}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+                      <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => { setCategoryToDelete(category); setDeleteDialogOpen(true); }}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3">
+                    {types.length === 0 ? (
+                      <p className="text-sm text-muted-foreground pl-4 py-2">No types assigned</p>
+                    ) : (
+                      <div className="space-y-1 pl-4">
+                        {types.map((type) => (
+                          <div key={type.id} className="py-1.5 text-sm text-foreground">
+                            {type.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         )}
         <p className="text-xs text-muted-foreground">
           {categories.length} {categories.length !== 1 ? 'categories' : 'category'} defined
