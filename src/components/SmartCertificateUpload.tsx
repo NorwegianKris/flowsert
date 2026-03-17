@@ -31,6 +31,59 @@ export function SmartCertificateUpload({
 
   // Process a single file through the extraction API
   const processFile = useCallback(async (file: File): Promise<ExtractionResult> => {
+    // Pre-flight OCR allowance check
+    if (businessId) {
+      try {
+        const { data: allowance, error: allowanceError } = await supabase.rpc('check_ai_allowance', {
+          p_business_id: businessId,
+          p_event_type: 'ocr',
+        });
+        if (allowanceError) {
+          console.error('OCR allowance check failed:', allowanceError);
+          return {
+            status: 'red',
+            confidence: 0,
+            extractedData: {
+              certificateName: null, dateOfIssue: null, expiryDate: null,
+              placeOfIssue: null, issuingAuthority: null, matchedCategory: null,
+              matchedCategoryId: null, matchedIssuer: null, matchedIssuerId: null,
+              suggestedTypeName: null, classificationConfidence: 0,
+            },
+            fieldsExtracted: 0,
+            issues: ['Unable to verify your OCR allowance. Please try again later.'],
+          };
+        }
+        if (allowance && !allowance.allowed) {
+          return {
+            status: 'red',
+            confidence: 0,
+            extractedData: {
+              certificateName: null, dateOfIssue: null, expiryDate: null,
+              placeOfIssue: null, issuingAuthority: null, matchedCategory: null,
+              matchedCategoryId: null, matchedIssuer: null, matchedIssuerId: null,
+              suggestedTypeName: null, classificationConfidence: 0,
+            },
+            fieldsExtracted: 0,
+            issues: ['You have reached your OCR limit for this plan. Upgrade to continue using Smart Upload.'],
+          };
+        }
+      } catch (err) {
+        console.error('OCR allowance pre-check error:', err);
+        return {
+          status: 'red',
+          confidence: 0,
+          extractedData: {
+            certificateName: null, dateOfIssue: null, expiryDate: null,
+            placeOfIssue: null, issuingAuthority: null, matchedCategory: null,
+            matchedCategoryId: null, matchedIssuer: null, matchedIssuerId: null,
+            suggestedTypeName: null, classificationConfidence: 0,
+          },
+          fieldsExtracted: 0,
+          issues: ['Unable to verify your OCR allowance. Please try again later.'],
+        };
+      }
+    }
+
     const fileTypeStatus = getFileTypeStatus(file.type);
 
     if (fileTypeStatus === 'unsupported') {
