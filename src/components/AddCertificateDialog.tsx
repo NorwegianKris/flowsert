@@ -21,7 +21,7 @@ import {
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine, ChevronDown, ChevronRight, Info, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
