@@ -49,17 +49,17 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
-    if (claimsError || !claimsData?.claims) {
-      console.error("Auth verification failed:", claimsError);
+    if (authError || !user) {
+      console.error("Auth verification failed:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     // Verify user has admin role
     const { data: roleData, error: roleError } = await supabase
