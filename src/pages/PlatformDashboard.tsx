@@ -2,11 +2,71 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, LogOut } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { Building2, LogOut, Plus, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import dashboardBg from '@/assets/dashboard-bg-pattern.png';
 
+interface PlatformBusiness {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  created_at: string;
+  is_test: boolean;
+  tier: string;
+  active_personnel_count: number;
+}
+
 export default function PlatformDashboard() {
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
+  const [businesses, setBusinesses] = useState<PlatformBusiness[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBusinesses() {
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          'list-platform-businesses',
+          {
+            headers: {
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+          }
+        );
+        if (error) throw error;
+        setBusinesses(data || []);
+      } catch (err) {
+        console.error('Failed to fetch businesses:', err);
+        toast.error('Failed to load businesses');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (session?.access_token) {
+      fetchBusinesses();
+    }
+  }, [session?.access_token]);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
 
   return (
     <div
@@ -37,17 +97,102 @@ export default function PlatformDashboard() {
 
       {/* Content */}
       <main className="container py-10">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="rounded-xl border bg-card shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 rounded-full bg-primary/10 p-4">
-                <Building2 className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-lg font-semibold text-foreground">Businesses</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Coming soon</p>
-            </CardContent>
-          </Card>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-foreground">Businesses</h2>
+          <Button
+            onClick={() => toast.info('Add Business form coming soon')}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Business
+          </Button>
         </div>
+
+        <Card className="rounded-xl border bg-card shadow-sm">
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-6 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : businesses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-4 rounded-full bg-muted p-4">
+                  <Building2 className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  No businesses yet
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Click "Add Business" to create the first one.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Personnel</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {businesses.map((biz) => (
+                    <TableRow key={biz.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            {biz.logo_url ? (
+                              <AvatarImage src={biz.logo_url} alt={biz.name} />
+                            ) : null}
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              <Building2 className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-foreground">
+                            {biz.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="capitalize">
+                          {biz.tier}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          {biz.active_personnel_count}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(biz.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {biz.is_test ? (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            Test
+                          </Badge>
+                        ) : (
+                          <Badge variant="active">Active</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

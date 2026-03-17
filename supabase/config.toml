@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.setup-platform-admin]
 verify_jwt = false
+
+[functions.list-platform-businesses]
+verify_jwt = false

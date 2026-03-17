@@ -1,47 +1,27 @@
 
 
-## Plan: Businesses List View with `is_test` Column
+## Rotation Schedule + Back-to-Back Shifts
 
-### 1. Database Migration
+**Status: Implemented**
 
-Add `is_test` boolean column to `businesses` table, defaulting to `false`. No name-pattern inference.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-```sql
-ALTER TABLE public.businesses ADD COLUMN is_test boolean NOT NULL DEFAULT false;
-```
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### 2. New Edge Function: `supabase/functions/list-platform-businesses/index.ts`
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-- Verifies caller is `hello@flowsert.com` via auth token
-- Uses service role client to query all businesses with:
-  - Business fields: `id`, `name`, `logo_url`, `created_at`, `is_test`
-  - Entitlement tier (left join `entitlements`, default `'starter'`)
-  - Active personnel count (count from `personnel` where `activated = true`)
-- Returns JSON array
-
-Config: Add `[functions.list-platform-businesses]` with `verify_jwt = false` to `supabase/config.toml`.
-
-### 3. Updated: `src/pages/PlatformDashboard.tsx`
-
-Replace placeholder card with:
-- **Header**: "Businesses" title + "Add Business" button (placeholder toast for now)
-- **Loading state**: Skeleton rows
-- **Empty state**: Building2 icon + "No businesses yet"
-- **Table/cards**: Each row shows:
-  - Logo (avatar fallback to Building2 icon) + name
-  - Tier badge (from entitlements)
-  - Active personnel count
-  - Created date (formatted)
-  - Status tag: **"Test"** if `is_test === true`, **"Active"** if `false` — based on the database column, not name inference
-
-Fetches on mount via the edge function with the user's session token.
-
-### Files
-
-| File | Change |
-|------|--------|
-| SQL migration | Add `is_test` column to `businesses` |
-| `supabase/functions/list-platform-businesses/index.ts` | New edge function |
-| `supabase/config.toml` | Register new function |
-| `src/pages/PlatformDashboard.tsx` | Full businesses list view |
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
