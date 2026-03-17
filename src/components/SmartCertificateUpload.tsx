@@ -163,7 +163,7 @@ export function SmartCertificateUpload({
         matchedIssuerId,
       },
     };
-  }, [existingCategories, existingIssuers]);
+  }, [existingCategories, existingIssuers, businessId]);
 
   // Process the queue sequentially
   const processQueue = useCallback(async () => {
