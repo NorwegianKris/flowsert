@@ -37,6 +37,7 @@ export default function PlatformDashboard() {
   const [businesses, setBusinesses] = useState<PlatformBusiness[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<PlatformBusiness | null>(null);
 
   const fetchBusinesses = useCallback(async () => {
     try {
