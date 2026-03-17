@@ -107,7 +107,7 @@ export function IssuerTypeSelector({
               <>
                 {selectedType.name}
                 {autoMatched && (
-                  <Badge variant="secondary" className="ml-1 text-xs">
+                  <Badge variant="secondary" className="ml-1 text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
                     <Sparkles className="h-3 w-3 mr-1" />
                     {allowFreeText ? "Auto" : "Auto-matched"}
                   </Badge>

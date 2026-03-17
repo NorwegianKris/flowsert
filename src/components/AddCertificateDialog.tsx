@@ -21,7 +21,7 @@ import {
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { Plus, Award, Upload, X, FileText, Loader2, CheckCircle2, AlertTriangle, Trash2, PenLine, ChevronDown, ChevronRight, Info, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SmartCertificateUpload } from './SmartCertificateUpload';
 import { ExtractionResult } from '@/types/certificateExtraction';
@@ -735,7 +735,7 @@ export function AddCertificateDialog({
                                 Issuing Authority
                                 {renderFieldIndicator(cert.fieldConfidence?.issuingAuthority)}
                                 {cert.issuerAliasAutoMatched && (
-                                  <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                                  <span className="text-xs text-emerald-700 dark:text-emerald-400 ml-1 inline-flex items-center gap-0.5"><Sparkles className="h-3 w-3" /> Auto-matched</span>
                                 )}
                               </Label>
                               <IssuerTypeSelector
@@ -798,7 +798,7 @@ export function AddCertificateDialog({
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 Certificate Type {isAdminOrManager && '*'}
                                 {cert.aliasAutoMatched && (
-                                  <span className="text-xs text-primary ml-1">(Auto-matched)</span>
+                                  <span className="text-xs text-emerald-700 dark:text-emerald-400 ml-1 inline-flex items-center gap-0.5"><Sparkles className="h-3 w-3" /> Auto-matched</span>
                                 )}
                               </Label>
                               <CertificateTypeSelector
