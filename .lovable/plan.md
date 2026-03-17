@@ -1,27 +1,24 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Fix: Make Accordion Expand Indicator Visible
 
-**Status: Implemented**
+### Problem
+The Accordion **is already implemented** in `CertificateCategoriesInner` (lines 311-348 of `CategoriesSection.tsx`). However, the class `[&>svg]:hidden` on line 316 hides the default chevron icon from the AccordionTrigger, making rows look flat and non-interactive. Clicking them does expand — but there's no visual cue.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Fix in `src/components/CategoriesSection.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**Line 316** — Remove `[&>svg]:hidden` from the AccordionTrigger className so the chevron arrow is visible and rotates on open/close:
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+```tsx
+// Before:
+<AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-accent/50 transition-colors [&>svg]:hidden">
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+// After:
+<AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-accent/50 transition-colors">
+```
+
+This single change makes the chevron visible, providing the standard accordion affordance. The expand/collapse functionality is already working.
+
+### Files modified
+- `src/components/CategoriesSection.tsx` — remove `[&>svg]:hidden` from AccordionTrigger (line 316)
+
