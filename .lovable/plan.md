@@ -1,27 +1,46 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Project Invitation Email Fix + Settings CRUD Verification
 
-**Status: Implemented**
+### Prompt 7 — Project Invitation Email
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+**Root cause:** Two issues prevent the email from sending:
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+1. **Missing config.toml entry:** `send-project-invitation` is not listed in `supabase/config.toml`. The gateway enforces JWT verification by default, but the function handles its own auth internally. Without `verify_jwt = false`, the request is rejected at the gateway before reaching the function code.
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+2. **Unstable auth method:** The function uses `supabase.auth.getClaims(token)` (line 52), which is unreliable across `supabase-js` versions (same issue fixed in Prompt 6). Replace with `supabase.auth.getUser(token)`.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `supabase/config.toml` | Add `[functions.send-project-invitation]` with `verify_jwt = false` |
+| `supabase/functions/send-project-invitation/index.ts` | Replace `getClaims` with `getUser` for stable auth |
+
+After code changes, redeploy the edge function.
+
+The client-side code in `useProjectInvitations.ts` is already correct — it passes email, name, and project details, and handles failures gracefully (logs error, doesn't block invitation creation).
+
+### Prompt 8 — Admin Settings CRUD
+
+After reviewing all four manager components:
+
+1. **Certificate Types** (`CertificateTypesManager.tsx` + `useCertificateTypes.ts`): Uses React Query mutations with `queryClient.invalidateQueries`. Add, edit, archive, and restore all follow correct patterns. **No changes needed.**
+
+2. **Issuer Types** (`IssuerTypesManager.tsx` + `useIssuerTypes.ts`): Same React Query pattern as certificate types. **No changes needed.**
+
+3. **Categories** (`CertificateCategoriesManager.tsx`): Edit (rename) via pencil icon uses direct Supabase calls with `fetchCategories()` refresh. The code at lines 143-171 correctly handles rename, duplicate detection, and re-fetches. **No changes needed.**
+
+4. **Departments** (`DepartmentsManager.tsx`): Uses direct Supabase calls with `as any` type assertions (since the table was added after type generation). Add and delete work correctly with `fetchCategories()` refresh. **No changes needed** — the CRUD logic is sound.
+
+**Conclusion for Prompt 8:** All four CRUD operations are implemented correctly with proper error handling, duplicate detection, and immediate UI refresh. No code changes required. The operations should work as-is if the user is authenticated with the admin role.
+
+### Summary
+
+| File | Change |
+|------|--------|
+| `supabase/config.toml` | Add `send-project-invitation` entry |
+| `supabase/functions/send-project-invitation/index.ts` | Replace `getClaims` → `getUser` |
+
+Prompt 8 requires no code changes — all CRUD operations are correctly implemented.
+
