@@ -19,6 +19,7 @@ export function SmartCertificateUpload({
   onFileSelected,
   disabled = false,
   maxFiles = 10,
+  businessId,
 }: SmartCertificateUploadProps) {
   const [fileQueue, setFileQueue] = useState<QueuedFile[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
