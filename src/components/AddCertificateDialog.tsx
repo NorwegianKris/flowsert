@@ -549,6 +549,7 @@ export function AddCertificateDialog({
                 existingIssuers={issuerTypes?.map(t => ({ id: t.id, name: t.name })) || []}
                 onExtractionComplete={handleExtractionComplete}
                 disabled={loadingCategories}
+                businessId={businessId ?? undefined}
               />
               
               {/* Manual Upload Option */}

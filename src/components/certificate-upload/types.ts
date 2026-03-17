@@ -15,4 +15,5 @@ export interface SmartCertificateUploadProps {
   onFileSelected?: (file: File) => void;
   disabled?: boolean;
   maxFiles?: number;
+  businessId?: string;
 }
