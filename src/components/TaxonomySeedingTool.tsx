@@ -279,6 +279,7 @@ export function TaxonomySeedingTool() {
     setFiles([]);
     setSuggestions([]);
     setProcessed(false);
+    setAddingMore(false);
   };
 
   // Stats
