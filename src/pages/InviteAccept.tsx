@@ -58,7 +58,25 @@ export default function InviteAccept() {
       if (!match) {
         setState('wrong_account');
       } else {
-        setState('ready');
+        // Check if user already belongs to a different business
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('business_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profileData?.business_id && profileData.business_id !== invite.business_id) {
+          // Fetch current business name
+          const { data: bizData } = await supabase
+            .from('businesses')
+            .select('name')
+            .eq('id', profileData.business_id)
+            .maybeSingle();
+          setCurrentBusinessName(bizData?.name ?? 'another organization');
+          setState('existing_business');
+        } else {
+          setState('ready');
+        }
       }
     } finally {
       evaluatingRef.current = false;
