@@ -6,47 +6,40 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Redeploy marker: v2026-03-17-diag-A7B
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log("--- delete-platform-business v2026-03-17-diag-A7B ---");
-  const hasSupabaseUrl = !!Deno.env.get("SUPABASE_URL");
-  const hasServiceRoleKey = !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  console.log("Env check:", { hasSupabaseUrl, hasServiceRoleKey });
-
   try {
     const authHeader = req.headers.get("Authorization");
-    console.log("Auth header present:", !!authHeader, "length:", authHeader?.length ?? 0);
-
     if (!authHeader?.startsWith("Bearer ")) {
-      console.log("Rejected: missing or malformed Authorization header");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    console.log("Token length:", token.length);
-
-    const anonClient = createClient(
+    const authClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
-    console.log("getUser result:", {
-      user: user ? { id: user.id, email: user.email } : null,
-      errorMessage: userError?.message,
-      errorStatus: userError?.status,
-    });
-
-    if (userError || !user) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !data?.claims) {
+      console.error("getClaims failed:", claimsError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userEmail = data.claims.email as string;
+    if (userEmail !== "hello@flowsert.com") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
