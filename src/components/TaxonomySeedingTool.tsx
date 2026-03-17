@@ -420,12 +420,20 @@ export function TaxonomySeedingTool() {
           )}
 
           {/* Summary + Approval */}
-          {processed && (
+          {processed && !addingMore && (
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
                 {files.length} files analyzed. {newCount} new type{newCount !== 1 ? 's' : ''} suggested. {matchedCount} already matched.
                 {errorCount > 0 && ` ${errorCount} failed.`}
               </div>
+
+              {pendingSuggestions.length === 0 && newCount === 0 && (
+                <div className="text-sm text-muted-foreground border rounded-lg p-4 text-center space-y-2">
+                  <CheckCircle2 className="h-6 w-6 mx-auto text-emerald-600 dark:text-emerald-400" />
+                  <p className="font-medium text-foreground">All certificates are already recognized in your system.</p>
+                  <p>No new types to add.</p>
+                </div>
+              )}
 
               {pendingSuggestions.length > 0 && (
                 <div className="space-y-3">
