@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import dashboardBg from '@/assets/dashboard-bg-pattern.png';
 import CreateBusinessDialog from '@/components/CreateBusinessDialog';
+import BusinessDetailSheet from '@/components/BusinessDetailSheet';
 
 interface PlatformBusiness {
   id: string;
