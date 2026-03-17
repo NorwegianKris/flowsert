@@ -259,22 +259,18 @@ export default function BusinessDetailSheet({
               </div>
             </div>
 
-            {/* Delete (test only) */}
-            {localIsTest && (
-              <>
-                <Separator />
-                <div className="pt-2">
-                  <Button
-                    variant="destructive"
-                    className="w-full gap-2"
-                    onClick={() => setDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete Business
-                  </Button>
-                </div>
-              </>
-            )}
+            {/* Delete */}
+            <Separator />
+            <div className="pt-2">
+              <Button
+                variant="destructive"
+                className="w-full gap-2"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Business
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
