@@ -276,6 +276,7 @@ export default function Auth() {
           ? redirect
           : null;
       if (safeRedirect) {
+        hasNavigatedRef.current = true;
         navigate(safeRedirect, { replace: true });
       }
       setAuthDialogOpen(false);
