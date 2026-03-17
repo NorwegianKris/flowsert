@@ -1,27 +1,41 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: One-time Platform Admin Bootstrap
 
-**Status: Implemented**
+### Approach
+Create an edge function `setup-platform-admin` that creates the auth user, plus a temporary frontend route `/setup-platform-admin` that calls it. The edge function is idempotent — it checks if the user exists first.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### 1. Secret: PLATFORM_ADMIN_PASSWORD
+Use the `add_secret` tool to request the password from the user. This is a runtime secret available to edge functions.
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+### 2. Edge Function: `supabase/functions/setup-platform-admin/index.ts`
+- Uses service role key to call `supabase.auth.admin.listUsers()` filtered by email
+- If user exists: returns `{ already_exists: true }`
+- If not: calls `supabase.auth.admin.createUser({ email, password, email_confirm: true })`
+- Password read from `Deno.env.get('PLATFORM_ADMIN_PASSWORD')`
+- Standard CORS headers
+- No JWT verification needed (the route itself is gated client-side, and the function is idempotent + harmless after first run)
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+### 3. Config: `supabase/config.toml`
+Add `[functions.setup-platform-admin]` with `verify_jwt = false`
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+### 4. Frontend Route: `src/pages/SetupPlatformAdmin.tsx`
+- On mount: calls the edge function
+- If `already_exists`: shows message + redirects to `/auth` after 2 seconds
+- If created: shows success message + redirect to `/auth`
+- If error: shows error
+- Minimal standalone page, FlowSert branding
+
+### 5. App.tsx
+Add route: `<Route path="/setup-platform-admin" element={<SetupPlatformAdmin />} />`
+
+### Files
+
+| File | Change |
+|------|--------|
+| Secret | Add `PLATFORM_ADMIN_PASSWORD` |
+| `supabase/functions/setup-platform-admin/index.ts` | New edge function |
+| `supabase/config.toml` | Add function config |
+| `src/pages/SetupPlatformAdmin.tsx` | New one-time setup page |
+| `src/App.tsx` | Add `/setup-platform-admin` route |
+
