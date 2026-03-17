@@ -142,14 +142,14 @@ export function ActivateProfileDialog({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={handleDeactivate}
               disabled={loading}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Deactivate
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
