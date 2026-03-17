@@ -220,10 +220,10 @@ export function ActivateProfileDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
           {!capReached && (
-            <AlertDialogAction onClick={handleActivate} disabled={loading}>
+            <Button onClick={handleActivate} disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Activate Profile
-            </AlertDialogAction>
+            </Button>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>
