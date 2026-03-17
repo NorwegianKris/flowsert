@@ -1,36 +1,27 @@
 
 
-## Fix: Show Suggestions While Adding More Files + Clickable "New Type" Badge
+## Rotation Schedule + Back-to-Back Shifts
 
-### Problem 1: Suggestions disappear when adding more files
-The condition on line 424 (`processed && !addingMore`) hides the entire summary + suggestions section when `addingMore` is true. The file list and suggestions should remain visible below the upload zone.
+**Status: Implemented**
 
-### Problem 2: No link between file row and suggestion card
-Files with "New type suggested" badge have no way to navigate to the corresponding suggestion card below.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-### Changes in `src/components/TaxonomySeedingTool.tsx`
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**1. Show suggestions while in addingMore mode**
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-Change line 424 from:
-```tsx
-{processed && !addingMore && (
-```
-to:
-```tsx
-{processed && (
-```
-
-This keeps the summary, suggestion cards, and action buttons visible even when the upload zone is showing via `addingMore`.
-
-**2. Add suggestion refs + scroll-to-highlight on "New type suggested" click**
-
-- Add a `suggestionRefs` ref: `useRef<Record<string, HTMLDivElement | null>>({})` 
-- Add a `highlightedSuggestion` state for briefly highlighting the target card
-- On each suggestion card div (line 451), attach `ref` via `suggestionRefs.current[s.id]`
-- On the "New type suggested" Badge (line 405-409), find the matching suggestion by comparing `extractedName` with `normalizeCertificateTitle`, then `scrollIntoView({ behavior: 'smooth', block: 'nearest' })` and set highlight state with a 1.5s timeout
-- Add a conditional ring/outline class on the suggestion card when highlighted
-
-### Files modified
-- `src/components/TaxonomySeedingTool.tsx`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

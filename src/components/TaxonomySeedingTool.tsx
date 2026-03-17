@@ -48,6 +48,8 @@ export function TaxonomySeedingTool() {
   const [processed, setProcessed] = useState(false);
   const [addingMore, setAddingMore] = useState(false);
   const [open, setOpen] = useState(false);
+  const [highlightedSuggestion, setHighlightedSuggestion] = useState<string | null>(null);
+  const suggestionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const { data: certificateTypes } = useCertificateTypes();
   const { categories } = useCertificateCategories();
@@ -403,7 +405,19 @@ export function TaxonomySeedingTool() {
                       </Badge>
                     )}
                     {f.status === 'new' && (
-                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 shrink-0">
+                      <Badge
+                        className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const norm = normalizeCertificateTitle(f.extractedName || '');
+                          const match = suggestions.find(s => normalizeCertificateTitle(s.extractedName) === norm);
+                          if (match && suggestionRefs.current[match.id]) {
+                            suggestionRefs.current[match.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            setHighlightedSuggestion(match.id);
+                            setTimeout(() => setHighlightedSuggestion(null), 1500);
+                          }
+                        }}
+                      >
                         <AlertTriangle className="h-3 w-3 mr-1" />
                         New type suggested
                       </Badge>
@@ -421,7 +435,7 @@ export function TaxonomySeedingTool() {
           )}
 
           {/* Summary + Approval */}
-          {processed && !addingMore && (
+          {processed && (
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
                 {files.length} files analyzed. {newCount} new type{newCount !== 1 ? 's' : ''} suggested. {matchedCount} already matched.
@@ -448,7 +462,14 @@ export function TaxonomySeedingTool() {
 
                   <div className="border rounded-lg divide-y">
                     {suggestions.map(s => (
-                      <div key={s.id} className="p-3 space-y-2">
+                      <div
+                        key={s.id}
+                        ref={(el) => { suggestionRefs.current[s.id] = el; }}
+                        className={cn(
+                          "p-3 space-y-2 transition-all duration-300",
+                          highlightedSuggestion === s.id && "ring-2 ring-primary bg-primary/5"
+                        )}
+                      >
                         <div className="flex items-center justify-between gap-2">
                           {s.status === 'pending' ? (
                             <div className="flex-1 min-w-0">
