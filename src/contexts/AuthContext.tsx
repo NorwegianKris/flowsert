@@ -227,7 +227,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchUserData]);
 
   // Superadmin is determined by email - only kmu@live.no can be superadmin
-  const isSuperadmin = profile?.email === 'kmu@live.no';
+  const isSuperadmin = profile?.email === 'kmu@live.no' || profile?.email === 'hello@flowsert.com';
+  const isPlatformAdmin = profile?.email === 'hello@flowsert.com';
 
   const value: AuthContextType = {
     user,
