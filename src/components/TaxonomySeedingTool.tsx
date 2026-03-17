@@ -46,6 +46,7 @@ export function TaxonomySeedingTool() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [processing, setProcessing] = useState(false);
   const [processed, setProcessed] = useState(false);
+  const [addingMore, setAddingMore] = useState(false);
   const [open, setOpen] = useState(false);
 
   const { data: certificateTypes } = useCertificateTypes();
@@ -190,6 +191,7 @@ export function TaxonomySeedingTool() {
     setSuggestions(prev => [...prev, ...newSuggestions]);
     setProcessing(false);
     setProcessed(true);
+    setAddingMore(false);
   };
 
   const showApprovalSummaryAndReset = (approvedItems: Array<{name: string; categoryId: string}>) => {
@@ -278,6 +280,7 @@ export function TaxonomySeedingTool() {
     setFiles([]);
     setSuggestions([]);
     setProcessed(false);
+    setAddingMore(false);
   };
 
   // Stats
@@ -313,7 +316,7 @@ export function TaxonomySeedingTool() {
           </div>
 
           {/* Upload zone */}
-          {!processing && !processed && (
+          {(!processing && !processed) || addingMore ? (
             <>
               <input
                 ref={fileInputRef}
@@ -351,8 +354,13 @@ export function TaxonomySeedingTool() {
                   </p>
                 </div>
               </div>
+              {addingMore && (
+                <Button variant="ghost" size="sm" onClick={() => setAddingMore(false)}>
+                  Done Adding
+                </Button>
+              )}
             </>
-          )}
+          ) : null}
 
           {/* File list */}
           {files.length > 0 && (
@@ -413,12 +421,20 @@ export function TaxonomySeedingTool() {
           )}
 
           {/* Summary + Approval */}
-          {processed && (
+          {processed && !addingMore && (
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
                 {files.length} files analyzed. {newCount} new type{newCount !== 1 ? 's' : ''} suggested. {matchedCount} already matched.
                 {errorCount > 0 && ` ${errorCount} failed.`}
               </div>
+
+              {pendingSuggestions.length === 0 && newCount === 0 && (
+                <div className="text-sm text-muted-foreground border rounded-lg p-4 text-center space-y-2">
+                  <CheckCircle2 className="h-6 w-6 mx-auto text-emerald-600 dark:text-emerald-400" />
+                  <p className="font-medium text-foreground">All certificates are already recognized in your system.</p>
+                  <p>No new types to add.</p>
+                </div>
+              )}
 
               {pendingSuggestions.length > 0 && (
                 <div className="space-y-3">
@@ -507,7 +523,7 @@ export function TaxonomySeedingTool() {
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setProcessed(false)}>Upload More Samples</Button>
+                <Button variant="outline" size="sm" onClick={() => setAddingMore(true)}>Upload More Samples</Button>
                 <Button variant="ghost" size="sm" onClick={reset} className="text-destructive">Clear All</Button>
               </div>
             </div>
