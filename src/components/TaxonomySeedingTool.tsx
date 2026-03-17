@@ -40,6 +40,7 @@ interface Suggestion {
 export function TaxonomySeedingTool() {
   const { businessId } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<SampleFile[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
