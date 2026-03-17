@@ -192,6 +192,28 @@ export function TaxonomySeedingTool() {
     setProcessed(true);
   };
 
+  const showApprovalSummaryAndReset = (approvedItems: Array<{name: string; categoryId: string}>) => {
+    const lines = approvedItems.map(item => {
+      const cat = (categories || []).find(c => c.id === item.categoryId);
+      return `• ${item.name}${cat ? ` — ${cat.name}` : ''}`;
+    }).join('\n');
+
+    toast.success(`${approvedItems.length} certificate type${approvedItems.length !== 1 ? 's' : ''} added to your system:\n${lines}`, {
+      duration: 6000,
+    });
+    reset();
+  };
+
+  const checkAllResolved = (updatedSuggestions: Suggestion[]) => {
+    const pending = updatedSuggestions.filter(s => s.status === 'pending');
+    if (pending.length === 0) {
+      const approved = updatedSuggestions.filter(s => s.status === 'approved');
+      if (approved.length > 0) {
+        showApprovalSummaryAndReset(approved.map(s => ({ name: s.extractedName, categoryId: s.categoryId })));
+      }
+    }
+  };
+
   const approveSuggestion = async (suggestion: Suggestion) => {
     try {
       const result = await createType.mutateAsync({
@@ -206,16 +228,24 @@ export function TaxonomySeedingTool() {
         confidence: 100,
       });
 
-      setSuggestions(prev => prev.map(s =>
-        s.id === suggestion.id ? { ...s, status: 'approved' } : s
-      ));
-      toast.success(`"${suggestion.extractedName}" approved and added`);
+      setSuggestions(prev => {
+        const updated = prev.map(s =>
+          s.id === suggestion.id ? { ...s, status: 'approved' as const } : s
+        );
+        // Defer the check so state is committed
+        setTimeout(() => checkAllResolved(updated), 0);
+        return updated;
+      });
     } catch (err: any) {
       if (err.code === '23505') {
         toast.error('This type already exists');
-        setSuggestions(prev => prev.map(s =>
-          s.id === suggestion.id ? { ...s, status: 'approved' } : s
-        ));
+        setSuggestions(prev => {
+          const updated = prev.map(s =>
+            s.id === suggestion.id ? { ...s, status: 'approved' as const } : s
+          );
+          setTimeout(() => checkAllResolved(updated), 0);
+          return updated;
+        });
       } else {
         toast.error('Failed to approve suggestion');
       }
@@ -223,15 +253,24 @@ export function TaxonomySeedingTool() {
   };
 
   const dismissSuggestion = (id: string) => {
-    setSuggestions(prev => prev.map(s =>
-      s.id === id ? { ...s, status: 'dismissed' } : s
-    ));
+    setSuggestions(prev => {
+      const updated = prev.map(s =>
+        s.id === id ? { ...s, status: 'dismissed' as const } : s
+      );
+      setTimeout(() => checkAllResolved(updated), 0);
+      return updated;
+    });
   };
 
   const approveAll = async () => {
     const pending = suggestions.filter(s => s.status === 'pending');
+    const approved: Array<{name: string; categoryId: string}> = [];
     for (const s of pending) {
       await approveSuggestion(s);
+      approved.push({ name: s.extractedName, categoryId: s.categoryId });
+    }
+    if (approved.length > 0) {
+      showApprovalSummaryAndReset(approved);
     }
   };
 
