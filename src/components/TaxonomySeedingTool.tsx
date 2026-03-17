@@ -67,7 +67,6 @@ export function TaxonomySeedingTool() {
     if (toAdd.length > 0) {
       setFiles(prev => [...prev, ...toAdd]);
       setProcessed(false);
-      setSuggestions([]);
     }
   }, [files.length]);
 
