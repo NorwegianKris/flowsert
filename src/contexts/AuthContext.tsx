@@ -28,6 +28,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isWorker: boolean;
   isSuperadmin: boolean;
+  isPlatformAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
