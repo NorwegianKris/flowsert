@@ -5,6 +5,7 @@ import { DocumentCategoriesManager } from '@/components/DocumentCategoriesManage
 import { WorkerCategoriesManager } from '@/components/WorkerCategoriesManager';
 import { WorkerGroupsManager } from '@/components/WorkerGroupsManager';
 import { DepartmentsManager } from '@/components/DepartmentsManager';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { CertificateTypesManager } from '@/components/CertificateTypesManager';
 import { CertificateAliasesManager } from '@/components/CertificateAliasesManager';
 
