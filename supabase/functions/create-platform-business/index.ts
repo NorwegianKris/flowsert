@@ -143,7 +143,6 @@ Deno.serve(async (req) => {
       status: "pending",
       token: inviteToken,
       expires_at: expiresAt,
-      personnel_id: personnel.id,
     });
 
     if (invError) throw invError;
