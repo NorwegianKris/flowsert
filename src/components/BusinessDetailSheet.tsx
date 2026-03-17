@@ -171,7 +171,7 @@ export default function BusinessDetailSheet({
               <div>
                 <SheetTitle className="text-left">{business.name}</SheetTitle>
                 <SheetDescription className="text-left">
-                  {business.is_test ? (
+                  {localIsTest ? (
                     <Badge variant="outline" className="text-muted-foreground mt-1">
                       Test
                     </Badge>
