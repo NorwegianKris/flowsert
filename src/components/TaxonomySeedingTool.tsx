@@ -446,7 +446,7 @@ export function TaxonomySeedingTool() {
                 </div>
               )}
 
-              <Button variant="outline" size="sm" onClick={reset}>Upload More Samples</Button>
+              <Button variant="outline" size="sm" onClick={() => setProcessed(false)}>Upload More Samples</Button>
             </div>
           )}
         </div>
