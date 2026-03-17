@@ -68,12 +68,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!business.is_test) {
-      return new Response(JSON.stringify({ error: "Only test businesses can be deleted" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Get personnel IDs for this business
     const { data: personnelRows } = await adminClient

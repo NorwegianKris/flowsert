@@ -286,7 +286,7 @@ export default function BusinessDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{business.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this test business and all associated data
+              This will permanently delete this business and all associated data
               including personnel, certificates, projects, and invitations. This
               action cannot be undone.
             </AlertDialogDescription>
