@@ -205,6 +205,24 @@ export default function BusinessDetailSheet({
               </Select>
             </div>
 
+            {/* Status Toggle */}
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {localIsTest ? 'Test business' : 'Active business'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Test</span>
+                  <Switch
+                    checked={localIsTest}
+                    onCheckedChange={handleTestToggle}
+                    disabled={updatingTest}
+                  />
+                </div>
+              </div>
+            </div>
+
             <Separator />
 
             {/* Admin Email */}
