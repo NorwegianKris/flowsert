@@ -34,32 +34,33 @@ export default function PlatformDashboard() {
   const { signOut, session } = useAuth();
   const [businesses, setBusinesses] = useState<PlatformBusiness[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const fetchBusinesses = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'list-platform-businesses',
+        {
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+        }
+      );
+      if (error) throw error;
+      setBusinesses(data || []);
+    } catch (err) {
+      console.error('Failed to fetch businesses:', err);
+      toast.error('Failed to load businesses');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.access_token]);
 
   useEffect(() => {
-    async function fetchBusinesses() {
-      try {
-        const { data, error } = await supabase.functions.invoke(
-          'list-platform-businesses',
-          {
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-          }
-        );
-        if (error) throw error;
-        setBusinesses(data || []);
-      } catch (err) {
-        console.error('Failed to fetch businesses:', err);
-        toast.error('Failed to load businesses');
-      } finally {
-        setLoading(false);
-      }
-    }
-
     if (session?.access_token) {
       fetchBusinesses();
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, fetchBusinesses]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-GB', {
