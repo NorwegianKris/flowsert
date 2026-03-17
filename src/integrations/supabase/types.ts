@@ -253,6 +253,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          is_test: boolean
           logo_url: string | null
           name: string
           org_number: string | null
@@ -272,6 +273,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_test?: boolean
           logo_url?: string | null
           name: string
           org_number?: string | null
@@ -291,6 +293,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_test?: boolean
           logo_url?: string | null
           name?: string
           org_number?: string | null
