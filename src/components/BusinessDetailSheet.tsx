@@ -62,9 +62,15 @@ export default function BusinessDetailSheet({
 }: BusinessDetailSheetProps) {
   const { session } = useAuth();
   const [updatingTier, setUpdatingTier] = useState(false);
+  const [updatingTest, setUpdatingTest] = useState(false);
+  const [localIsTest, setLocalIsTest] = useState(business?.is_test ?? false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (business) setLocalIsTest(business.is_test);
+  }, [business]);
 
   if (!business) return null;
 
