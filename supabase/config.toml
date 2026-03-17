@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.delete-platform-business]
 verify_jwt = false
+
+[functions.create-platform-business]
+verify_jwt = false
