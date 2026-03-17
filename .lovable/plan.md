@@ -1,23 +1,27 @@
 
 
-## Brand Auth Emails: "Crew Certify" → "FlowSert"
+## Rotation Schedule + Back-to-Back Shifts
 
-The email domain `notify.flowsert.com` is already verified. I will:
+**Status: Implemented**
 
-1. **Scaffold auth email templates** using the managed tooling — creates `auth-email-hook` edge function and 6 template files (signup, recovery, magic-link, invite, email-change, reauthentication)
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-2. **Apply FlowSert branding** to all templates:
-   - App name: "FlowSert" everywhere
-   - Primary button color: `hsl(243, 75%, 41%)` (the project's purple)
-   - Foreground: `hsl(222, 47%, 11%)`
-   - Muted text: `hsl(215, 20%, 65%)`
-   - Border radius: `0.5rem`
-   - Font: Inter with web-safe fallback
-   - Logo: add FlowSert logo from `public/email-logo.jpg`
-   - White email background per requirements
-   - Professional tone matching the app's existing copy style
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-3. **Deploy** `auth-email-hook` edge function
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-After deployment, all auth emails (confirmation, password reset, magic link, etc.) will automatically send branded FlowSert emails from `notify.flowsert.com` instead of the default "Crew Certify" templates.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

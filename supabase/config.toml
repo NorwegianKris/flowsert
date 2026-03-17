@@ -1,43 +1,33 @@
 project_id = "frgsnallgwkufyzabeje"
 
-[functions.certificate-chat]
-verify_jwt = false
-
-[functions.send-invitation]
-verify_jwt = false
-
-[functions.extract-certificate-data]
-verify_jwt = false
-
-[functions.suggest-project-personnel]
-verify_jwt = false
-
-[functions.delete-user]
-verify_jwt = false
-
-[functions.suggest-certificate-types]
-verify_jwt = false
-
-[functions.suggest-issuer-types]
-verify_jwt = false
-
-[functions.auto-close-projects]
-verify_jwt = false
-
-[functions.setup-platform-admin]
-verify_jwt = false
-
-[functions.list-platform-businesses]
-verify_jwt = false
-
-[functions.update-platform-business]
-verify_jwt = false
-
-[functions.delete-platform-business]
-verify_jwt = false
-
-[functions.create-platform-business]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auto-close-projects]
+    verify_jwt = false
+  [functions.certificate-chat]
+    verify_jwt = false
+  [functions.create-platform-business]
+    verify_jwt = false
+  [functions.delete-platform-business]
+    verify_jwt = false
+  [functions.delete-user]
+    verify_jwt = false
+  [functions.extract-certificate-data]
+    verify_jwt = false
+  [functions.list-platform-businesses]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-invitation]
+    verify_jwt = false
+  [functions.setup-platform-admin]
+    verify_jwt = false
+  [functions.suggest-certificate-types]
+    verify_jwt = false
+  [functions.suggest-issuer-types]
+    verify_jwt = false
+  [functions.suggest-project-personnel]
+    verify_jwt = false
+  [functions.update-platform-business]
+    verify_jwt = false
