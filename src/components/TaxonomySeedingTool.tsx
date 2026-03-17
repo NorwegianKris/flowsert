@@ -462,7 +462,14 @@ export function TaxonomySeedingTool() {
 
                   <div className="border rounded-lg divide-y">
                     {suggestions.map(s => (
-                      <div key={s.id} className="p-3 space-y-2">
+                      <div
+                        key={s.id}
+                        ref={(el) => { suggestionRefs.current[s.id] = el; }}
+                        className={cn(
+                          "p-3 space-y-2 transition-all duration-300",
+                          highlightedSuggestion === s.id && "ring-2 ring-primary bg-primary/5"
+                        )}
+                      >
                         <div className="flex items-center justify-between gap-2">
                           {s.status === 'pending' ? (
                             <div className="flex-1 min-w-0">
