@@ -1,27 +1,48 @@
 
+Goal: instrument `delete-platform-business` so we can see exactly what the deployed function receives, prove whether the latest code is running, and confirm whether the service-role secret is available in that function runtime.
 
-## Rotation Schedule + Back-to-Back Shifts
+What I verified first:
+- `delete-platform-business` already has `verify_jwt = false` in `supabase/config.toml`, so that is not the missing piece.
+- Its auth flow already matches `create-platform-business` in all material steps:
+  - read `Authorization` header
+  - require `Bearer ...`
+  - extract token with `replace("Bearer ", "")`
+  - create client with `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+  - call `auth.getUser(token)`
+  - check `user.email === "hello@flowsert.com"`
+- Current function logs only show boot events, not request-level diagnostics, so we cannot yet tell whether the deployed handler is the newest version or whether env lookup is failing.
 
-**Status: Implemented**
+Implementation plan:
+1. Add request-entry logging at the very top of `delete-platform-business/index.ts`
+   - Log a unique redeploy marker/version string
+   - Log the exact `Authorization` header value received
+   - Log booleans for `hasSupabaseUrl` and `hasServiceRoleKey`
+   - Log header length as an extra sanity check
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+2. Add `getUser()` result logging immediately after the auth call
+   - Log `userError?.message`
+   - Log `userError?.status`
+   - Log whether a user object was returned
+   - Log resolved `user.id` and `user.email` when present
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+3. Force a full redeploy
+   - Make a trivial no-op change/comment plus the unique boot/version log
+   - Redeploy `delete-platform-business`
+   - The new marker in logs will confirm the deployed code actually updated
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+4. Re-test the delete action and inspect logs
+   - If `Authorization` is missing or malformed: client invocation issue
+   - If `hasServiceRoleKey` is `false`: runtime secret/env problem
+   - If `getUser` logs `Session not found`: auth/session validation path is still the failing point
+   - If `user.email` resolves correctly but request still fails later: the problem is in delete logic, not auth
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+Important detail about the secret check:
+- `fetch_secrets` does not currently list `SUPABASE_SERVICE_ROLE_KEY`, but the backend configuration context says it exists as a platform-provided runtime secret.
+- Because of that mismatch, the safest confirmation is to log `Boolean(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))` from inside the function itself rather than relying on the secrets list.
+
+Files involved:
+- `supabase/functions/delete-platform-business/index.ts`
+- `supabase/config.toml` only for verification reference; no config change planned unless logs prove a separate issue
+
+Expected outcome:
+- We will know whether the function is receiving the bearer token, whether the service-role key is available at runtime, whether `getUser()` is failing with `session_not_found` or something else, and whether a stale deployment is the real cause.
