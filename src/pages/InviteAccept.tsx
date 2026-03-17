@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, CheckCircle, AlertTriangle, LogOut, UserPlus, LogIn } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, LogOut, UserPlus, LogIn, ArrowRightLeft } from 'lucide-react';
 
 interface InvitePreview {
   business_id: string;
@@ -14,7 +14,7 @@ interface InvitePreview {
   status: string;
 }
 
-type PageState = 'loading' | 'invalid' | 'not_logged_in' | 'wrong_account' | 'ready' | 'accepting' | 'success' | 'error';
+type PageState = 'loading' | 'invalid' | 'not_logged_in' | 'wrong_account' | 'existing_business' | 'ready' | 'accepting' | 'success' | 'error';
 
 export default function InviteAccept() {
   const [searchParams] = useSearchParams();
@@ -26,6 +26,7 @@ export default function InviteAccept() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasExistingAccount, setHasExistingAccount] = useState<boolean | null>(null);
+  const [currentBusinessName, setCurrentBusinessName] = useState<string | null>(null);
 
   // Guard to prevent the initial useEffect and onAuthStateChange from competing
   const evaluatingRef = useRef(false);
@@ -57,7 +58,25 @@ export default function InviteAccept() {
       if (!match) {
         setState('wrong_account');
       } else {
-        setState('ready');
+        // Check if user already belongs to a different business
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('business_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profileData?.business_id && profileData.business_id !== invite.business_id) {
+          // Fetch current business name
+          const { data: bizData } = await supabase
+            .from('businesses')
+            .select('name')
+            .eq('id', profileData.business_id)
+            .maybeSingle();
+          setCurrentBusinessName(bizData?.name ?? 'another organization');
+          setState('existing_business');
+        } else {
+          setState('ready');
+        }
       }
     } finally {
       evaluatingRef.current = false;
@@ -239,6 +258,39 @@ export default function InviteAccept() {
             <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Log out and continue
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+  if (state === 'existing_business' && preview) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <ArrowRightLeft className="h-12 w-12 text-primary mx-auto mb-2" />
+            <CardTitle>Switch Organization</CardTitle>
+            <CardDescription>
+              You are currently a member of <strong>{currentBusinessName}</strong>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Accepting this invitation will switch you to <strong>{preview.business_name}</strong> as a{' '}
+              <strong>{preview.invited_role}</strong>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You will lose access to <strong>{currentBusinessName}</strong>.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-2">
+            <Button className="w-full" onClick={handleAccept}>
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Accept and Switch
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/admin')}>
+              Cancel
             </Button>
           </CardFooter>
         </Card>
