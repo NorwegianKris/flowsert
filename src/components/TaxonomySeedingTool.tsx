@@ -394,7 +394,20 @@ export function TaxonomySeedingTool() {
                     {suggestions.map(s => (
                       <div key={s.id} className="p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-sm">{s.extractedName}</span>
+                          {s.status === 'pending' ? (
+                            <div className="flex-1 min-w-0">
+                              <Input
+                                value={s.extractedName}
+                                onChange={(e) => setSuggestions(prev => prev.map(x =>
+                                  x.id === s.id ? { ...x, extractedName: e.target.value } : x
+                                ))}
+                                className="h-8 text-sm font-medium"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">AI-suggested name — click to edit</p>
+                            </div>
+                          ) : (
+                            <span className="font-medium text-sm">{s.extractedName}</span>
+                          )}
                           {s.status === 'approved' && (
                             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                               <Check className="h-3 w-3 mr-1" />Approved
