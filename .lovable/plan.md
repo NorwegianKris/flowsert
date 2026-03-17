@@ -1,27 +1,26 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Add is_test Toggle to Business Detail Sheet
 
-**Status: Implemented**
+### 1. Edge Function: `supabase/functions/update-platform-business/index.ts`
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+- Change validation: `business_id` is required, but `tier` and `is_test` are both optional (at least one must be provided)
+- If `tier` is provided, update `entitlements` table as before
+- If `is_test` is provided (boolean), update `businesses` table: `UPDATE businesses SET is_test = ? WHERE id = ?`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+### 2. Component: `src/components/BusinessDetailSheet.tsx`
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+- Import `Switch` from `@/components/ui/switch`
+- Add local state `localIsTest` initialized from `business.is_test` (reset when `business` changes)
+- Add a "Status" section with a Switch toggle between Test/Active, placed after the Plan Tier section
+- On toggle, call `update-platform-business` with `{ business_id, is_test: newValue }`, then call `onUpdated()` to refresh
+- The badge in the header already reads from `business.is_test`, so it updates on refetch
+- The delete button section already conditionally renders on `business.is_test`
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+### Files
+
+| File | Change |
+|------|--------|
+| `supabase/functions/update-platform-business/index.ts` | Accept optional `is_test`, update `businesses` table |
+| `src/components/BusinessDetailSheet.tsx` | Add Switch toggle for is_test status |
+
