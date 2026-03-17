@@ -1,27 +1,21 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Restyle Advanced section to match standard Settings sections
 
-**Status: Implemented**
+### Problem
+The "Advanced — data standardisation tools" collapsible uses a different visual style (dashed border, muted background, smaller font, `Settings2` icon) compared to all other Settings sections which use: `border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20`, `h-5 w-5 text-primary` icon, `font-semibold text-lg` title. There's also an orphaned description paragraph outside the card.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Change
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**File:** `src/pages/AdminDashboard.tsx` (lines 952-998)
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+Replace the outer Advanced collapsible trigger and content wrapper to match the standard pattern:
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+1. **Trigger styling** — change from `border-dashed border-border/50 bg-muted/30 hover:bg-muted/50` to the standard `border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20`
+2. **Icon** — change `Settings2 h-4 w-4 text-muted-foreground` to `Settings2 h-5 w-5 text-primary`
+3. **Title** — change `text-sm font-medium text-muted-foreground` to `font-semibold text-lg` (no muted color)
+4. **Remove** the `<p>` description line on line 961
+5. **Keep** `defaultOpen` unset (collapsed by default) — already correct
+
+No other files affected. The inner Issuing Authorities and Locations collapsibles already use the correct styling.
+
