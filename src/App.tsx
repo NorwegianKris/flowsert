@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PlatformAdminRoute } from "@/components/PlatformAdminRoute";
 import RoleRedirect from "./pages/RoleRedirect";
+import PlatformDashboard from "./pages/PlatformDashboard";
 import Auth from "./pages/Auth";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
@@ -50,6 +52,9 @@ const App = () => (
             <Route path="/subprocessors" element={<Subprocessors />} />
             <Route path="/security" element={<SecurityPage />} />
             <Route path="/trust" element={<Trust />} />
+            
+            {/* Platform admin */}
+            <Route path="/platform" element={<PlatformAdminRoute><PlatformDashboard /></PlatformAdminRoute>} />
             
             {/* Role-based redirect */}
             <Route path="/" element={<RoleRedirect />} />

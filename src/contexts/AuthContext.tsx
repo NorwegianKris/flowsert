@@ -28,6 +28,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isWorker: boolean;
   isSuperadmin: boolean;
+  isPlatformAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -226,7 +227,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchUserData]);
 
   // Superadmin is determined by email - only kmu@live.no can be superadmin
-  const isSuperadmin = profile?.email === 'kmu@live.no';
+  const isSuperadmin = profile?.email === 'kmu@live.no' || profile?.email === 'hello@flowsert.com';
+  const isPlatformAdmin = profile?.email === 'hello@flowsert.com';
 
   const value: AuthContextType = {
     user,
@@ -242,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: role === 'admin',
     isWorker: role === 'worker',
     isSuperadmin,
+    isPlatformAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

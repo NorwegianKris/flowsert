@@ -20,6 +20,12 @@ export default function RoleRedirect() {
       return;
     }
 
+    // Platform admin check — must come before any other role check
+    if (profile?.email === 'hello@flowsert.com') {
+      navigate('/platform', { replace: true });
+      return;
+    }
+
     if (needsConsent(profile)) {
       navigate('/consent', { replace: true });
       return;
