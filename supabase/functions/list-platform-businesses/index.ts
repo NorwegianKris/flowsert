@@ -81,13 +81,21 @@ Deno.serve(async (req) => {
       .in("business_id", businessIds)
       .eq("activated", true);
 
-    // Fetch most recent admin invitation per business
-    const { data: adminInvitations } = await adminClient
-      .from("invitations")
-      .select("business_id, email, role")
+    // Fetch admin user IDs from user_roles
+    const { data: adminRoles } = await adminClient
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+
+    const adminUserIds = (adminRoles || []).map((r: any) => r.user_id);
+
+    // Fetch admin profiles for these businesses, ordered by created_at ASC (first = original owner)
+    const { data: adminProfiles } = await adminClient
+      .from("profiles")
+      .select("id, business_id, email, created_at")
+      .in("id", adminUserIds)
       .in("business_id", businessIds)
-      .eq("role", "admin")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     // Build lookup maps
     const tierMap: Record<string, string> = {};
@@ -103,9 +111,9 @@ Deno.serve(async (req) => {
     }
 
     const adminEmailMap: Record<string, string> = {};
-    for (const inv of adminInvitations || []) {
-      if (inv.business_id && !adminEmailMap[inv.business_id]) {
-        adminEmailMap[inv.business_id] = inv.email;
+    for (const p of adminProfiles || []) {
+      if (p.business_id && !adminEmailMap[p.business_id]) {
+        adminEmailMap[p.business_id] = p.email;
       }
     }
 
