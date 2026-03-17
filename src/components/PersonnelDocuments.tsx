@@ -200,11 +200,27 @@ export function PersonnelDocuments({ personnelId, isProfileActivated = true }: P
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      // First fetch the personnel's business_id to scope categories
+      const { data: personnelData } = await supabase
+        .from('personnel')
+        .select('business_id')
+        .eq('id', personnelId)
+        .maybeSingle();
+
+      const businessId = personnelData?.business_id;
+
+      const categoriesQuery = supabase
+        .from('document_categories')
+        .select('*')
+        .order('name');
+
+      // Scope categories to personnel's business
+      if (businessId) {
+        categoriesQuery.eq('business_id', businessId);
+      }
+
       const [categoriesRes, documentsRes] = await Promise.all([
-        supabase
-          .from('document_categories')
-          .select('*')
-          .order('name'),
+        categoriesQuery,
         supabase
           .from('personnel_documents')
           .select('*')

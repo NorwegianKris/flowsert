@@ -113,6 +113,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         if (!isMountedRef.current) return;
         
+        // Detect session expiry: SIGNED_OUT while user was previously logged in
+        if (event === 'SIGNED_OUT' && fetchedUserIdRef.current) {
+          fetchedUserIdRef.current = null;
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setRole(null);
+          setLoading(false);
+          window.location.replace('/auth');
+          return;
+        }
+        
         // For token refresh events where user hasn't changed, just update
         // the session reference silently without triggering user re-renders
         if (event !== 'SIGNED_OUT' && fetchedUserIdRef.current === session?.user?.id) {
@@ -139,9 +151,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Session guard: periodically verify the session is still valid
+    const sessionGuardInterval = setInterval(async () => {
+      if (!isMountedRef.current || !fetchedUserIdRef.current) return;
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!currentSession && fetchedUserIdRef.current) {
+          console.warn('Session expired, redirecting to login');
+          fetchedUserIdRef.current = null;
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setRole(null);
+          setLoading(false);
+          window.location.replace('/auth');
+        }
+      } catch (err) {
+        console.error('Session guard check failed:', err);
+      }
+    }, 60_000);
+
     return () => {
       isMountedRef.current = false;
       subscription.unsubscribe();
+      clearInterval(sessionGuardInterval);
     };
   }, [fetchUserData]);
 
