@@ -1,19 +1,27 @@
 
 
-## Plan: Fix auth in platform edge functions — use SERVICE_ROLE_KEY for getUser
+## Rotation Schedule + Back-to-Back Shifts
 
-### Problem
-All four platform edge functions use `SUPABASE_ANON_KEY` for the client that calls `auth.getUser(token)`. When the server-side session expires, `getUser` via the anon client fails with 401 even though the JWT is still valid. This is the root cause of the persistent 401 errors on `delete-platform-business` and `update-platform-business`.
+**Status: Implemented**
 
-### Fix
-Change `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` in the auth verification client for all four functions. The service role client can resolve user identity from a JWT regardless of session state.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-| File | Line | Change |
-|------|------|--------|
-| `supabase/functions/delete-platform-business/index.ts` | 26 | `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` |
-| `supabase/functions/update-platform-business/index.ts` | 36 | `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` |
-| `supabase/functions/list-platform-businesses/index.ts` | 26 | `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` |
-| `supabase/functions/create-platform-business/index.ts` | 51 | `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` |
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-Each is a single-line change. The email check (`hello@flowsert.com`) remains the authorization gate. The service role key is only used server-side within edge functions — never exposed to the client.
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
