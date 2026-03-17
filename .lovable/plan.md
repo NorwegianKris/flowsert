@@ -1,27 +1,34 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Make AI-suggested Badge Clickable to Focus Input
 
-**Status: Implemented**
+The badge and text are already correct (emerald green Badge with Sparkles icon saying "AI-suggested type"). The only missing piece is click-to-focus behavior.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Change in `src/components/TaxonomySeedingTool.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**Lines 398-409** — Add a ref per suggestion input and an `onClick` on the Badge to focus it. Since suggestions are dynamic, use a ref map:
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+1. Add a `useRef` for input refs: `const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})` near line 42.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+2. At line 399, add a `ref` callback to the `<Input>`:
+```tsx
+<Input
+  ref={(el) => { inputRefs.current[s.id] = el; }}
+  value={s.extractedName}
+  ...
+/>
+```
+
+3. At line 406, add `cursor-pointer` and `onClick` to the Badge:
+```tsx
+<Badge
+  className="mt-1 flex items-center gap-1 w-fit cursor-pointer bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+  onClick={() => inputRefs.current[s.id]?.focus()}
+>
+  <Sparkles className="h-3 w-3" />
+  AI-suggested type
+</Badge>
+```
+
+### Files modified
+- `src/components/TaxonomySeedingTool.tsx` — add ref map + clickable badge
