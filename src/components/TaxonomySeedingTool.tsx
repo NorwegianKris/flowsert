@@ -405,7 +405,19 @@ export function TaxonomySeedingTool() {
                       </Badge>
                     )}
                     {f.status === 'new' && (
-                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 shrink-0">
+                      <Badge
+                        className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 shrink-0 cursor-pointer hover:ring-2 hover:ring-amber-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const norm = normalizeCertificateTitle(f.extractedName || '');
+                          const match = suggestions.find(s => normalizeCertificateTitle(s.extractedName) === norm);
+                          if (match && suggestionRefs.current[match.id]) {
+                            suggestionRefs.current[match.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            setHighlightedSuggestion(match.id);
+                            setTimeout(() => setHighlightedSuggestion(null), 1500);
+                          }
+                        }}
+                      >
                         <AlertTriangle className="h-3 w-3 mr-1" />
                         New type suggested
                       </Badge>
