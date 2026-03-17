@@ -48,6 +48,8 @@ export function TaxonomySeedingTool() {
   const [processed, setProcessed] = useState(false);
   const [addingMore, setAddingMore] = useState(false);
   const [open, setOpen] = useState(false);
+  const [highlightedSuggestion, setHighlightedSuggestion] = useState<string | null>(null);
+  const suggestionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const { data: certificateTypes } = useCertificateTypes();
   const { categories } = useCertificateCategories();
