@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
