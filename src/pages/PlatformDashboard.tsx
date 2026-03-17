@@ -14,10 +14,11 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Building2, LogOut, Plus, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import dashboardBg from '@/assets/dashboard-bg-pattern.png';
+import CreateBusinessDialog from '@/components/CreateBusinessDialog';
 
 interface PlatformBusiness {
   id: string;
