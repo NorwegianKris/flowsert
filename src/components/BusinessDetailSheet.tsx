@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { Building2, Loader2, Mail, Users, Calendar, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,9 +62,15 @@ export default function BusinessDetailSheet({
 }: BusinessDetailSheetProps) {
   const { session } = useAuth();
   const [updatingTier, setUpdatingTier] = useState(false);
+  const [updatingTest, setUpdatingTest] = useState(false);
+  const [localIsTest, setLocalIsTest] = useState(business?.is_test ?? false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (business) setLocalIsTest(business.is_test);
+  }, [business]);
 
   if (!business) return null;
 
@@ -93,6 +100,30 @@ export default function BusinessDetailSheet({
       toast.error(err.message || 'Failed to update plan');
     } finally {
       setUpdatingTier(false);
+    }
+  };
+
+  const handleTestToggle = async (checked: boolean) => {
+    setLocalIsTest(checked);
+    setUpdatingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'update-platform-business',
+        {
+          body: { business_id: business.id, is_test: checked },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        }
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(checked ? 'Marked as test' : 'Marked as active');
+      onUpdated();
+    } catch (err: any) {
+      setLocalIsTest(!checked);
+      console.error('Failed to update test status:', err);
+      toast.error(err.message || 'Failed to update status');
+    } finally {
+      setUpdatingTest(false);
     }
   };
 
@@ -140,7 +171,7 @@ export default function BusinessDetailSheet({
               <div>
                 <SheetTitle className="text-left">{business.name}</SheetTitle>
                 <SheetDescription className="text-left">
-                  {business.is_test ? (
+                  {localIsTest ? (
                     <Badge variant="outline" className="text-muted-foreground mt-1">
                       Test
                     </Badge>
@@ -172,6 +203,24 @@ export default function BusinessDetailSheet({
                   <SelectItem value="professional">Professional</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Status Toggle */}
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {localIsTest ? 'Test business' : 'Active business'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Test</span>
+                  <Switch
+                    checked={localIsTest}
+                    onCheckedChange={handleTestToggle}
+                    disabled={updatingTest}
+                  />
+                </div>
+              </div>
             </div>
 
             <Separator />
@@ -210,7 +259,7 @@ export default function BusinessDetailSheet({
             </div>
 
             {/* Delete (test only) */}
-            {business.is_test && (
+            {localIsTest && (
               <>
                 <Separator />
                 <div className="pt-2">

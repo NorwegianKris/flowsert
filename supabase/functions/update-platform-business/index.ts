@@ -51,15 +51,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { business_id, tier } = await req.json();
-    if (!business_id || !tier) {
-      return new Response(JSON.stringify({ error: "business_id and tier required" }), {
+    const { business_id, tier, is_test } = await req.json();
+    if (!business_id) {
+      return new Response(JSON.stringify({ error: "business_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!["starter", "growth", "professional"].includes(tier)) {
+    if (tier === undefined && is_test === undefined) {
+      return new Response(JSON.stringify({ error: "At least one of tier or is_test required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (tier !== undefined && !["starter", "growth", "professional"].includes(tier)) {
       return new Response(JSON.stringify({ error: "Invalid tier" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -71,12 +78,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error: updateError } = await adminClient
-      .from("entitlements")
-      .update({ tier, profile_cap: getTierProfileCap(tier) })
-      .eq("business_id", business_id);
+    if (tier !== undefined) {
+      const { error: updateError } = await adminClient
+        .from("entitlements")
+        .update({ tier, profile_cap: getTierProfileCap(tier) })
+        .eq("business_id", business_id);
+      if (updateError) throw updateError;
+    }
 
-    if (updateError) throw updateError;
+    if (typeof is_test === "boolean") {
+      const { error: bizError } = await adminClient
+        .from("businesses")
+        .update({ is_test })
+        .eq("id", business_id);
+      if (bizError) throw bizError;
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
