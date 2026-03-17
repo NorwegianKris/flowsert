@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import dashboardBg from '@/assets/dashboard-bg-pattern.png';
 import CreateBusinessDialog from '@/components/CreateBusinessDialog';
+import BusinessDetailSheet from '@/components/BusinessDetailSheet';
 
 interface PlatformBusiness {
   id: string;
@@ -28,6 +29,7 @@ interface PlatformBusiness {
   is_test: boolean;
   tier: string;
   active_personnel_count: number;
+  admin_email: string | null;
 }
 
 export default function PlatformDashboard() {
@@ -35,6 +37,7 @@ export default function PlatformDashboard() {
   const [businesses, setBusinesses] = useState<PlatformBusiness[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<PlatformBusiness | null>(null);
 
   const fetchBusinesses = useCallback(async () => {
     try {
@@ -151,7 +154,7 @@ export default function PlatformDashboard() {
                 </TableHeader>
                 <TableBody>
                   {businesses.map((biz) => (
-                    <TableRow key={biz.id}>
+                    <TableRow key={biz.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedBusiness(biz)}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
@@ -197,6 +200,21 @@ export default function PlatformDashboard() {
             )}
           </CardContent>
         </Card>
+
+        <BusinessDetailSheet
+          business={selectedBusiness}
+          open={!!selectedBusiness}
+          onClose={() => setSelectedBusiness(null)}
+          onUpdated={() => {
+            fetchBusinesses();
+            // Update local state to reflect changes immediately
+            setSelectedBusiness(null);
+          }}
+          onDeleted={() => {
+            setSelectedBusiness(null);
+            fetchBusinesses();
+          }}
+        />
       </main>
     </div>
   );
