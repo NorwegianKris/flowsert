@@ -353,8 +353,13 @@ export function TaxonomySeedingTool() {
                   </p>
                 </div>
               </div>
+              {addingMore && (
+                <Button variant="ghost" size="sm" onClick={() => setAddingMore(false)}>
+                  Done Adding
+                </Button>
+              )}
             </>
-          )}
+          ) : null}
 
           {/* File list */}
           {files.length > 0 && (
