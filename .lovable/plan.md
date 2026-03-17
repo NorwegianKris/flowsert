@@ -1,27 +1,21 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Add Existing Business Confirmation State to InviteAccept
 
-**Status: Implemented**
+The `existing_business` confirmation state was **not** added. Currently, `evaluateSession` goes directly to `'ready'` when the email matches, without checking if the user already belongs to another business. This means accepting silently overwrites their `business_id`.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Fix: `src/pages/InviteAccept.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+1. Add `'existing_business'` to the `PageState` union type
+2. Add state variable `currentBusinessName` to store the user's current business name
+3. In `evaluateSession`, after confirming email match, query `profiles` for the user's current `business_id`. If it exists and differs from `invite.business_id`, fetch the business name from `businesses` table and set state to `'existing_business'`
+4. Add a new render block for `state === 'existing_business'` showing:
+   - "You are currently a member of **[Current Business]**"
+   - "Accepting this invitation will switch you to **[New Business]** as **[role]**"
+   - An "Accept and Switch" button that calls `handleAccept`
+   - A "Cancel" button/link
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+| File | Change |
+|------|--------|
+| `src/pages/InviteAccept.tsx` | Add `existing_business` state, profile/business lookup in `evaluateSession`, confirmation UI |
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
