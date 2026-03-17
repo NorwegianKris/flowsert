@@ -259,7 +259,7 @@ export default function BusinessDetailSheet({
             </div>
 
             {/* Delete (test only) */}
-            {business.is_test && (
+            {localIsTest && (
               <>
                 <Separator />
                 <div className="pt-2">
