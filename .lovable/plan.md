@@ -1,25 +1,27 @@
 
 
-## Plan: Add Enterprise Tier Option
+## Rotation Schedule + Back-to-Back Shifts
 
-Three files need the "enterprise" tier added:
+**Status: Implemented**
 
-### 1. `src/components/CreateBusinessDialog.tsx`
-Add `<SelectItem value="enterprise">Enterprise</SelectItem>` after the Professional option in the Plan Tier dropdown.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-### 2. `supabase/functions/create-platform-business/index.ts`
-Add `case "enterprise": return 2147483647;` to the `getTierProfileCap` switch (matching the database function `get_tier_profile_limit`).
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### 3. `supabase/functions/update-platform-business/index.ts`
-Add `case "enterprise": return 2147483647;` to its `getTierProfileCap` switch.
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-### 4. `src/components/BusinessDetailSheet.tsx`
-Add `<SelectItem value="enterprise">Enterprise</SelectItem>` after the Professional option (line 203).
-
-| File | Change |
-|------|--------|
-| `src/components/CreateBusinessDialog.tsx` | Add Enterprise SelectItem |
-| `src/components/BusinessDetailSheet.tsx` | Add Enterprise SelectItem |
-| `supabase/functions/create-platform-business/index.ts` | Add enterprise case to getTierProfileCap |
-| `supabase/functions/update-platform-business/index.ts` | Add enterprise case to getTierProfileCap |
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

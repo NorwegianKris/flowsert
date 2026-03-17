@@ -22,6 +22,8 @@ function getTierProfileCap(tier: string): number {
       return 75;
     case "professional":
       return 200;
+    case "enterprise":
+      return 2147483647;
     default:
       return 25;
   }
@@ -141,7 +143,6 @@ Deno.serve(async (req) => {
       status: "pending",
       token: inviteToken,
       expires_at: expiresAt,
-      personnel_id: personnel.id,
     });
 
     if (invError) throw invError;

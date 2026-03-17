@@ -11,6 +11,7 @@ function getTierProfileCap(tier: string): number {
     case "starter": return 25;
     case "growth": return 75;
     case "professional": return 200;
+    case "enterprise": return 2147483647;
     default: return 25;
   }
 }
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (tier !== undefined && !["starter", "growth", "professional"].includes(tier)) {
+    if (tier !== undefined && !["starter", "growth", "professional", "enterprise"].includes(tier)) {
       return new Response(JSON.stringify({ error: "Invalid tier" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
