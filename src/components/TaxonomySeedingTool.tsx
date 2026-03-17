@@ -186,7 +186,7 @@ export function TaxonomySeedingTool() {
       }
     }
 
-    setSuggestions(newSuggestions);
+    setSuggestions(prev => [...prev, ...newSuggestions]);
     setProcessing(false);
     setProcessed(true);
   };
