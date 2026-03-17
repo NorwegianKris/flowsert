@@ -459,7 +459,10 @@ export function TaxonomySeedingTool() {
                 </div>
               )}
 
-              <Button variant="outline" size="sm" onClick={() => setProcessed(false)}>Upload More Samples</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setProcessed(false)}>Upload More Samples</Button>
+                <Button variant="ghost" size="sm" onClick={reset} className="text-destructive">Clear All</Button>
+              </div>
             </div>
           )}
         </div>
