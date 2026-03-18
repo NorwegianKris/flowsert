@@ -23,7 +23,8 @@ import { IssuerTypesManager } from '@/components/IssuerTypesManager';
 import { RegistrationLinkCard } from '@/components/RegistrationLinkCard';
 import { AdminOverview } from '@/components/AdminOverview';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { MapPin, ShieldCheck, Award, Link2, FileText, MessageSquare, RefreshCw, CreditCard, Settings2 } from 'lucide-react';
+import { MapPin, ShieldCheck, Award, Link2, FileText, MessageSquare, RefreshCw, CreditCard, Settings2, Brain } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
 import { FeedbackList } from '@/components/FeedbackList';
