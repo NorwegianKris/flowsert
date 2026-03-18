@@ -228,7 +228,7 @@ Always apply this rule consistently — never alternate between environment-base
 ` : ""}
 ${existingIssuers && existingIssuers.length > 0 ? `
 Known issuing authorities in this system: ${existingIssuers.join(", ")}
-If the issuing authority matches one of these exactly or closely, include that name in matchedIssuer.
+If the issuing authority visible on the document matches one of these by exact name or minor spelling variation only (e.g. abbreviation, capitalisation, or a missing/extra word), include that exact name from the list in matchedIssuer. Do NOT match based on semantic similarity, organisational relationship, or because two bodies operate in the same industry or country. If the match is not near-exact, return null for matchedIssuer.
 ` : ""}`;
 
     const userPrompt = `Analyze this certificate image and extract all visible information.
