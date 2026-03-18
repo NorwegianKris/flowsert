@@ -438,10 +438,10 @@ Return the extracted data using the extract_certificate_data function.`;
         'services', 'solutions', 'group', 'AS', 'Ltd', 'LLC',
         'training', 'school', 'directorate', 'council', 'association'
       ];
-      const place = extractedData.placeOfIssue.toLowerCase();
-      const looksLikeOrg = orgIndicators.some(indicator =>
-        place.includes(indicator.toLowerCase())
-      );
+      const looksLikeOrg = orgIndicators.some(indicator => {
+        const pattern = new RegExp(`\\b${indicator}\\b`, 'i');
+        return pattern.test(extractedData.placeOfIssue!);
+      });
       if (looksLikeOrg) {
         // Move to issuingAuthority if that field is empty, then clear placeOfIssue
         if (!extractedData.issuingAuthority) {
