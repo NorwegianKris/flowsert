@@ -119,6 +119,8 @@ export function SmartCertificateUpload({
       },
     });
 
+    console.log('[SmartUpload] Edge function raw response:', JSON.stringify({ data, error }));
+
     if (error) {
       // Check for monthly cap reached (edge function returns 429 with error field)
       if (data?.error === 'monthly_cap_reached') {
