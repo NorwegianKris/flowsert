@@ -202,6 +202,7 @@ IMPORTANT RULES:
 4. certificateName MUST be the verbatim title copied character-for-character from the document in its original language. NEVER translate, NEVER paraphrase, NEVER convert to English. If the document says "Helseerklæring /udyktighetserklæring for arbeidsdykking", that exact string must be returned as certificateName.
 5. PLACE OF ISSUE: Look for an explicit field first. If none exists, infer from the following in priority order: (a) the issuing organization's registered address city/country, (b) the training centre or clinic address visible on the document, (c) any city or country mentioned in connection with the issuing body. Return the city name if available, otherwise the country. If truly nothing can be inferred, return null. Never return the certificate holder's address as place of issue.
 5b. HALLUCINATION PREVENTION — PLACE OF ISSUE: If you cannot find place of issue directly on the document AND cannot confidently infer it from an address or location visually present on the document, you MUST return null. Do NOT guess, do NOT infer from the issuing organization's known real-world location from your training data, and do NOT fabricate a location. Only return a value you can visually confirm or directly infer from text present in this specific document image.
+5c. PLACE OF ISSUE vs ISSUING AUTHORITY — DO NOT CONFUSE THESE: Place of issue is a geographic location (city or country) only — never an organization name. Issuing authority is an organization name only — never a city or country. If you find an organization name (e.g. "NYD Subsea Training Centre", "Havtil", "DNV"), do NOT put it in placeOfIssue — put it in issuingAuthority. If you find a city or country (e.g. "Oslo", "Norway", "Haugesund"), do NOT put it in issuingAuthority — put it in placeOfIssue. When a stamp or block contains both an organization name and an address, extract the organization to issuingAuthority and the city/country to placeOfIssue separately.
 6. ISSUING AUTHORITY: The organization — never a person — that has authority over this certificate. Search ALL of these locations in priority order:
    (a) Explicit fields labeled "issued by", "issuing authority", "issued on behalf of", "godkjent av", "utstedt av", "approved by", "authorized by"
    (b) The document header organization or logo text (e.g. "Helsedirektoratet", "Arbeidstilsynet", "DNV", "Havtil")
@@ -285,7 +286,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   placeOfIssue: {
                     type: "string",
-                    description: "Explicit place of issue if labeled, otherwise inferred from the issuing organization's address, training centre location, or clinic address — city preferred, country as fallback. Never use the certificate holder's address. Null only if nothing can be inferred.",
+                    description: "Geographic location (city or country) where the certificate was issued. Must be a place name only — never an organization, training centre, or issuing body name. Infer from org address or clinic address if not explicitly labeled. Return null if no geographic location can be identified. Examples: 'Haugesund, Norway', 'Oslo', 'Norway', 'Aberdeen, UK'.",
                     nullable: true,
                   },
                   issuingAuthority: {
