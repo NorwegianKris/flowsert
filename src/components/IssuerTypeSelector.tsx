@@ -199,7 +199,7 @@ export function IssuerTypeSelector({
           <div className="flex-1">
             {renderDropdown()}
           </div>
-          <div className="flex items-center justify-center sm:pt-2">
+          <div className="flex items-center justify-center">
             <span className="text-xs text-muted-foreground whitespace-nowrap px-1">or type if not found</span>
           </div>
           <div className="flex-1">
