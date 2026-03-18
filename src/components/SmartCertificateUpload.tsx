@@ -174,7 +174,12 @@ export function SmartCertificateUpload({
               })
               .select('id')
               .single();
-            if (!error) matchedIssuerId = newIssuer?.id || null;
+            if (!error) {
+              matchedIssuerId = newIssuer?.id || null;
+            } else {
+              console.warn('Auto-create issuer failed:', error.message);
+              matchedIssuerId = null;
+            }
           } catch {
             matchedIssuerId = null;
           }
