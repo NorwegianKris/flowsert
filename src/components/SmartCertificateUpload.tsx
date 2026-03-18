@@ -189,7 +189,7 @@ export function SmartCertificateUpload({
       }
     }
 
-    return {
+    const finalResult = {
       ...data,
       extractedData: {
         ...data.extractedData,
@@ -197,6 +197,8 @@ export function SmartCertificateUpload({
         matchedIssuerId,
       },
     };
+    console.log('[SmartUpload] Final extraction result:', JSON.stringify(finalResult));
+    return finalResult;
   }, [existingCategories, existingIssuers, businessId]);
 
   // Process the queue sequentially

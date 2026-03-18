@@ -183,6 +183,7 @@ export function AddCertificateDialog({
 
   // Handle OCR extraction result - creates a new certificate entry
   const handleExtractionComplete = (result: ExtractionResult, file: File) => {
+    console.log('[AddCertDialog] handleExtractionComplete called:', JSON.stringify({ status: result.status, confidence: result.confidence, fieldsExtracted: result.fieldsExtracted, extractedData: result.extractedData }));
     const { extractedData } = result;
 
     console.log('FRONTEND_OCR:', JSON.stringify({
