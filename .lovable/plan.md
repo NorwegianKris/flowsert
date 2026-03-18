@@ -1,49 +1,27 @@
 
 
-## Plan: Add Fuzzy Dedup Before Auto-Creating Issuers
+## Rotation Schedule + Back-to-Back Shifts
 
-**Single file change**: `src/components/SmartCertificateUpload.tsx`, lines 149–156.
+**Status: Implemented**
 
-Replace the current matched issuer block with:
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-1. Keep the exact case-insensitive match as the first check
-2. If no exact match, run a fuzzy dedup check (strip non-alphanumeric, compare with includes)
-3. If fuzzy match found, use that issuer's ID
-4. If no fuzzy match and `businessId` is present, auto-create via `issuer_types` insert
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-```typescript
-// Find matched issuer ID if there's a match
-let matchedIssuerId: string | null = null;
-if (data.extractedData?.matchedIssuer && existingIssuers) {
-  const matched = existingIssuers.find(
-    i => i.name.toLowerCase() === data.extractedData.matchedIssuer.toLowerCase()
-  );
-  if (matched) {
-    matchedIssuerId = matched.id;
-  } else if (businessId && data.extractedData.issuingAuthority) {
-    // Fuzzy dedup — prevent near-duplicate issuers
-    const fuzzyMatch = existingIssuers.find(i => {
-      const a = i.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const b = data.extractedData.issuingAuthority.toLowerCase().replace(/[^a-z0-9]/g, '');
-      return a === b || a.includes(b) || b.includes(a);
-    });
-    if (fuzzyMatch) {
-      matchedIssuerId = fuzzyMatch.id;
-    } else {
-      // genuinely new — auto-create
-      const { data: newIssuer } = await supabase
-        .from('issuer_types')
-        .insert({
-          name: data.extractedData.issuingAuthority,
-          business_id: businessId,
-        })
-        .select('id')
-        .single();
-      matchedIssuerId = newIssuer?.id || null;
-    }
-  }
-}
-```
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-No other changes.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
