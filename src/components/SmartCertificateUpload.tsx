@@ -168,7 +168,7 @@ export function SmartCertificateUpload({
         } else {
           // genuinely new — auto-create (silent failure)
           try {
-            const { data: newIssuer, error } = await supabase
+            const { data: newIssuer, error: issuerError } = await supabase
               .from('issuer_types')
               .insert({
                 name: data.extractedData.issuingAuthority,
@@ -176,10 +176,10 @@ export function SmartCertificateUpload({
               })
               .select('id')
               .single();
-            if (!error) {
+            if (!issuerError) {
               matchedIssuerId = newIssuer?.id || null;
             } else {
-              console.warn('Auto-create issuer failed:', error.message);
+              console.warn('Auto-create issuer failed:', issuerError.message);
               matchedIssuerId = null;
             }
           } catch {
