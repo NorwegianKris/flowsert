@@ -1,27 +1,21 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Render All PDF Pages into a Single Stitched Image
 
-**Status: Implemented**
+**Single file change**: `src/lib/pdfUtils.ts`, replace `pdfToImage()` (lines 7–36).
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Approach
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+1. Load all pages via `pdf.numPages`
+2. Compute a uniform scale based on the widest page (keeping width ≤ 1568px)
+3. Render each page to its own temporary canvas
+4. Create a combined canvas: width = max page width, height = sum of all page heights
+5. Draw each page canvas onto the combined canvas sequentially (stacking vertically)
+6. Export as single JPEG at 0.85 quality
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+The scale calculation changes from "longest side of page 1" to "widest page across all pages", ensuring consistent width. The combined image's height will naturally be tall for multi-page docs — this is fine since Gemini handles tall images well.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+Also update the JSDoc comment (line 8) and the `fileToBase64Image` comment (line 84) to reflect "all pages" instead of "first page".
+
+No edge function changes — it still receives one `imageBase64` string.
+
