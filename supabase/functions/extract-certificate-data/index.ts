@@ -429,6 +429,28 @@ Return the extracted data using the extract_certificate_data function.`;
       extractedData.expiryDate = null;
       issues.push("Expiry date appears before issue date — cleared");
     }
+
+    // Guard: placeOfIssue must be a geographic location, not an organization name
+    // If it contains known org indicators, clear it
+    if (extractedData.placeOfIssue) {
+      const orgIndicators = [
+        'centre', 'center', 'authority', 'institute', 'academy',
+        'services', 'solutions', 'group', 'AS', 'Ltd', 'LLC',
+        'training', 'school', 'directorate', 'council', 'association'
+      ];
+      const place = extractedData.placeOfIssue.toLowerCase();
+      const looksLikeOrg = orgIndicators.some(indicator =>
+        place.includes(indicator.toLowerCase())
+      );
+      if (looksLikeOrg) {
+        // Move to issuingAuthority if that field is empty, then clear placeOfIssue
+        if (!extractedData.issuingAuthority) {
+          extractedData.issuingAuthority = extractedData.placeOfIssue;
+        }
+        extractedData.placeOfIssue = null;
+      }
+    }
+
     let confidence = extractedRaw.confidence || 0;
     
     // Adjust based on image quality
