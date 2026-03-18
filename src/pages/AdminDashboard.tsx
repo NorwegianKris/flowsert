@@ -144,6 +144,23 @@ export default function AdminDashboard() {
   const { isAvailable } = usePersonnelAvailability(availabilityDateRange?.from, availabilityDateRange?.to);
   const { business, refetch: refetchBusiness } = useBusinessInfo();
   const { signOut, profile, user } = useAuth();
+
+  // Fetch AI usage data
+  useEffect(() => {
+    if (!profile?.business_id) return;
+    const fetchUsage = async () => {
+      const results: Record<string, { used: number; cap: number }> = {};
+      for (const metric of ['ocr', 'chat']) {
+        const { data } = await supabase.rpc('check_ai_allowance', {
+          p_business_id: profile.business_id!,
+          p_event_type: metric,
+        });
+        if (data) results[metric] = { used: (data as any).used ?? 0, cap: (data as any).cap ?? 0 };
+      }
+      setAiUsage(results);
+    };
+    fetchUsage();
+  }, [profile?.business_id]);
   
   const { categories: certCategories } = useCertificateCategories();
   const { data: workerGroups = [] } = useWorkerGroups();
