@@ -195,7 +195,7 @@ export function IssuerTypeSelector({
   if (allowFreeText) {
     return (
       <div className="space-y-2">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+        <div className="flex flex-col items-stretch gap-2">
           <div className="flex-1">
             {renderDropdown()}
           </div>
