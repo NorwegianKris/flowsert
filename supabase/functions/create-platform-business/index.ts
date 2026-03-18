@@ -29,6 +29,19 @@ function getTierProfileCap(tier: string): number {
   }
 }
 
+function getTierAICaps(tier: string): { ocr: number; chat: number; search: number } {
+  switch (tier) {
+    case "growth":
+      return { ocr: 200, chat: 999999, search: 999999 };
+    case "professional":
+      return { ocr: 500, chat: 999999, search: 999999 };
+    case "enterprise":
+      return { ocr: 999999, chat: 999999, search: 999999 };
+    default:
+      return { ocr: 50, chat: 200, search: 50 };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -103,6 +116,7 @@ Deno.serve(async (req) => {
     const businessId = business.id;
 
     // 2. Insert entitlements
+    const aiCaps = getTierAICaps(tier);
     const { error: entError } = await adminClient
       .from("entitlements")
       .insert({
@@ -110,6 +124,9 @@ Deno.serve(async (req) => {
         tier,
         profile_cap: getTierProfileCap(tier),
         is_active: true,
+        monthly_ocr_cap: aiCaps.ocr,
+        monthly_chat_cap: aiCaps.chat,
+        monthly_search_cap: aiCaps.search,
       });
 
     if (entError) throw entError;

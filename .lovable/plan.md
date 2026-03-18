@@ -1,58 +1,27 @@
 
 
-## Plan: Fix Entitlements + OCR Allowance UX
+## Rotation Schedule + Back-to-Back Shifts
 
-### 1. Insert entitlements row for KMU Invest immediately
+**Status: Implemented**
 
-Use the data insert tool to add Professional tier entitlements for business `c9e4b56d-bcca-4852-930f-7927498694c7`:
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-```sql
-INSERT INTO public.entitlements (business_id, tier, is_active, profile_cap, is_unlimited, monthly_ocr_cap, monthly_chat_cap, monthly_search_cap)
-VALUES ('c9e4b56d-bcca-4852-930f-7927498694c7', 'professional', true, 200, false, 500, 999999, 999999);
-```
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### 2. Fix `create-platform-business` edge function to include AI caps
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-The edge function already inserts an entitlements row (line 106-113), but it's missing the `monthly_ocr_cap`, `monthly_chat_cap`, and `monthly_search_cap` columns — so they fall back to the column defaults (50, 100, 200) regardless of tier.
-
-**File: `supabase/functions/create-platform-business/index.ts`**
-
-- Add a helper function mapping tier to AI caps (matching the values in `stripe-webhook/index.ts` TIER_MAP)
-- Include `monthly_ocr_cap`, `monthly_chat_cap`, `monthly_search_cap` in the entitlements insert
-
-### 3. Add database trigger for safety net
-
-Create a trigger on `businesses` table that auto-inserts a Starter entitlements row on INSERT, using `ON CONFLICT DO NOTHING` so it doesn't overwrite rows already created by the edge function. This ensures no business can ever exist without entitlements.
-
-```sql
-CREATE OR REPLACE FUNCTION public.seed_default_entitlements()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-BEGIN
-  INSERT INTO public.entitlements (business_id, tier, is_active, profile_cap, is_unlimited, monthly_ocr_cap, monthly_chat_cap, monthly_search_cap)
-  VALUES (NEW.id, 'starter', true, 25, false, 50, 200, 50)
-  ON CONFLICT (business_id) DO NOTHING;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_seed_entitlements
-AFTER INSERT ON public.businesses
-FOR EACH ROW EXECUTE FUNCTION public.seed_default_entitlements();
-```
-
-### 4. Show clear toast + reason when OCR cap is blocked
-
-**File: `src/components/SmartCertificateUpload.tsx`** (lines 57-69)
-
-When `allowance.allowed === false`, extract the `reason` field and show a `toast.error()` with a specific message before returning the red result:
-
-- `reason === 'monthly_cap_reached'` → toast: "You've used all X/Y OCR scans this month. Contact your administrator or upgrade your plan."
-- `reason === 'no_entitlement_record'` → toast: "Your account is not set up for Smart Upload. Please contact support."
-- default → toast: "OCR scanning is unavailable. Please contact support."
-
-This replaces the current silent return with visible user feedback.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
