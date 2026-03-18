@@ -1,29 +1,27 @@
 
 
-## Plan: Fix Word-Boundary Check for Short Org Indicators
+## Rotation Schedule + Back-to-Back Shifts
 
-**Problem**: The current guard uses `.includes()` for all indicators. Short ones like `"AS"` (lowercased to `"as"`) will match substrings in place names like "Haugesund", "Newcastle", etc., causing false positives.
+**Status: Implemented**
 
-**Fix**: Replace the simple `.includes()` check with a word-boundary regex (`\b`) for each indicator. This ensures `"AS"` only matches as a standalone word, not as a substring.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**Single change** in `supabase/functions/extract-certificate-data/index.ts`, lines 442-444.
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-Replace:
-```typescript
-const looksLikeOrg = orgIndicators.some(indicator =>
-  place.includes(indicator.toLowerCase())
-);
-```
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-With:
-```typescript
-const looksLikeOrg = orgIndicators.some(indicator => {
-  const pattern = new RegExp(`\\b${indicator}\\b`, 'i');
-  return pattern.test(extractedData.placeOfIssue!);
-});
-```
-
-This uses case-insensitive word-boundary matching on the original (non-lowercased) string, so `"AS"` matches `"Falck AS"` but not `"Haugesund"`. The `place` lowercase variable becomes unused and can be removed (line 441).
-
-One change only. Nothing else touched.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
