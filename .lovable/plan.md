@@ -1,47 +1,27 @@
 
 
-## Plan: Add Diagnostic Logging to Smart Upload Flow
+## Rotation Schedule + Back-to-Back Shifts
 
-The symptoms (both certs show "Manual entry needed", 0 ready to save, edge function returns 200) suggest the data is coming back but either:
-- The response shape from `supabase.functions.invoke` doesn't match what the client expects
-- Something in post-extraction processing silently produces a `red` status result
-- `handleExtractionComplete` in `AddCertificateDialog.tsx` receives data but fails to create a "ready" entry
+**Status: Implemented**
 
-### Changes
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**File 1: `src/components/SmartCertificateUpload.tsx`**
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-Add `console.log` after the edge function returns (after line 129, before the usage warning check) to dump the raw response:
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-```typescript
-console.log('[SmartUpload] Edge function raw response:', JSON.stringify({ data, error }));
-```
-
-Add another `console.log` right before the `return` at line 190 to dump the final processed result:
-
-```typescript
-console.log('[SmartUpload] Final extraction result:', JSON.stringify({
-  status: data.status,
-  confidence: data.confidence,
-  fieldsExtracted: data.fieldsExtracted,
-  matchedCategoryId,
-  matchedIssuerId,
-  extractedData: data.extractedData,
-}));
-```
-
-**File 2: `src/components/AddCertificateDialog.tsx`**
-
-Add `console.log` at the top of `handleExtractionComplete` (after line 186) to dump the full result object:
-
-```typescript
-console.log('[AddCertDialog] handleExtractionComplete called:', JSON.stringify({
-  status: result.status,
-  confidence: result.confidence,
-  fieldsExtracted: result.fieldsExtracted,
-  extractedData: result.extractedData,
-}));
-```
-
-These three log points will trace the data from edge function response -> client processing -> parent handler, revealing exactly where the break occurs.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
