@@ -1,25 +1,27 @@
 
 
-## Fix: Replace SWC Plugin with Babel Plugin to Resolve Native Binding Error
+## Rotation Schedule + Back-to-Back Shifts
 
-### Root Cause
-The `@vitejs/plugin-react-swc` plugin depends on `@swc/core`, which requires a platform-specific native binary. The build environment cannot load this binary, causing every build and publish attempt to fail with `Failed to load native binding`.
+**Status: Implemented**
 
-This is **not a code issue** — it's a binary compatibility problem between `@swc/core` and the build server's architecture.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-### Fix
-Switch from `@vitejs/plugin-react-swc` (requires native binary) to `@vitejs/plugin-react` (pure JS, uses Babel). This is a drop-in replacement with identical functionality — no other code changes needed.
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-### Changes
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**`package.json`**
-- Remove `@vitejs/plugin-react-swc` from devDependencies
-- Add `@vitejs/plugin-react` to devDependencies
-
-**`vite.config.ts`**
-- Change import from `@vitejs/plugin-react-swc` to `@vitejs/plugin-react`
-
-### Files modified
-- `package.json`
-- `vite.config.ts`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
