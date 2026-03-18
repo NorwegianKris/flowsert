@@ -164,16 +164,20 @@ export function SmartCertificateUpload({
         if (fuzzyMatch) {
           matchedIssuerId = fuzzyMatch.id;
         } else {
-          // genuinely new — auto-create
-          const { data: newIssuer } = await supabase
-            .from('issuer_types')
-            .insert({
-              name: data.extractedData.issuingAuthority,
-              business_id: businessId,
-            })
-            .select('id')
-            .single();
-          matchedIssuerId = newIssuer?.id || null;
+          // genuinely new — auto-create (silent failure)
+          try {
+            const { data: newIssuer, error } = await supabase
+              .from('issuer_types')
+              .insert({
+                name: data.extractedData.issuingAuthority,
+                business_id: businessId,
+              })
+              .select('id')
+              .single();
+            if (!error) matchedIssuerId = newIssuer?.id || null;
+          } catch {
+            matchedIssuerId = null;
+          }
         }
       }
     }
