@@ -152,7 +152,30 @@ export function SmartCertificateUpload({
       const matched = existingIssuers.find(
         i => i.name.toLowerCase() === data.extractedData.matchedIssuer.toLowerCase()
       );
-      matchedIssuerId = matched?.id || null;
+      if (matched) {
+        matchedIssuerId = matched.id;
+      } else if (businessId && data.extractedData.issuingAuthority) {
+        // Fuzzy dedup — prevent near-duplicate issuers
+        const fuzzyMatch = existingIssuers.find(i => {
+          const a = i.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const b = data.extractedData.issuingAuthority.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return a === b || a.includes(b) || b.includes(a);
+        });
+        if (fuzzyMatch) {
+          matchedIssuerId = fuzzyMatch.id;
+        } else {
+          // genuinely new — auto-create
+          const { data: newIssuer } = await supabase
+            .from('issuer_types')
+            .insert({
+              name: data.extractedData.issuingAuthority,
+              business_id: businessId,
+            })
+            .select('id')
+            .single();
+          matchedIssuerId = newIssuer?.id || null;
+        }
+      }
     }
 
     return {
