@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
     const businessId = business.id;
 
     // 2. Insert entitlements
+    const aiCaps = getTierAICaps(tier);
     const { error: entError } = await adminClient
       .from("entitlements")
       .insert({
@@ -123,6 +124,9 @@ Deno.serve(async (req) => {
         tier,
         profile_cap: getTierProfileCap(tier),
         is_active: true,
+        monthly_ocr_cap: aiCaps.ocr,
+        monthly_chat_cap: aiCaps.chat,
+        monthly_search_cap: aiCaps.search,
       });
 
     if (entError) throw entError;
