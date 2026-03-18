@@ -110,6 +110,118 @@ export function CertificateTypesManager() {
 /**
  * The original types management list - for editing/archiving types
  */
+function TypeCertificatesList({ typeId }: { typeId: string }) {
+  const [previewDoc, setPreviewDoc] = useState<{
+    url: string;
+    title: string;
+    metadata: DocumentPreviewMetadata;
+  } | null>(null);
+
+  const { data: certificates = [], isLoading } = useQuery({
+    queryKey: ["type-certificates", typeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select(
+          "id, name, expiry_date, document_url, date_of_issue, place_of_issue, issuing_authority, personnel:personnel_id(id, name)"
+        )
+        .eq("certificate_type_id", typeId)
+        .order("expiry_date", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (certificates.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-3 px-1">
+        No certificates uploaded for this type yet.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div className="divide-y border rounded-md">
+        {certificates.map((cert: any) => {
+          const personnelName =
+            cert.personnel?.name || "Unknown worker";
+          const status = getCertificateStatus(cert.expiry_date);
+          const days = getDaysUntilExpiry(cert.expiry_date);
+          const expiryText = formatExpiryText(days);
+
+          return (
+            <button
+              key={cert.id}
+              type="button"
+              className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors text-sm"
+              onClick={() => {
+                if (cert.document_url) {
+                  setPreviewDoc({
+                    url: cert.document_url,
+                    title: cert.name,
+                    metadata: {
+                      personnelName,
+                      dateOfIssue: cert.date_of_issue,
+                      expiryDate: cert.expiry_date,
+                      placeOfIssue: cert.place_of_issue,
+                      issuingAuthority: cert.issuing_authority,
+                    },
+                  });
+                } else {
+                  toast.info("No document attached to this certificate.");
+                }
+              }}
+            >
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate font-medium flex-1 min-w-0">
+                {personnelName}
+              </span>
+              <span className="truncate text-muted-foreground hidden sm:block max-w-[200px]">
+                {cert.name}
+              </span>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs shrink-0",
+                  status === "valid" && "border-green-500 text-green-700 dark:text-green-400",
+                  status === "expiring" && "border-yellow-500 text-yellow-700 dark:text-yellow-400",
+                  status === "expired" && "border-destructive text-destructive"
+                )}
+              >
+                {status === "valid"
+                  ? "Valid"
+                  : status === "expiring"
+                  ? "Expiring soon"
+                  : "Expired"}
+              </Badge>
+            </button>
+          );
+        })}
+      </div>
+
+      <DocumentPreviewDialog
+        open={!!previewDoc}
+        onOpenChange={(open) => !open && setPreviewDoc(null)}
+        documentUrl={previewDoc?.url || null}
+        title={previewDoc?.title}
+        metadata={previewDoc?.metadata}
+      />
+    </>
+  );
+}
+
+/**
+ * The original types management list - for editing/archiving types
+ */
 function TypesManageList() {
   const { businessId } = useAuth();
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("active");
