@@ -1,20 +1,27 @@
 
 
-## Plan: Update issuingAuthority Tool Schema Description
+## Rotation Schedule + Back-to-Back Shifts
 
-**Single change** in `supabase/functions/extract-certificate-data/index.ts`, line 293.
+**Status: Implemented**
 
-Replace the current `description` value on line 293 with the user-provided text that adds explicit search instructions including "(a)…(e)" priority list and "You MUST actively search the entire document" directive.
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**Current (line 293):**
-```
-"The organization with authority over this certificate. Check in order: explicit 'issued by'/'godkjent av'/'utstedt av' fields, document header/logo organization, stamps or seals, 'issued on behalf of' phrases, footer text. Return organization name only — never a person's name. Examples: 'Helsedirektoratet', 'Havtil', 'DNV', 'Arbeidstilsynet', 'Falck Safety Services', 'OPITO', 'IMCA'."
-```
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**New:**
-```
-"The organization with authority over this certificate. You MUST actively search the entire document for this — do not skip it. Check in this order: (a) any field labeled 'issued by', 'issuing authority', 'issued on behalf of', 'godkjent av', 'utstedt av'; (b) the organization name in the document header or logo (e.g. 'Helsedirektoratet', 'Arbeidstilsynet', 'Havtil', 'DNV', 'OPITO', 'IMCA'); (c) any stamp or seal with an organization name; (d) footer organization text; (e) phrases like 'Issued on behalf of: [org]'. Return the organization name only, never a person's name. Examples: 'Helsedirektoratet', 'Havtil', 'Arbeidstilsynet', 'DNV GL', 'Falck Safety Services', 'OPITO'."
-```
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-One line replacement. Nothing else touched.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
