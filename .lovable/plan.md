@@ -1,20 +1,30 @@
 
 
-## Fix: Dev Preview Blank Screen After Plugin Switch
+## Fix: Issuer Authority Input Getting Compressed
 
-### Root Cause
-Two problems in `package.json`:
-1. `@vitejs/plugin-react` was added to `dependencies` (line 44) instead of `devDependencies`
-2. `@vitejs/plugin-react-swc` was **not removed** from `devDependencies` (line 75)
+**Problem**: In `IssuerTypeSelector.tsx` lines 168-183, the `allowFreeText` layout uses a horizontal `flex-row` on `sm:` screens. When the dropdown shows a long issuer name (e.g. "Norwegian Maritime Authority") plus the auto-matched badge, it takes most of the row width, squeezing the custom input to near-zero width.
 
-Having both plugins installed causes duplicate React resolution conflicts in the dev server, resulting in a blank screen. The production build works because it tree-shakes the unused plugin.
+**Fix** in `src/components/IssuerTypeSelector.tsx` (the `allowFreeText` return block, ~line 170):
 
-### Fix
+Change the layout from side-by-side to **always stacked vertically**. Remove the `sm:flex-row` / `sm:items-start` responsive classes so the dropdown and custom input always stack. This is cleaner and avoids the compression issue entirely.
 
-**`package.json`**:
-- Remove `@vitejs/plugin-react` from `dependencies` (line 44)
-- Remove `@vitejs/plugin-react-swc` from `devDependencies` (line 75)
-- Add `@vitejs/plugin-react: "5.2.0"` to `devDependencies`
+```tsx
+// Before (line 171):
+<div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
 
-No other files need changes — `vite.config.ts` already imports from `@vitejs/plugin-react` and has the `dedupe` config.
+// After:
+<div className="flex flex-col items-stretch gap-2">
+```
+
+Also update the "or type if not found" separator (line 175) to remove the `sm:pt-2` padding that was for the horizontal layout:
+
+```tsx
+// Before:
+<div className="flex items-center justify-center sm:pt-2">
+
+// After:
+<div className="flex items-center justify-center">
+```
+
+Two lines changed, no logic changes.
 
