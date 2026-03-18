@@ -421,7 +421,7 @@ function TypesManageList() {
                 <Accordion type="multiple" className="divide-y">
                   {grouped[category].map((type) => (
                     <AccordionItem key={type.id} value={type.id} className="border-b-0">
-                      <div className="flex items-center bg-card hover:bg-accent/40 transition-colors">
+                      <div className="flex items-center bg-card hover:bg-accent/40 transition-colors [&>h3]:flex-1 [&>h3]:min-w-0">
                         <AccordionTrigger className="flex-1 min-w-0 px-4 py-3 hover:no-underline">
                           <div className="flex items-center gap-2 min-w-0 text-left">
                             <span className="font-medium truncate">{type.name}</span>
