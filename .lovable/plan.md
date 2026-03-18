@@ -1,27 +1,40 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Analysis: Async Chain Is Correct — Variable Shadowing Is the Real Risk
 
-**Status: Implemented**
+After reviewing `processFile` (line 33–201), the function **is** marked `async` and all `await` calls are at the correct scope level. The async/await chain is not broken.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+However, there is a **variable shadowing issue** on line 171:
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+```text
+Line 113:  const { data, error } = await supabase.functions.invoke(...)   // outer
+Line 171:  const { data: newIssuer, error } = await supabase...            // shadows outer `error`
+```
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+The inner `const error` on line 171 shadows the outer `error` from line 113 within the try block. While technically scoped correctly, this is a code smell and could cause subtle issues depending on transpilation.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**More importantly**: if the issue is truly "all fields null, status red, confidence 0" despite a 200 response, the diagnostic logs we just added (`[SmartUpload] Edge function raw response`) will reveal the actual shape mismatch. The async chain itself is not the cause.
+
+### Change
+
+**File: `src/components/SmartCertificateUpload.tsx`** — Rename the shadowed `error` variable on line 171 to `issuerError`, and update its reference on line 181:
+
+```typescript
+const { data: newIssuer, error: issuerError } = await supabase
+  .from('issuer_types')
+  .insert({
+    name: data.extractedData.issuingAuthority,
+    business_id: businessId,
+  })
+  .select('id')
+  .single();
+if (!issuerError) {
+  matchedIssuerId = newIssuer?.id || null;
+} else {
+  console.warn('Auto-create issuer failed:', issuerError.message);
+  matchedIssuerId = null;
+}
+```
+
+This is a single rename — no logic changes. The diagnostic logs already in place will reveal the actual root cause on the next upload attempt.
+
