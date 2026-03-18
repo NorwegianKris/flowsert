@@ -1,46 +1,27 @@
 
 
-## Plan: Fix Issuer Auto-Create for All Businesses
+## Rotation Schedule + Back-to-Back Shifts
 
-### Problem
-The issuer matching block (line 166) is gated by `data.extractedData?.matchedIssuer && existingIssuers`. For new businesses with an empty issuers list, the AI returns `matchedIssuer: null` even when `issuingAuthority` is populated. The entire auto-create block is skipped.
+**Status: Implemented**
 
-### Fix
-**File: `src/components/SmartCertificateUpload.tsx`** (lines 164-203)
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-Replace the issuer matching block so it triggers on `issuingAuthority` instead of `matchedIssuer`:
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-1. First check for an exact match via `matchedIssuer` (existing behavior, still useful when the AI does match)
-2. If no exact match, check `issuingAuthority` + `businessId` — run fuzzy dedup against `existingIssuers`, and auto-create if no duplicate found
-3. This ensures the block runs even when `existingIssuers` is empty (the fuzzy check simply finds no match → auto-creates)
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-```typescript
-let matchedIssuerId: string | null = null;
-
-// Try exact AI match first
-if (data.extractedData?.matchedIssuer && existingIssuers) {
-  const matched = existingIssuers.find(
-    i => i.name.toLowerCase() === data.extractedData.matchedIssuer.toLowerCase()
-  );
-  if (matched) matchedIssuerId = matched.id;
-}
-
-// If no exact match, try fuzzy dedup or auto-create based on issuingAuthority
-if (!matchedIssuerId && data.extractedData?.issuingAuthority && businessId) {
-  const extractedName = data.extractedData.issuingAuthority.trim();
-  const fuzzyMatch = existingIssuers?.find(i => {
-    const a = i.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const b = extractedName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return a === b || a.includes(b) || b.includes(a);
-  });
-  if (fuzzyMatch) {
-    matchedIssuerId = fuzzyMatch.id;
-  } else {
-    // auto-create new issuer
-    try { ... } catch { ... }
-  }
-}
-```
-
-Single file change, no database or edge function modifications needed.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

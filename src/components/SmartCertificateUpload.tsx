@@ -163,41 +163,43 @@ export function SmartCertificateUpload({
 
     // Find matched issuer ID if there's a match
     let matchedIssuerId: string | null = null;
+
+    // Try exact AI match first
     if (data.extractedData?.matchedIssuer && existingIssuers) {
       const matched = existingIssuers.find(
         i => i.name.toLowerCase() === data.extractedData.matchedIssuer.toLowerCase()
       );
-      if (matched) {
-        matchedIssuerId = matched.id;
-      } else if (businessId && data.extractedData.issuingAuthority) {
-        // Fuzzy dedup — prevent near-duplicate issuers
-        const fuzzyMatch = existingIssuers.find(i => {
-          const a = i.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const b = data.extractedData.issuingAuthority.toLowerCase().replace(/[^a-z0-9]/g, '');
-          return a === b || a.includes(b) || b.includes(a);
-        });
-        if (fuzzyMatch) {
-          matchedIssuerId = fuzzyMatch.id;
-        } else {
-          // genuinely new — auto-create (silent failure)
-          try {
-            const { data: newIssuer, error: issuerError } = await supabase
-              .from('issuer_types')
-              .insert({
-                name: data.extractedData.issuingAuthority,
-                business_id: businessId,
-              })
-              .select('id')
-              .single();
-            if (!issuerError) {
-              matchedIssuerId = newIssuer?.id || null;
-            } else {
-              console.warn('Auto-create issuer failed:', issuerError.message);
-              matchedIssuerId = null;
-            }
-          } catch {
+      if (matched) matchedIssuerId = matched.id;
+    }
+
+    // If no exact match, try fuzzy dedup or auto-create based on issuingAuthority
+    if (!matchedIssuerId && data.extractedData?.issuingAuthority && businessId) {
+      const extractedName = data.extractedData.issuingAuthority.trim();
+      const fuzzyMatch = existingIssuers?.find(i => {
+        const a = i.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const b = extractedName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return a === b || a.includes(b) || b.includes(a);
+      });
+      if (fuzzyMatch) {
+        matchedIssuerId = fuzzyMatch.id;
+      } else {
+        try {
+          const { data: newIssuer, error: issuerError } = await supabase
+            .from('issuer_types')
+            .insert({
+              name: extractedName,
+              business_id: businessId,
+            })
+            .select('id')
+            .single();
+          if (!issuerError) {
+            matchedIssuerId = newIssuer?.id || null;
+          } else {
+            console.warn('Auto-create issuer failed:', issuerError.message);
             matchedIssuerId = null;
           }
+        } catch {
+          matchedIssuerId = null;
         }
       }
     }
