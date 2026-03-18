@@ -1,27 +1,27 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Analysis: The Edge Function Is Never Called
 
-**Status: Implemented**
+The `[SmartUpload] Edge function raw response` log on line 122 **already exists** in the code. If it never appears in the console for `kristian@getflowsert.com`, the function is returning **before** reaching the `supabase.functions.invoke` call on line 113.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+The culprit is the **pre-flight OCR allowance check** (lines 35-84). The `supabase.rpc('check_ai_allowance')` call is made with the user's session token, and the `check_ai_allowance` function is `SECURITY DEFINER`. However, the RPC could be failing due to RLS on the `entitlements` or `usage_ledger` tables blocking the non-superadmin user, OR the allowance check is returning `{allowed: false}` for this business.
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+The `console.error('OCR allowance check failed:', allowanceError)` on line 42 would show in the console if there's an RPC error — but the user says "all fields return null" with no visible error, which means line 56 is likely being hit: `allowance.allowed === false`, silently returning a red result with the "OCR limit reached" message.
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+### Plan: Add diagnostic logging to the pre-flight check
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**File: `src/components/SmartCertificateUpload.tsx`**
+
+Add a `console.log` immediately after the `supabase.rpc('check_ai_allowance')` call (after line 40) to dump the raw allowance response:
+
+```typescript
+console.log('[SmartUpload] OCR allowance check result:', JSON.stringify({ allowance, allowanceError }));
+```
+
+This single log line will reveal:
+- If the RPC returns an error (RLS blocking the call)
+- If `allowed` is `false` with `reason: 'monthly_cap_reached'` or `reason: 'no_entitlement_record'`
+- If the business has no entitlement record at all
+
+No other changes needed. This will immediately identify whether the block is at the allowance gate or elsewhere.
+
