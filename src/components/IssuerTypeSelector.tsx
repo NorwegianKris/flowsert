@@ -195,11 +195,11 @@ export function IssuerTypeSelector({
   if (allowFreeText) {
     return (
       <div className="space-y-2">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+        <div className="flex flex-col items-stretch gap-2">
           <div className="flex-1">
             {renderDropdown()}
           </div>
-          <div className="flex items-center justify-center sm:pt-2">
+          <div className="flex items-center justify-center">
             <span className="text-xs text-muted-foreground whitespace-nowrap px-1">or type if not found</span>
           </div>
           <div className="flex-1">

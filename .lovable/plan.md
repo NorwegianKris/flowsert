@@ -1,30 +1,27 @@
 
 
-## Fix: Issuer Authority Input Getting Compressed
+## Rotation Schedule + Back-to-Back Shifts
 
-**Problem**: In `IssuerTypeSelector.tsx` lines 168-183, the `allowFreeText` layout uses a horizontal `flex-row` on `sm:` screens. When the dropdown shows a long issuer name (e.g. "Norwegian Maritime Authority") plus the auto-matched badge, it takes most of the row width, squeezing the custom input to near-zero width.
+**Status: Implemented**
 
-**Fix** in `src/components/IssuerTypeSelector.tsx` (the `allowFreeText` return block, ~line 170):
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-Change the layout from side-by-side to **always stacked vertically**. Remove the `sm:flex-row` / `sm:items-start` responsive classes so the dropdown and custom input always stack. This is cleaner and avoids the compression issue entirely.
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-```tsx
-// Before (line 171):
-<div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-// After:
-<div className="flex flex-col items-stretch gap-2">
-```
-
-Also update the "or type if not found" separator (line 175) to remove the `sm:pt-2` padding that was for the horizontal layout:
-
-```tsx
-// Before:
-<div className="flex items-center justify-center sm:pt-2">
-
-// After:
-<div className="flex items-center justify-center">
-```
-
-Two lines changed, no logic changes.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
