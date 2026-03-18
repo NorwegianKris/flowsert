@@ -1,44 +1,27 @@
 
 
-## Make Certificate Type Rows Expandable with Certificate Details
+## Rotation Schedule + Back-to-Back Shifts
 
-### Overview
-Convert each type row in the "Manage Types" list from a flat `div` to an `Accordion` item that expands to show all certificates assigned to that type. Each certificate row shows worker name, title, expiry status, and is clickable to open the `DocumentPreviewDialog`.
+**Status: Implemented**
 
-### Changes in `src/components/CertificateTypesManager.tsx`
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**1. New imports**
-- `Accordion, AccordionItem, AccordionTrigger, AccordionContent` from UI
-- `DocumentPreviewDialog` and `DocumentPreviewMetadata`
-- `getCertificateStatus, formatExpiryText, getDaysUntilExpiry` from `certificateUtils`
-- `useQuery` from tanstack
-- `format` from date-fns
-- `FileText, Eye` from lucide
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**2. New inner component: `TypeCertificatesList`**
-- Takes `typeId: string` and `businessId: string`
-- Uses `useQuery` to fetch certificates for this type:
-  ```sql
-  certificates.select('id, name, expiry_date, document_url, date_of_issue, place_of_issue, issuing_authority, personnel:personnel_id(id, name)')
-    .eq('certificate_type_id', typeId)
-    .order('expiry_date', { ascending: true, nullsFirst: false })
-  ```
-- Renders each certificate as a clickable row with: personnel name, cert title, expiry badge (green/yellow/red)
-- Clicking a row opens `DocumentPreviewDialog` with the document URL and metadata
-- Empty state: "No certificates uploaded for this type yet."
-- Query only runs when accordion is expanded (use `enabled` flag or just let it fetch on mount — it's lightweight)
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**3. Convert type rows to Accordion**
-- Wrap the `grouped[category].map(...)` section inside `<Accordion type="multiple">` 
-- Each type row becomes an `AccordionItem` with:
-  - `AccordionTrigger`: contains the existing type name, archived badge, description, and edit/archive buttons (with `onClick stopPropagation`)
-  - `AccordionContent`: renders `<TypeCertificatesList typeId={type.id} />`
-- Uses same chevron pattern as CategoriesSection (visible chevron, `hover:no-underline`)
-
-**4. DocumentPreviewDialog state**
-- Add state for `previewDoc` (document URL + metadata) in `TypesManageList`
-- Pass to a single `DocumentPreviewDialog` instance at the bottom
-
-### Files modified
-- `src/components/CertificateTypesManager.tsx`
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views

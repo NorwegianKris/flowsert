@@ -27,6 +27,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -39,10 +45,13 @@ import {
   Award,
   Merge,
   Settings,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   useCertificateTypes,
   useCreateCertificateType,
@@ -54,6 +63,9 @@ import {
 } from "@/hooks/useCertificateTypes";
 import { TypeMergingPane } from "@/components/TypeMergingPane";
 import { RescanCertificatesTool } from "@/components/RescanCertificatesTool";
+import { DocumentPreviewDialog, DocumentPreviewMetadata } from "@/components/DocumentPreviewDialog";
+import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from "@/lib/certificateUtils";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -92,6 +104,118 @@ export function CertificateTypesManager() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/**
+ * The original types management list - for editing/archiving types
+ */
+function TypeCertificatesList({ typeId }: { typeId: string }) {
+  const [previewDoc, setPreviewDoc] = useState<{
+    url: string;
+    title: string;
+    metadata: DocumentPreviewMetadata;
+  } | null>(null);
+
+  const { data: certificates = [], isLoading } = useQuery({
+    queryKey: ["type-certificates", typeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select(
+          "id, name, expiry_date, document_url, date_of_issue, place_of_issue, issuing_authority, personnel:personnel_id(id, name)"
+        )
+        .eq("certificate_type_id", typeId)
+        .order("expiry_date", { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (certificates.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-3 px-1">
+        No certificates uploaded for this type yet.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div className="divide-y border rounded-md">
+        {certificates.map((cert: any) => {
+          const personnelName =
+            cert.personnel?.name || "Unknown worker";
+          const status = getCertificateStatus(cert.expiry_date);
+          const days = getDaysUntilExpiry(cert.expiry_date);
+          const expiryText = formatExpiryText(days);
+
+          return (
+            <button
+              key={cert.id}
+              type="button"
+              className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors text-sm"
+              onClick={() => {
+                if (cert.document_url) {
+                  setPreviewDoc({
+                    url: cert.document_url,
+                    title: cert.name,
+                    metadata: {
+                      personnelName,
+                      dateOfIssue: cert.date_of_issue,
+                      expiryDate: cert.expiry_date,
+                      placeOfIssue: cert.place_of_issue,
+                      issuingAuthority: cert.issuing_authority,
+                    },
+                  });
+                } else {
+                  toast.info("No document attached to this certificate.");
+                }
+              }}
+            >
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate font-medium flex-1 min-w-0">
+                {personnelName}
+              </span>
+              <span className="truncate text-muted-foreground hidden sm:block max-w-[200px]">
+                {cert.name}
+              </span>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs shrink-0",
+                  status === "valid" && "border-green-500 text-green-700 dark:text-green-400",
+                  status === "expiring" && "border-yellow-500 text-yellow-700 dark:text-yellow-400",
+                  status === "expired" && "border-destructive text-destructive"
+                )}
+              >
+                {status === "valid"
+                  ? "Valid"
+                  : status === "expiring"
+                  ? "Expiring soon"
+                  : "Expired"}
+              </Badge>
+            </button>
+          );
+        })}
+      </div>
+
+      <DocumentPreviewDialog
+        open={!!previewDoc}
+        onOpenChange={(open) => !open && setPreviewDoc(null)}
+        documentUrl={previewDoc?.url || null}
+        title={previewDoc?.title}
+        metadata={previewDoc?.metadata}
+      />
+    </>
   );
 }
 
@@ -294,60 +418,62 @@ function TypesManageList() {
                 <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b">
                   {category}
                 </div>
-                <div className="divide-y">
+                <Accordion type="multiple" className="divide-y">
                   {grouped[category].map((type) => (
-                    <div
-                      key={type.id}
-                      className="flex items-center justify-between p-4 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{type.name}</span>
-                          {!type.is_active && (
-                            <Badge variant="secondary" className="text-xs">
-                              Archived
-                            </Badge>
+                    <AccordionItem key={type.id} value={type.id} className="border-b-0">
+                      <div className="flex items-center bg-card hover:bg-accent/40 transition-colors">
+                        <AccordionTrigger className="flex-1 min-w-0 px-4 py-3 hover:no-underline">
+                          <div className="flex items-center gap-2 min-w-0 text-left">
+                            <span className="font-medium truncate">{type.name}</span>
+                            {!type.is_active && (
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                Archived
+                              </Badge>
+                            )}
+                            {type.description && (
+                              <span className="text-sm text-muted-foreground truncate hidden sm:inline">
+                                — {type.description}
+                              </span>
+                            )}
+                          </div>
+                        </AccordionTrigger>
+                        <div className="flex items-center gap-1 pr-4 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); openEditDialog(type); }}
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {type.is_active ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); openArchiveDialog(type); }}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <Archive className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); handleRestore(type); }}
+                              disabled={restoreMutation.isPending}
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
                           )}
                         </div>
-                        {type.description && (
-                          <p className="text-sm text-muted-foreground mt-1 truncate">
-                            {type.description}
-                          </p>
-                        )}
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(type)}
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {type.is_active ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openArchiveDialog(type)}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Archive className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRestore(type)}
-                            disabled={restoreMutation.isPending}
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                      <AccordionContent className="px-4 pb-3">
+                        <TypeCertificatesList typeId={type.id} />
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </div>
             ));
           })()}
