@@ -1,27 +1,28 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Add Rule 5c and Update placeOfIssue Schema Description
 
-**Status: Implemented**
+Two changes in `supabase/functions/extract-certificate-data/index.ts`.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Change 1 — Insert rule 5c after line 204
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+After current line 204 (rule 5b), insert:
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+```
+5c. PLACE OF ISSUE vs ISSUING AUTHORITY — DO NOT CONFUSE THESE: Place of issue is a geographic location (city or country) only — never an organization name. Issuing authority is an organization name only — never a city or country. If you find an organization name (e.g. "NYD Subsea Training Centre", "Havtil", "DNV"), do NOT put it in placeOfIssue — put it in issuingAuthority. If you find a city or country (e.g. "Oslo", "Norway", "Haugesund"), do NOT put it in issuingAuthority — put it in placeOfIssue. When a stamp or block contains both an organization name and an address, extract the organization to issuingAuthority and the city/country to placeOfIssue separately.
+```
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+### Change 2 — Update placeOfIssue tool schema description (line 288)
+
+Replace current description:
+```
+"Explicit place of issue if labeled, otherwise inferred from the issuing organization's address, training centre location, or clinic address — city preferred, country as fallback. Never use the certificate holder's address. Null only if nothing can be inferred."
+```
+
+With:
+```
+"Geographic location (city or country) where the certificate was issued. Must be a place name only — never an organization, training centre, or issuing body name. Infer from org address or clinic address if not explicitly labeled. Return null if no geographic location can be identified. Examples: 'Haugesund, Norway', 'Oslo', 'Norway', 'Aberdeen, UK'."
+```
+
+Two changes only. Nothing else touched.
+
