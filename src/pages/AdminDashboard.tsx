@@ -915,6 +915,49 @@ export default function AdminDashboard() {
                       />
                     </CollapsibleContent>
                   </Collapsible>
+
+                  {/* AI Usage */}
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full p-4 rounded-lg border border-border/50 bg-card hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all group">
+                      <div className="flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-lg">AI Usage</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="p-4 space-y-4">
+                        <p className="font-medium text-base">AI Usage this month</p>
+                        {(['ocr', 'chat'] as const).map((metric) => {
+                          const { used = 0, cap = 0 } = aiUsage[metric] ?? {};
+                          const isUnlimited = cap >= 999999;
+                          const remaining = cap > 0 ? Math.max(0, cap - used) : 0;
+                          const remainingPct = isUnlimited ? 100 : (cap > 0 ? Math.round((remaining / cap) * 100) : 0);
+                          const barColor = isUnlimited
+                            ? '[&>div]:bg-green-500'
+                            : remainingPct > 50
+                              ? '[&>div]:bg-green-500'
+                              : remainingPct > 20
+                                ? '[&>div]:bg-amber-500'
+                                : '[&>div]:bg-red-500';
+                          const label = metric === 'ocr' ? 'OCR Scans' : 'Chat Messages';
+                          const remainingLabel = isUnlimited
+                            ? `${used} used — Unlimited`
+                            : `${remaining} remaining of ${cap}`;
+                          return (
+                            <div key={metric} className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">{label}</span>
+                                <span className="text-muted-foreground">{remainingLabel}</span>
+                              </div>
+                              <Progress value={remainingPct} className={`h-2 ${barColor}`} />
+                            </div>
+                          );
+                        })}
+                        <p className="text-xs text-muted-foreground">Resets on the 1st of each month</p>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
 
                 {/* GROUP 2: ACCESS & TEAM */}
