@@ -105,6 +105,7 @@ export default function AdminDashboard() {
   
   const [linkProfileOpen, setLinkProfileOpen] = useState(false);
   const [addPersonnelPrefill, setAddPersonnelPrefill] = useState<{ name: string; email: string } | null>(null);
+  const [aiUsage, setAiUsage] = useState<Record<string, { used: number; cap: number }>>({});
 
   useEffect(() => {
     if (selectedProject || selectedPersonnel) {
