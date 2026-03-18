@@ -199,8 +199,14 @@ IMPORTANT RULES:
 2. For dates, convert to YYYY-MM-DD format (e.g., "15 January 2024" -> "2024-01-15")
 3. If a field is not visible or unclear, return null for that field
 4. certificateName MUST be the verbatim title copied character-for-character from the document in its original language. NEVER translate, NEVER paraphrase, NEVER convert to English. If the document says "Helseerklæring /udyktighetserklæring for arbeidsdykking", that exact string must be returned as certificateName.
-5. Place of issue is typically a country or city
-6. Issuing authority is the organization that issued the certificate (e.g., "DNV", "Falck Safety Services", "Red Cross")
+5. PLACE OF ISSUE: Look for an explicit field first. If none exists, infer from the following in priority order: (a) the issuing organization's registered address city/country, (b) the training centre or clinic address visible on the document, (c) any city or country mentioned in connection with the issuing body. Return the city name if available, otherwise the country. If truly nothing can be inferred, return null. Never return the certificate holder's address as place of issue.
+6. ISSUING AUTHORITY: The organization — never a person — that has authority over this certificate. Search ALL of these locations in priority order:
+   (a) Explicit fields labeled "issued by", "issuing authority", "issued on behalf of", "godkjent av", "utstedt av", "approved by", "authorized by"
+   (b) The document header organization or logo text (e.g. "Helsedirektoratet", "Arbeidstilsynet", "DNV", "Havtil")
+   (c) A stamp or seal containing an organization name and address
+   (d) Footer text identifying the issuing body
+   (e) Phrases like "Issued on behalf of: [org]" or "On behalf of: [org]"
+   Return the organization name only, not a person's name. If a person's name and organization both appear in a stamp, return the organization.
 7. IMPORTANT: Also classify the certificate into its canonical industry-standard type name in English via the suggestedTypeName field. This is a SEPARATE field from certificateName and may differ from it — that is expected and correct. Use ALL available signals: document title, issuing authority, logos, expiry period, qualification level, and any other context clues. Examples: "BOSIET with CA-EBS", "CSWIP 3.2U Diver Inspector", "Offshore Diving Medical (DMAC 11)". Return null if genuinely uncertain.
 
 ${existingCategories.length > 0 ? `
