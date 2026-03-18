@@ -27,6 +27,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -39,10 +45,13 @@ import {
   Award,
   Merge,
   Settings,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   useCertificateTypes,
   useCreateCertificateType,
@@ -54,6 +63,9 @@ import {
 } from "@/hooks/useCertificateTypes";
 import { TypeMergingPane } from "@/components/TypeMergingPane";
 import { RescanCertificatesTool } from "@/components/RescanCertificatesTool";
+import { DocumentPreviewDialog, DocumentPreviewMetadata } from "@/components/DocumentPreviewDialog";
+import { getCertificateStatus, getDaysUntilExpiry, formatExpiryText } from "@/lib/certificateUtils";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
