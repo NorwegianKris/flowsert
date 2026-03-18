@@ -38,6 +38,7 @@ export function SmartCertificateUpload({
           p_business_id: businessId,
           p_event_type: 'ocr',
         });
+        console.log('[SmartUpload] OCR allowance check result:', JSON.stringify({ allowance, allowanceError }));
         if (allowanceError) {
           console.error('OCR allowance check failed:', allowanceError);
           return {
