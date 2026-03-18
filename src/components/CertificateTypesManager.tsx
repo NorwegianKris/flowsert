@@ -418,60 +418,62 @@ function TypesManageList() {
                 <div className="font-semibold text-xs uppercase text-muted-foreground bg-muted/50 px-3 py-2 border-b">
                   {category}
                 </div>
-                <div className="divide-y">
+                <Accordion type="multiple" className="divide-y">
                   {grouped[category].map((type) => (
-                    <div
-                      key={type.id}
-                      className="flex items-center justify-between p-4 bg-white dark:bg-card hover:bg-[#C4B5FD]/10 hover:shadow-md hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 transition-all relative hover:z-10 first:rounded-t-lg last:rounded-b-lg"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{type.name}</span>
-                          {!type.is_active && (
-                            <Badge variant="secondary" className="text-xs">
-                              Archived
-                            </Badge>
+                    <AccordionItem key={type.id} value={type.id} className="border-b-0">
+                      <div className="flex items-center bg-card hover:bg-accent/40 transition-colors">
+                        <AccordionTrigger className="flex-1 min-w-0 px-4 py-3 hover:no-underline">
+                          <div className="flex items-center gap-2 min-w-0 text-left">
+                            <span className="font-medium truncate">{type.name}</span>
+                            {!type.is_active && (
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                Archived
+                              </Badge>
+                            )}
+                            {type.description && (
+                              <span className="text-sm text-muted-foreground truncate hidden sm:inline">
+                                — {type.description}
+                              </span>
+                            )}
+                          </div>
+                        </AccordionTrigger>
+                        <div className="flex items-center gap-1 pr-4 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); openEditDialog(type); }}
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {type.is_active ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); openArchiveDialog(type); }}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            >
+                              <Archive className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); handleRestore(type); }}
+                              disabled={restoreMutation.isPending}
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
                           )}
                         </div>
-                        {type.description && (
-                          <p className="text-sm text-muted-foreground mt-1 truncate">
-                            {type.description}
-                          </p>
-                        )}
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(type)}
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {type.is_active ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openArchiveDialog(type)}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Archive className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRestore(type)}
-                            disabled={restoreMutation.isPending}
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                      <AccordionContent className="px-4 pb-3">
+                        <TypeCertificatesList typeId={type.id} />
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </div>
             ));
           })()}
