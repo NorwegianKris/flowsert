@@ -55,6 +55,18 @@ export function SmartCertificateUpload({
           };
         }
         if (allowance && !(allowance as any).allowed) {
+          const reason = (allowance as any).reason;
+          const used = (allowance as any).used;
+          const cap = (allowance as any).cap;
+          let userMessage: string;
+          if (reason === 'monthly_cap_reached') {
+            userMessage = `You've used all ${used ?? ''}/${cap ?? ''} OCR scans this month. Contact your administrator or upgrade your plan.`;
+          } else if (reason === 'no_entitlement_record') {
+            userMessage = 'Your account is not set up for Smart Upload. Please contact support.';
+          } else {
+            userMessage = 'OCR scanning is unavailable. Please contact support.';
+          }
+          toast.error(userMessage);
           return {
             status: 'red',
             confidence: 0,
@@ -65,7 +77,7 @@ export function SmartCertificateUpload({
               suggestedTypeName: null, classificationConfidence: 0,
             },
             fieldsExtracted: 0,
-            issues: ['You have reached your OCR limit for this plan. Upgrade to continue using Smart Upload.'],
+            issues: [userMessage],
           };
         }
       } catch (err) {

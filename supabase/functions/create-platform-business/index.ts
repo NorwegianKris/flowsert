@@ -29,6 +29,19 @@ function getTierProfileCap(tier: string): number {
   }
 }
 
+function getTierAICaps(tier: string): { ocr: number; chat: number; search: number } {
+  switch (tier) {
+    case "growth":
+      return { ocr: 200, chat: 999999, search: 999999 };
+    case "professional":
+      return { ocr: 500, chat: 999999, search: 999999 };
+    case "enterprise":
+      return { ocr: 999999, chat: 999999, search: 999999 };
+    default:
+      return { ocr: 50, chat: 200, search: 50 };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
