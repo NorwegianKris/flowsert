@@ -273,7 +273,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   dateOfIssue: {
                     type: "string",
-                    description: "Date the certificate was issued in YYYY-MM-DD format",
+                    description: "Date the certificate was issued, in YYYY-MM-DD format. Only return a date explicitly visible on the document with a label such as 'date of issue', 'issued', 'utstedelsesdato', 'dato', or similar. Do NOT infer from expiry date, certificate type, or training knowledge. Return null if not clearly present.",
                     nullable: true,
                   },
                   expiryDate: {
