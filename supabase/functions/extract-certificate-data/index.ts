@@ -282,7 +282,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   placeOfIssue: {
                     type: "string",
-                    description: "Country or location where certificate was issued",
+                    description: "Explicit place of issue if labeled, otherwise inferred from the issuing organization's address, training centre location, or clinic address — city preferred, country as fallback. Never use the certificate holder's address. Null only if nothing can be inferred.",
                     nullable: true,
                   },
                   issuingAuthority: {
