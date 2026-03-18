@@ -287,7 +287,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   issuingAuthority: {
                     type: "string",
-                    description: "Organization that issued the certificate",
+                    description: "The organization with authority over this certificate. Check in order: explicit 'issued by'/'godkjent av'/'utstedt av' fields, document header/logo organization, stamps or seals, 'issued on behalf of' phrases, footer text. Return organization name only — never a person's name. Examples: 'Helsedirektoratet', 'Havtil', 'DNV', 'Arbeidstilsynet', 'Falck Safety Services', 'OPITO', 'IMCA'.",
                     nullable: true,
                   },
                   matchedCategory: {
