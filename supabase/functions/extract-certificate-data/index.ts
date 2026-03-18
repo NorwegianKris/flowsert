@@ -286,7 +286,7 @@ Return the extracted data using the extract_certificate_data function.`;
                   },
                   placeOfIssue: {
                     type: "string",
-                    description: "Explicit place of issue if labeled, otherwise inferred from the issuing organization's address, training centre location, or clinic address — city preferred, country as fallback. Never use the certificate holder's address. Null only if nothing can be inferred.",
+                    description: "Geographic location (city or country) where the certificate was issued. Must be a place name only — never an organization, training centre, or issuing body name. Infer from org address or clinic address if not explicitly labeled. Return null if no geographic location can be identified. Examples: 'Haugesund, Norway', 'Oslo', 'Norway', 'Aberdeen, UK'.",
                     nullable: true,
                   },
                   issuingAuthority: {
