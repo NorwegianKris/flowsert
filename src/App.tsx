@@ -25,7 +25,7 @@ import SecurityPage from "./pages/SecurityPage";
 import Trust from "./pages/Trust";
 import InviteAccept from "./pages/InviteAccept";
 import AuthCallback from "./pages/AuthCallback";
-import SetupPlatformAdmin from "./pages/SetupPlatformAdmin";
+
 
 const queryClient = new QueryClient();
 
