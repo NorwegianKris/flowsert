@@ -386,6 +386,9 @@ export function PersonnelDetail({ personnel, onBack, hideBackButton = false, onR
         </Card>
       )}
 
+      {/* Skills Section */}
+      <SkillsCard personnel={personnel} onRefresh={onRefresh} />
+
       {/* Certificates Table */}
       <Card className="border-border/50">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

@@ -54,5 +54,6 @@ export interface Personnel {
   createdAt?: string; // Registration timestamp
   country?: string; // Normalized lowercase country for visibility matching
   city?: string; // Normalized lowercase city for visibility matching
+  skills?: string[]; // Up to 8 key skills tags
   certificates: Certificate[];
 }

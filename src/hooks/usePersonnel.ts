@@ -226,6 +226,7 @@ export function useWorkerPersonnel() {
         createdAt: p.created_at || undefined,
         country: p.country || undefined,
         city: p.city || undefined,
+        skills: p.skills || [],
         certificates: ((certificatesData || []) as DbCertificate[]).map((c): Certificate => ({
           id: c.id,
           name: c.certificate_types?.name || c.name,

@@ -462,6 +462,15 @@ onChange={(value) => setFormData(prev => ({
             </div>
           )}
 
+          {/* Skills Section */}
+          <div className="pt-4 border-t">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Skills</h3>
+            <SkillsSelector
+              skills={formData.skills}
+              onChange={(skills) => setFormData({ ...formData, skills })}
+            />
+          </div>
+
           {/* Next of Kin Section */}
           <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold text-foreground mb-4">Next of Kin</h3>
