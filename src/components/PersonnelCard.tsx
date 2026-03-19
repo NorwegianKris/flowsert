@@ -229,20 +229,22 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
           </div>
           
           {/* Skills preview */}
-          {personnel.skills && personnel.skills.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {personnel.skills.slice(0, 3).map(skill => (
-                <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {skill}
-                </Badge>
-              ))}
-              {personnel.skills.length > 3 && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
-                  +{personnel.skills.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
+          <div className="mt-3 min-h-[32px] flex flex-wrap gap-1">
+            {personnel.skills && personnel.skills.length > 0 && (
+              <>
+                {personnel.skills.slice(0, 3).map(skill => (
+                  <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {skill}
+                  </Badge>
+                ))}
+                {personnel.skills.length > 3 && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                    +{personnel.skills.length - 3}
+                  </Badge>
+                )}
+              </>
+            )}
+          </div>
 
           <div className="mt-auto pt-4 border-t border-border/50">
             <div className="flex items-center justify-between">
