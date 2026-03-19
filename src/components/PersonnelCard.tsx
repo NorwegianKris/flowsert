@@ -151,7 +151,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
           <Trash2 className="h-4 w-4" />
         </Button>
 
-        <CardContent className="p-5">
+        <CardContent className="p-5 flex-1 flex flex-col">
           <div className="flex items-start gap-4">
             <Avatar className="h-14 w-14 border-2 border-border">
               {personnel.avatarUrl && (
