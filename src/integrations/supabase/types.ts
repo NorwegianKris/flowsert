@@ -1160,6 +1160,7 @@ export type Database = {
           profile_code: string
           role: string
           salary_account_number: string | null
+          skills: string[] | null
           updated_at: string
           user_id: string | null
         }
@@ -1194,6 +1195,7 @@ export type Database = {
           profile_code?: string
           role: string
           salary_account_number?: string | null
+          skills?: string[] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1228,6 +1230,7 @@ export type Database = {
           profile_code?: string
           role?: string
           salary_account_number?: string | null
+          skills?: string[] | null
           updated_at?: string
           user_id?: string | null
         }

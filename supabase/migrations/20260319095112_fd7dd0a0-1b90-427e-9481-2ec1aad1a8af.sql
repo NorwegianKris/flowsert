@@ -1,0 +1,1 @@
+ALTER TABLE public.personnel ADD COLUMN skills text[] DEFAULT '{}';
