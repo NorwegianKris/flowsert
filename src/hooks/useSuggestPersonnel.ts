@@ -35,6 +35,7 @@ interface PersonnelForAI {
   country: string | null;
   city: string | null;
   employmentType: 'employee' | 'freelancer';
+  skills: string[];
   certificates: { 
     name: string; 
     expiryDate: string | null;
@@ -90,6 +91,7 @@ export function useSuggestPersonnel() {
           country: p.country || null,
           city: p.city || null,
           employmentType,
+          skills: p.skills || [],
           certificates: p.certificates.map(c => ({
             name: c.name,
             expiryDate: c.expiryDate,

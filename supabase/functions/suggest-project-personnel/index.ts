@@ -19,6 +19,7 @@ interface PersonnelData {
   country: string | null;
   city: string | null;
   employmentType: 'employee' | 'freelancer';
+  skills: string[];
   certificates: { 
     name: string; 
     expiryDate: string | null;
@@ -526,6 +527,7 @@ serve(async (req) => {
       country: p.country,
       city: p.city,
       employmentType: p.employmentType,
+      skills: p.skills || [],
       certificates: p.certificates.map(c => ({
         name: c.name,
         category: c.category,
