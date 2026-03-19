@@ -220,7 +220,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
                   <Mail className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
                   <span className="truncate">{personnel.email}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pb-3">
                   <Phone className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
                   <span>{personnel.phone}</span>
                 </div>
