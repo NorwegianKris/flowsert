@@ -244,7 +244,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-border/50">
+          <div className="mt-auto pt-4 border-t border-border/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <FileCheck className="h-4 w-4 text-blue-500" />

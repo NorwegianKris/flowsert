@@ -741,7 +741,7 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4 items-stretch">
                   {filteredPersonnel.map((p) => (
                     <PersonnelCard
                       key={p.id}
