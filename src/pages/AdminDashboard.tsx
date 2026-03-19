@@ -444,9 +444,9 @@ export default function AdminDashboard() {
 
   // Personnel tab filtered list
   const filteredPersonnel = useMemo(() => {
-    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds) && applyCommonFilters(p));
+    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, personnelCustomSkills) && applyCommonFilters(p));
     return applySorting(filtered);
-  }, [personnel, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
+  }, [personnel, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, personnelCustomSkills, applyCategoryFilter, applyCommonFilters, applySorting]);
 
   // Overview tab filtered list
   const overviewFiltered = useMemo(() => {
