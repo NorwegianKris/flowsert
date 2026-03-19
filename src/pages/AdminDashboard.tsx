@@ -781,10 +781,12 @@ export default function AdminDashboard() {
                 customPersonnelIds={customFilterPersonnelIds}
                 customRoles={customFilterRoles}
                 customWorkerGroupIds={customFilterWorkerGroupIds}
-                onCustomFilterChange={(ids, roles, workerGroupIds) => {
+                customSkills={customFilterSkills}
+                onCustomFilterChange={(ids, roles, workerGroupIds, skills) => {
                   setCustomFilterPersonnelIds(ids);
                   setCustomFilterRoles(roles);
                   setCustomFilterWorkerGroupIds(workerGroupIds);
+                  setCustomFilterSkills(skills);
                 }}
               />
             </div>
@@ -794,6 +796,7 @@ export default function AdminDashboard() {
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
+              customSkills={customFilterSkills}
               businessName={business?.name}
             />
             <ExpiryTimeline 
@@ -802,6 +805,7 @@ export default function AdminDashboard() {
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
+              customSkills={customFilterSkills}
             />
             <RecentRegistrations 
               personnel={personnel}

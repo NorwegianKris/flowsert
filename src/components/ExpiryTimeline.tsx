@@ -80,7 +80,7 @@ export function ExpiryTimeline({
       );
     }
     return personnel;
-  }, [personnel, personnelFilter, customPersonnelIds, customRoles, workerGroupPersonnelIds]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles, customSkills, workerGroupPersonnelIds]);
 
   // Calculate expiry groups
   const expiryGroups = useMemo((): ExpiryGroup[] => {

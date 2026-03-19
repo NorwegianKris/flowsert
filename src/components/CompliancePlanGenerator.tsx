@@ -90,7 +90,7 @@ export function CompliancePlanGenerator({
       );
     }
     return personnel;
-  }, [personnel, personnelFilter, customPersonnelIds, customRoles, workerGroupPersonnelIds]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles, customSkills, workerGroupPersonnelIds]);
 
   const periodDays = parseInt(period);
 
