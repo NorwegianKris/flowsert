@@ -91,6 +91,7 @@ export function useSuggestPersonnel() {
           country: p.country || null,
           city: p.city || null,
           employmentType,
+          skills: p.skills || [],
           certificates: p.certificates.map(c => ({
             name: c.name,
             expiryDate: c.expiryDate,
