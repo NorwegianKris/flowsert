@@ -259,14 +259,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // --- Hard cap: 40 unique recipients ---
-    if (uniqueRecipients.length > 40) {
-      return new Response(
-        JSON.stringify({
-          error: `Too many recipients (max 40 unique emails). Received: ${uniqueRecipients.length}`,
-        }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
-      );
-    }
 
     console.log(`[${sendId}] sending to ${uniqueRecipients.length} unique recipients`);
 
@@ -311,7 +303,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // 500ms delay between sends (skip after last)
       if (i < uniqueRecipients.length - 1) {
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 200));
       }
     }
 
