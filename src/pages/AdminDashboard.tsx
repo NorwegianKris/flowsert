@@ -358,6 +358,7 @@ export default function AdminDashboard() {
     customIds: string[],
     customRoles: string[],
     customGroupIds: string[],
+    customSkills: string[] = [],
   ) => {
     const isFreelancer = p.category === 'freelancer';
     if (filter === 'employees' && isFreelancer) return false;
@@ -367,7 +368,8 @@ export default function AdminDashboard() {
       const inByRole = customRoles.includes(p.role);
       const inByGroup = customGroupIds.length > 0 && (personnelGroupMap.get(p.id) || new Set()).size > 0
         && customGroupIds.some(gid => personnelGroupMap.get(p.id)?.has(gid));
-      if (!inById && !inByRole && !inByGroup) return false;
+      const inBySkill = customSkills.length > 0 && (p.skills || []).some(s => customSkills.includes(s));
+      if (!inById && !inByRole && !inByGroup && !inBySkill) return false;
     }
     return true;
   }, [personnelGroupMap]);
