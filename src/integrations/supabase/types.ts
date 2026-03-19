@@ -642,7 +642,15 @@ export type Database = {
           sender_id?: string
           sender_role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_categories: {
         Row: {
