@@ -186,6 +186,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
           bio: formData.bio.trim() || null,
           country: formData.country || null,
           city: formData.city || null,
+          skills: formData.skills,
         })
         .eq('id', personnel.id);
 
