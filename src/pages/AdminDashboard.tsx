@@ -132,6 +132,7 @@ export default function AdminDashboard() {
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
+  const [customFilterSkills, setCustomFilterSkills] = useState<string[]>([]);
   // Custom filter state — Personnel tab
   const [personnelCustomIds, setPersonnelCustomIds] = useState<string[]>([]);
   const [personnelCustomRoles, setPersonnelCustomRoles] = useState<string[]>([]);
