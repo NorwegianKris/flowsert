@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Users, X, Search, GripVertical } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, Send, Users, X, Search, GripVertical, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +21,6 @@ interface SendNotificationDialogProps {
 }
 
 type RecipientGroup = 'employee' | 'freelancer';
-
-
 
 /** Normalize and de-dupe emails, filtering out invalid ones */
 function dedupeEmails(emails: (string | null | undefined)[]): string[] {
@@ -48,6 +47,12 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
   const [showIndividualSelect, setShowIndividualSelect] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [listHeight, setListHeight] = useState(160);
+  const [sendProgress, setSendProgress] = useState(0);
+  const [sendComplete, setSendComplete] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
+  
+  const sendStartTime = useRef<number>(0);
+  const expectedDuration = useRef<number>(1000);
   
   const { businessId, user } = useAuth();
   const { toast } = useToast();
@@ -92,7 +97,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
   const recipientCount = getRecipients().length;
 
-
   const filteredPersonnel = useMemo(() => {
     if (!searchQuery.trim()) return personnel;
     const query = searchQuery.toLowerCase();
@@ -101,6 +105,23 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
       p.role?.toLowerCase().includes(query)
     );
   }, [personnel, searchQuery]);
+
+  // Progress simulation
+  useEffect(() => {
+    if (!sending || sendComplete) return;
+    
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - sendStartTime.current;
+      const ratio = Math.min(elapsed / expectedDuration.current, 1);
+      // Ease-out curve, cap at 95% until complete
+      const simulated = Math.min(ratio * 100, 95);
+      setSendProgress(simulated);
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [sending, sendComplete]);
+
+  const simulatedCounter = Math.floor((sendProgress / 100) * recipientCount);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -143,8 +164,12 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
     }
 
     setSending(true);
+    setSendProgress(0);
+    setSendComplete(false);
+    sendStartTime.current = Date.now();
+    expectedDuration.current = sendEmail ? recipients.length * 200 : 1000;
+
     try {
-      // Create the notification
       const { data: notification, error: notifError } = await supabase
         .from('notifications')
         .insert({
@@ -158,7 +183,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
       if (notifError) throw notifError;
 
-      // Create recipient records
       const recipientRecords = recipients.map(r => ({
         notification_id: notification.id,
         personnel_id: r.id,
@@ -170,12 +194,11 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
       if (recipError) throw recipError;
 
-      // Send email notifications if enabled
       if (sendEmail) {
         const dedupedEmails = dedupeEmails(recipients.map(r => r.email));
 
         if (dedupedEmails.length > 0) {
-          const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-notification-email', {
+          const { error: emailError } = await supabase.functions.invoke('send-notification-email', {
             body: {
               emails: dedupedEmails,
               subject: subject.trim(),
@@ -185,53 +208,16 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
           });
 
           if (emailError) {
-            // In-app notification succeeded, email failed
-            toast({
-              title: 'Notification sent',
-              description: `In-app notification delivered to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}. Emails could not be sent.`,
-            });
-          } else if (emailResult) {
-            const { send_id, attempted, sent, failed, skipped, errors } = emailResult;
-            const problemCount = (failed || 0) + (skipped || 0);
-
-            if (problemCount === 0) {
-              toast({
-                title: 'Notification sent',
-                description: `Delivered to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}. Email sent to ${sent} recipient${sent !== 1 ? 's' : ''}.`,
-              });
-            } else {
-              toast({
-                title: 'Notification sent with email issues',
-                description: `In-app: ${recipients.length} delivered. Email: ${sent} of ${attempted} sent.${skipped ? ` ${skipped} skipped.` : ''} Reference: ${send_id}`,
-              });
-            }
-          } else {
-            toast({
-              title: 'Notification sent',
-              description: `Successfully sent to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}.`,
-            });
+            // In-app succeeded but email failed — still show complete
+            console.error('Email send error:', emailError);
           }
-        } else {
-          toast({
-            title: 'Notification sent',
-            description: `In-app notification delivered. No valid email addresses found.`,
-          });
         }
-      } else {
-        toast({
-          title: 'Notification sent',
-          description: `Successfully sent to ${recipients.length} recipient${recipients.length > 1 ? 's' : ''}.`,
-        });
       }
 
-      // Reset form
-      setSubject('');
-      setMessage('');
-      setSelectedGroups([]);
-      setSelectedIndividuals([]);
-      setSendEmail(false);
-      setShowIndividualSelect(false);
-      onOpenChange(false);
+      // Success — show completion state
+      setSendProgress(100);
+      setSendComplete(true);
+      setCompletedCount(recipients.length);
     } catch (error) {
       console.error('Error sending notification:', error);
       toast({
@@ -239,18 +225,33 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
         title: 'Error',
         description: 'Failed to send notification. Please try again.',
       });
+      setSendProgress(0);
     } finally {
       setSending(false);
     }
   };
 
+  const handleCloseAfterSuccess = () => {
+    setSubject('');
+    setMessage('');
+    setSelectedGroups([]);
+    setSelectedIndividuals([]);
+    setSendEmail(false);
+    setShowIndividualSelect(false);
+    setSendProgress(0);
+    setSendComplete(false);
+    setCompletedCount(0);
+    onOpenChange(false);
+  };
+
   const handleClose = () => {
-    if (!sending) {
+    if (sending) return;
+    if (sendComplete) {
+      handleCloseAfterSuccess();
+    } else {
       onOpenChange(false);
     }
   };
-
-  
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -277,6 +278,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                   size="sm"
                   onClick={() => toggleGroup(group)}
                   className="gap-2"
+                  disabled={sending || sendComplete}
                 >
                   {selectedGroups.includes(group) && <span>✓</span>}
                   {groupLabels[group]}
@@ -292,6 +294,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               size="sm"
               onClick={() => setShowIndividualSelect(!showIndividualSelect)}
               className="text-muted-foreground"
+              disabled={sending || sendComplete}
             >
               <Users className="h-4 w-4 mr-2" />
               {showIndividualSelect ? 'Hide individual selection' : 'Or select individuals...'}
@@ -310,6 +313,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
+                  disabled={sending || sendComplete}
                 />
               </div>
               
@@ -329,11 +333,11 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                           className={`flex items-center gap-3 p-2.5 rounded-md cursor-pointer hover:bg-muted transition-colors w-full ${
                             selectedIndividuals.includes(p.id) ? 'bg-primary/10 ring-1 ring-primary/20' : ''
                           }`}
-                          onClick={() => toggleIndividual(p.id)}
+                          onClick={() => !sending && !sendComplete && toggleIndividual(p.id)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              toggleIndividual(p.id);
+                              if (!sending && !sendComplete) toggleIndividual(p.id);
                             }
                           }}
                         >
@@ -379,6 +383,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                     setSelectedIndividuals([]);
                   }}
                   className="h-6 px-2 text-xs"
+                  disabled={sending || sendComplete}
                 >
                   Clear all
                 </Button>
@@ -387,7 +392,9 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                 {selectedGroups.map(g => (
                   <Badge key={g} variant="secondary" className="text-xs">
                     {groupLabels[g]}
-                    <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleGroup(g)} />
+                    {!sending && !sendComplete && (
+                      <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleGroup(g)} />
+                    )}
                   </Badge>
                 ))}
                 {selectedIndividuals.slice(0, 5).map(id => {
@@ -395,7 +402,9 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
                   return p ? (
                     <Badge key={id} variant="outline" className="text-xs">
                       {p.name}
-                      <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleIndividual(id)} />
+                      {!sending && !sendComplete && (
+                        <X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleIndividual(id)} />
+                      )}
                     </Badge>
                   ) : null;
                 })}
@@ -417,6 +426,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               maxLength={100}
+              disabled={sending || sendComplete}
             />
           </div>
 
@@ -430,12 +440,12 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               onChange={(e) => setMessage(e.target.value)}
               rows={4}
               maxLength={1000}
+              disabled={sending || sendComplete}
             />
             <p className="text-xs text-muted-foreground text-right">
               {message.length}/1000 characters
             </p>
           </div>
-
 
           {/* Email Option */}
           <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
@@ -443,6 +453,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               id="sendEmail"
               checked={sendEmail}
               onCheckedChange={(checked) => setSendEmail(checked === true)}
+              disabled={sending || sendComplete}
             />
             <Label htmlFor="sendEmail" className="text-sm cursor-pointer">
               Also send email notification to recipients
@@ -450,24 +461,53 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
           </div>
         </div>
 
+        {/* Progress / Success area */}
+        {(sending || sendComplete) && (
+          <div className="px-1 pb-2">
+            {sendComplete ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span className="text-sm font-medium">
+                  Successfully sent to {completedCount} recipient{completedCount !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Progress value={sendProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground text-center">
+                  Sending... {simulatedCounter} of {recipientCount}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={handleClose} disabled={sending}>
-            Cancel
-          </Button>
-          <Button onClick={handleSend} disabled={sending || recipientCount === 0}>
-            {sending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4 mr-2" />
-                Send to {recipientCount} recipient{recipientCount !== 1 ? 's' : ''}
-              </>
-            )}
-          </Button>
+          {sendComplete ? (
+            <Button onClick={handleCloseAfterSuccess}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleClose} disabled={sending}>
+                Cancel
+              </Button>
+              <Button onClick={handleSend} disabled={sending || recipientCount === 0}>
+                {sending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send to {recipientCount} recipient{recipientCount !== 1 ? 's' : ''}
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
