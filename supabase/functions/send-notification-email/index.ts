@@ -303,7 +303,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // 500ms delay between sends (skip after last)
       if (i < uniqueRecipients.length - 1) {
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 200));
       }
     }
 
