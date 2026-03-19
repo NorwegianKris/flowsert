@@ -32,6 +32,7 @@ interface ExpiryTimelineProps {
   customPersonnelIds?: string[];
   customRoles?: string[];
   customWorkerGroupIds?: string[];
+  customSkills?: string[];
 }
 
 export function ExpiryTimeline({ 
@@ -40,6 +41,7 @@ export function ExpiryTimeline({
   customPersonnelIds = [],
   customRoles = [],
   customWorkerGroupIds = [],
+  customSkills = [],
 }: ExpiryTimelineProps) {
   const [timelineEndDays, setTimelineEndDays] = useState(90);
   const [timelineStartDays, setTimelineStartDays] = useState(-30);
