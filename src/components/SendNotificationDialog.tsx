@@ -436,15 +436,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
             </p>
           </div>
 
-          {/* Email Cap Warning */}
-          {showEmailCapWarning && (
-            <div className="flex items-start gap-2 p-3 border rounded-lg bg-destructive/10 border-destructive/20">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-sm text-destructive">
-                Email is limited to {MAX_EMAIL_RECIPIENTS} recipients at a time. For larger groups, send in-app only or split into smaller batches.
-              </p>
-            </div>
-          )}
 
           {/* Email Option */}
           <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
