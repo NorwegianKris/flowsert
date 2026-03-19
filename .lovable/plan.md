@@ -1,27 +1,16 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: PersonnelCard spacing fixes
 
-**Status: Implemented**
+### Changes in `src/components/PersonnelCard.tsx`
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+**1. Skills container — fixed min height (lines 231-245)**
+- Remove the conditional rendering (`{personnel.skills && personnel.skills.length > 0 && ...}`) so the container always renders
+- Add `min-h-[32px]` to the skills div so cards without skills reserve the same space
+- Keep the conditional inside for the badge content only
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**2. Phone row — bottom spacing (line 223)**
+- Add `pb-3` to the phone number row div: `className="flex items-center gap-2 pb-3"`
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+### No other files changed.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
