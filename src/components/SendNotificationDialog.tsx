@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Users, X, Search, GripVertical, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, Users, X, Search, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ interface SendNotificationDialogProps {
 
 type RecipientGroup = 'employee' | 'freelancer';
 
-const MAX_EMAIL_RECIPIENTS = 40;
+
 
 /** Normalize and de-dupe emails, filtering out invalid ones */
 function dedupeEmails(emails: (string | null | undefined)[]): string[] {
@@ -92,23 +92,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
   const recipientCount = getRecipients().length;
 
-  // Compute unique email count from current recipients
-  const uniqueEmailCount = useMemo(() => {
-    const recipients = getRecipients();
-    return dedupeEmails(recipients.map(r => r.email)).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGroups, selectedIndividuals, personnel]);
-
-  // Auto-disable email when over cap
-  useEffect(() => {
-    if (sendEmail && uniqueEmailCount > MAX_EMAIL_RECIPIENTS) {
-      setSendEmail(false);
-      toast({
-        title: 'Email limit reached',
-        description: `Email sending is limited to ${MAX_EMAIL_RECIPIENTS} recipients. In-app notification will still be sent.`,
-      });
-    }
-  }, [uniqueEmailCount, sendEmail, toast]);
 
   const filteredPersonnel = useMemo(() => {
     if (!searchQuery.trim()) return personnel;
@@ -267,7 +250,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
     }
   };
 
-  const showEmailCapWarning = uniqueEmailCount > MAX_EMAIL_RECIPIENTS;
+  
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -453,15 +436,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
             </p>
           </div>
 
-          {/* Email Cap Warning */}
-          {showEmailCapWarning && (
-            <div className="flex items-start gap-2 p-3 border rounded-lg bg-destructive/10 border-destructive/20">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-sm text-destructive">
-                Email is limited to {MAX_EMAIL_RECIPIENTS} recipients at a time. For larger groups, send in-app only or split into smaller batches.
-              </p>
-            </div>
-          )}
 
           {/* Email Option */}
           <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
@@ -469,13 +443,9 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               id="sendEmail"
               checked={sendEmail}
               onCheckedChange={(checked) => setSendEmail(checked === true)}
-              disabled={showEmailCapWarning}
             />
             <Label htmlFor="sendEmail" className="text-sm cursor-pointer">
               Also send email notification to recipients
-              {showEmailCapWarning && (
-                <span className="text-xs text-muted-foreground ml-1">(exceeds {MAX_EMAIL_RECIPIENTS} limit)</span>
-              )}
             </Label>
           </div>
         </div>

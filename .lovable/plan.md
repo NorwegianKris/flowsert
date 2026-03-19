@@ -1,24 +1,27 @@
 
 
-## Plan: Remove 40-recipient email cap from notification dialog
+## Rotation Schedule + Back-to-Back Shifts
 
-### Changes in `src/components/SendNotificationDialog.tsx`
+**Status: Implemented**
 
-**1. Delete the `MAX_EMAIL_RECIPIENTS` constant (line 24)**
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**2. Remove the `uniqueEmailCount` memo (lines 96-100)** — no longer needed
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**3. Remove the auto-disable useEffect (lines 102-111)** — the effect that force-unchecks the email checkbox when over 40
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**4. Remove `showEmailCapWarning` variable (line 270)**
-
-**5. Delete the email cap warning block (lines 456-464)** — the AlertTriangle warning UI
-
-**6. Remove `disabled={showEmailCapWarning}` from the Checkbox (line 472)** — email checkbox is always enabled
-
-**7. Remove the "(exceeds N limit)" span from the Label (lines 476-478)**
-
-**8. Remove unused imports** — `AlertTriangle` if no longer used elsewhere in the file
-
-### No other files changed.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
