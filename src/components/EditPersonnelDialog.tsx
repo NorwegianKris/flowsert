@@ -61,6 +61,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
     bio: '',
     country: '',
     city: '',
+    skills: [] as string[],
   });
 
   useEffect(() => {
