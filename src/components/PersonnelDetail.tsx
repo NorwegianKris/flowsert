@@ -703,3 +703,71 @@ function DataPrivacySection({ personnelId, businessId }: { personnelId: string; 
     </Card>
   );
 }
+
+function SkillsCard({ personnel, onRefresh }: { personnel: Personnel; onRefresh?: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [skills, setSkills] = useState<string[]>(personnel.skills || []);
+  const [saving, setSaving] = useState(false);
+
+  // Reset when personnel changes
+  useEffect(() => {
+    setSkills(personnel.skills || []);
+    setEditing(false);
+  }, [personnel.id, personnel.skills]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('personnel')
+        .update({ skills })
+        .eq('id', personnel.id);
+      if (error) throw error;
+      toast.success('Skills updated');
+      setEditing(false);
+      onRefresh?.();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save skills');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="border-border/50">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <Wrench className="h-4 w-4" />
+          Skills
+        </CardTitle>
+        {!editing ? (
+          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setEditing(true)}>
+            <Pencil className="h-3 w-3" />
+            Edit
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => { setSkills(personnel.skills || []); setEditing(false); }}>
+              Cancel
+            </Button>
+            <Button size="sm" className="text-xs" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        )}
+      </CardHeader>
+      <CardContent className="pt-0">
+        {editing ? (
+          <SkillsSelector skills={skills} onChange={setSkills} />
+        ) : (
+          <SkillsSelector skills={personnel.skills || []} onChange={() => {}} readonly />
+        )}
+        {!editing && (!personnel.skills || personnel.skills.length === 0) && (
+          <p className="text-sm text-muted-foreground italic">
+            No skills selected yet. Click Edit to add your key skills.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
