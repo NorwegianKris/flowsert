@@ -17,6 +17,7 @@ import { GeoLocationInput } from '@/components/ui/geo-location-input';
 import { MultiSelectInput } from '@/components/ui/multi-select-input';
 import { useLocations, useNationalities, useLanguages } from '@/hooks/useLocations';
 import { normalizeText } from '@/lib/stringUtils';
+import { SkillsSelector } from '@/components/SkillsSelector';
 
 interface EditPersonnelDialogProps {
   open: boolean;
