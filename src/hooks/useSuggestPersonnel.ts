@@ -35,6 +35,7 @@ interface PersonnelForAI {
   country: string | null;
   city: string | null;
   employmentType: 'employee' | 'freelancer';
+  skills: string[];
   certificates: { 
     name: string; 
     expiryDate: string | null;
