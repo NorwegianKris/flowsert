@@ -58,6 +58,7 @@ export function CompliancePlanGenerator({
   customPersonnelIds = [],
   customRoles = [],
   customWorkerGroupIds = [],
+  customSkills = [],
   businessName,
 }: CompliancePlanGeneratorProps) {
   const [period, setPeriod] = useState('90');
