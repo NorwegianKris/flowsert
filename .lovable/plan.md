@@ -1,48 +1,57 @@
 
 
-## Plan: Add Skills Tab to Custom Personnel Filter
+## Plan: Add Skills Section to Worker Profiles
 
-### Overview
-Add a 4th "Skills" tab to the `CustomPersonnelFilterDialog`, using the same categorized skill list from `SkillsSelector`. Filter logic uses OR matching — personnel with ANY selected skill are shown.
+### 1. Database Migration
+Add `skills text[] default '{}'` to `personnel` table.
 
-### Changes
+### 2. Type & Data Layer
+- **`src/types/index.ts`**: Add `skills?: string[]` to `Personnel` interface
+- **`src/hooks/usePersonnel.ts`**: Map `skills: p.skills || []` in both `usePersonnel` and `useWorkerPersonnel`
 
-**1. `src/components/CustomPersonnelFilterDialog.tsx`**
-- Add `selectedSkills: string[]` to props interface and `onApply` signature (add 4th param `skills: string[]`)
-- Add `localSkills` state, `Wrench` icon import
-- Change TabsList to `grid-cols-4`, add "Skills" tab with badge count
-- Add Skills tab content: search input + categorized skill list (reuse the same 18-category constant from `SkillsSelector.tsx` or import it). Each skill shown as a checkbox row, grouped under emoji category headers. Search filters across all categories.
-- Include `localSkills` in `totalSelected`, `handleClear`, and `handleOpenChange` reset
-- `handleApply` passes `localSkills` as 4th argument
+### 3. New Shared Data: `src/lib/skillsData.ts`
+Export `SKILL_CATEGORIES` constant — array of `{ emoji, name, skills[] }` for all 18 categories (~170 skills). Reused by SkillsSelector and CustomPersonnelFilterDialog.
 
-**2. `src/components/FreelancerFilters.tsx`**
-- Add `customSkills?: string[]` prop (default `[]`)
-- Update `onCustomFilterChange` signature to include 4th param `skills: string[]`
-- Include `customSkills.length` in `customSelectionCount`
-- Pass `selectedSkills={customSkills}` to dialog
-- Update `handleApplyCustomFilter` to forward skills, and check skills emptiness in the "reset to employees" condition
+### 4. New Component: `src/components/SkillsSelector.tsx`
+Props: `skills: string[]`, `onChange: (skills: string[]) => void`, `readonly?: boolean`
 
-**3. `src/pages/AdminDashboard.tsx`**
-- Add `personnelCustomSkills` and `customFilterSkills` state arrays
-- Wire them through `FreelancerFilters` props and `onCustomFilterChange` callbacks (both personnel tab and overview tab)
-- Update `applyCategoryFilter` to accept `customSkills: string[]` as 5th param, add OR-match: `const inBySkill = customSkills.length > 0 && (p.skills || []).some(s => customSkills.includes(s))`
-- Add `customSkills` to the filter condition: `if (!inById && !inByRole && !inByGroup && !inBySkill) return false`
-- Pass `customSkills` to `ExpiryTimeline` and `CompliancePlanGenerator` if they accept it
+**Layout (edit mode):**
+- Header: "Pick up to 8 key skills..." with counter "X of 8 selected" top-right
+- Selected chips row at top with X buttons to deselect
+- Search input filtering across all categories
+- Categories with emoji headers (🤿 Diving & Subsea, 🔧 Mechanical, etc.)
+- 6 tags shown per category by default, "Show more" toggle to expand
+- Selected tags: filled `bg-[#3B3AC2]` white text; Unselected: outlined/ghost
+- At 8 selected: unselected tags greyed out + disabled with tooltip
 
-**4. `src/components/ExpiryTimeline.tsx` and `src/components/CompliancePlanGenerator.tsx`**
-- Add `customSkills?: string[]` prop
-- Include skills OR-match in their personnel filtering logic, same pattern as above
+**Readonly mode:** Just renders selected skills as filled chips, no editing.
 
-### Skills Data
-Import the categorized skills constant from `SkillsSelector.tsx` (export it as `SKILL_CATEGORIES`). In the Skills tab, render each category with its emoji header, skills as checkbox rows with search filtering — compact format matching the existing Individuals/Roles/Groups tabs.
+### 5. PersonnelDetail Integration
+**`src/components/PersonnelDetail.tsx`** (line ~385): Insert a Skills card after the bio card, before the Certificates card. Shows `SkillsSelector` in readonly mode with an inline save — admin and worker can both edit via an Edit button that toggles edit mode, saves directly to DB on confirm.
 
-### Filter Logic
-OR matching: a person passes the custom filter if they match by ID, role, group, **or** skill. This is consistent with the existing OR logic across the other three dimensions.
+### 6. EditPersonnelDialog Integration
+**`src/components/EditPersonnelDialog.tsx`**:
+- Add `skills: [] as string[]` to formData (line 42-64)
+- Initialize from `personnel.skills || []` (line 66-93)
+- Include `skills` in update payload (line 163-188)
+- Render `SkillsSelector` after bio section (line 459)
+
+### 7. PersonnelCard Preview
+**`src/components/PersonnelCard.tsx`** (line ~231): Show first 3 skills as small `Badge` components in the card footer, before the certificates count row.
+
+### 8. AI Search Integration
+- **`src/hooks/useSuggestPersonnel.ts`**: Add `skills: string[]` to `PersonnelForAI` interface, include `p.skills || []` in the mapped data
+- **`supabase/functions/suggest-project-personnel/index.ts`**: Add `skills: string[]` to `PersonnelData` interface so the AI prompt includes skills for matching
 
 ### Files Changed
-1. `src/components/CustomPersonnelFilterDialog.tsx`
-2. `src/components/FreelancerFilters.tsx`
-3. `src/pages/AdminDashboard.tsx`
-4. `src/components/ExpiryTimeline.tsx`
-5. `src/components/CompliancePlanGenerator.tsx`
+1. Migration: `ALTER TABLE personnel ADD COLUMN skills text[] DEFAULT '{}'`
+2. `src/types/index.ts`
+3. `src/hooks/usePersonnel.ts`
+4. `src/lib/skillsData.ts` (new)
+5. `src/components/SkillsSelector.tsx` (new)
+6. `src/components/PersonnelDetail.tsx`
+7. `src/components/EditPersonnelDialog.tsx`
+8. `src/components/PersonnelCard.tsx`
+9. `src/hooks/useSuggestPersonnel.ts`
+10. `supabase/functions/suggest-project-personnel/index.ts`
 
