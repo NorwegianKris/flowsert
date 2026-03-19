@@ -229,7 +229,7 @@ export function PersonnelCard({ personnel, onClick, onRemoved, highlighted, isAd
           </div>
           
           {/* Skills preview */}
-          <div className="mt-3 min-h-[32px] flex flex-wrap gap-1">
+          <div className="mt-3 min-h-[24px] flex flex-wrap gap-1">
             {personnel.skills && personnel.skills.length > 0 && (
               <>
                 {personnel.skills.slice(0, 3).map(skill => (
