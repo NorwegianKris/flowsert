@@ -18,6 +18,7 @@ interface CompliancePlanGeneratorProps {
   customPersonnelIds?: string[];
   customRoles?: string[];
   customWorkerGroupIds?: string[];
+  customSkills?: string[];
   businessName?: string;
 }
 
