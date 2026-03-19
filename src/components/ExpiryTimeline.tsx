@@ -75,7 +75,8 @@ export function ExpiryTimeline({
       return personnel.filter(p => 
         customPersonnelIds.includes(p.id) || 
         customRoles.includes(p.role) ||
-        workerGroupPersonnelIds.has(p.id)
+        workerGroupPersonnelIds.has(p.id) ||
+        (customSkills.length > 0 && (p.skills || []).some(s => customSkills.includes(s)))
       );
     }
     return personnel;
