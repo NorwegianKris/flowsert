@@ -21,7 +21,7 @@ interface SendNotificationDialogProps {
 
 type RecipientGroup = 'employee' | 'freelancer';
 
-const MAX_EMAIL_RECIPIENTS = 40;
+
 
 /** Normalize and de-dupe emails, filtering out invalid ones */
 function dedupeEmails(emails: (string | null | undefined)[]): string[] {
