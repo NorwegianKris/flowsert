@@ -450,9 +450,9 @@ export default function AdminDashboard() {
 
   // Overview tab filtered list
   const overviewFiltered = useMemo(() => {
-    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds) && applyCommonFilters(p));
+    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, customFilterSkills) && applyCommonFilters(p));
     return applySorting(filtered);
-  }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
+  }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, customFilterSkills, applyCategoryFilter, applyCommonFilters, applySorting]);
 
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
