@@ -136,6 +136,7 @@ export default function AdminDashboard() {
   const [personnelCustomIds, setPersonnelCustomIds] = useState<string[]>([]);
   const [personnelCustomRoles, setPersonnelCustomRoles] = useState<string[]>([]);
   const [personnelCustomWorkerGroupIds, setPersonnelCustomWorkerGroupIds] = useState<string[]>([]);
+  const [personnelCustomSkills, setPersonnelCustomSkills] = useState<string[]>([]);
   
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
