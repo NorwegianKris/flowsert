@@ -32,6 +32,7 @@ interface ExpiryTimelineProps {
   customPersonnelIds?: string[];
   customRoles?: string[];
   customWorkerGroupIds?: string[];
+  customSkills?: string[];
 }
 
 export function ExpiryTimeline({ 
@@ -40,6 +41,7 @@ export function ExpiryTimeline({
   customPersonnelIds = [],
   customRoles = [],
   customWorkerGroupIds = [],
+  customSkills = [],
 }: ExpiryTimelineProps) {
   const [timelineEndDays, setTimelineEndDays] = useState(90);
   const [timelineStartDays, setTimelineStartDays] = useState(-30);
@@ -73,11 +75,12 @@ export function ExpiryTimeline({
       return personnel.filter(p => 
         customPersonnelIds.includes(p.id) || 
         customRoles.includes(p.role) ||
-        workerGroupPersonnelIds.has(p.id)
+        workerGroupPersonnelIds.has(p.id) ||
+        (customSkills.length > 0 && (p.skills || []).some(s => customSkills.includes(s)))
       );
     }
     return personnel;
-  }, [personnel, personnelFilter, customPersonnelIds, customRoles, workerGroupPersonnelIds]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles, customSkills, workerGroupPersonnelIds]);
 
   // Calculate expiry groups
   const expiryGroups = useMemo((): ExpiryGroup[] => {

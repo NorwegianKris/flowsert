@@ -14,7 +14,8 @@ interface FreelancerFiltersProps {
   customPersonnelIds?: string[];
   customRoles?: string[];
   customWorkerGroupIds?: string[];
-  onCustomFilterChange?: (personnelIds: string[], roles: string[], workerGroupIds: string[]) => void;
+  customSkills?: string[];
+  onCustomFilterChange?: (personnelIds: string[], roles: string[], workerGroupIds: string[], skills: string[]) => void;
 }
 
 export function FreelancerFilters({
@@ -24,6 +25,7 @@ export function FreelancerFilters({
   customPersonnelIds = [],
   customRoles = [],
   customWorkerGroupIds = [],
+  customSkills = [],
   onCustomFilterChange,
 }: FreelancerFiltersProps) {
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
@@ -37,14 +39,14 @@ export function FreelancerFilters({
     }
   };
 
-  const handleApplyCustomFilter = (personnelIds: string[], roles: string[], workerGroupIds: string[]) => {
-    onCustomFilterChange?.(personnelIds, roles, workerGroupIds);
-    if (personnelIds.length === 0 && roles.length === 0 && workerGroupIds.length === 0) {
+  const handleApplyCustomFilter = (personnelIds: string[], roles: string[], workerGroupIds: string[], skills: string[]) => {
+    onCustomFilterChange?.(personnelIds, roles, workerGroupIds, skills);
+    if (personnelIds.length === 0 && roles.length === 0 && workerGroupIds.length === 0 && skills.length === 0) {
       onPersonnelFilterChange('employees');
     }
   };
 
-  const customSelectionCount = customPersonnelIds.length + customRoles.length + customWorkerGroupIds.length;
+  const customSelectionCount = customPersonnelIds.length + customRoles.length + customWorkerGroupIds.length + customSkills.length;
 
   return (
     <>
@@ -111,6 +113,7 @@ export function FreelancerFilters({
           selectedPersonnelIds={customPersonnelIds}
           selectedRoles={customRoles}
           selectedWorkerGroupIds={customWorkerGroupIds}
+          selectedSkills={customSkills}
           onApply={handleApplyCustomFilter}
         />
       )}

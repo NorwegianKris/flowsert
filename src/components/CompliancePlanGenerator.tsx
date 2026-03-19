@@ -18,6 +18,7 @@ interface CompliancePlanGeneratorProps {
   customPersonnelIds?: string[];
   customRoles?: string[];
   customWorkerGroupIds?: string[];
+  customSkills?: string[];
   businessName?: string;
 }
 
@@ -57,6 +58,7 @@ export function CompliancePlanGenerator({
   customPersonnelIds = [],
   customRoles = [],
   customWorkerGroupIds = [],
+  customSkills = [],
   businessName,
 }: CompliancePlanGeneratorProps) {
   const [period, setPeriod] = useState('90');
@@ -83,11 +85,12 @@ export function CompliancePlanGenerator({
       return personnel.filter(p =>
         customPersonnelIds.includes(p.id) ||
         customRoles.includes(p.role) ||
-        workerGroupPersonnelIds.has(p.id)
+        workerGroupPersonnelIds.has(p.id) ||
+        (customSkills.length > 0 && (p.skills || []).some(s => customSkills.includes(s)))
       );
     }
     return personnel;
-  }, [personnel, personnelFilter, customPersonnelIds, customRoles, workerGroupPersonnelIds]);
+  }, [personnel, personnelFilter, customPersonnelIds, customRoles, customSkills, workerGroupPersonnelIds]);
 
   const periodDays = parseInt(period);
 

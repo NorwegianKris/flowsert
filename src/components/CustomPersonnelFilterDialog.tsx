@@ -6,9 +6,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, Briefcase, FolderOpen } from 'lucide-react';
+import { Search, Users, Briefcase, FolderOpen, Wrench } from 'lucide-react';
 import { Personnel } from '@/types';
 import { useWorkerGroups, useWorkerGroupMemberCounts } from '@/hooks/useWorkerGroups';
+import { SKILL_CATEGORIES } from '@/lib/skillsData';
 
 interface CustomPersonnelFilterDialogProps {
   open: boolean;
@@ -17,7 +18,8 @@ interface CustomPersonnelFilterDialogProps {
   selectedPersonnelIds: string[];
   selectedRoles: string[];
   selectedWorkerGroupIds: string[];
-  onApply: (personnelIds: string[], roles: string[], workerGroupIds: string[]) => void;
+  selectedSkills: string[];
+  onApply: (personnelIds: string[], roles: string[], workerGroupIds: string[], skills: string[]) => void;
 }
 
 export function CustomPersonnelFilterDialog({
@@ -27,13 +29,16 @@ export function CustomPersonnelFilterDialog({
   selectedPersonnelIds,
   selectedRoles,
   selectedWorkerGroupIds,
+  selectedSkills,
   onApply,
 }: CustomPersonnelFilterDialogProps) {
   const [localPersonnelIds, setLocalPersonnelIds] = useState<string[]>(selectedPersonnelIds);
   const [localRoles, setLocalRoles] = useState<string[]>(selectedRoles);
   const [localWorkerGroupIds, setLocalWorkerGroupIds] = useState<string[]>(selectedWorkerGroupIds);
+  const [localSkills, setLocalSkills] = useState<string[]>(selectedSkills);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'individuals' | 'roles' | 'groups'>('individuals');
+  const [skillsSearchQuery, setSkillsSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'individuals' | 'roles' | 'groups' | 'skills'>('individuals');
 
   const { data: workerGroups = [] } = useWorkerGroups();
   const { data: memberCounts = [] } = useWorkerGroupMemberCounts();
@@ -44,13 +49,11 @@ export function CustomPersonnelFilterDialog({
     return map;
   }, [memberCounts]);
 
-  // Get unique roles from personnel
   const uniqueRoles = useMemo(() => {
     const roles = [...new Set(personnel.map(p => p.role))].filter(Boolean).sort();
     return roles;
   }, [personnel]);
 
-  // Filter personnel by search query
   const filteredPersonnel = useMemo(() => {
     if (!searchQuery.trim()) return personnel;
     const query = searchQuery.toLowerCase();
@@ -60,6 +63,17 @@ export function CustomPersonnelFilterDialog({
       p.email.toLowerCase().includes(query)
     );
   }, [personnel, searchQuery]);
+
+  const filteredSkillCategories = useMemo(() => {
+    if (!skillsSearchQuery.trim()) return SKILL_CATEGORIES;
+    const query = skillsSearchQuery.toLowerCase();
+    return SKILL_CATEGORIES
+      .map(cat => ({
+        ...cat,
+        skills: cat.skills.filter(s => s.toLowerCase().includes(query)),
+      }))
+      .filter(cat => cat.skills.length > 0);
+  }, [skillsSearchQuery]);
 
   const handlePersonnelToggle = (personnelId: string) => {
     setLocalPersonnelIds(prev => 
@@ -85,8 +99,16 @@ export function CustomPersonnelFilterDialog({
     );
   };
 
+  const handleSkillToggle = (skill: string) => {
+    setLocalSkills(prev =>
+      prev.includes(skill)
+        ? prev.filter(s => s !== skill)
+        : [...prev, skill]
+    );
+  };
+
   const handleApply = () => {
-    onApply(localPersonnelIds, localRoles, localWorkerGroupIds);
+    onApply(localPersonnelIds, localRoles, localWorkerGroupIds, localSkills);
     onOpenChange(false);
   };
 
@@ -94,17 +116,19 @@ export function CustomPersonnelFilterDialog({
     setLocalPersonnelIds([]);
     setLocalRoles([]);
     setLocalWorkerGroupIds([]);
+    setLocalSkills([]);
   };
 
-  const totalSelected = localPersonnelIds.length + localRoles.length + localWorkerGroupIds.length;
+  const totalSelected = localPersonnelIds.length + localRoles.length + localWorkerGroupIds.length + localSkills.length;
 
-  // Reset local state when dialog opens
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
       setLocalPersonnelIds(selectedPersonnelIds);
       setLocalRoles(selectedRoles);
       setLocalWorkerGroupIds(selectedWorkerGroupIds);
+      setLocalSkills(selectedSkills);
       setSearchQuery('');
+      setSkillsSearchQuery('');
     }
     onOpenChange(newOpen);
   };
@@ -123,32 +147,41 @@ export function CustomPersonnelFilterDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'individuals' | 'roles' | 'groups')}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="individuals" className="gap-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="individuals" className="gap-1.5">
               <Users className="h-4 w-4" />
-              Individuals
+              <span className="hidden sm:inline">Individuals</span>
               {localPersonnelIds.length > 0 && (
                 <Badge variant="outline" className="ml-1 h-5 px-1.5">
                   {localPersonnelIds.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="roles" className="gap-2">
+            <TabsTrigger value="roles" className="gap-1.5">
               <Briefcase className="h-4 w-4" />
-              Roles
+              <span className="hidden sm:inline">Roles</span>
               {localRoles.length > 0 && (
                 <Badge variant="outline" className="ml-1 h-5 px-1.5">
                   {localRoles.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="groups" className="gap-2">
+            <TabsTrigger value="groups" className="gap-1.5">
               <FolderOpen className="h-4 w-4" />
-              Groups
+              <span className="hidden sm:inline">Groups</span>
               {localWorkerGroupIds.length > 0 && (
                 <Badge variant="outline" className="ml-1 h-5 px-1.5">
                   {localWorkerGroupIds.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="skills" className="gap-1.5">
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">Skills</span>
+              {localSkills.length > 0 && (
+                <Badge variant="outline" className="ml-1 h-5 px-1.5">
+                  {localSkills.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -256,6 +289,49 @@ export function CustomPersonnelFilterDialog({
                 {workerGroups.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">
                     No worker groups defined
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="skills" className="mt-4">
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search skills..."
+                value={skillsSearchQuery}
+                onChange={(e) => setSkillsSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <ScrollArea className="h-[280px] pr-4">
+              <div className="space-y-4">
+                {filteredSkillCategories.map((category) => (
+                  <div key={category.name}>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">
+                      {category.emoji} {category.name}
+                    </p>
+                    <div className="space-y-1">
+                      {category.skills.map((skill) => (
+                        <div
+                          key={skill}
+                          className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-muted/50 cursor-pointer"
+                          onClick={() => handleSkillToggle(skill)}
+                        >
+                          <Checkbox
+                            checked={localSkills.includes(skill)}
+                            onCheckedChange={() => handleSkillToggle(skill)}
+                          />
+                          <p className="text-sm">{skill}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {filteredSkillCategories.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No skills found
                   </p>
                 )}
               </div>

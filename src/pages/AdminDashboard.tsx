@@ -132,10 +132,12 @@ export default function AdminDashboard() {
   const [customFilterPersonnelIds, setCustomFilterPersonnelIds] = useState<string[]>([]);
   const [customFilterRoles, setCustomFilterRoles] = useState<string[]>([]);
   const [customFilterWorkerGroupIds, setCustomFilterWorkerGroupIds] = useState<string[]>([]);
+  const [customFilterSkills, setCustomFilterSkills] = useState<string[]>([]);
   // Custom filter state — Personnel tab
   const [personnelCustomIds, setPersonnelCustomIds] = useState<string[]>([]);
   const [personnelCustomRoles, setPersonnelCustomRoles] = useState<string[]>([]);
   const [personnelCustomWorkerGroupIds, setPersonnelCustomWorkerGroupIds] = useState<string[]>([]);
+  const [personnelCustomSkills, setPersonnelCustomSkills] = useState<string[]>([]);
   
   
   const { personnel, loading: personnelLoading, refetch } = usePersonnel();
@@ -356,6 +358,7 @@ export default function AdminDashboard() {
     customIds: string[],
     customRoles: string[],
     customGroupIds: string[],
+    customSkills: string[] = [],
   ) => {
     const isFreelancer = p.category === 'freelancer';
     if (filter === 'employees' && isFreelancer) return false;
@@ -365,7 +368,8 @@ export default function AdminDashboard() {
       const inByRole = customRoles.includes(p.role);
       const inByGroup = customGroupIds.length > 0 && (personnelGroupMap.get(p.id) || new Set()).size > 0
         && customGroupIds.some(gid => personnelGroupMap.get(p.id)?.has(gid));
-      if (!inById && !inByRole && !inByGroup) return false;
+      const inBySkill = customSkills.length > 0 && (p.skills || []).some(s => customSkills.includes(s));
+      if (!inById && !inByRole && !inByGroup && !inBySkill) return false;
     }
     return true;
   }, [personnelGroupMap]);
@@ -440,15 +444,15 @@ export default function AdminDashboard() {
 
   // Personnel tab filtered list
   const filteredPersonnel = useMemo(() => {
-    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds) && applyCommonFilters(p));
+    const filtered = personnel.filter(p => applyCategoryFilter(p, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, personnelCustomSkills) && applyCommonFilters(p));
     return applySorting(filtered);
-  }, [personnel, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
+  }, [personnel, personnelTabFilter, personnelCustomIds, personnelCustomRoles, personnelCustomWorkerGroupIds, personnelCustomSkills, applyCategoryFilter, applyCommonFilters, applySorting]);
 
   // Overview tab filtered list
   const overviewFiltered = useMemo(() => {
-    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds) && applyCommonFilters(p));
+    const filtered = personnel.filter(p => applyCategoryFilter(p, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, customFilterSkills) && applyCommonFilters(p));
     return applySorting(filtered);
-  }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, applyCategoryFilter, applyCommonFilters, applySorting]);
+  }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, customFilterSkills, applyCategoryFilter, applyCommonFilters, applySorting]);
 
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
@@ -668,10 +672,12 @@ export default function AdminDashboard() {
                 customPersonnelIds={personnelCustomIds}
                 customRoles={personnelCustomRoles}
                 customWorkerGroupIds={personnelCustomWorkerGroupIds}
-                onCustomFilterChange={(ids, roles, workerGroupIds) => {
+                customSkills={personnelCustomSkills}
+                onCustomFilterChange={(ids, roles, workerGroupIds, skills) => {
                   setPersonnelCustomIds(ids);
                   setPersonnelCustomRoles(roles);
                   setPersonnelCustomWorkerGroupIds(workerGroupIds);
+                  setPersonnelCustomSkills(skills);
                 }}
               />
             </div>
@@ -775,10 +781,12 @@ export default function AdminDashboard() {
                 customPersonnelIds={customFilterPersonnelIds}
                 customRoles={customFilterRoles}
                 customWorkerGroupIds={customFilterWorkerGroupIds}
-                onCustomFilterChange={(ids, roles, workerGroupIds) => {
+                customSkills={customFilterSkills}
+                onCustomFilterChange={(ids, roles, workerGroupIds, skills) => {
                   setCustomFilterPersonnelIds(ids);
                   setCustomFilterRoles(roles);
                   setCustomFilterWorkerGroupIds(workerGroupIds);
+                  setCustomFilterSkills(skills);
                 }}
               />
             </div>
@@ -788,6 +796,7 @@ export default function AdminDashboard() {
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
+              customSkills={customFilterSkills}
               businessName={business?.name}
             />
             <ExpiryTimeline 
@@ -796,6 +805,7 @@ export default function AdminDashboard() {
               customPersonnelIds={customFilterPersonnelIds}
               customRoles={customFilterRoles}
               customWorkerGroupIds={customFilterWorkerGroupIds}
+              customSkills={customFilterSkills}
             />
             <RecentRegistrations 
               personnel={personnel}
