@@ -443,13 +443,9 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
               id="sendEmail"
               checked={sendEmail}
               onCheckedChange={(checked) => setSendEmail(checked === true)}
-              disabled={showEmailCapWarning}
             />
             <Label htmlFor="sendEmail" className="text-sm cursor-pointer">
               Also send email notification to recipients
-              {showEmailCapWarning && (
-                <span className="text-xs text-muted-foreground ml-1">(exceeds {MAX_EMAIL_RECIPIENTS} limit)</span>
-              )}
             </Label>
           </div>
         </div>
