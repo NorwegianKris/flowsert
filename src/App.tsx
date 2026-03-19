@@ -25,7 +25,7 @@ import SecurityPage from "./pages/SecurityPage";
 import Trust from "./pages/Trust";
 import InviteAccept from "./pages/InviteAccept";
 import AuthCallback from "./pages/AuthCallback";
-import SetupPlatformAdmin from "./pages/SetupPlatformAdmin";
+
 
 const queryClient = new QueryClient();
 
@@ -41,7 +41,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/invite" element={<InviteAccept />} />
-            <Route path="/setup-platform-admin" element={<SetupPlatformAdmin />} />
+            
             <Route path="/register/freelancer/:companyCode" element={<FreelancerRedirect />} />
             <Route path="/register/jobseeker/:companyCode" element={<FreelancerRedirect />} />
             <Route path="/about" element={<About />} />

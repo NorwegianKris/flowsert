@@ -1,22 +1,27 @@
 
 
-## Plan: Disable setup-platform-admin endpoint and remove frontend route
+## Rotation Schedule + Back-to-Back Shifts
 
-Since the platform admin account already exists, the safest approach is to fully disable this function and remove all frontend access.
+**Status: Implemented**
 
-### Changes
+### Database
+- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
+- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
+- Added `INTERNAL_CRON_SECRET` to secrets
 
-**1. Neutralize the edge function (`supabase/functions/setup-platform-admin/index.ts`)**
-- Replace the entire function body with a simple handler that returns `410 Gone` for all requests (POST returns `{"error":"This endpoint has been permanently disabled"}`, OPTIONS still returns 204 for CORS).
-- This is safer than deleting the file, which could cause deployment issues if references exist.
+### Edge Function
+- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
 
-**2. Remove the frontend route and page**
-- `src/App.tsx`: Delete the `SetupPlatformAdmin` import (line 30) and the `/setup-platform-admin` route (line 44).
-- `src/pages/SetupPlatformAdmin.tsx`: Delete the file entirely.
+### Files Changed
+- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
+- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
+- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
+- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
+- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
+- `supabase/functions/auto-close-projects/index.ts` — New edge function
+- `supabase/config.toml` — Added auto-close-projects function config
 
-**3. Remove from config.toml (`supabase/config.toml`)**
-- Delete the `[functions.setup-platform-admin]` block (lines ~26-27) so the function is no longer registered.
-
-### Summary
-Three files modified, one file deleted. The endpoint becomes permanently disabled, the frontend route is removed, and no new attack surface remains.
-
+### Pending
+- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
+- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
+- Compliance date scoping against shift-specific dates in certificate views
