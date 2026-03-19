@@ -672,10 +672,12 @@ export default function AdminDashboard() {
                 customPersonnelIds={personnelCustomIds}
                 customRoles={personnelCustomRoles}
                 customWorkerGroupIds={personnelCustomWorkerGroupIds}
-                onCustomFilterChange={(ids, roles, workerGroupIds) => {
+                customSkills={personnelCustomSkills}
+                onCustomFilterChange={(ids, roles, workerGroupIds, skills) => {
                   setPersonnelCustomIds(ids);
                   setPersonnelCustomRoles(roles);
                   setPersonnelCustomWorkerGroupIds(workerGroupIds);
+                  setPersonnelCustomSkills(skills);
                 }}
               />
             </div>
