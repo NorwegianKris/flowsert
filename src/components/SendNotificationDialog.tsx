@@ -92,23 +92,6 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
 
   const recipientCount = getRecipients().length;
 
-  // Compute unique email count from current recipients
-  const uniqueEmailCount = useMemo(() => {
-    const recipients = getRecipients();
-    return dedupeEmails(recipients.map(r => r.email)).length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGroups, selectedIndividuals, personnel]);
-
-  // Auto-disable email when over cap
-  useEffect(() => {
-    if (sendEmail && uniqueEmailCount > MAX_EMAIL_RECIPIENTS) {
-      setSendEmail(false);
-      toast({
-        title: 'Email limit reached',
-        description: `Email sending is limited to ${MAX_EMAIL_RECIPIENTS} recipients. In-app notification will still be sent.`,
-      });
-    }
-  }, [uniqueEmailCount, sendEmail, toast]);
 
   const filteredPersonnel = useMemo(() => {
     if (!searchQuery.trim()) return personnel;
