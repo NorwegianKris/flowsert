@@ -250,7 +250,7 @@ export function SendNotificationDialog({ open, onOpenChange, personnel }: SendNo
     }
   };
 
-  const showEmailCapWarning = uniqueEmailCount > MAX_EMAIL_RECIPIENTS;
+  
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
