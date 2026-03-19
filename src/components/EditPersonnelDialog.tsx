@@ -88,6 +88,7 @@ export function EditPersonnelDialog({ open, onOpenChange, personnel, onSuccess }
         bio: personnel.bio || '',
         country: personnel.country || '',
         city: personnel.city || '',
+        skills: personnel.skills || [],
       });
       setAvatarUrl(personnel.avatarUrl || null);
     }
