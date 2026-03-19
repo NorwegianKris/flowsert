@@ -21,6 +21,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { ActivateProfileDialog } from '@/components/ActivateProfileDialog';
 import { ProfileCompletionBar } from '@/components/ProfileCompletionBar';
 import { CertificateExpiryNotificationDialog } from '@/components/CertificateExpiryNotificationDialog';
+import { SkillsSelector } from '@/components/SkillsSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { Personnel } from '@/types';
 import { Project, useProjects } from '@/hooks/useProjects';
@@ -33,12 +34,13 @@ import {
 } from '@/lib/certificateUtils';
 import {
   ArrowLeft, MapPin, Mail, Phone, FileCheck, AlertTriangle, CheckCircle, Plus, Trash2,
-  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock, Clock, RefreshCw, Hash, Shield
+  User, Globe, Home, CreditCard, Languages, Pencil, Users, Send, UserPlus, ShieldCheck, ShieldOff, Lock, Clock, RefreshCw, Hash, Shield, Wrench
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { PersonnelDocuments } from './PersonnelDocuments';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 interface PersonnelDetailProps {
   personnel: Personnel;
