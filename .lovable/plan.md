@@ -1,27 +1,39 @@
 
 
-## Rotation Schedule + Back-to-Back Shifts
+## Plan: Add sending progress indicator to notification dialog
 
-**Status: Implemented**
+### Overview
+Add time-estimated progress tracking during send, and a success completion state before the admin manually closes.
 
-### Database
-- Added 10 columns to `projects`: `rotation_on_days`, `rotation_off_days`, `rotation_count`, `rotations_completed`, `auto_close_enabled`, `next_close_date`, `next_open_date`, `is_shift_parent`, `shift_group_id`, `shift_number`
-- Created `project_events` table with RLS (SELECT for same-business, INSERT for admin, UPDATE/DELETE denied)
-- Added `INTERNAL_CRON_SECRET` to secrets
+### Changes in `src/components/SendNotificationDialog.tsx`
 
-### Edge Function
-- `auto-close-projects`: Secret-gated cron function that auto-closes/reopens rotations, takes compliance snapshots, and warns about unstaffed shifts starting within 7 days
+**1. New state variables**
+- `sendProgress: number` (0-100) — animated progress percentage
+- `sendComplete: boolean` — true after send finishes successfully
+- `completedCount: number` — total recipients sent to (for success message)
 
-### Files Changed
-- `src/hooks/useProjects.ts` — New fields in interfaces, multi-insert for back-to-back shifts
-- `src/components/AddProjectDialog.tsx` — On/off period inputs, rotation count, auto-close toggle, back-to-back toggle with naming preview and shift schedule preview
-- `src/components/EditProjectDialog.tsx` — Read-only rotation and shift info display
-- `src/components/ProjectsTab.tsx` — Grouped shift cards, rotation status badges
-- `src/components/ProjectDetail.tsx` — Shift badge, sibling shift navigation tabs
-- `supabase/functions/auto-close-projects/index.ts` — New edge function
-- `supabase/config.toml` — Added auto-close-projects function config
+**2. Progress simulation via `useEffect`**
+- When `sending` becomes true, start an interval that increments `sendProgress` based on elapsed time vs expected duration (`recipientCount * 200ms` for email sends, or a fast 1s animation for in-app only).
+- Cap simulated progress at 95% until the actual send completes, then jump to 100%.
+- Track a simulated counter: `Math.floor((progress / 100) * totalRecipients)` for the "Sending... X of Y" display.
 
-### Pending
-- Cron job scheduling (requires insert tool with secret value — do NOT put in migration)
-- ProjectDetail shift tabs for crew management per shift (currently shows sibling navigation)
-- Compliance date scoping against shift-specific dates in certificate views
+**3. Modify `handleSend`**
+- On success: set `sendComplete = true` and `completedCount = recipients.length`. Do NOT reset form or close dialog — admin closes manually.
+- Remove the `onOpenChange(false)` call from the success path.
+- Remove toast notifications on success (the in-dialog success state replaces them). Keep error toasts.
+
+**4. Modify footer UI**
+- When `sendComplete`: show a green success bar with "✓ Successfully sent to N recipients" above the footer, and change the Send button to "Close" (which resets state and closes dialog).
+- When `sending`: show progress bar (using existing `Progress` component) + "Sending... X of Y" counter below it. Both Cancel and Send buttons disabled.
+- Default state: unchanged.
+
+**5. Add `handleCloseAfterSuccess` function**
+- Resets all form state (subject, message, groups, individuals, sendEmail, progress, complete) and calls `onOpenChange(false)`.
+
+**6. New import**
+- `import { Progress } from '@/components/ui/progress'`
+- `import { useEffect, useRef }` added to existing React import
+- `import { CheckCircle2 }` from lucide-react
+
+### No other files changed. No backend changes.
+
