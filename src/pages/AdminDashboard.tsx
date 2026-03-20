@@ -781,19 +781,18 @@ export default function AdminDashboard() {
                 <span className="text-sm font-medium text-muted-foreground">Compliance at a Glance</span>
               </div>
 
-              <div className="h-full overflow-hidden flex items-center gap-4">
-                <div className="flex flex-col items-center justify-center">
-                  <span className="text-lg font-bold" style={{ color: 'hsl(241, 53%, 49%)' }}>{totalCertificates}</span>
-                  <span className="text-[9px] text-muted-foreground leading-tight">Certificates uploaded</span>
+              <div className="h-full overflow-hidden flex items-center gap-2 py-2">
+                <div className="bg-white border border-[hsl(220,13%,91%)] rounded-lg px-3 py-1 flex flex-col items-center justify-center">
+                  <span className="text-[13px] font-bold" style={{ color: 'hsl(241, 53%, 49%)' }}>{totalCertificates}</span>
+                  <span className="text-[8px] text-muted-foreground leading-tight">Certificates uploaded</span>
                 </div>
-                <div className="w-px self-stretch my-[20%] bg-border" />
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-                      <span className="text-lg font-bold" style={{ color: profilesWithoutCerts.length > 0 ? 'hsl(38, 92%, 50%)' : 'hsl(160, 84%, 39%)' }}>
+                    <button className="bg-white border border-[hsl(220,13%,91%)] rounded-lg px-3 py-1 flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                      <span className="text-[13px] font-bold" style={{ color: profilesWithoutCerts.length > 0 ? 'hsl(38, 92%, 50%)' : 'hsl(160, 84%, 39%)' }}>
                         {profilesWithoutCerts.length}
                       </span>
-                      <span className="text-[9px] text-muted-foreground leading-tight">Profiles without certificates</span>
+                      <span className="text-[8px] text-muted-foreground leading-tight">Profiles without certificates</span>
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-64 p-3 max-h-60 overflow-y-auto">
@@ -818,10 +817,9 @@ export default function AdminDashboard() {
                     )}
                   </PopoverContent>
                 </Popover>
-                <div className="w-px self-stretch my-[20%] bg-border" />
-                <div className="flex flex-col items-center justify-center">
-                  <span className="text-lg font-bold" style={{ color: 'hsl(241, 53%, 49%)' }}>{activeProjectsCount}</span>
-                  <span className="text-[9px] text-muted-foreground leading-tight">Active projects</span>
+                <div className="bg-white border border-[hsl(220,13%,91%)] rounded-lg px-3 py-1 flex flex-col items-center justify-center">
+                  <span className="text-[13px] font-bold" style={{ color: 'hsl(241, 53%, 49%)' }}>{activeProjectsCount}</span>
+                  <span className="text-[8px] text-muted-foreground leading-tight">Active projects</span>
                 </div>
               </div>
 
