@@ -455,6 +455,11 @@ export default function AdminDashboard() {
     return applySorting(filtered);
   }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, customFilterSkills, applyCategoryFilter, applyCommonFilters, applySorting]);
 
+  // Inline stats for overview top bar
+  const totalCertificates = useMemo(() => personnel.reduce((sum, p) => sum + p.certificates.length, 0), [personnel]);
+  const profilesWithoutCerts = useMemo(() => personnel.filter(p => p.activated && p.certificates.length === 0).map(p => ({ id: p.id, name: p.name })), [personnel]);
+  const activeProjectsCount = useMemo(() => projects.filter(p => p.status === 'active').length, [projects]);
+
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
