@@ -26,6 +26,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import { MapPin, ShieldCheck, Award, Link2, FileText, MessageSquare, RefreshCw, CreditCard, Settings2, Brain } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
