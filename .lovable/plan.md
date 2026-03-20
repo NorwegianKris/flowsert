@@ -1,27 +1,24 @@
 
 
-## Plan: Fix personnel deletion FK constraints
+## Plan: Add 3 inline stat metrics to Overview tab top bar (revised)
 
-### Database Migration
+### Changes in `src/pages/AdminDashboard.tsx`
 
-Run a single migration with two changes:
+**1. Add imports**
+- `Popover, PopoverTrigger, PopoverContent` from `@/components/ui/popover`
 
-1. **Fix `data_processing_acknowledgements.personnel_id` FK** — drop the existing NO ACTION constraint and re-add it with `ON DELETE CASCADE`
-2. **Add missing `direct_messages.personnel_id` FK** — add a new foreign key to `personnel(id)` with `ON DELETE CASCADE`
+**2. Compute stats via `useMemo`**
+- `totalCertificates`: sum of all personnel's `certificates.length`
+- `profilesWithoutCerts`: active personnel with 0 certificates (list + count)
+- `activeProjectsCount`: projects with `status === 'active'`
 
-```sql
-ALTER TABLE public.data_processing_acknowledgements
-  DROP CONSTRAINT data_processing_acknowledgements_personnel_id_fkey;
-ALTER TABLE public.data_processing_acknowledgements
-  ADD CONSTRAINT data_processing_acknowledgements_personnel_id_fkey
-  FOREIGN KEY (personnel_id) REFERENCES public.personnel(id) ON DELETE CASCADE;
+**3. Insert stat clusters in the top bar (between label and filter buttons)**
+- Wrapper div: `h-full overflow-hidden flex items-center gap-4` — fills parent height, never expands it
+- 3 stat clusters separated by vertical dividers (`w-px bg-[#E5E7EB] self-stretch my-[20%]`)
+- Each cluster: number (18px bold) + label (9px, #6B7280), vertically centered
+- Stat 1: Certificates uploaded — number color `#3B3AC2`
+- Stat 2: Profiles without certificates — amber if >0, green if 0; wrapped in `Popover` listing names with links
+- Stat 3: Active projects — number color `#3B3AC2`
 
-ALTER TABLE public.direct_messages
-  ADD CONSTRAINT direct_messages_personnel_id_fkey
-  FOREIGN KEY (personnel_id) REFERENCES public.personnel(id) ON DELETE CASCADE;
-```
-
-### No frontend code changes needed
-
-The existing delete handlers in `PersonnelCard.tsx` and `PersonnelOverview.tsx` already have proper error handling with toast messages. Once the FK constraints cascade correctly, deletion will succeed.
+### No other files changed.
 
