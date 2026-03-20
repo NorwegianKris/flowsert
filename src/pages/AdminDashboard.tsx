@@ -26,6 +26,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import { MapPin, ShieldCheck, Award, Link2, FileText, MessageSquare, RefreshCw, CreditCard, Settings2, Brain } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 import { FeedbackList } from '@/components/FeedbackList';
 import { ActivationOverview } from '@/components/ActivationOverview';
@@ -454,6 +455,11 @@ export default function AdminDashboard() {
     return applySorting(filtered);
   }, [personnel, overviewFilter, customFilterPersonnelIds, customFilterRoles, customFilterWorkerGroupIds, customFilterSkills, applyCategoryFilter, applyCommonFilters, applySorting]);
 
+  // Inline stats for overview top bar
+  const totalCertificates = useMemo(() => personnel.reduce((sum, p) => sum + p.certificates.length, 0), [personnel]);
+  const profilesWithoutCerts = useMemo(() => personnel.filter(p => p.activated && p.certificates.length === 0).map(p => ({ id: p.id, name: p.name })), [personnel]);
+  const activeProjectsCount = useMemo(() => projects.filter(p => p.status === 'active').length, [projects]);
+
 
   const handleProjectAdded = async (projectData: Omit<Project, 'id' | 'calendarItems'>): Promise<Project | null> => {
     return await addProject(projectData);
@@ -770,10 +776,55 @@ export default function AdminDashboard() {
           
           <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 h-10 px-3 w-full max-w-96">
+              <div className="flex items-center gap-2 h-10 px-3 shrink-0">
                 <LayoutDashboard className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-muted-foreground">Compliance at a Glance</span>
               </div>
+
+              <div className="h-full overflow-hidden flex items-center gap-4">
+                <div className="flex flex-col items-center justify-center">
+                  <span className="text-lg font-bold" style={{ color: 'hsl(241, 53%, 49%)' }}>{totalCertificates}</span>
+                  <span className="text-[9px] text-muted-foreground leading-tight">Certificates uploaded</span>
+                </div>
+                <div className="w-px self-stretch my-[20%] bg-border" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                      <span className="text-lg font-bold" style={{ color: profilesWithoutCerts.length > 0 ? 'hsl(38, 92%, 50%)' : 'hsl(160, 84%, 39%)' }}>
+                        {profilesWithoutCerts.length}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground leading-tight">Profiles without certificates</span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3 max-h-60 overflow-y-auto">
+                    {profilesWithoutCerts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">All active profiles have certificates.</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {profilesWithoutCerts.map((p) => (
+                          <li key={p.id}>
+                            <button
+                              className="text-sm text-primary hover:underline w-full text-left"
+                              onClick={() => {
+                                const found = personnel.find(per => per.id === p.id);
+                                if (found) setSelectedPersonnel(found);
+                              }}
+                            >
+                              {p.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </PopoverContent>
+                </Popover>
+                <div className="w-px self-stretch my-[20%] bg-border" />
+                <div className="flex flex-col items-center justify-center">
+                  <span className="text-lg font-bold" style={{ color: 'hsl(241, 53%, 49%)' }}>{activeProjectsCount}</span>
+                  <span className="text-[9px] text-muted-foreground leading-tight">Active projects</span>
+                </div>
+              </div>
+
               <FreelancerFilters
                 personnelFilter={overviewFilter}
                 onPersonnelFilterChange={setOverviewFilter}
