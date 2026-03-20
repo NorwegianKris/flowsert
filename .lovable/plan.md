@@ -1,24 +1,21 @@
 
 
-## Plan: Add 3 inline stat metrics to Overview tab top bar (revised)
+## Plan: Restyle stat clusters with card boxes
 
-### Changes in `src/pages/AdminDashboard.tsx`
+### Changes in `src/pages/AdminDashboard.tsx` (lines 784-826)
 
-**1. Add imports**
-- `Popover, PopoverTrigger, PopoverContent` from `@/components/ui/popover`
+**1. Update container (line 784)**
+- Change `gap-4` to `gap-2`, add `py-2`: `h-full overflow-hidden flex items-center gap-2 py-2`
 
-**2. Compute stats via `useMemo`**
-- `totalCertificates`: sum of all personnel's `certificates.length`
-- `profilesWithoutCerts`: active personnel with 0 certificates (list + count)
-- `activeProjectsCount`: projects with `status === 'active'`
+**2. Wrap each stat cluster in a card box**
+- Each of the 3 stat groups gets: `bg-white border border-[#E5E7EB] rounded-lg px-3 py-1` (px-3 = 12px, py-1 = 4px)
 
-**3. Insert stat clusters in the top bar (between label and filter buttons)**
-- Wrapper div: `h-full overflow-hidden flex items-center gap-4` — fills parent height, never expands it
-- 3 stat clusters separated by vertical dividers (`w-px bg-[#E5E7EB] self-stretch my-[20%]`)
-- Each cluster: number (18px bold) + label (9px, #6B7280), vertically centered
-- Stat 1: Certificates uploaded — number color `#3B3AC2`
-- Stat 2: Profiles without certificates — amber if >0, green if 0; wrapped in `Popover` listing names with links
-- Stat 3: Active projects — number color `#3B3AC2`
+**3. Update font sizes**
+- Number spans: change `text-lg` to `text-[13px]`
+- Label spans: change `text-[9px]` to `text-[8px]`
+
+**4. Remove vertical dividers**
+- Delete the two `<div className="w-px self-stretch my-[20%] bg-border" />` elements (lines 789 and 821)
 
 ### No other files changed.
 
