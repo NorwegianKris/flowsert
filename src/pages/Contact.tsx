@@ -92,7 +92,7 @@ export default function Contact() {
               {/* Left: Calendly */}
               <div
                 className="calendly-inline-widget rounded-xl overflow-hidden"
-                data-url="https://calendly.com/kmu-7-vf/30min?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff"
+                data-url="https://calendly.com/flowsert?hide_event_type_details=1&hide_gdpr_banner=1&background_color=faf5ff"
                 style={{ minWidth: '320px', height: '580px' }}
               />
 
