@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
     // 5. Create portal session
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const returnUrl = Deno.env.get("STRIPE_PORTAL_RETURN_URL")
-      || `${req.headers.get("origin") || 'https://flowsert.lovable.app'}/admin`;
+      || `${req.headers.get("origin") || 'https://flowsert.com'}/admin`;
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: billingCustomer.stripe_customer_id,
