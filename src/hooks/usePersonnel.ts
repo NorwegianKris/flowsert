@@ -52,6 +52,26 @@ interface DbCertificate {
   title_raw: string | null;
 }
 
+// Fetch all rows in pages of 200 to avoid Supabase's default 1000-row cap.
+const PAGE_SIZE = 200;
+
+async function fetchAllPaginated<T>(
+  queryFn: () => any // returns a Supabase query builder
+): Promise<T[]> {
+  const all: T[] = [];
+  let page = 0;
+  while (true) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await queryFn().range(from, to);
+    if (error) throw error;
+    all.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) break;
+    page++;
+  }
+  return all;
+}
+
 export function usePersonnel() {
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,21 +86,17 @@ export function usePersonnel() {
     }
 
     try {
-      // Fetch personnel and certificates in parallel (no waterfall)
-      const [personnelResult, certificatesResult] = await Promise.all([
-        supabase.from('personnel').select('*'),
-        supabase.from('certificates').select('*, certificate_categories(name), certificate_types(name, certificate_categories(name))')
+      // Fetch personnel and certificates in parallel, paginated in batches of 200
+      const [personnelData, certificatesData] = await Promise.all([
+        fetchAllPaginated<DbPersonnel>(() => supabase.from('personnel').select('*')),
+        fetchAllPaginated<DbCertificate>(() =>
+          supabase.from('certificates').select('*, certificate_categories(name), certificate_types(name, certificate_categories(name))')
+        ),
       ]);
 
-      if (personnelResult.error) throw personnelResult.error;
-      if (certificatesResult.error) throw certificatesResult.error;
-
-      const personnelData = personnelResult.data || [];
-      const personnelIds = new Set((personnelData as any[]).map((p) => p.id));
+      const personnelIds = new Set(personnelData.map((p) => p.id));
       // Filter certificates to only those belonging to accessible personnel
-      const certificatesData = ((certificatesResult.data || []) as DbCertificate[]).filter(
-        (c) => personnelIds.has(c.personnel_id)
-      );
+      const filteredCerts = certificatesData.filter((c) => personnelIds.has(c.personnel_id));
 
       // Map to Personnel type with certificates
       const mappedPersonnel: Personnel[] = ((personnelData || []) as any[]).map((p) => ({
