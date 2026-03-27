@@ -44,6 +44,27 @@ interface PersonnelForAI {
   }[];
 }
 
+/**
+ * Calculate a profile completion percentage (0-100) for sorting.
+ * Fields: name, role, location, email, bio, nationality, department, country, city, skills, certificates.
+ */
+function getProfileCompletionPct(p: Personnel): number {
+  const fields = [
+    !!p.name?.trim(),
+    !!p.role?.trim(),
+    !!p.location?.trim() && p.location !== 'Not specified',
+    !!p.email?.trim(),
+    !!p.bio?.trim(),
+    !!p.nationality,
+    !!p.department,
+    !!p.country,
+    !!p.city,
+    (p.skills?.length ?? 0) > 0,
+    p.certificates.length > 0,
+  ];
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+}
+
 
 export function useSuggestPersonnel() {
   const [loading, setLoading] = useState(false);
@@ -65,26 +86,36 @@ export function useSuggestPersonnel() {
     setLoading(true);
 
     try {
-      // Prepare personnel data (exclude sensitive fields, include completion info)
-      const personnelForAI: PersonnelForAI[] = personnel.map(p => {
-        // Determine employment type based on category
-        let employmentType: 'employee' | 'freelancer' = 'employee';
-        if (p.category === 'freelancer') {
-          employmentType = 'freelancer';
-        } else {
-          employmentType = 'employee';
-        }
-        
+      // ── Pre-filter & payload limit ──────────────────────────────────────────
+      // Only send activated personnel to the AI. Sort by profile completion so
+      // the most complete profiles are prioritised. Cap at 200 to keep the HTTP
+      // payload under ~1 MB and avoid edge-function timeouts.
+      const MAX_CLIENT_PAYLOAD = 200;
+
+      const activatedPersonnel = personnel.filter(p => p.activated);
+
+      const scored = activatedPersonnel.map(p => ({
+        person: p,
+        completionPct: getProfileCompletionPct(p),
+      }));
+      scored.sort((a, b) => b.completionPct - a.completionPct);
+
+      const cappedPersonnel = scored.slice(0, MAX_CLIENT_PAYLOAD);
+
+      const personnelForAI: PersonnelForAI[] = cappedPersonnel.map(({ person: p }) => {
+        const employmentType: 'employee' | 'freelancer' =
+          p.category === 'freelancer' ? 'freelancer' : 'employee';
+
         // Truncate bio to avoid token limits (max 500 chars)
         const truncatedBio = p.bio ? p.bio.slice(0, 500) : null;
-        
+
         return {
           id: p.id,
           name: p.name,
           role: p.role,
           location: p.location,
           category: p.category || null,
-          activated: p.activated || false,
+          activated: true, // always true after pre-filter
           nationality: p.nationality || null,
           department: p.department || null,
           bio: truncatedBio,
@@ -96,7 +127,7 @@ export function useSuggestPersonnel() {
             name: c.name,
             expiryDate: c.expiryDate,
             category: c.category || null,
-            issuingAuthority: c.issuingAuthority || null
+            issuingAuthority: c.issuingAuthority || null,
           })),
         };
       });

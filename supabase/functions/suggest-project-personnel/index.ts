@@ -430,13 +430,20 @@ serve(async (req) => {
       return true;
     };
 
-    // ── Pre-filter: freelancer toggle + location ───────────────────────────────
+    // ── Pre-filter: activated + freelancer toggle + location ─────────────────
+    // The client already caps the payload at 200 activated profiles sorted by
+    // profile completion. This server-side filter is a defence-in-depth guard
+    // that also applies the freelancer/employee toggle and location intent.
+    // After this filter the list is further capped to 50 (MAX_CANDIDATES)
+    // before being sent to the AI model.
     const locationIntent = parseLocationIntent(prompt);
 
     const filteredPersonnel: PersonnelData[] = (personnel || []).filter((p: PersonnelData) => {
+      // Defence-in-depth: reject non-activated profiles
+      if (!p.activated) return false;
       // Freelancer toggle
       if (p.category === 'freelancer') {
-        if (!includeFreelancers || !p.activated) return false;
+        if (!includeFreelancers) return false;
       }
       if (p.category !== 'freelancer' && !includeEmployees) return false;
       // Location hard filter — only applied when query contains explicit location
