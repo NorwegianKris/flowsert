@@ -130,10 +130,17 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
 };
 
 const handler = async (req: Request): Promise<Response> => {
-  const corsHeaders = getCorsHeaders(req);
+  const corsHeaders = getCorsHeaders(req, { extraAllowHeaders: 'x-internal-secret' });
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Secret check for cron invocation security
+  const secret = Deno.env.get('INTERNAL_CRON_SECRET');
+  const provided = req.headers.get('x-internal-secret');
+  if (!secret || provided !== secret) {
+    return new Response('Unauthorized', { status: 401, headers: corsHeaders });
   }
 
   try {
