@@ -1,67 +1,65 @@
 
 
-## Plan: Create shared CORS utility with proper unknown-origin blocking
+## Plan: Paginated fetching in usePersonnel
 
 ### Problem
-1. The shared `_shared/cors.ts` utility from the previous plan was never created — all 22 edge functions still use `Access-Control-Allow-Origin: *`
-2. The user correctly identifies that falling back to `ALLOWED_ORIGINS[0]` for unrecognised origins defeats the purpose
+`supabase.from('personnel').select('*')` fetches all rows in a single request. Supabase has a default 1000-row limit, and large datasets will be slow.
 
 ### Approach
-Create the shared utility with the correct behavior: if the request `Origin` is not in the whitelist, return an empty string for `Access-Control-Allow-Origin`, causing browsers to block the response. Then update all 22 edge functions to use it.
+Implement a paginated fetch loop inside `fetchPersonnel` that loads personnel in batches of 200, accumulating results until a batch returns fewer than 200 rows (indicating the last page). Certificates are already scoped by RLS and filtered client-side to matching personnel IDs, so they use the same pattern.
 
-### Changes
+### Changes — single file: `src/hooks/usePersonnel.ts`
 
-**1. Create `supabase/functions/_shared/cors.ts`**
+**1. Add a paginated fetch helper**
+
 ```typescript
-// Allowed origins for CORS. Requests from other origins will be blocked by browsers.
-const ALLOWED_ORIGINS = [
-  "https://flowsert.com",
-  "https://flowsert.lovable.app",
-];
+const PAGE_SIZE = 200;
 
-export function getCorsHeaders(
-  req: Request,
-  options?: {
-    extraAllowHeaders?: string;
-    allowMethods?: string;
+async function fetchAllPaginated<T>(
+  query: () => any // returns a Supabase query builder
+): Promise<T[]> {
+  const all: T[] = [];
+  let page = 0;
+  while (true) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await query().range(from, to);
+    if (error) throw error;
+    all.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) break;
+    page++;
   }
-): Record<string, string> {
-  const origin = req.headers.get("Origin") || "";
-  // If the origin is not recognised, set an empty value so browsers reject the response.
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
-
-  const headers: Record<string, string> = {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": [
-      "authorization, x-client-info, apikey, content-type",
-      "x-supabase-client-platform, x-supabase-client-platform-version",
-      "x-supabase-client-runtime, x-supabase-client-runtime-version",
-      options?.extraAllowHeaders,
-    ].filter(Boolean).join(", "),
-  };
-
-  if (options?.allowMethods) {
-    headers["Access-Control-Allow-Methods"] = options.allowMethods;
-  }
-
-  return headers;
+  return all;
 }
 ```
 
-**2. Update all 22 edge functions**
+**2. Replace the two `Promise.all` queries**
 
-Each function will:
-- Import `getCorsHeaders` from `../_shared/cors.ts`
-- Replace the static `const corsHeaders = { ... }` with a dynamic call inside the handler
-- Move `const corsHeaders = getCorsHeaders(req, ...)` to the first line inside `Deno.serve`
+Replace:
+```typescript
+supabase.from('personnel').select('*')
+```
+and
+```typescript
+supabase.from('certificates').select('*, certificate_categories(name), ...')
+```
 
-Special cases:
-- **auth-email-hook**: Both `corsHeaders` and `previewCorsHeaders` use `getCorsHeaders(req, ...)` with `x-lovable-signature, x-lovable-timestamp` as extra headers for the main one
-- **auto-close-projects**: Extra header `x-internal-secret`
-- **setup-platform-admin**, **create-portal-session**, **create-checkout-session**: Pass `allowMethods: "POST, OPTIONS"`
-- **stripe-webhook**: Server-to-server (no browser CORS needed) — update anyway for consistency since it still has the `*` header
-- **process-email-queue**: Background job — same treatment
+With parallel paginated fetches:
+```typescript
+const [personnelData, certificatesData] = await Promise.all([
+  fetchAllPaginated<DbPersonnel>(() => supabase.from('personnel').select('*')),
+  fetchAllPaginated<DbCertificate>(() => supabase.from('certificates').select('*, certificate_categories(name), certificate_types(name, certificate_categories(name))'))
+]);
+```
+
+**3. No changes to return type, mapping, or consumers**
+
+The rest of the function (mapping, filtering, state) stays identical. The hook still returns the full accumulated list, so all UI consumers work without modification.
+
+### What stays unchanged
+- `useWorkerPersonnel` — fetches a single record by `user_id`, no pagination needed
+- All consuming components — they receive the same `personnel[]` array
 
 ### Risk
-Edge functions + access control changes → **Anchor required** before publish (Q2 + Q3).
+Green — no schema, RLS, auth, or edge function changes. Pure client-side fetch optimization.
 
