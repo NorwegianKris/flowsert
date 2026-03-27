@@ -1,36 +1,40 @@
 
 
-## Plan: Replace hardcoded lovable.app URLs with flowsert.com
+## Plan: Schedule certificate expiry notifications via pg_cron
 
-### Findings
+### Context
 
-7 files contain `flowsert.lovable.app`. Here's the full list:
+This project runs on Lovable Cloud. According to project memory, **pg_cron and pg_net are unavailable** on the current tier. The existing `auto-close-projects` function already uses an external cron service pattern with `INTERNAL_CRON_SECRET` header authentication.
 
-| File | Line(s) | Context |
-|------|---------|---------|
-| `send-notification-email/index.ts` | 23, 24 | Email link URLs |
-| `send-dm-notification/index.ts` | 129 | "View Message" button href |
-| `send-certificate-expiry-notifications/index.ts` | 108 | "View My Profile" button href |
-| `send-project-invitation/index.ts` | 205 | "View Invitation" button href |
-| `create-portal-session/index.ts` | 90 | Stripe portal return URL fallback |
-| `auth-email-hook/index.ts` | 44 | `SAMPLE_PROJECT_URL` constant |
-| `_shared/cors.ts` | 4 | CORS allowed origins list |
+### Recommendation
+
+**Do not create a migration with `cron.schedule`** -- it will fail if pg_cron is not enabled. Instead, follow the same pattern already used for `auto-close-projects`:
+
+1. **Add secret-based authentication** to `send-certificate-expiry-notifications` (it currently has none -- anyone can call it)
+2. **Register with an external cron service** (e.g., cron-job.org) to call the function daily at 07:00 UTC
 
 ### Changes
 
-**5 edge functions** — replace `https://flowsert.lovable.app` with `https://flowsert.com` in all email links and redirect URLs:
-- `send-notification-email/index.ts` (lines 23-24)
-- `send-dm-notification/index.ts` (line 129)
-- `send-certificate-expiry-notifications/index.ts` (line 108)
-- `send-project-invitation/index.ts` (line 205)
-- `create-portal-session/index.ts` (line 90)
+**1. `supabase/functions/send-certificate-expiry-notifications/index.ts`**
+- Add `INTERNAL_CRON_SECRET` header check at the top of the handler, matching the `auto-close-projects` pattern
+- Add `x-internal-secret` to the CORS extra allowed headers
+- This prevents unauthorized invocation
 
-**1 shared utility** — `_shared/cors.ts`: keep `flowsert.lovable.app` in the CORS allowed origins list alongside `flowsert.com`, since the lovable.app preview domain still needs to make requests during development.
+**2. External cron setup (manual step)**
+Configure the external cron service to make a POST request to:
+```
+https://frgsnallgwkufyzabeje.supabase.co/functions/v1/send-certificate-expiry-notifications
+```
+With headers:
+- `Content-Type: application/json`
+- `x-internal-secret: <value of INTERNAL_CRON_SECRET>`
 
-**1 template file** — `auth-email-hook/index.ts`: update `SAMPLE_PROJECT_URL` to `https://flowsert.com`.
+Schedule: `0 7 * * *` (daily at 07:00 UTC)
 
-After making changes, a full search will confirm zero remaining `flowsert.lovable.app` references outside of `_shared/cors.ts`.
+### If you want to try pg_cron instead
+
+To check whether pg_cron is available, you would need to enable the `pg_cron` and `pg_net` extensions via the backend extensions settings. If they are available, a migration can be created to schedule the job. However, based on prior experience with this project, these extensions are not available on the current tier.
 
 ### Risk
-Edge function changes → **anchor required** (Q2). Low functional risk — string replacements only.
+Edge function change (Q2) -- **anchor required**. Adding auth guard is a security improvement.
 
