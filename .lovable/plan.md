@@ -1,25 +1,40 @@
 
 
-## Plan: Add .env to .gitignore
+## Plan: Add client-side pre-filtering to personnel search payload
 
-### Findings
+### Problem
+The full personnel list (all fields) is sent to the edge function with every AI search request. This won't scale beyond a few hundred profiles due to payload size and unnecessary data transfer.
 
-1. **`.env` is NOT in `.gitignore`** — this is a risk. The `.env` file contains the Supabase URL, project ID, and anon key. While these are auto-generated and the anon key is a publishable key (not a secret), best practice is to keep `.env` out of version control.
+### Changes
 
-2. **No hardcoded keys in client-side code** — all references use `import.meta.env.VITE_SUPABASE_*` correctly.
+**1. `src/hooks/useSuggestPersonnel.ts` — Pre-filter and slim the payload before sending**
 
-3. **Edge functions reference the project ref in logo URLs** — this is expected server-side behavior (these run on the backend, not exposed to the client repo). No action needed.
+- Filter to only `activated` personnel before building the payload
+- Compute a profile completion percentage for sorting (based on fields filled + certificate count)
+- Sort by completion percentage descending, cap at 200
+- Strip fields not needed for matching: remove `created_at`, `updated_at`, and all internal IDs except `personnel.id`
+- Add a comment explaining the 200-profile payload limit
 
-### Change
+The `PersonnelForAI` interface and mapping logic (lines ~42-90) will be updated:
+- Remove any timestamp or internal ID fields from the interface
+- Add the `profileCompletionPercentage` field
+- Filter `personnel` to only `p.activated === true` before mapping
+- Sort mapped array by completion % descending
+- Slice to 200 max
+- Add explanatory comment
 
-**`.gitignore`** — append `.env` and `.env.*` entries:
+**2. `supabase/functions/suggest-project-personnel/index.ts` — Add server-side safety guard**
 
+- At line ~436 (the `filteredPersonnel` filter), add an additional check to reject non-activated personnel as a defence-in-depth measure
+- Add a comment noting the 200-profile client-side cap and the 50-profile AI cap
+
+### Profile completion calculation (client-side)
+```text
+Fields checked: name, role, location, email, bio, nationality, department, country, city, skills.length > 0
+Certificates: hasAnyCerts
+Score = (filled fields / total fields) * 100
 ```
-.env
-.env.*
-```
 
-This is a single-line addition to an existing file. No other changes needed.
-
-Risk level: Green — purely a config/hygiene change.
+### Risk
+Green — no schema changes. Pure client-side + edge function logic. No RLS or auth impact.
 
