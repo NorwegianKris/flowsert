@@ -99,7 +99,7 @@ export function usePersonnel() {
       const filteredCerts = certificatesData.filter((c) => personnelIds.has(c.personnel_id));
 
       // Map to Personnel type with certificates
-      const mappedPersonnel: Personnel[] = ((personnelData || []) as any[]).map((p) => ({
+      const mappedPersonnel: Personnel[] = personnelData.map((p: any) => ({
         id: p.id,
         name: p.name,
         role: p.role,
