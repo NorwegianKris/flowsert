@@ -1,40 +1,67 @@
 
 
-## Plan: Add client-side pre-filtering to personnel search payload
+## Plan: Create shared CORS utility with proper unknown-origin blocking
 
 ### Problem
-The full personnel list (all fields) is sent to the edge function with every AI search request. This won't scale beyond a few hundred profiles due to payload size and unnecessary data transfer.
+1. The shared `_shared/cors.ts` utility from the previous plan was never created — all 22 edge functions still use `Access-Control-Allow-Origin: *`
+2. The user correctly identifies that falling back to `ALLOWED_ORIGINS[0]` for unrecognised origins defeats the purpose
+
+### Approach
+Create the shared utility with the correct behavior: if the request `Origin` is not in the whitelist, return an empty string for `Access-Control-Allow-Origin`, causing browsers to block the response. Then update all 22 edge functions to use it.
 
 ### Changes
 
-**1. `src/hooks/useSuggestPersonnel.ts` — Pre-filter and slim the payload before sending**
+**1. Create `supabase/functions/_shared/cors.ts`**
+```typescript
+// Allowed origins for CORS. Requests from other origins will be blocked by browsers.
+const ALLOWED_ORIGINS = [
+  "https://flowsert.com",
+  "https://flowsert.lovable.app",
+];
 
-- Filter to only `activated` personnel before building the payload
-- Compute a profile completion percentage for sorting (based on fields filled + certificate count)
-- Sort by completion percentage descending, cap at 200
-- Strip fields not needed for matching: remove `created_at`, `updated_at`, and all internal IDs except `personnel.id`
-- Add a comment explaining the 200-profile payload limit
+export function getCorsHeaders(
+  req: Request,
+  options?: {
+    extraAllowHeaders?: string;
+    allowMethods?: string;
+  }
+): Record<string, string> {
+  const origin = req.headers.get("Origin") || "";
+  // If the origin is not recognised, set an empty value so browsers reject the response.
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
 
-The `PersonnelForAI` interface and mapping logic (lines ~42-90) will be updated:
-- Remove any timestamp or internal ID fields from the interface
-- Add the `profileCompletionPercentage` field
-- Filter `personnel` to only `p.activated === true` before mapping
-- Sort mapped array by completion % descending
-- Slice to 200 max
-- Add explanatory comment
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": [
+      "authorization, x-client-info, apikey, content-type",
+      "x-supabase-client-platform, x-supabase-client-platform-version",
+      "x-supabase-client-runtime, x-supabase-client-runtime-version",
+      options?.extraAllowHeaders,
+    ].filter(Boolean).join(", "),
+  };
 
-**2. `supabase/functions/suggest-project-personnel/index.ts` — Add server-side safety guard**
+  if (options?.allowMethods) {
+    headers["Access-Control-Allow-Methods"] = options.allowMethods;
+  }
 
-- At line ~436 (the `filteredPersonnel` filter), add an additional check to reject non-activated personnel as a defence-in-depth measure
-- Add a comment noting the 200-profile client-side cap and the 50-profile AI cap
-
-### Profile completion calculation (client-side)
-```text
-Fields checked: name, role, location, email, bio, nationality, department, country, city, skills.length > 0
-Certificates: hasAnyCerts
-Score = (filled fields / total fields) * 100
+  return headers;
+}
 ```
 
+**2. Update all 22 edge functions**
+
+Each function will:
+- Import `getCorsHeaders` from `../_shared/cors.ts`
+- Replace the static `const corsHeaders = { ... }` with a dynamic call inside the handler
+- Move `const corsHeaders = getCorsHeaders(req, ...)` to the first line inside `Deno.serve`
+
+Special cases:
+- **auth-email-hook**: Both `corsHeaders` and `previewCorsHeaders` use `getCorsHeaders(req, ...)` with `x-lovable-signature, x-lovable-timestamp` as extra headers for the main one
+- **auto-close-projects**: Extra header `x-internal-secret`
+- **setup-platform-admin**, **create-portal-session**, **create-checkout-session**: Pass `allowMethods: "POST, OPTIONS"`
+- **stripe-webhook**: Server-to-server (no browser CORS needed) — update anyway for consistency since it still has the `*` header
+- **process-email-queue**: Background job — same treatment
+
 ### Risk
-Green — no schema changes. Pure client-side + edge function logic. No RLS or auth impact.
+Edge functions + access control changes → **Anchor required** before publish (Q2 + Q3).
 
