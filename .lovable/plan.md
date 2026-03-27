@@ -1,25 +1,36 @@
 
 
-## Plan: Add performance indexes on frequently searched columns
+## Plan: Update Deno standard library imports to v0.224.0
 
 ### Problem
-Key columns used in search, filtering, and joins lack indexes, which will degrade query performance as data grows.
+12 edge functions use outdated `deno.land/std` versions (6 on `@0.168.0`, 6 on `@0.190.0`). All should use the stable `@0.224.0`.
 
 ### Change
+Single-line replacement on line 1 of each file — update the `serve` import URL.
 
-**Single database migration** adding 6 indexes:
+**Files using `@0.168.0` (6 files):**
+- `certificate-chat/index.ts`
+- `extract-certificate-data/index.ts`
+- `send-dm-notification/index.ts`
+- `suggest-certificate-types/index.ts`
+- `suggest-issuer-types/index.ts`
+- `suggest-project-personnel/index.ts`
 
-```sql
-CREATE INDEX IF NOT EXISTS idx_certificates_name ON public.certificates (name);
-CREATE INDEX IF NOT EXISTS idx_certificates_expiry_date ON public.certificates (expiry_date);
-CREATE INDEX IF NOT EXISTS idx_personnel_location ON public.personnel (location);
-CREATE INDEX IF NOT EXISTS idx_personnel_role ON public.personnel (role);
-CREATE INDEX IF NOT EXISTS idx_personnel_business_id ON public.personnel (business_id);
-CREATE INDEX IF NOT EXISTS idx_personnel_activated ON public.personnel (activated);
+**Files using `@0.190.0` (6 files):**
+- `send-certificate-expiry-notifications/index.ts`
+- `send-contact-email/index.ts`
+- `send-demo-request/index.ts`
+- `send-invitation/index.ts`
+- `send-notification-email/index.ts`
+- `send-project-invitation/index.ts`
+
+Each file: replace line 1 import from old version to:
+```typescript
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 ```
 
-All use `CREATE INDEX IF NOT EXISTS` for idempotency. No code changes needed.
+No other changes. The `serve` API is stable across these versions.
 
 ### Risk
-Schema change (Q1) -- **anchor required** before publish. However, adding indexes is non-destructive and does not affect RLS, data, or application logic.
+Edge function changes → anchor required (Q2). Low functional risk — `serve` API unchanged between versions.
 
