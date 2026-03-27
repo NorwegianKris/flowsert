@@ -547,7 +547,7 @@ export default function Auth() {
 
       <HeroSection
         onGetInTouch={() => navigate('/contact')}
-        onBookDemo={() => window.open('https://calendly.com/kmu-7-vf/30min', '_blank')}
+        onBookDemo={() => window.open('https://calendly.com/flowsert', '_blank')}
       />
 
       {/* Workforce Compliance Section */}
@@ -883,7 +883,7 @@ export default function Auth() {
             <Button size="lg" onClick={() => navigate('/contact')} className="h-12 px-8">
               Get in Touch
             </Button>
-            <Button size="lg" variant="outline" onClick={() => window.open('https://calendly.com/kmu-7-vf/30min', '_blank')} className="h-12 px-8">
+            <Button size="lg" variant="outline" onClick={() => window.open('https://calendly.com/flowsert', '_blank')} className="h-12 px-8">
               Book a Demo
             </Button>
           </div>
