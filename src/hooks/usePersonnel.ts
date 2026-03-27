@@ -133,7 +133,7 @@ export function usePersonnel() {
         country: p.country || undefined,
         city: p.city || undefined,
         skills: p.skills || [],
-        certificates: certificatesData
+        certificates: filteredCerts
           .filter((c: DbCertificate) => c.personnel_id === p.id)
           .map((c: DbCertificate): Certificate => ({
             id: c.id,
