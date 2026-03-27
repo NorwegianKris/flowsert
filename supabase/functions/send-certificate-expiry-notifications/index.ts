@@ -105,7 +105,7 @@ const getEmailTemplate = (personnelName: string, certificates: ExpiringCertifica
             
             <!-- Action Button -->
             <div style="text-align: center; margin: 28px 0;">
-              <a href="https://flowsert.lovable.app/worker" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+              <a href="https://flowsert.com/worker" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                 View My Profile
               </a>
             </div>

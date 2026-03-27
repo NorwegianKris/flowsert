@@ -20,8 +20,8 @@ const logoUrl = "https://frgsnallgwkufyzabeje.supabase.co/storage/v1/object/publ
 
 const getEmailTemplate = (subject: string, message: string, notificationId?: string) => {
   const viewNotificationUrl = notificationId 
-    ? `https://flowsert.lovable.app/worker?notification=${notificationId}`
-    : `https://flowsert.lovable.app/worker`;
+    ? `https://flowsert.com/worker?notification=${notificationId}`
+    : `https://flowsert.com/worker`;
 
   return `
     <!DOCTYPE html>
