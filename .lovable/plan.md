@@ -1,21 +1,13 @@
 
 
-## Plan: Restyle stat clusters with card boxes
+## Plan: Add FlowSert One Pager PDF as a public asset
 
-### Changes in `src/pages/AdminDashboard.tsx` (lines 784-826)
+### Steps
 
-**1. Update container (line 784)**
-- Change `gap-4` to `gap-2`, add `py-2`: `h-full overflow-hidden flex items-center gap-2 py-2`
+1. **Copy the uploaded PDF** to `public/onepager.pdf` so Vite serves it at the root path.
 
-**2. Wrap each stat cluster in a card box**
-- Each of the 3 stat groups gets: `bg-white border border-[#E5E7EB] rounded-lg px-3 py-1` (px-3 = 12px, py-1 = 4px)
+2. **Add a redirect rule** in `public/_redirects` — not needed since files in `public/` are served directly by Vite/the CDN at their exact filename. The file will be accessible at `flowsert.com/onepager.pdf` automatically.
 
-**3. Update font sizes**
-- Number spans: change `text-lg` to `text-[13px]`
-- Label spans: change `text-[9px]` to `text-[8px]`
-
-**4. Remove vertical dividers**
-- Delete the two `<div className="w-px self-stretch my-[20%] bg-border" />` elements (lines 789 and 821)
-
-### No other files changed.
+### Summary
+One file copy operation. No code changes needed. The PDF will be available at `https://flowsert.com/onepager.pdf` (and `https://flowsert.lovable.app/onepager.pdf`).
 
