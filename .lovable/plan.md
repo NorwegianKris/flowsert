@@ -1,48 +1,32 @@
 
-Findings:
-- I checked the code paths that style the expanded modal. The exact green outline rule is not coming from `expandedCalendarClassNames.day`.
-- The only green-border rule in the expanded modal is this inline CSS in `src/components/AvailabilityCalendar.tsx` around lines 734–736:
-  ```css
-  .expanded-availability-calendar .rdp-day--project-block {
-    box-shadow: inset 0 0 0 2px #639922 !important;
-    border-radius: 6px;
-  }
+
+## Plan: Three fixes in AvailabilityCalendar.tsx
+
+### File: `src/components/AvailabilityCalendar.tsx`
+
+### 1. Remove tip banner from collapsed view only
+- Delete lines 689–693 (the tip banner in the collapsed card view)
+- Keep the identical tip banner in the expanded modal (lines 727–731)
+
+### 2. Enhance projectBlockDates debug logging
+- In the existing `useEffect` (line 469), add a log that prints each date as a readable string along with the total count, and also log the raw `assignedProjects` array to see which projects are generating dates
+
+### 3. Fix dark navy fill on days 10 and 14 in collapsed view
+- The dark fill is caused by `day_selected` class (`bg-primary text-primary-foreground`) from the `selectedRange` state persisting across interactions
+- The collapsed calendar uses `selectedRange` (line 698) which retains the previously clicked range even after saving/removing availability
+- **Fix**: After saving or removing availability in the collapsed view, clear `selectedRange` (already done on line 429 but only inside the `else` branch — verify this is firing). Also initialize `selectedRange` to `undefined` and ensure the `day_selected` class in `calendarClassNames` does not produce a dark navy fill for range endpoints
+- Most likely root cause: the `day_range_start` and `day_range_end` classes are not defined in `calendarClassNames`, so DayPicker falls back to its built-in dark styles. **Add `day_range_start` and `day_range_end` entries** to `calendarClassNames` with transparent or primary-colored styling that matches the design, or add `day_range_middle` to control the in-between fill
+
+### Technical details
+- `calendarClassNames` (line 480) is missing `day_range_end`, `day_range_start`, and `day_range_middle` — DayPicker's default stylesheet applies its own dark background for these
+- Add these keys to `calendarClassNames`:
   ```
-- So the green border is being added by:
-  - class: `rdp-day--project-block`
-  - property: `box-shadow`
-  - value: `inset 0 0 0 2px #639922 !important`
-  - file/line: `src/components/AvailabilityCalendar.tsx` inline `<style>` block, ~734–736
-- `expandedCalendarClassNames.day` already has `border-0 outline-none shadow-none ring-0`.
-- There is no `day_button` entry in `expandedCalendarClassNames` at all.
-- Conclusion: the visible green border is not from the expanded `day` class; it is from the `.rdp-day--project-block` rule being applied to cells that should be empty.
-
-Plan:
-1. Remove the inline class-based project outline rule
-- Delete the expanded-modal `<style>` rule for `.expanded-availability-calendar .rdp-day--project-block`.
-- Delete the broad reset rule beside it too, since it is not solving the problem.
-
-2. Move the project outline to DayPicker modifier styles directly
-- Add `projectBlock` into `modifiersStyles`:
-  ```ts
-  projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' }
+  day_range_start: "bg-primary text-primary-foreground rounded-full"
+  day_range_end: "bg-primary text-primary-foreground rounded-full"  
+  day_range_middle: "bg-accent text-accent-foreground"
   ```
-- This makes the outline apply only through the DayPicker modifier system, instead of a global CSS selector.
+- Same entries should be added to `expandedCalendarClassNames` (inherited via spread, so only need to add to `calendarClassNames`)
 
-3. Keep expanded empty days identical to collapsed empty days
-- Keep `expandedCalendarClassNames.day` free of any border/ring/outline/shadow classes.
-- Do not add a `day_button` override.
-- If needed, simplify the expanded `day` class so it only differs from the collapsed one by size and corner radius.
+### Risk
+Q5 — purely UI, no backend or permission changes.
 
-4. Re-verify modifier wiring
-- Keep `projectBlock` only in `modifiers`.
-- Remove `modifiersClassNames.projectBlock` entirely if the outline is handled by `modifiersStyles`.
-- This avoids any leftover `.rdp-day--project-block` class from driving styles in the expanded modal.
-
-5. Expected result
-- Empty expanded cells: no border, no outline, no box-shadow, transparent background, only the date number.
-- Assigned-project days: green outline only on true project days.
-- Collapsed and expanded empty cells will visually match.
-
-Risk:
-- Q5 only: visual-only change in one file, no data/auth/backend changes.
