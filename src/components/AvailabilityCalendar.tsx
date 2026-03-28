@@ -458,13 +458,12 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     partial: { backgroundColor: '#F5B942', color: '#fff', borderRadius: '6px' },
     other: { backgroundColor: '#5B9FE0', color: '#fff', borderRadius: '6px' },
     certificateExpiry: { backgroundColor: '#9B8FE8', color: '#1a1a2e', borderRadius: '6px' },
+    projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' },
     projectEvent: {},
     certExpiryWarning: {},
   };
 
-  const modifiersClassNames: Record<string, string> = {
-    ...(projectBlockDates.length > 0 ? { projectBlock: 'rdp-day--project-block' } : {}),
-  };
+  const modifiersClassNames: Record<string, string> = {};
 
   // Debug logging when the expanded modal opens
   useEffect(() => {
@@ -731,10 +730,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <span className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</span>
               </div>
 
-              <style>{`
-                .expanded-availability-calendar .rdp td button { box-shadow: none; border: none; outline: none; }
-                .expanded-availability-calendar .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922 !important; border-radius: 6px; }
-              `}</style>
               <Calendar
                 mode="range"
                 selected={expandedSelectedRange}
