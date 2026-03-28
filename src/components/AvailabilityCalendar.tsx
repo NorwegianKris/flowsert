@@ -474,10 +474,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           <span
             style={{
               position: 'absolute',
-              top: '2px',
-              right: '2px',
-              width: '5px',
-              height: '5px',
+              top: '3px',
+              right: '3px',
+              width: '7px',
+              height: '7px',
               borderRadius: '50%',
               backgroundColor: '#639922',
             }}
@@ -486,6 +486,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
       </span>
     );
   }, [projectBlockDates]);
+
+  // Always-on debug logging for projectBlockDates
+  console.log('[AvailabilityCalendar] projectBlockDates count:', projectBlockDates.length, 'first 5:', projectBlockDates.slice(0, 5).map(d => format(d, 'yyyy-MM-dd')));
 
   // Debug logging when the expanded modal opens
   useEffect(() => {
