@@ -449,7 +449,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     other: availability.filter((a) => a.status === 'other').map((a) => toLocalDate(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
     projectEvent: getProjectEventDates(),
-    ...(projectBlockDates.length > 0 ? { projectBlock: projectBlockDates } : {}),
     certExpiryWarning: certExpiryWarningDates,
   };
 
@@ -459,7 +458,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     partial: { backgroundColor: '#F5B942', color: '#fff', borderRadius: '6px' },
     other: { backgroundColor: '#5B9FE0', color: '#fff', borderRadius: '6px' },
     certificateExpiry: { backgroundColor: '#9B8FE8', color: '#1a1a2e', borderRadius: '6px' },
-    projectBlock: {},
     projectEvent: {},
     certExpiryWarning: {},
   };
@@ -470,20 +468,22 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const DayContentWithDot = useCallback((props: DayContentProps) => {
     const isProjectDay = projectBlockDates.some(d => isSameDay(d, props.date));
     return (
-      <div className="relative w-full h-full flex items-center justify-center">
-        <span>{props.date.getDate()}</span>
+      <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+        {props.date.getDate()}
         {isProjectDay && (
           <span
-            className="absolute top-0 right-0"
             style={{
-              width: '4px',
-              height: '4px',
+              position: 'absolute',
+              top: '2px',
+              right: '2px',
+              width: '5px',
+              height: '5px',
               borderRadius: '50%',
               backgroundColor: '#639922',
             }}
           />
         )}
-      </div>
+      </span>
     );
   }, [projectBlockDates]);
 
