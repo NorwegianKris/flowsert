@@ -1,79 +1,64 @@
 
 
-## Plan: Consolidate all cron jobs to pg_cron
+## Plan: Redesign Personal Calendar modal — visual only
 
-### Current state
+### Scope
+Restyle the expanded modal in `src/components/AvailabilityCalendar.tsx` (lines 711-789). No data logic, state, or save behavior changes.
 
-| Job | Schedule | Auth method | Issue |
-|-----|----------|-------------|-------|
-| `certificate-expiry-check` (jobid 2) | `0 8 * * *` | Anon key in `Authorization` header | Rejected by `x-internal-secret` guard — broken |
-| `process-email-queue` (jobid 3) | Every 5s | Service role key from vault | Working correctly |
-| `auto-close-projects` | Not in pg_cron | External cron with `x-internal-secret` header | Works but depends on external service |
+### Layout change (lines 718-787)
 
-Vault currently has only `email_queue_service_role_key`. No `internal_cron_secret` entry exists.
+Current: Left = calendar + legend + upcoming events, Right = detail panel (shows "Select a day..." placeholder or selected date info).
 
-### Changes (3 steps, all via insert tool — no migrations)
+New: Left = calendar grid + compact legend, Right = upcoming events timeline + set availability buttons (always visible).
 
-**Step 1: Store `INTERNAL_CRON_SECRET` in vault**
+The detail panel content (assigned projects, cert expiry info for selected date) moves into the right column above the events list when a date is selected.
 
-Generate a new 64-char hex secret. Update the edge function secret via the secrets tool, then store it in vault:
+### Specific changes
 
-```sql
-SELECT vault.create_secret('<new_value>', 'internal_cron_secret');
-```
+**1. Two-column layout restructure**
+- Left column: header, tip banner, calendar grid, legend row
+- Right column: selected date details (if any), upcoming events timeline, availability buttons at bottom
+- Remove the "Select a day or period to set availability" placeholder text
 
-**Step 2: Fix `certificate-expiry-check` cron job**
+**2. Day cell styling via `modifiersStyles`**
+Replace current circle/underline styles with soft background fills:
+- `available`: `backgroundColor: '#EAF3DE'`, `color: 'inherit'`, no border-radius circle
+- `unavailable`: `backgroundColor: '#FCEBEB'`, `color: 'inherit'`
+- `partial`: `backgroundColor: '#FAEEDA'`, `color: 'inherit'`
+- `other`: `backgroundColor: '#E6F1FB'`, `color: 'inherit'`
+- `certificateExpiry`: `backgroundColor: '#EEEDFE'`, `color: 'inherit'`
+- `projectBlock`: `outline: '2px solid #639922'`, `outlineOffset: '-2px'` (green outline on top of any fill)
+- Remove `projectEvent` and `certExpiryWarning` modifier styles (visual noise reduction)
+- All day cells use `borderRadius: '6px'` instead of `50%`
 
-Unschedule the broken job and recreate it with the correct auth header, schedule changed from 08:00 to 07:00 UTC as intended:
+**3. Legend row**
+- Change from circles to small rounded squares (`rounded-sm` instead of `rounded-full`)
+- Add `gap-x-5` for more spacing
+- Move inside the left column, below the calendar grid
 
-```sql
-SELECT cron.unschedule('certificate-expiry-check');
+**4. Events panel (right column)**
+- Each event card gets a `border-l-[3px]` with color matching type:
+  - Assigned Project: `#639922` (green)
+  - Unavailable: `#dc2626` (red)
+  - Partial: `#d97706` (amber)
+  - Certificate Expiry: `#7c3aed` (purple)
+  - Available: `#16a34a` (green)
+  - Other: `#2563eb` (blue)
+- Card layout: name + date range + small badge, padding and background
+- Month grouping kept, month label styled as small uppercase text
 
-SELECT cron.schedule(
-  'certificate-expiry-check',
-  '0 7 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://frgsnallgwkufyzabeje.supabase.co/functions/v1/send-certificate-expiry-notifications',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'x-internal-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_cron_secret' LIMIT 1)
-    ),
-    body := '{}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
+**5. Availability buttons**
+- Move from detail panel into bottom of right column
+- Always visible (not gated on date selection)
+- 2x2 grid of small buttons with color dot matching status
+- Notes textarea and Save/Remove below
 
-**Step 3: Add `auto-close-projects` to pg_cron**
+**6. Month navigation**
+- `caption_label` class changed from `text-sm font-medium` to `text-base font-bold`
 
-Schedule it daily at 02:00 UTC (matching the external service timing), using the same vault secret:
-
-```sql
-SELECT cron.schedule(
-  'auto-close-projects',
-  '0 2 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://frgsnallgwkufyzabeje.supabase.co/functions/v1/auto-close-projects',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'x-internal-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'internal_cron_secret' LIMIT 1)
-    ),
-    body := '{}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
-
-### After completion
-
-- All three background jobs run inside pg_cron — no external cron service dependency
-- Both `send-certificate-expiry-notifications` and `auto-close-projects` authenticate via vault-stored `INTERNAL_CRON_SECRET`
-- The external cron service can be decommissioned
-- Memory note `infrastructure/external-cron-automation` will be updated to reflect pg_cron is now used
+### Files modified
+- `src/components/AvailabilityCalendar.tsx` — single file, visual changes only
 
 ### Risk
-
-Schema-adjacent change (Q2) — **anchor required**. Secret rotation affects `auto-close-projects` immediately, but since we're adding it to pg_cron in the same pass, there's no gap.
+Purely UI/layout — anchor optional (Q5).
 
