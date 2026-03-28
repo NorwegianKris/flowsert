@@ -719,7 +719,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           </DialogHeader>
           <div className="flex flex-col md:flex-row h-full max-h-[90vh]">
             {/* Left Column — Calendar Grid + Legend */}
-            <div className="flex-1 min-w-0 border-r border-border overflow-y-auto p-5 space-y-5">
+            <div className="expanded-availability-calendar flex-1 min-w-0 border-r border-border overflow-y-auto p-5 space-y-5">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-bold text-foreground">Personal Calendar</h2>
@@ -731,7 +731,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <span className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</span>
               </div>
 
-              <style>{`.rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }`}</style>
+              <style>{`
+                .expanded-availability-calendar .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }
+                .expanded-availability-calendar .rdp button:not(.rdp-day--project-block):not([class*="available"]):not([class*="unavailable"]):not([class*="partial"]):not([class*="other"]):not([class*="certificateExpiry"]) { box-shadow: none; border: none; outline: none; }
+              `}</style>
               <Calendar
                 mode="range"
                 selected={expandedSelectedRange}
