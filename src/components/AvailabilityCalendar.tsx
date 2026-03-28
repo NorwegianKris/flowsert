@@ -7,7 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval, parseISO, addDays, differenceInDays, addMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, parseISO, addDays, differenceInDays, addMonths, startOfMonth, endOfMonth, isWithinInterval, startOfDay } from 'date-fns';
+
+/** Parse a date-only string (yyyy-MM-dd) into a local-midnight Date, avoiding UTC shift from `new Date(str)`. */
+function toLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -132,7 +138,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const certificateExpiryDates = certificates
     .filter((cert) => cert.expiryDate)
     .map((cert) => ({
-      date: new Date(cert.expiryDate!),
+      date: toLocalDate(cert.expiryDate!),
       name: cert.name,
     }));
 
@@ -248,7 +254,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
     // Add availability entries
     for (const a of availability) {
-      const d = new Date(a.date);
+      const d = toLocalDate(a.date);
       if (d >= now && d <= threeMonthsLater) {
         const cfg = statusConfig[a.status];
         events.push({
@@ -290,6 +296,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     }
     return grouped;
   }, [upcomingEvents]);
+
+  // Debug logging when the expanded modal opens
+  useEffect(() => {
+    if (isExpanded) {
+      console.log('[AvailabilityCalendar] Modal opened — projectBlockDates:', projectBlockDates.map(d => format(d, 'yyyy-MM-dd')));
+      console.log('[AvailabilityCalendar] Assigned projects:', assignedProjects.map(p => ({ id: p.id, name: p.name, start: p.startDate, end: p.endDate, rotationOn: p.rotationOnDays, rotationOff: p.rotationOffDays })));
+    }
+  }, [isExpanded, projectBlockDates, assignedProjects]);
 
   useEffect(() => {
     fetchAvailability();
@@ -334,7 +348,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     }
     if (range?.from) {
       if (!range.to || isSameDay(range.from, range.to)) {
-        const existing = availability.find((a) => isSameDay(new Date(a.date), range.from!));
+        const existing = availability.find((a) => isSameDay(toLocalDate(a.date), range.from!));
         if (existing) {
           setSelectedStatus(existing.status as AvailabilityStatus);
           setNotes(existing.notes || '');
@@ -363,7 +377,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     try {
       for (const date of datesToSave) {
         const dateStr = format(date, 'yyyy-MM-dd');
-        const existing = availability.find((a) => isSameDay(new Date(a.date), date));
+        const existing = availability.find((a) => isSameDay(toLocalDate(a.date), date));
         if (existing) {
           const { error } = await supabase
             .from('availability')
@@ -399,7 +413,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     if (!activeRange?.from) return;
     const datesToRemove = getDatesInRange();
     const existingEntries = datesToRemove
-      .map((date) => availability.find((a) => isSameDay(new Date(a.date), date)))
+      .map((date) => availability.find((a) => isSameDay(toLocalDate(a.date), date)))
       .filter(Boolean);
     if (existingEntries.length === 0) return;
     setIsSaving(true);
@@ -430,29 +444,29 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   const hasExistingEntriesInRange = (): boolean => {
     const dates = getDatesInRange();
-    return dates.some((date) => availability.find((a) => isSameDay(new Date(a.date), date)));
+    return dates.some((date) => availability.find((a) => isSameDay(toLocalDate(a.date), date)));
   };
 
   const modifiers = {
-    available: availability.filter((a) => a.status === 'available').map((a) => parseISO(a.date)),
-    unavailable: availability.filter((a) => a.status === 'unavailable').map((a) => parseISO(a.date)),
-    partial: availability.filter((a) => a.status === 'partial').map((a) => parseISO(a.date)),
-    other: availability.filter((a) => a.status === 'other').map((a) => parseISO(a.date)),
+    available: availability.filter((a) => a.status === 'available').map((a) => toLocalDate(a.date)),
+    unavailable: availability.filter((a) => a.status === 'unavailable').map((a) => toLocalDate(a.date)),
+    partial: availability.filter((a) => a.status === 'partial').map((a) => toLocalDate(a.date)),
+    other: availability.filter((a) => a.status === 'other').map((a) => toLocalDate(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
     projectEvent: getProjectEventDates(),
-    projectBlock: projectBlockDates,
+    ...(projectBlockDates.length > 0 ? { projectBlock: projectBlockDates } : {}),
     certExpiryWarning: certExpiryWarningDates,
   };
 
-  const modifiersStyles = {
+  const modifiersStyles: Record<string, React.CSSProperties> = {
     available: { backgroundColor: '#86C952', color: '#fff', borderRadius: '6px' },
     unavailable: { backgroundColor: '#F47878', color: '#fff', borderRadius: '6px' },
     partial: { backgroundColor: '#F5B942', color: '#fff', borderRadius: '6px' },
     other: { backgroundColor: '#5B9FE0', color: '#fff', borderRadius: '6px' },
     certificateExpiry: { backgroundColor: '#9B8FE8', color: '#1a1a2e', borderRadius: '6px' },
     projectEvent: {},
-    projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' },
     certExpiryWarning: {},
+    ...(projectBlockDates.length > 0 ? { projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' } } : {}),
   };
 
   const calendarClassNames = {
