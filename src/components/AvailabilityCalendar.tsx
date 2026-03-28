@@ -724,6 +724,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 className="rounded-md border border-border p-3 pointer-events-auto w-full"
                 classNames={calendarClassNames}
                 numberOfMonths={1}
+                components={{ DayContent: DayContentWithDot }}
               />
             </div>
           )}
@@ -761,6 +762,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 className="rounded-md border border-border p-3 pointer-events-auto w-full"
                 classNames={expandedCalendarClassNames}
                 numberOfMonths={1}
+                components={{ DayContent: DayContentWithDot }}
               />
 
               {/* Legend — compact horizontal row */}
