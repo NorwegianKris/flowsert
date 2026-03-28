@@ -103,8 +103,8 @@ function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectO
       currentStart = addDays(periodStart, cycleLength);
     }
   } else {
-    const finalEnd = endDate || addDays(startDate, 30);
-    const days = eachDayOfInterval({ start: startDate, end: finalEnd });
+    if (!endDate) return results;
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
     for (const day of days) {
       results.push({ date: day, project, periodStart: startDate, periodEnd: finalEnd });
     }
