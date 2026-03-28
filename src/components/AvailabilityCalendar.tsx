@@ -731,7 +731,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <span className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</span>
               </div>
 
-              <style>{`.rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }`}</style>
+              <style>{`
+                .expanded-availability-calendar .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }
+                .expanded-availability-calendar .rdp button:not(.rdp-day--project-block):not([class*="available"]):not([class*="unavailable"]):not([class*="partial"]):not([class*="other"]):not([class*="certificateExpiry"]) { box-shadow: none; border: none; outline: none; }
+              `}</style>
               <Calendar
                 mode="range"
                 selected={expandedSelectedRange}
