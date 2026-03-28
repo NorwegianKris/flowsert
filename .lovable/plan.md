@@ -1,37 +1,42 @@
 
+Plan: Make empty day cells in the expanded AvailabilityCalendar match the collapsed view exactly
 
-## Plan: Fix green outline leaking to all day cells in expanded calendar
+File:
+- `src/components/AvailabilityCalendar.tsx`
 
-### File: `src/components/AvailabilityCalendar.tsx`
+What I found
+- `expandedCalendarClassNames` only overrides `cell` and `day`; neither currently adds a border utility.
+- There is no `day_button` class in this calendar setup.
+- The only expanded-only outline style in this file is:
+  ` .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; } `
+- That means the visible outline on “empty” cells is almost certainly coming from the `projectBlock` modifier/class being applied too broadly in the expanded modal, not from the base day styling.
 
-### Root cause
+Implementation plan
+1. Align expanded empty-cell styling with collapsed
+- Make `expandedCalendarClassNames.day` and `expandedCalendarClassNames.cell` inherit the collapsed classes as closely as possible.
+- Keep only the size/typography changes needed for the premium modal.
+- Ensure no border, ring, shadow, or background utility is present on default empty days.
 
-Line 106: `getProjectOnPeriodDates` — when a project has no end date and no rotation, it defaults to `startDate + 30 days`, which covers the entire visible month. Every day cell gets the `projectBlock` modifier and the green outline CSS class.
+2. Tighten project outline application
+- Verify `modifiersClassNames.projectBlock` is only added for actual `projectBlockDates`.
+- Keep the green outline CSS scoped strictly to modified project days only.
+- If needed, wrap the expanded calendar in a dedicated container class and scope the selector to that calendar instance only.
 
-The CSS selector `.rdp-day--project-block` is correctly scoped — the problem is the **data**, not the styling.
+3. Re-check projectBlock matcher data
+- Audit `projectBlockDates` generation so only true assigned-project on-period dates are included.
+- Keep the existing guard that skips open-ended non-rotation projects.
+- Deduplicate dates before passing them to the calendar so stray matches cannot create “outline everywhere” behavior.
 
-### Fixes
+4. Preserve empty-day appearance
+- Empty cells in expanded view should render with:
+  - no border
+  - no box-shadow
+  - no background fill
+  - just the date number
+- This will match the collapsed calendar behavior exactly.
 
-**1. Clamp `projectBlockDates` to actual project date ranges**
-- In `getProjectOnPeriodDates` (line 106): instead of defaulting to `startDate + 30 days` when there's no end date, use a reasonable upper bound — clamp to `endOfMonth(addMonths(today, 2))` to match the calendar's visible range, but only include days where the project is genuinely active (i.e., status is `active` or `in_progress`).
-- Better fix: only include a project in `projectBlockDates` if it has **both** a start and end date. Projects without an end date should not generate block dates — they have no defined period to display.
+5. No functionality changes
+- Keep click-to-select, range selection, availability saving, project markers, certificate expiry markers, and event list unchanged.
 
-**2. Add a guard: skip projects with no end date from block highlighting**
-- Change line 106 from `const finalEnd = endDate || addDays(startDate, 30)` to:
-  ```
-  if (!endDate) return results;
-  ```
-- This means open-ended projects won't show a green outline on every single day. They'll still appear in the events timeline and project details panel.
-
-**3. Verify no other CSS adds borders to all cells**
-- `expandedCalendarClassNames.day` (line 507): `rounded-[6px]` — no border. ✓
-- `expandedCalendarClassNames.cell` (line 506): no border. ✓
-- Calendar `className` (line 742): `border border-border` — this is on the Calendar **container**, not individual cells. ✓
-- The `<style>` tag (line 734): correctly scoped to `.rdp-day--project-block`. ✓
-
-### Summary
-Single change in `getProjectOnPeriodDates`: skip open-ended projects from generating block dates. The green outline CSS is correctly scoped — only the modifier data is too broad.
-
-### Risk
-Q5 — purely visual logic fix, no backend changes.
-
+Risk
+- Q5 only: visual parity fix in one component, no backend/auth/data model changes.
