@@ -434,10 +434,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const modifiers = {
-    available: availability.filter((a) => a.status === 'available').map((a) => new Date(a.date)),
-    unavailable: availability.filter((a) => a.status === 'unavailable').map((a) => new Date(a.date)),
-    partial: availability.filter((a) => a.status === 'partial').map((a) => new Date(a.date)),
-    other: availability.filter((a) => a.status === 'other').map((a) => new Date(a.date)),
+    available: availability.filter((a) => a.status === 'available').map((a) => parseISO(a.date)),
+    unavailable: availability.filter((a) => a.status === 'unavailable').map((a) => parseISO(a.date)),
+    partial: availability.filter((a) => a.status === 'partial').map((a) => parseISO(a.date)),
+    other: availability.filter((a) => a.status === 'other').map((a) => parseISO(a.date)),
     certificateExpiry: certificateExpiryDates.map((c) => c.date),
     projectEvent: getProjectEventDates(),
     projectBlock: projectBlockDates,
@@ -445,11 +445,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const modifiersStyles = {
-    available: { backgroundColor: '#D4EBB0', color: 'inherit', borderRadius: '6px' },
-    unavailable: { backgroundColor: '#FAC0C0', color: 'inherit', borderRadius: '6px' },
-    partial: { backgroundColor: '#FAD898', color: 'inherit', borderRadius: '6px' },
-    other: { backgroundColor: '#A8CAED', color: 'inherit', borderRadius: '6px' },
-    certificateExpiry: { backgroundColor: '#C5C0F0', color: 'inherit', borderRadius: '6px' },
+    available: { backgroundColor: '#86C952', color: '#fff', borderRadius: '6px' },
+    unavailable: { backgroundColor: '#F47878', color: '#fff', borderRadius: '6px' },
+    partial: { backgroundColor: '#F5B942', color: '#fff', borderRadius: '6px' },
+    other: { backgroundColor: '#5B9FE0', color: '#fff', borderRadius: '6px' },
+    certificateExpiry: { backgroundColor: '#9B8FE8', color: '#1a1a2e', borderRadius: '6px' },
     projectEvent: {},
     projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' },
     certExpiryWarning: {},
@@ -487,23 +487,23 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const legendRow = (
     <div className="flex items-center flex-wrap gap-x-5 gap-y-1.5">
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#D4EBB0' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#86C952' }} />
         <span className="text-muted-foreground">Available</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FAC0C0' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#F47878' }} />
         <span className="text-muted-foreground">Unavailable</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FAD898' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#F5B942' }} />
         <span className="text-muted-foreground">Partial</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#A8CAED' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#5B9FE0' }} />
         <span className="text-muted-foreground">Other</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#C5C0F0' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#9B8FE8' }} />
         <span className="text-muted-foreground">Cert Expiry</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
@@ -629,10 +629,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   // Availability status dot colors for buttons
   const statusDotColors: Record<AvailabilityStatus, string> = {
-    available: '#D4EBB0',
-    unavailable: '#FAC0C0',
-    partial: '#FAD898',
-    other: '#A8CAED',
+    available: '#86C952',
+    unavailable: '#F47878',
+    partial: '#F5B942',
+    other: '#5B9FE0',
   };
 
   return (
