@@ -445,14 +445,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const modifiersStyles = {
-    available: { backgroundColor: 'hsl(142 76% 36%)', color: 'white', borderRadius: '50%' },
-    unavailable: { backgroundColor: 'hsl(0 72% 50%)', color: 'white', borderRadius: '50%' },
-    partial: { backgroundColor: 'hsl(38 92% 50%)', color: 'white', borderRadius: '50%' },
-    other: { backgroundColor: 'hsl(210 100% 50%)', color: 'white', borderRadius: '50%' },
-    certificateExpiry: { border: '2px solid hsl(280 70% 50%)', borderRadius: '50%' },
-    projectEvent: { border: '2px solid hsl(210 100% 50%)', borderRadius: '50%' },
-    projectBlock: { borderBottom: '3px solid hsl(240 60% 60%)', borderRadius: '4px' },
-    certExpiryWarning: { boxShadow: 'inset 0 -2px 0 0 hsl(38 92% 50%)' },
+    available: { backgroundColor: '#EAF3DE', color: 'inherit', borderRadius: '6px' },
+    unavailable: { backgroundColor: '#FCEBEB', color: 'inherit', borderRadius: '6px' },
+    partial: { backgroundColor: '#FAEEDA', color: 'inherit', borderRadius: '6px' },
+    other: { backgroundColor: '#E6F1FB', color: 'inherit', borderRadius: '6px' },
+    certificateExpiry: { backgroundColor: '#EEEDFE', color: 'inherit', borderRadius: '6px' },
+    projectEvent: {},
+    projectBlock: { outline: '2px solid #639922', outlineOffset: '-2px', borderRadius: '6px' },
+    certExpiryWarning: {},
   };
 
   const calendarClassNames = {
@@ -479,44 +479,49 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   const expandedCalendarClassNames = {
     ...calendarClassNames,
+    caption_label: "text-base font-bold",
     cell: "flex-1 h-11 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
-    day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-full inline-flex items-center justify-center text-sm",
+    day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-[6px] inline-flex items-center justify-center text-sm",
   };
 
   const legendRow = (
-    <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
-      {Object.entries(statusConfig).map(([status, config]) => (
-        <div key={status} className="flex items-center gap-1.5 text-sm">
-          <span className={cn('h-3 w-3 rounded-full', config.className)} />
-          <span className="text-muted-foreground">{config.label}</span>
-        </div>
-      ))}
+    <div className="flex items-center flex-wrap gap-x-5 gap-y-1.5">
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-full border-2 border-[hsl(280_70%_50%)]" />
-        <span className="text-muted-foreground">Certificate Expiry</span>
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#EAF3DE' }} />
+        <span className="text-muted-foreground">Available</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ borderBottom: '3px solid hsl(240 60% 60%)', width: 12, height: 12 }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FCEBEB' }} />
+        <span className="text-muted-foreground">Unavailable</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FAEEDA' }} />
+        <span className="text-muted-foreground">Partial</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#E6F1FB' }} />
+        <span className="text-muted-foreground">Other</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#EEEDFE' }} />
+        <span className="text-muted-foreground">Cert Expiry</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="h-3 w-3 rounded-sm" style={{ outline: '2px solid #639922', outlineOffset: '-2px' }} />
         <span className="text-muted-foreground">Assigned Project</span>
       </div>
     </div>
   );
 
-  // Detail panel content — used in the expanded modal right column
-  const renderDetailPanel = () => {
+  // Detail panel: selected date info (assigned projects, cert expiry) — rendered in right column when a date is selected
+  const renderSelectedDateDetails = () => {
     const range = expandedSelectedRange;
-    if (!range?.from) {
-      return (
-        <div className="flex items-center justify-center h-full text-muted-foreground text-sm text-center px-4">
-          Select a day or period to set availability
-        </div>
-      );
-    }
+    if (!range?.from) return null;
 
     const isSingle = !range.to || isSameDay(range.from, range.to);
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-4 pb-4 border-b border-border">
         {/* Date heading */}
         <div>
           <h3 className="text-base font-semibold text-foreground">
@@ -605,56 +610,29 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
             </div>
           )}
         </div>
-
-        {/* Set Availability */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {(['available', 'partial', 'unavailable', 'other'] as AvailabilityStatus[]).map((status) => {
-              const config = statusConfig[status];
-              const Icon = config.icon;
-              return (
-                <Button
-                  key={status}
-                  variant={selectedStatus === status ? 'default' : 'outline'}
-                  onClick={() => setSelectedStatus(status)}
-                  className={cn(
-                    'h-10',
-                    selectedStatus === status && config.className
-                  )}
-                >
-                  <Icon className="h-4 w-4 mr-1.5" />
-                  {config.label}
-                </Button>
-              );
-            })}
-          </div>
-          <Textarea
-            placeholder="Add notes (optional)..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-          />
-          <Button onClick={handleSave} disabled={isSaving} className="w-full">
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
-            )}
-          </Button>
-          {hasExistingEntriesInRange() && (
-            <Button
-              variant="outline"
-              onClick={handleRemove}
-              disabled={isSaving}
-              className="w-full"
-            >
-              Remove
-            </Button>
-          )}
-        </div>
       </div>
     );
+  };
+
+  // Event type to border color mapping
+  const getEventBorderColor = (type: string): string => {
+    switch (type) {
+      case 'Assigned Project': return '#639922';
+      case 'Unavailable': return '#dc2626';
+      case 'Partial': return '#d97706';
+      case 'Certificate Expiry': return '#7c3aed';
+      case 'Available': return '#16a34a';
+      case 'Other': return '#2563eb';
+      default: return 'hsl(var(--border))';
+    }
+  };
+
+  // Availability status dot colors for buttons
+  const statusDotColors: Record<AvailabilityStatus, string> = {
+    available: '#EAF3DE',
+    unavailable: '#FCEBEB',
+    partial: '#FAEEDA',
+    other: '#E6F1FB',
   };
 
   return (
