@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
+import type { DayContentProps } from 'react-day-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -458,12 +459,33 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     partial: { backgroundColor: '#F5B942', color: '#fff', borderRadius: '6px' },
     other: { backgroundColor: '#5B9FE0', color: '#fff', borderRadius: '6px' },
     certificateExpiry: { backgroundColor: '#9B8FE8', color: '#1a1a2e', borderRadius: '6px' },
-    projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' },
+    projectBlock: {},
     projectEvent: {},
     certExpiryWarning: {},
   };
 
   const modifiersClassNames: Record<string, string> = {};
+
+  // Custom DayContent that renders a green dot for project-block days
+  const DayContentWithDot = useCallback((props: DayContentProps) => {
+    const isProjectDay = projectBlockDates.some(d => isSameDay(d, props.date));
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <span>{props.date.getDate()}</span>
+        {isProjectDay && (
+          <span
+            className="absolute top-0 right-0"
+            style={{
+              width: '4px',
+              height: '4px',
+              borderRadius: '50%',
+              backgroundColor: '#639922',
+            }}
+          />
+        )}
+      </div>
+    );
+  }, [projectBlockDates]);
 
   // Debug logging when the expanded modal opens
   useEffect(() => {
@@ -533,7 +555,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         <span className="text-muted-foreground">Cert Expiry</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ boxShadow: 'inset 0 0 0 2px #639922' }} />
+        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#639922' }} />
         <span className="text-muted-foreground">Assigned Project</span>
       </div>
     </div>
@@ -702,6 +724,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 className="rounded-md border border-border p-3 pointer-events-auto w-full"
                 classNames={calendarClassNames}
                 numberOfMonths={1}
+                components={{ DayContent: DayContentWithDot }}
               />
             </div>
           )}
@@ -739,6 +762,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 className="rounded-md border border-border p-3 pointer-events-auto w-full"
                 classNames={expandedCalendarClassNames}
                 numberOfMonths={1}
+                components={{ DayContent: DayContentWithDot }}
               />
 
               {/* Legend — compact horizontal row */}
