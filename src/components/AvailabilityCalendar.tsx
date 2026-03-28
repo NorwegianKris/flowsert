@@ -468,12 +468,13 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   // Debug logging when the expanded modal opens
   useEffect(() => {
     if (isExpanded) {
-      console.log('[AvailabilityCalendar] Modal opened — projectBlockDates:', projectBlockDates.map(d => format(d, 'yyyy-MM-dd')));
-      console.log('[AvailabilityCalendar] Assigned projects:', assignedProjects.map(p => ({ id: p.id, name: p.name, start: p.startDate, end: p.endDate, rotationOn: p.rotationOnDays, rotationOff: p.rotationOffDays })));
+      console.log('[AvailabilityCalendar] Modal opened — projectBlockDates count:', projectBlockDates.length, 'dates:', projectBlockDates.map(d => format(d, 'yyyy-MM-dd')));
+      console.log('[AvailabilityCalendar] Assigned projects raw:', assignedProjects.map(p => ({ id: p.id, name: p.name, start: p.startDate, end: p.endDate, rotationOn: p.rotationOnDays, rotationOff: p.rotationOffDays, rotationCount: p.rotationCount })));
       console.log('[AvailabilityCalendar] availability.length:', availability.length);
       const week2Plus = availability.filter(a => { const d = parseInt(a.date.split('-')[2], 10); return d >= 8; });
       console.log('[AvailabilityCalendar] availability entries day>=8:', week2Plus.length, 'sample:', week2Plus.slice(0, 5).map(a => ({ date: a.date, status: a.status })));
       console.log('[AvailabilityCalendar] modifier lengths — available:', modifiers.available.length, 'unavailable:', modifiers.unavailable.length, 'partial:', modifiers.partial.length, 'other:', modifiers.other.length);
+      console.log('[AvailabilityCalendar] projectBlock modifiersStyles:', modifiersStyles);
     }
   }, [isExpanded, projectBlockDates, assignedProjects, availability]);
 
@@ -497,6 +498,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     day_outside: "text-muted-foreground opacity-50",
     day_disabled: "text-muted-foreground opacity-50",
     day_hidden: "invisible",
+    day_range_start: "bg-primary text-primary-foreground rounded-full",
+    day_range_end: "bg-primary text-primary-foreground rounded-full",
+    day_range_middle: "bg-accent text-accent-foreground",
   };
 
   const expandedCalendarClassNames = {
@@ -686,11 +690,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
             <div className="space-y-4">
               {legendRow}
 
-              {/* Tip banner */}
-              <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
-                <span className="text-sm">💡</span>
-                <span className="text-xs text-muted-foreground">Tip: Click the start date, then click the end date to select a period.</span>
-              </div>
 
               {/* Compact calendar — visual only, no dialog on click */}
               <Calendar
