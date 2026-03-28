@@ -700,6 +700,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 onSelect={(range) => setSelectedRange(range)}
                 modifiers={modifiers}
                 modifiersStyles={modifiersStyles}
+                modifiersClassNames={modifiersClassNames}
                 className="rounded-md border border-border p-3 pointer-events-auto w-full"
                 classNames={calendarClassNames}
                 numberOfMonths={1}
