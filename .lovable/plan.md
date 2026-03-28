@@ -1,41 +1,37 @@
 
 
-## Plan: Fix two remaining AvailabilityCalendar bugs
+## Plan: Fix green outline leaking to all day cells in expanded calendar
 
 ### File: `src/components/AvailabilityCalendar.tsx`
 
-### Root cause analysis
+### Root cause
 
-**Bug 1 — Green outline on all cells:**
-`getProjectOnPeriodDates` (line 78-79) uses `parseISO()` to parse project start/end dates. `parseISO('2026-03-15')` produces a **UTC midnight** Date. In any negative-UTC timezone, `isSameDay()` (which uses local getters) shifts this by a day. More critically, for non-rotation projects with no end date (line 106), it generates `startDate + 30 days` — covering the entire visible month. Combined with timezone drift, this creates a match on every rendered cell. The fix: replace `parseISO` with `toLocalDate` in `getProjectOnPeriodDates`.
+Line 106: `getProjectOnPeriodDates` — when a project has no end date and no rotation, it defaults to `startDate + 30 days`, which covers the entire visible month. Every day cell gets the `projectBlock` modifier and the green outline CSS class.
 
-**Bug 2 — Availability fills only on days 1–7:**
-The `modifiers` object (lines 451-454) maps availability entries using `toLocalDate(a.date)` which produces correct local-midnight dates. However, `projectBlockDates` (from `parseISO`) produces UTC-midnight dates. When both modifiers match the same cell, DayPicker applies styles in object-key order. The `projectBlock` style (last key, line 457) gets applied **after** the availability style. While `boxShadow` shouldn't override `backgroundColor`, DayPicker v8 merges modifier styles and the **last matching modifier's full style object** replaces earlier ones rather than merging. Since `projectBlock`'s style object has no `backgroundColor`, it effectively resets it to `undefined` — wiping the fill for any cell where both modifiers match.
-
-Days 1-7 may work because of timezone offset: `parseISO` dates shift by one day, so the projectBlock modifier doesn't overlap with early-month availability dates. Days 8+ fall within the shifted project range and get their fills wiped.
+The CSS selector `.rdp-day--project-block` is correctly scoped — the problem is the **data**, not the styling.
 
 ### Fixes
 
-**1. Fix `getProjectOnPeriodDates` to use local dates**
-Replace `parseISO(project.startDate)` and `parseISO(project.endDate)` with `toLocalDate(project.startDate)` and `toLocalDate(project.endDate)` (lines 78-79). This ensures project dates are local-midnight, matching how DayPicker renders cells.
+**1. Clamp `projectBlockDates` to actual project date ranges**
+- In `getProjectOnPeriodDates` (line 106): instead of defaulting to `startDate + 30 days` when there's no end date, use a reasonable upper bound — clamp to `endOfMonth(addMonths(today, 2))` to match the calendar's visible range, but only include days where the project is genuinely active (i.e., status is `active` or `in_progress`).
+- Better fix: only include a project in `projectBlockDates` if it has **both** a start and end date. Projects without an end date should not generate block dates — they have no defined period to display.
 
-**2. Prevent projectBlock from overwriting availability fills**
-Move `projectBlock` into `modifiersStyles` with **only** `boxShadow` — but also ensure it cannot wipe other modifier styles. The fix: apply the project outline via a CSS class instead of inline `modifiersStyles`, using `modifiersClassNames` so DayPicker adds a class rather than merging style objects. Add a small CSS block (inline `<style>` or in the component) for `.rdp-day_projectBlock { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }`.
+**2. Add a guard: skip projects with no end date from block highlighting**
+- Change line 106 from `const finalEnd = endDate || addDays(startDate, 30)` to:
+  ```
+  if (!endDate) return results;
+  ```
+- This means open-ended projects won't show a green outline on every single day. They'll still appear in the events timeline and project details panel.
 
-**3. Enhanced debug logging**
-Expand the existing `useEffect` (line 301-306) to also log:
-- `availability.length` and a sample of availability entries for days 8+
-- The modifier arrays' lengths for each status
-- Whether any `projectBlockDates` fall outside the actual project date range
+**3. Verify no other CSS adds borders to all cells**
+- `expandedCalendarClassNames.day` (line 507): `rounded-[6px]` — no border. ✓
+- `expandedCalendarClassNames.cell` (line 506): no border. ✓
+- Calendar `className` (line 742): `border border-border` — this is on the Calendar **container**, not individual cells. ✓
+- The `<style>` tag (line 734): correctly scoped to `.rdp-day--project-block`. ✓
 
-**4. Fix remaining `parseISO` calls for calendar events**
-Line 214 (`parseISO(item.date)`) and line 226 (`parseISO(item.date)`) — replace with `toLocalDate(item.date)` for consistency.
-
-### Summary of changes
-- Replace all `parseISO` date-string parsing with `toLocalDate` throughout the component
-- Switch projectBlock styling from `modifiersStyles` to `modifiersClassNames` + CSS class to avoid style-object merging conflicts
-- Add diagnostic logging for availability data beyond day 7
+### Summary
+Single change in `getProjectOnPeriodDates`: skip open-ended projects from generating block dates. The green outline CSS is correctly scoped — only the modifier data is too broad.
 
 ### Risk
-Q5 — purely visual/debugging, no backend or permission changes.
+Q5 — purely visual logic fix, no backend changes.
 
