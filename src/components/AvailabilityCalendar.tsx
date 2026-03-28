@@ -719,7 +719,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           </DialogHeader>
           <div className="flex flex-col md:flex-row h-full max-h-[90vh]">
             {/* Left Column — Calendar Grid + Legend */}
-            <div className="flex-1 min-w-0 border-r border-border overflow-y-auto p-5 space-y-5">
+            <div className="expanded-availability-calendar flex-1 min-w-0 border-r border-border overflow-y-auto p-5 space-y-5">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-bold text-foreground">Personal Calendar</h2>
