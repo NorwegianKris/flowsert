@@ -694,11 +694,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
             <DialogDescription>Expanded calendar view with availability management</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col md:flex-row h-full max-h-[90vh]">
-            {/* Left Column — Calendar + Events */}
+            {/* Left Column — Calendar Grid + Legend */}
             <div className="flex-1 min-w-0 border-r border-border overflow-y-auto p-5 space-y-5">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-primary" />
-                <h2 className="text-base font-semibold text-foreground">Personal Calendar</h2>
+                <h2 className="text-lg font-bold text-foreground">Personal Calendar</h2>
               </div>
 
               {/* Tip banner */}
@@ -718,33 +718,41 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 numberOfMonths={1}
               />
 
-              {/* Legend */}
+              {/* Legend — compact horizontal row */}
               {legendRow}
+            </div>
 
-              {/* Upcoming Events */}
-              <div className="space-y-3">
+            {/* Right Column — Selected Date Details + Events Timeline + Availability Buttons */}
+            <div className="w-full md:w-[340px] shrink-0 overflow-y-auto p-5 flex flex-col gap-5">
+              {/* Selected date details (conditionally rendered) */}
+              {renderSelectedDateDetails()}
+
+              {/* Upcoming Events Timeline */}
+              <div className="space-y-3 flex-1 min-h-0">
                 <h3 className="text-sm font-semibold text-foreground">Upcoming Events</h3>
-                <ScrollArea className="h-[200px]">
+                <ScrollArea className="h-[240px]">
                   {eventsByMonth.size === 0 ? (
                     <p className="text-sm text-muted-foreground italic">No upcoming events</p>
                   ) : (
-                    <div className="space-y-4 pr-3">
+                    <div className="space-y-5 pr-3">
                       {Array.from(eventsByMonth.entries()).map(([month, events]) => (
                         <div key={month}>
-                          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{month}</h4>
-                          <div className="space-y-1.5">
+                          <h4 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">{month}</h4>
+                          <div className="space-y-2">
                             {events.map((event, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-sm">
-                                <span
-                                  className="h-2.5 w-2.5 rounded-full shrink-0"
-                                  style={{ backgroundColor: event.color }}
-                                />
-                                <span className="text-foreground font-medium truncate flex-1">{event.name}</span>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {format(event.date, 'MMM d')}
-                                  {event.endDate && !isSameDay(event.date, event.endDate) && ` – ${format(event.endDate, 'MMM d')}`}
-                                </span>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                              <div
+                                key={idx}
+                                className="rounded-md bg-muted/40 p-2.5 flex items-start gap-2.5"
+                                style={{ borderLeft: `3px solid ${getEventBorderColor(event.type)}` }}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-medium text-foreground block truncate">{event.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(event.date, 'MMM d')}
+                                    {event.endDate && !isSameDay(event.date, event.endDate) && ` – ${format(event.endDate, 'MMM d')}`}
+                                  </span>
+                                </div>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">
                                   {event.type}
                                 </Badge>
                               </div>
@@ -756,11 +764,59 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                   )}
                 </ScrollArea>
               </div>
-            </div>
 
-            {/* Right Column — Detail Panel */}
-            <div className="w-full md:w-[320px] shrink-0 overflow-y-auto p-5">
-              {renderDetailPanel()}
+              {/* Set Availability — always visible */}
+              <div className="space-y-3 border-t border-border pt-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['available', 'partial', 'unavailable', 'other'] as AvailabilityStatus[]).map((status) => {
+                    const config = statusConfig[status];
+                    const Icon = config.icon;
+                    return (
+                      <Button
+                        key={status}
+                        variant={selectedStatus === status ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedStatus(status)}
+                        className={cn(
+                          'h-9 text-xs gap-1.5',
+                          selectedStatus === status && config.className
+                        )}
+                      >
+                        <span
+                          className="h-2.5 w-2.5 rounded-sm shrink-0"
+                          style={{ backgroundColor: statusDotColors[status] }}
+                        />
+                        {config.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Textarea
+                  placeholder="Add notes (optional)..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                />
+                <Button onClick={handleSave} disabled={isSaving || !expandedSelectedRange?.from} className="w-full" size="sm">
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `Save${getDatesInRange().length > 1 ? ` (${getDatesInRange().length} days)` : ''}`
+                  )}
+                </Button>
+                {hasExistingEntriesInRange() && (
+                  <Button
+                    variant="outline"
+                    onClick={handleRemove}
+                    disabled={isSaving}
+                    className="w-full"
+                    size="sm"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </DialogContent>
