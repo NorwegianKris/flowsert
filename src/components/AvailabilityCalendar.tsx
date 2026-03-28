@@ -106,7 +106,7 @@ function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectO
     if (!endDate) return results;
     const days = eachDayOfInterval({ start: startDate, end: endDate });
     for (const day of days) {
-      results.push({ date: day, project, periodStart: startDate, periodEnd: finalEnd });
+      results.push({ date: day, project, periodStart: startDate, periodEnd: endDate });
     }
   }
 
