@@ -297,17 +297,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return grouped;
   }, [upcomingEvents]);
 
-  // Debug logging when the expanded modal opens
-  useEffect(() => {
-    if (isExpanded) {
-      console.log('[AvailabilityCalendar] Modal opened — projectBlockDates:', projectBlockDates.map(d => format(d, 'yyyy-MM-dd')));
-      console.log('[AvailabilityCalendar] Assigned projects:', assignedProjects.map(p => ({ id: p.id, name: p.name, start: p.startDate, end: p.endDate, rotationOn: p.rotationOnDays, rotationOff: p.rotationOffDays })));
-      console.log('[AvailabilityCalendar] availability.length:', availability.length);
-      const week2Plus = availability.filter(a => { const d = parseInt(a.date.split('-')[2], 10); return d >= 8; });
-      console.log('[AvailabilityCalendar] availability entries day>=8:', week2Plus.length, 'sample:', week2Plus.slice(0, 5).map(a => ({ date: a.date, status: a.status })));
-      console.log('[AvailabilityCalendar] modifier lengths — available:', modifiers.available.length, 'unavailable:', modifiers.unavailable.length, 'partial:', modifiers.partial.length, 'other:', modifiers.other.length);
-    }
-  }, [isExpanded, projectBlockDates, assignedProjects, availability, modifiers]);
+  // Debug logging when the expanded modal opens (moved after modifiers declaration via separate effect below)
 
   useEffect(() => {
     fetchAvailability();
