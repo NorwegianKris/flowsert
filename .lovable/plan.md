@@ -1,36 +1,32 @@
 
-I inspected the current implementation: `expandedCalendarClassNames` is not adding any global border or shadow, so both bugs are coming from how `AvailabilityCalendar.tsx` is feeding/styling DayPicker modifiers.
+Fixes in `src/components/AvailabilityCalendar.tsx` only.
 
-Plan:
-1. Fix modifier matching so fills actually render
-- Replace the current `new Date(a.date)` / `new Date(cert.expiryDate)` modifier dates with consistent local-date parsing.
-- This should fix why `available`, `unavailable`, `partial`, `other`, and `certificateExpiry` are not attaching to the intended day cells and the calendar stays white.
+1. Add targeted debug logging when the modal opens
+- Add a `useEffect` tied to `isExpanded` that logs:
+  - `projectBlockDates` as normalized `yyyy-MM-dd` strings
+  - assigned project names/ids with start, end, and rotation fields
+- This will confirm whether the project matcher is incorrectly being populated with all dates.
 
-2. Scope the assigned-project outline to real project days only
-- Remove the current leaking `projectBlock` inline shadow approach.
-- Apply the green project outline through a project-only modifier class/scoped styling so it can only appear on dates inside the `projectBlock` matcher set.
-- Recheck the project date matcher after normalization so only actual assigned days are marked.
+2. Rebuild `projectBlockDates` from normalized local date keys
+- Add one shared date-only parser/helper and use it consistently.
+- Build `projectBlockDates` from a de-duplicated `Set` of actual project on-period days only, then convert back to `Date[]`.
+- Keep current project-period behavior, but make the matcher data deterministic and timezone-safe.
 
-3. Increase fill strength and correct text contrast
-- Update day fills to:
-  - Available `#86C952`
-  - Unavailable `#F47878`
-  - Partial `#F5B942`
-  - Other `#5B9FE0`
-  - Certificate Expiry `#9B8FE8`
-- Use white text on Available/Unavailable/Partial/Other.
-- Use dark text on Certificate Expiry.
-- Keep unstyled days transparent.
+3. Stop the green project outline from leaking to all cells
+- Remove the outline from shared inline `modifiersStyles.projectBlock`.
+- Apply the outline through a `projectBlock`-only modifier class so only matched days receive it.
+- This isolates the styling even if other modifier styles are present.
 
-4. Sync the same colors everywhere else
-- Update `legendRow` swatches and `statusDotColors` to the same stronger palette.
+4. Fix availability fills past the first week
+- Replace mixed `new Date(...)` / `parseISO(...)` usage with the same local-date parser everywhere this component compares date-only values:
+  - availability modifiers
+  - selected-day lookup
+  - save/remove matching
+  - upcoming events / certificate date comparisons
+- This should eliminate the date matching drift causing days 8+ to render white.
 
-5. Make all Set Availability buttons visually consistent
-- Ensure all four buttons always use `variant="outline"`.
-- Use only a ring/border selected state so Available no longer appears solid filled.
-
-Files
-- `src/components/AvailabilityCalendar.tsx`
+5. Preserve all current behavior
+- No changes to selection, drag-to-range, availability saving, project markers, certificate markers, or the redesigned layout.
 
 Risk
-- UI-only fix (Q5), no changes to state, saving, or calendar interaction logic.
+- Q5 only: visual/debugging fix, no backend or permission changes.
