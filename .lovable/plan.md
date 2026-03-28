@@ -1,29 +1,36 @@
 
+I inspected the current implementation: `expandedCalendarClassNames` is not adding any global border or shadow, so both bugs are coming from how `AvailabilityCalendar.tsx` is feeding/styling DayPicker modifiers.
 
-## Plan: Fix 5 visual issues in AvailabilityCalendar modal
+Plan:
+1. Fix modifier matching so fills actually render
+- Replace the current `new Date(a.date)` / `new Date(cert.expiryDate)` modifier dates with consistent local-date parsing.
+- This should fix why `available`, `unavailable`, `partial`, `other`, and `certificateExpiry` are not attaching to the intended day cells and the calendar stays white.
 
-### File: `src/components/AvailabilityCalendar.tsx`
+2. Scope the assigned-project outline to real project days only
+- Remove the current leaking `projectBlock` inline shadow approach.
+- Apply the green project outline through a project-only modifier class/scoped styling so it can only appear on dates inside the `projectBlock` matcher set.
+- Recheck the project date matcher after normalization so only actual assigned days are marked.
 
-**1. Green outline leaking to all cells**
-Change `projectBlock` style from `outline` to `boxShadow: 'inset 0 0 0 2px #639922'` to prevent CSS bleed. Verify no global outline in `expandedCalendarClassNames`.
+3. Increase fill strength and correct text contrast
+- Update day fills to:
+  - Available `#86C952`
+  - Unavailable `#F47878`
+  - Partial `#F5B942`
+  - Other `#5B9FE0`
+  - Certificate Expiry `#9B8FE8`
+- Use white text on Available/Unavailable/Partial/Other.
+- Use dark text on Certificate Expiry.
+- Keep unstyled days transparent.
 
-**2. Unstyled days = no background**
-Confirm only modifier-matched days receive fills. No catch-all style should apply a background.
+4. Sync the same colors everywhere else
+- Update `legendRow` swatches and `statusDotColors` to the same stronger palette.
 
-**3. Updated fill colors (lighter than previous proposal)**
-Update `modifiersStyles`, `legendRow` indicators, and `statusDotColors`:
-- Available: `#D4EBB0`
-- Unavailable: `#FAC0C0`
-- Partial: `#FAD898`
-- Other: `#A8CAED`
-- Certificate Expiry: `#C5C0F0`
+5. Make all Set Availability buttons visually consistent
+- Ensure all four buttons always use `variant="outline"`.
+- Use only a ring/border selected state so Available no longer appears solid filled.
 
-**4. Availability buttons — uniform outline style**
-Change from `variant={selectedStatus === status ? 'default' : 'outline'}` to always `variant="outline"`. Use a ring or border accent to indicate the selected status.
+Files
+- `src/components/AvailabilityCalendar.tsx`
 
-**5. Event cards — white background**
-Change `bg-muted/40` to `bg-white dark:bg-card` on event cards.
-
-### Risk
-Purely UI (Q5) — anchor optional.
-
+Risk
+- UI-only fix (Q5), no changes to state, saving, or calendar interaction logic.
