@@ -256,10 +256,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           name: cfg.label,
           type: cfg.label,
           color:
-            a.status === 'available' ? 'hsl(142 76% 36%)' :
-            a.status === 'unavailable' ? 'hsl(0 72% 50%)' :
-            a.status === 'partial' ? 'hsl(38 92% 50%)' :
-            'hsl(210 100% 50%)',
+            a.status === 'available' ? '#86C952' :
+            a.status === 'unavailable' ? '#F47878' :
+            a.status === 'partial' ? '#F5B942' :
+            '#5B9FE0',
         });
       }
     }
@@ -271,7 +271,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           date: cert.date,
           name: cert.name,
           type: 'Certificate Expiry',
-          color: 'hsl(280 70% 50%)',
+          color: '#9B8FE8',
         });
       }
     }
