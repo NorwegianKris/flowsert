@@ -504,7 +504,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     ...calendarClassNames,
     caption_label: "text-base font-bold",
     cell: "flex-1 h-11 text-sm p-0 relative focus-within:relative focus-within:z-20 flex items-center justify-center",
-    day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-[6px] inline-flex items-center justify-center text-sm",
+    day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-[6px] inline-flex items-center justify-center text-sm border-0 outline-none shadow-none ring-0",
   };
 
   const legendRow = (
@@ -732,8 +732,8 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               </div>
 
               <style>{`
-                .expanded-availability-calendar .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }
-                .expanded-availability-calendar .rdp button:not(.rdp-day--project-block):not([class*="available"]):not([class*="unavailable"]):not([class*="partial"]):not([class*="other"]):not([class*="certificateExpiry"]) { box-shadow: none; border: none; outline: none; }
+                .expanded-availability-calendar .rdp td button { box-shadow: none; border: none; outline: none; }
+                .expanded-availability-calendar .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922 !important; border-radius: 6px; }
               `}</style>
               <Calendar
                 mode="range"
