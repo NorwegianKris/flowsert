@@ -7,7 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, eachDayOfInterval, parseISO, addDays, differenceInDays, addMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, isSameDay, eachDayOfInterval, parseISO, addDays, differenceInDays, addMonths, startOfMonth, endOfMonth, isWithinInterval, startOfDay } from 'date-fns';
+
+/** Parse a date-only string (yyyy-MM-dd) into a local-midnight Date, avoiding UTC shift from `new Date(str)`. */
+function toLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 import { CalendarDays, Check, X, Clock, Loader2, Award, Briefcase, Circle, AlertTriangle, MapPin, ExternalLink, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
