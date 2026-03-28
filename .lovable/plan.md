@@ -1,44 +1,48 @@
 
+Findings:
+- I checked the code paths that style the expanded modal. The exact green outline rule is not coming from `expandedCalendarClassNames.day`.
+- The only green-border rule in the expanded modal is this inline CSS in `src/components/AvailabilityCalendar.tsx` around lines 734–736:
+  ```css
+  .expanded-availability-calendar .rdp-day--project-block {
+    box-shadow: inset 0 0 0 2px #639922 !important;
+    border-radius: 6px;
+  }
+  ```
+- So the green border is being added by:
+  - class: `rdp-day--project-block`
+  - property: `box-shadow`
+  - value: `inset 0 0 0 2px #639922 !important`
+  - file/line: `src/components/AvailabilityCalendar.tsx` inline `<style>` block, ~734–736
+- `expandedCalendarClassNames.day` already has `border-0 outline-none shadow-none ring-0`.
+- There is no `day_button` entry in `expandedCalendarClassNames` at all.
+- Conclusion: the visible green border is not from the expanded `day` class; it is from the `.rdp-day--project-block` rule being applied to cells that should be empty.
 
-## Plan: Remove border/outline from empty day cells in expanded calendar
+Plan:
+1. Remove the inline class-based project outline rule
+- Delete the expanded-modal `<style>` rule for `.expanded-availability-calendar .rdp-day--project-block`.
+- Delete the broad reset rule beside it too, since it is not solving the problem.
 
-### File: `src/components/AvailabilityCalendar.tsx`
+2. Move the project outline to DayPicker modifier styles directly
+- Add `projectBlock` into `modifiersStyles`:
+  ```ts
+  projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' }
+  ```
+- This makes the outline apply only through the DayPicker modifier system, instead of a global CSS selector.
 
-### Root cause
+3. Keep expanded empty days identical to collapsed empty days
+- Keep `expandedCalendarClassNames.day` free of any border/ring/outline/shadow classes.
+- Do not add a `day_button` override.
+- If needed, simplify the expanded `day` class so it only differs from the collapsed one by size and corner radius.
 
-The expanded `day` class (line 507) omits `buttonVariants({ variant: "ghost" })` that the collapsed view inherits from `calendar.tsx`. Without that variant wrapper, the raw `<button>` element may show a default user-agent border. Additionally, the CSS reset on line 736 uses `:not([class*="available"])` selectors that may not reliably match DayPicker's actual modifier class format, leaving some "empty" buttons unaffected by the reset.
+4. Re-verify modifier wiring
+- Keep `projectBlock` only in `modifiers`.
+- Remove `modifiersClassNames.projectBlock` entirely if the outline is handled by `modifiersStyles`.
+- This avoids any leftover `.rdp-day--project-block` class from driving styles in the expanded modal.
 
-### Fixes
+5. Expected result
+- Empty expanded cells: no border, no outline, no box-shadow, transparent background, only the date number.
+- Assigned-project days: green outline only on true project days.
+- Collapsed and expanded empty cells will visually match.
 
-**1. Add explicit border/outline/shadow reset to the expanded `day` class (line 507)**
-
-Add `border-0 outline-none shadow-none ring-0` to the `day` class string in `expandedCalendarClassNames`:
-
-```
-day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-[6px] inline-flex items-center justify-center text-sm border-0 outline-none shadow-none ring-0"
-```
-
-This ensures every day button in the expanded view starts with zero border/outline/shadow, matching the collapsed view's ghost button behavior.
-
-**2. Simplify the inline CSS reset (line 736)**
-
-Replace the fragile `:not([class*="..."])` selector chain with a cleaner universal reset that targets all day buttons, then lets modifier styles layer on top:
-
-```css
-.expanded-availability-calendar .rdp button.rdp-cell button,
-.expanded-availability-calendar .rdp td button {
-  box-shadow: none;
-  border: none;
-  outline: none;
-}
-```
-
-Keep the `.rdp-day--project-block` rule as-is — it will override the reset for project days.
-
-**3. No other changes**
-- All functionality (click, drag-range, availability saving, modifiers) stays identical.
-- Only the `expandedCalendarClassNames.day` string and the CSS reset block change.
-
-### Risk
-Q5 — purely visual, no backend or permission changes.
-
+Risk:
+- Q5 only: visual-only change in one file, no data/auth/backend changes.
