@@ -75,8 +75,8 @@ const statusConfig: Record<AvailabilityStatus, { label: string; icon: typeof Che
 };
 
 function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectOnPeriod[] {
-  const startDate = parseISO(project.startDate);
-  const endDate = project.endDate ? parseISO(project.endDate) : null;
+  const startDate = toLocalDate(project.startDate);
+  const endDate = project.endDate ? toLocalDate(project.endDate) : null;
   const results: ProjectOnPeriod[] = [];
 
   if (project.status === 'completed') return results;
@@ -211,7 +211,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     const events: ProjectEvent[] = [];
     for (const project of assignedProjects) {
       for (const item of project.calendarItems || []) {
-        if (isSameDay(parseISO(item.date), date)) {
+        if (isSameDay(toLocalDate(item.date), date)) {
           events.push({ date, projectName: project.name, description: item.description, type: 'event' });
         }
       }
@@ -223,7 +223,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     const projectDates: Date[] = [];
     for (const project of assignedProjects) {
       for (const item of project.calendarItems || []) {
-        projectDates.push(parseISO(item.date));
+        projectDates.push(toLocalDate(item.date));
       }
     }
     return projectDates;
@@ -302,8 +302,12 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     if (isExpanded) {
       console.log('[AvailabilityCalendar] Modal opened — projectBlockDates:', projectBlockDates.map(d => format(d, 'yyyy-MM-dd')));
       console.log('[AvailabilityCalendar] Assigned projects:', assignedProjects.map(p => ({ id: p.id, name: p.name, start: p.startDate, end: p.endDate, rotationOn: p.rotationOnDays, rotationOff: p.rotationOffDays })));
+      console.log('[AvailabilityCalendar] availability.length:', availability.length);
+      const week2Plus = availability.filter(a => { const d = parseInt(a.date.split('-')[2], 10); return d >= 8; });
+      console.log('[AvailabilityCalendar] availability entries day>=8:', week2Plus.length, 'sample:', week2Plus.slice(0, 5).map(a => ({ date: a.date, status: a.status })));
+      console.log('[AvailabilityCalendar] modifier lengths — available:', modifiers.available.length, 'unavailable:', modifiers.unavailable.length, 'partial:', modifiers.partial.length, 'other:', modifiers.other.length);
     }
-  }, [isExpanded, projectBlockDates, assignedProjects]);
+  }, [isExpanded, projectBlockDates, assignedProjects, availability, modifiers]);
 
   useEffect(() => {
     fetchAvailability();
@@ -466,7 +470,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     certificateExpiry: { backgroundColor: '#9B8FE8', color: '#1a1a2e', borderRadius: '6px' },
     projectEvent: {},
     certExpiryWarning: {},
-    ...(projectBlockDates.length > 0 ? { projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' } } : {}),
+  };
+
+  const modifiersClassNames: Record<string, string> = {
+    ...(projectBlockDates.length > 0 ? { projectBlock: 'rdp-day--project-block' } : {}),
   };
 
   const calendarClassNames = {
@@ -721,12 +728,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <span className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</span>
               </div>
 
+              <style>{`.rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; }`}</style>
               <Calendar
                 mode="range"
                 selected={expandedSelectedRange}
                 onSelect={handleRangeSelect}
                 modifiers={modifiers}
                 modifiersStyles={modifiersStyles}
+                modifiersClassNames={modifiersClassNames}
                 className="rounded-md border border-border p-3 pointer-events-auto w-full"
                 classNames={expandedCalendarClassNames}
                 numberOfMonths={1}
