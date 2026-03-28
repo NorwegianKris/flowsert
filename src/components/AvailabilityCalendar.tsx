@@ -445,13 +445,13 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   };
 
   const modifiersStyles = {
-    available: { backgroundColor: '#EAF3DE', color: 'inherit', borderRadius: '6px' },
-    unavailable: { backgroundColor: '#FCEBEB', color: 'inherit', borderRadius: '6px' },
-    partial: { backgroundColor: '#FAEEDA', color: 'inherit', borderRadius: '6px' },
-    other: { backgroundColor: '#E6F1FB', color: 'inherit', borderRadius: '6px' },
-    certificateExpiry: { backgroundColor: '#EEEDFE', color: 'inherit', borderRadius: '6px' },
+    available: { backgroundColor: '#D4EBB0', color: 'inherit', borderRadius: '6px' },
+    unavailable: { backgroundColor: '#FAC0C0', color: 'inherit', borderRadius: '6px' },
+    partial: { backgroundColor: '#FAD898', color: 'inherit', borderRadius: '6px' },
+    other: { backgroundColor: '#A8CAED', color: 'inherit', borderRadius: '6px' },
+    certificateExpiry: { backgroundColor: '#C5C0F0', color: 'inherit', borderRadius: '6px' },
     projectEvent: {},
-    projectBlock: { outline: '2px solid #639922', outlineOffset: '-2px', borderRadius: '6px' },
+    projectBlock: { boxShadow: 'inset 0 0 0 2px #639922', borderRadius: '6px' },
     certExpiryWarning: {},
   };
 
@@ -487,27 +487,27 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const legendRow = (
     <div className="flex items-center flex-wrap gap-x-5 gap-y-1.5">
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#EAF3DE' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#D4EBB0' }} />
         <span className="text-muted-foreground">Available</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FCEBEB' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FAC0C0' }} />
         <span className="text-muted-foreground">Unavailable</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FAEEDA' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#FAD898' }} />
         <span className="text-muted-foreground">Partial</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#E6F1FB' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#A8CAED' }} />
         <span className="text-muted-foreground">Other</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#EEEDFE' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: '#C5C0F0' }} />
         <span className="text-muted-foreground">Cert Expiry</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-3 w-3 rounded-sm" style={{ outline: '2px solid #639922', outlineOffset: '-2px' }} />
+        <span className="h-3 w-3 rounded-sm" style={{ boxShadow: 'inset 0 0 0 2px #639922' }} />
         <span className="text-muted-foreground">Assigned Project</span>
       </div>
     </div>
@@ -629,10 +629,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   // Availability status dot colors for buttons
   const statusDotColors: Record<AvailabilityStatus, string> = {
-    available: '#EAF3DE',
-    unavailable: '#FCEBEB',
-    partial: '#FAEEDA',
-    other: '#E6F1FB',
+    available: '#D4EBB0',
+    unavailable: '#FAC0C0',
+    partial: '#FAD898',
+    other: '#A8CAED',
   };
 
   return (
@@ -742,7 +742,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                             {events.map((event, idx) => (
                               <div
                                 key={idx}
-                                className="rounded-md bg-muted/40 p-2.5 flex items-start gap-2.5"
+                                className="rounded-md bg-white dark:bg-card p-2.5 flex items-start gap-2.5"
                                 style={{ borderLeft: `3px solid ${getEventBorderColor(event.type)}` }}
                               >
                                 <div className="flex-1 min-w-0">
@@ -773,14 +773,14 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                     const config = statusConfig[status];
                     const Icon = config.icon;
                     return (
-                      <Button
+                       <Button
                         key={status}
-                        variant={selectedStatus === status ? 'default' : 'outline'}
+                        variant="outline"
                         size="sm"
                         onClick={() => setSelectedStatus(status)}
                         className={cn(
                           'h-9 text-xs gap-1.5',
-                          selectedStatus === status && config.className
+                          selectedStatus === status && 'ring-2 ring-primary ring-offset-1'
                         )}
                       >
                         <span
