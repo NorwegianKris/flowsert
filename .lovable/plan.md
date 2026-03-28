@@ -1,42 +1,44 @@
 
-Plan: Make empty day cells in the expanded AvailabilityCalendar match the collapsed view exactly
 
-File:
-- `src/components/AvailabilityCalendar.tsx`
+## Plan: Remove border/outline from empty day cells in expanded calendar
 
-What I found
-- `expandedCalendarClassNames` only overrides `cell` and `day`; neither currently adds a border utility.
-- There is no `day_button` class in this calendar setup.
-- The only expanded-only outline style in this file is:
-  ` .rdp-day--project-block { box-shadow: inset 0 0 0 2px #639922; border-radius: 6px; } `
-- That means the visible outline on “empty” cells is almost certainly coming from the `projectBlock` modifier/class being applied too broadly in the expanded modal, not from the base day styling.
+### File: `src/components/AvailabilityCalendar.tsx`
 
-Implementation plan
-1. Align expanded empty-cell styling with collapsed
-- Make `expandedCalendarClassNames.day` and `expandedCalendarClassNames.cell` inherit the collapsed classes as closely as possible.
-- Keep only the size/typography changes needed for the premium modal.
-- Ensure no border, ring, shadow, or background utility is present on default empty days.
+### Root cause
 
-2. Tighten project outline application
-- Verify `modifiersClassNames.projectBlock` is only added for actual `projectBlockDates`.
-- Keep the green outline CSS scoped strictly to modified project days only.
-- If needed, wrap the expanded calendar in a dedicated container class and scope the selector to that calendar instance only.
+The expanded `day` class (line 507) omits `buttonVariants({ variant: "ghost" })` that the collapsed view inherits from `calendar.tsx`. Without that variant wrapper, the raw `<button>` element may show a default user-agent border. Additionally, the CSS reset on line 736 uses `:not([class*="available"])` selectors that may not reliably match DayPicker's actual modifier class format, leaving some "empty" buttons unaffected by the reset.
 
-3. Re-check projectBlock matcher data
-- Audit `projectBlockDates` generation so only true assigned-project on-period dates are included.
-- Keep the existing guard that skips open-ended non-rotation projects.
-- Deduplicate dates before passing them to the calendar so stray matches cannot create “outline everywhere” behavior.
+### Fixes
 
-4. Preserve empty-day appearance
-- Empty cells in expanded view should render with:
-  - no border
-  - no box-shadow
-  - no background fill
-  - just the date number
-- This will match the collapsed calendar behavior exactly.
+**1. Add explicit border/outline/shadow reset to the expanded `day` class (line 507)**
 
-5. No functionality changes
-- Keep click-to-select, range selection, availability saving, project markers, certificate expiry markers, and event list unchanged.
+Add `border-0 outline-none shadow-none ring-0` to the `day` class string in `expandedCalendarClassNames`:
 
-Risk
-- Q5 only: visual parity fix in one component, no backend/auth/data model changes.
+```
+day: "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-[6px] inline-flex items-center justify-center text-sm border-0 outline-none shadow-none ring-0"
+```
+
+This ensures every day button in the expanded view starts with zero border/outline/shadow, matching the collapsed view's ghost button behavior.
+
+**2. Simplify the inline CSS reset (line 736)**
+
+Replace the fragile `:not([class*="..."])` selector chain with a cleaner universal reset that targets all day buttons, then lets modifier styles layer on top:
+
+```css
+.expanded-availability-calendar .rdp button.rdp-cell button,
+.expanded-availability-calendar .rdp td button {
+  box-shadow: none;
+  border: none;
+  outline: none;
+}
+```
+
+Keep the `.rdp-day--project-block` rule as-is — it will override the reset for project days.
+
+**3. No other changes**
+- All functionality (click, drag-range, availability saving, modifiers) stays identical.
+- Only the `expandedCalendarClassNames.day` string and the CSS reset block change.
+
+### Risk
+Q5 — purely visual, no backend or permission changes.
+
