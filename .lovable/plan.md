@@ -1,63 +1,104 @@
 
 
-## Plan: Make shift selector update entire project detail view
+## Plan: Redesign grouped project detail header into 3-zone cohesive layout
 
 ### File: `src/components/ProjectDetail.tsx`
 
-### Changes
+### Overview
 
-**1. Derive all display data from `selectedShiftProject` instead of `project`**
+For grouped projects (`siblings.length > 1`), replace the current header card + separate shift bar + 3 stat cards with a seamless 3-zone header. Non-grouped projects are completely unchanged — wrap the new layout in a conditional.
 
-Currently, header card, stats, timeline, and chat all use `project` directly. Replace these with `selectedShiftProject` which already resolves to the correct shift (or falls back to `project` for non-grouped).
+### Zone 1 — Group Header (lines 242-325)
 
-Specific lines to update:
+Replace the current header card content for grouped projects:
 
-- **Header name** (line 267): `project.name` → `selectedShiftProject.name`
-- **Shift badge** (lines 280-285): `project.shiftNumber` → `selectedShiftProject.shiftNumber`
-- **Status badge** (lines 275-278): use `selectedShiftProject.status` for the badge (keep `groupStatus` only for the stats card status, or use selected shift status everywhere — per the request, show the selected shift's status)
-- **Start/end dates** (lines 135-137): compute from `selectedShiftProject` instead of `project`:
+- **Name**: Strip `— Shift N` suffix using regex: `project.name.replace(/\s*—\s*Shift\s*\d+$/i, '')`
+- **Subtitle line**: `{location} · {groupStartDate} – {groupEndDate} · {onDays} on / {offDays} off` — compute group date span from `siblings[0].startDate` to `siblings[siblings.length-1].endDate`
+- **Badges**: `Recurring` badge + group-level status badge (Active if any sibling is active, else parent status)
+- **Remove** the start/end date row and duration row from this zone
+- **Keep** same `bg-teal-500/10 border-teal-500/50` tint, same image layout
+- **Border radius**: `rounded-lg rounded-b-none` to connect flush to Zone 2
+
+### Zone 2 — Shift Selector (lines 327-353)
+
+Restyle the existing shift selector bar:
+
+- **Background**: `bg-[#1E1E3F]` (matches main nav)
+- **No border-radius** (flat top and bottom to sit between Zone 1 and Zone 3): `rounded-none`
+- **Left label**: `<span className="text-white/60 text-sm mr-3">Shift:</span>`
+- **Pill buttons**: Same logic, but mark active shift with `— Now` suffix:
   ```tsx
-  const shiftStart = parseISO(selectedShiftProject.startDate);
-  const shiftEnd = selectedShiftProject.endDate ? parseISO(selectedShiftProject.endDate) : null;
-  const shiftDuration = shiftEnd ? differenceInDays(shiftEnd, shiftStart) + 1 : null;
+  const isNow = isWithinInterval(today, { start: sStart, end: sEnd });
+  // Label: "Shift 1 · Feb 18" or "Shift 2 · Mar 11 — Now"
   ```
-  Use `shiftStart`, `shiftEnd`, `shiftDuration` in the header dates (lines 302-318) and stats cards (lines 394-399).
+- **Selected pill**: `bg-white text-[#1E1E3F]`. **Unselected**: `text-white/70 hover:bg-white/15`
+- Full width: `w-full flex items-center gap-1 p-1.5`
 
-- **Stats card — status** (line 410): `groupStatus` → `selectedShiftProject.status`
+### Zone 3 — Shift Stats (lines 355-410)
 
-**2. Update Timeline to use selected shift's project ID (line 436-446)**
+For grouped projects, replace the 3 stat cards with 4 stat cards in a single row, styled with `rounded-t-none` on the container to connect to Zone 2:
 
-```tsx
-<ProjectTimeline
-  project={selectedShiftProject}
-  ...
-/>
-```
+1. **Personnel this shift**: count + `{shiftStart} – {shiftEnd}` as subtitle
+2. **Shift duration**: `{duration} days`
+3. **Compliance**: count valid certs / total required (derive from `assignedPersonnel` certificates)
+4. **Next shift starts**: calculate days until next sibling's start date, or show `—` if this is the last shift
 
-**3. Update Chat to use selected shift's project ID (line 453)**
+Wrap the 4 cards in a container with matching border and `rounded-b-lg rounded-t-none border-t-0` to visually connect to Zone 2.
 
-```tsx
-<ProjectChat projectId={selectedShiftProject.id} projectName={selectedShiftProject.name} />
-```
-
-**4. Update Documents to use selected shift's project ID (line 524)**
+### Implementation structure
 
 ```tsx
-<ProjectDocuments projectId={selectedShiftProject.id} ... />
+{siblings.length > 1 ? (
+  <div className="overflow-hidden rounded-lg border border-teal-500/50">
+    {/* Zone 1 — Group Header */}
+    <div className="bg-teal-500/10 p-6">
+      {/* image + group name + subtitle + badges */}
+    </div>
+    
+    {/* Zone 2 — Shift Selector */}
+    <div className="bg-[#1E1E3F] px-4 py-2 flex items-center gap-1.5">
+      <span className="text-white/60 text-sm mr-2">Shift:</span>
+      {/* pill buttons */}
+    </div>
+    
+    {/* Zone 3 — Shift Stats */}
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
+      {/* 4 stat cells with white bg */}
+    </div>
+  </div>
+) : (
+  <>
+    {/* Existing header card — completely unchanged */}
+    <Card className={`border-border/50 ...`}>...</Card>
+    {/* Existing 3 stat cards — completely unchanged */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">...</div>
+  </>
+)}
 ```
 
-**5. Keep `project` for structural things that don't change per-shift**
-- `project.isPosted`, `project.isRecurring`, `project.rotationOnDays/Off` — these are group-level attributes, keep as-is
-- Edit/Share/Close dialogs still operate on `project` (the parent)
-- Card background tinting (`project.isRecurring`, `project.isPosted`) — keep as-is
+### Computed values to add
 
-**6. No styling changes to shift selector** — already matches the requested style from previous iteration.
+```tsx
+const groupDisplayName = project.name.replace(/\s*—\s*Shift\s*\d+$/i, '');
+const groupStart = siblings.length > 1 ? parseISO(siblings[0].startDate) : projectStart;
+const groupEnd = siblings.length > 1 && siblings[siblings.length - 1].endDate 
+  ? parseISO(siblings[siblings.length - 1].endDate!) : projectEnd;
+const groupStatus = siblings.some(s => s.status === 'active') ? 'active' : project.status;
+const today = new Date();
+const nextSibling = siblings.find(s => {
+  const idx = siblings.findIndex(x => x.id === selectedShiftId);
+  return siblings.indexOf(s) === idx + 1;
+});
+const daysUntilNextShift = nextSibling 
+  ? differenceInDays(parseISO(nextSibling.startDate), today) 
+  : null;
+```
 
 ### No changes to
-- Non-grouped projects (selectedShiftProject falls back to project)
+- Non-grouped projects (entire existing header/stats preserved in else branch)
+- Content below header (Timeline, Chat, Personnel, Documents) — already uses `selectedShiftProject`
 - Schema/RLS/backend
-- Other components
 
 ### Risk
-Q5 — purely UI display change.
+Q5 — purely UI display/layout change.
 
