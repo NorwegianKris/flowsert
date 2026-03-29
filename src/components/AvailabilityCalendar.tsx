@@ -842,9 +842,9 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               {renderSelectedDateDetails()}
 
               {/* Upcoming Events Timeline */}
-              <div className="space-y-3 flex-1 min-h-0">
+              <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Upcoming Events</h3>
-                <ScrollArea className="h-[240px]">
+                <ScrollArea className={expandedSelectedRange?.from ? "h-[140px]" : "h-[240px]"}>
                   {eventsByMonth.size === 0 ? (
                     <p className="text-sm text-muted-foreground italic">No upcoming events</p>
                   ) : (
