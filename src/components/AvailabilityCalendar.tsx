@@ -88,7 +88,9 @@ function getProjectOnPeriodDates(project: AssignedProjectWithRotation): ProjectO
 
   if (onDays && offDays && onDays > 0 && offDays > 0) {
     const cycleLength = onDays + offDays;
-    const maxRotations = project.rotationCount || 52;
+    const maxRotations = project.rotationCount && project.rotationCount > 0
+      ? project.rotationCount
+      : (endDate ? 999 : 1);
     let currentStart = startDate;
 
     for (let i = 0; i < maxRotations; i++) {
@@ -490,7 +492,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   }, [projectBlockDates, availability]);
 
   // Always-on debug logging for projectBlockDates
-  console.log('[AvailabilityCalendar] projectBlockDates count:', projectBlockDates.length, 'first 5:', projectBlockDates.slice(0, 5).map(d => format(d, 'yyyy-MM-dd')));
+  console.log('[AvailabilityCalendar] projectBlockDates total:', projectBlockDates.length);
+  assignedProjects.forEach(p => {
+    const dates = getProjectOnPeriodDates(p);
+    console.log(`[Project] "${p.name}" | start: ${p.startDate} | end: ${p.endDate ?? 'NONE'} | status: ${p.status} | rotationOn: ${p.rotationOnDays} | rotationOff: ${p.rotationOffDays} | rotationCount: ${p.rotationCount} | generated dates: ${dates.length}`);
+  });
 
   // Debug logging when the expanded modal opens
   useEffect(() => {
