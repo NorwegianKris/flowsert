@@ -722,20 +722,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
             <div className="space-y-4">
               {legendRow}
 
-  // Simple date range for visual bar indicator only — ignores rotation logic
-  const projectBarDates = useMemo(() => {
-    const dates: Date[] = [];
-    for (const project of assignedProjects) {
-      if (project.status === 'completed') continue;
-      if (!project.endDate) continue;
-      const start = toLocalDate(project.startDate);
-      const end = toLocalDate(project.endDate);
-      const days = eachDayOfInterval({ start, end });
-      dates.push(...days);
-    }
-    return dates;
-  }, [assignedProjects]);
-
 
               {/* Compact calendar — visual only, no dialog on click */}
               <Calendar
