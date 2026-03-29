@@ -1,55 +1,74 @@
 
 
-## Plan: Separate visual bar dates from rotation logic
+## Plan: Scope projectBarDates to visible month and add per-project debug logging
 
 ### File: `src/components/AvailabilityCalendar.tsx`
 
-### Problem
-`projectBlockDates` is derived from `getProjectOnPeriodDates` which has complex rotation logic that's generating incorrect dates. The project runs Apr 1–21 but bars appear on every March day.
+### Finding
+
+The bars appearing on every March day is **not a bug** — three active/pending projects collectively cover all 31 March days. The 324-date `projectBarDates` array is correct but wasteful since most dates are outside the visible month.
 
 ### Changes
 
-**1. Add a new `projectBarDates` array (after line 140)**
+**1. Add `visibleMonth` state tracking** (near line 128)
 
-A simple `useMemo` that generates dates purely from `startDate`/`endDate`, ignoring rotation logic entirely:
+The collapsed calendar already shows one month. Track which month is displayed so we can scope dates:
+
+```typescript
+const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
+```
+
+Pass `onMonthChange={setVisibleMonth}` to both DayPicker instances (collapsed and expanded).
+
+**2. Scope `projectBarDates` to visible month** (lines 143–153)
+
+Only generate dates that fall within the visible month boundaries, drastically reducing the array size and `.some()` cost:
 
 ```typescript
 const projectBarDates = useMemo(() => {
+  const monthStart = startOfMonth(visibleMonth);
+  const monthEnd = endOfMonth(visibleMonth);
   const dates: Date[] = [];
   for (const project of assignedProjects) {
     if (project.status === 'completed') continue;
     if (!project.endDate) continue;
     const start = toLocalDate(project.startDate);
     const end = toLocalDate(project.endDate);
-    const days = eachDayOfInterval({ start, end });
-    dates.push(...days);
+    // Clamp to visible month
+    const clampedStart = start < monthStart ? monthStart : start;
+    const clampedEnd = end > monthEnd ? monthEnd : end;
+    if (clampedStart > clampedEnd) continue;
+    dates.push(...eachDayOfInterval({ start: clampedStart, end: clampedEnd }));
   }
   return dates;
-}, [assignedProjects]);
+}, [assignedProjects, visibleMonth]);
 ```
 
-**2. Update `DayContentWithDot` (line 472)**
+**3. Enhanced per-project debug logging** (lines 508–511)
 
-Replace `projectBlockDates` with `projectBarDates`:
+Show per-project contribution to the bar dates for the visible month:
 
 ```typescript
-const isProjectDay = projectBarDates.some(d => isSameDay(d, props.date));
+console.log('[AvailabilityCalendar] visibleMonth:', format(visibleMonth, 'yyyy-MM'));
+console.log('[AvailabilityCalendar] projectBarDates (this month):', projectBarDates.length);
+assignedProjects.forEach(p => {
+  const start = p.startDate;
+  const end = p.endDate ?? 'NONE';
+  console.log(`  [Project] "${p.name}" | ${start} → ${end} | status: ${p.status}`);
+});
 ```
 
-Update the dependency array to use `projectBarDates` instead of `projectBlockDates`.
+**4. Pass `onMonthChange` to both Calendar components**
 
-**3. Update debug logging (line 495)**
+Add `onMonthChange={setVisibleMonth}` prop to the collapsed `<Calendar>` and the expanded modal `<Calendar>`.
 
-Log `projectBarDates` count and first 5 dates instead of `projectBlockDates`:
+### Result
 
-```typescript
-console.log('[AvailabilityCalendar] projectBarDates total:', projectBarDates.length, 'first 5:', projectBarDates.slice(0, 5).map(d => format(d, 'yyyy-MM-dd')));
-```
-
-**4. No other changes**
-
-`projectBlockDates` and `getProjectOnPeriodDates` stay as-is for any other consumers. The bar indicator is now completely independent of rotation logic.
+- Bars still appear on every March day (correct — 3 projects cover all of March)
+- `projectBarDates` shrinks from 324 to ~31 entries (only visible month)
+- Debug logs clearly show per-project date ranges so you can verify the data
+- Performance improvement from smaller `.some()` comparisons
 
 ### Risk
-Q5 — purely visual data source change, no backend or permission changes.
+Q5 — purely visual/performance, no backend or permission changes.
 
