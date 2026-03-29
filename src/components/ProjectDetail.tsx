@@ -332,37 +332,30 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
 
       {/* Shift Selector Tab Bar */}
       {siblings.length > 1 && (
-        <Card className="border-border/50 bg-teal-500/5 border-teal-500/30">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted-foreground font-medium mr-1">
-                <Layers className="h-3.5 w-3.5 inline mr-1" />
-                Shift:
-              </span>
-              {siblings.map(s => {
-                const sStart = parseISO(s.startDate);
-                const sEnd = s.endDate ? parseISO(s.endDate) : null;
-                const dateLabel = sEnd
-                  ? `${format(sStart, 'MMM d')} – ${format(sEnd, 'MMM d')}`
-                  : format(sStart, 'MMM d');
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedShiftId(s.id)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      s.id === selectedShiftId
-                        ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/50 shadow-sm'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/50'
-                    }`}
-                  >
-                    <span className="font-semibold">Shift {s.shiftNumber}</span>
-                    <span className="ml-1.5 opacity-70">{dateLabel}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="inline-flex items-center gap-1 rounded-md bg-primary p-1 flex-wrap">
+          {siblings.map(s => {
+            const sStart = parseISO(s.startDate);
+            const sEnd = s.endDate ? parseISO(s.endDate) : null;
+            const dateLabel = sEnd
+              ? `${format(sStart, 'MMM d')} – ${format(sEnd, 'MMM d')}`
+              : format(sStart, 'MMM d');
+            const isSelected = s.id === selectedShiftId;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setSelectedShiftId(s.id)}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-200 ${
+                  isSelected
+                    ? 'bg-primary-foreground text-primary shadow-sm'
+                    : 'text-primary-foreground/80 hover:bg-primary-foreground/20 hover:text-primary-foreground hover:shadow-md hover:-translate-y-0.5'
+                }`}
+              >
+                Shift {s.shiftNumber}
+                <span className="ml-1.5 opacity-70 text-xs">{dateLabel}</span>
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {/* Stats Cards */}
