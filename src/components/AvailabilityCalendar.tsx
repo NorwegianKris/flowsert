@@ -469,7 +469,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
 
   // Custom DayContent that renders a green dot for project-block days
   const DayContentWithDot = useCallback((props: DayContentProps) => {
-    const isProjectDay = projectBlockDates.some(d => isSameDay(d, props.date));
+    const isProjectDay = projectBarDates.some(d => isSameDay(d, props.date));
     const hasColoredFill = availability.some(a => isSameDay(toLocalDate(a.date), props.date));
     return (
       <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
@@ -489,13 +489,12 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         )}
       </span>
     );
-  }, [projectBlockDates, availability]);
+  }, [projectBarDates, availability]);
 
   // Always-on debug logging for projectBlockDates
-  console.log('[AvailabilityCalendar] projectBlockDates total:', projectBlockDates.length);
+  console.log('[AvailabilityCalendar] projectBarDates total:', projectBarDates.length, 'first 5:', projectBarDates.slice(0, 5).map(d => format(d, 'yyyy-MM-dd')));
   assignedProjects.forEach(p => {
-    const dates = getProjectOnPeriodDates(p);
-    console.log(`[Project] "${p.name}" | start: ${p.startDate} | end: ${p.endDate ?? 'NONE'} | status: ${p.status} | rotationOn: ${p.rotationOnDays} | rotationOff: ${p.rotationOffDays} | rotationCount: ${p.rotationCount} | generated dates: ${dates.length}`);
+    console.log(`[Project] "${p.name}" | start: ${p.startDate} | end: ${p.endDate ?? 'NONE'} | status: ${p.status}`);
   });
 
   // Debug logging when the expanded modal opens
