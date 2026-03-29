@@ -234,9 +234,10 @@ interface ProjectCardProps {
   getInitials: (name: string) => string;
   onClick: () => void;
   groupColor?: string;
+  shiftGroup?: Project[];
 }
 
-function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupColor }: ProjectCardProps) {
+function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupColor, shiftGroup }: ProjectCardProps) {
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
   const assignedPersonnel = project.assignedPersonnel
