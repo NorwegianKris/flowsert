@@ -130,6 +130,33 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
   const projectEnd = selectedShiftProject.endDate ? parseISO(selectedShiftProject.endDate) : null;
   const duration = projectEnd ? differenceInDays(projectEnd, projectStart) + 1 : null;
 
+  // Grouped project computed values
+  const isGrouped = siblings.length > 1;
+  const groupDisplayName = project.name.replace(/\s*—\s*Shift\s*\d+$/i, '');
+  const groupStart = isGrouped ? parseISO(siblings[0].startDate) : projectStart;
+  const groupEnd = isGrouped && siblings[siblings.length - 1].endDate
+    ? parseISO(siblings[siblings.length - 1].endDate!) : projectEnd;
+  const groupStatus = siblings.some(s => s.status === 'active') ? 'active' : project.status;
+  const groupStatusConfig = statusConfig[groupStatus as keyof typeof statusConfig] || statusConfig.active;
+  const GroupStatusIcon = groupStatusConfig.icon;
+  const today = new Date();
+  const currentShiftIdx = siblings.findIndex(s => s.id === selectedShiftId);
+  const nextSibling = currentShiftIdx >= 0 && currentShiftIdx < siblings.length - 1 ? siblings[currentShiftIdx + 1] : null;
+  const daysUntilNextShift = nextSibling ? differenceInDays(parseISO(nextSibling.startDate), today) : null;
+
+  // Compliance: count valid certs across assigned personnel for this shift
+  const complianceStats = useMemo(() => {
+    let valid = 0;
+    let total = 0;
+    assignedPersonnel.forEach(p => {
+      p.certificates.forEach(c => {
+        total++;
+        if (!c.expiryDate || differenceInDays(parseISO(c.expiryDate), today) >= 0) valid++;
+      });
+    });
+    return { valid, total };
+  }, [assignedPersonnel]);
+
   const handleUpdateDates = (startDate: string, endDate: string | undefined) => {
     if (onUpdateProject) {
       onUpdateProject({
