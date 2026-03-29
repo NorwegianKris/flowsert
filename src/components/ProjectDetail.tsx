@@ -265,192 +265,256 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
         </div>
       </div>
 
-      {/* Project Header Card */}
-      <Card className={`border-border/50 ${project.isPosted ? 'border-[#C4B5FD]/50 bg-[#C4B5FD]/10' : ''} ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : ''}`}>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-start gap-6">
-            {project.imageUrl ? (
-              <img
-                src={project.imageUrl}
-                alt={project.name}
-                className="h-20 w-20 rounded-xl object-cover border border-border"
-              />
-            ) : (
-              <div className="h-20 w-20 rounded-xl border border-border bg-muted flex items-center justify-center text-4xl">
-                📋
-              </div>
-            )}
-
-            <div className="flex-1 space-y-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-foreground">
-                    {selectedShiftProject.name}
-                  </h1>
-                  {project.isPosted ? (
-                    <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
-                      <Megaphone className="h-3 w-3 mr-1" />
-                      Posted
-                    </Badge>
-                  ) : (
-                    <Badge variant={selectedConfig.variant}>
-                      <SelectedStatusIcon className="h-3 w-3 mr-1" />
-                      {selectedConfig.label}
-                    </Badge>
-                  )}
-                  {selectedShiftProject.shiftGroupId && selectedShiftProject.shiftNumber && (
-                    <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
-                      <Layers className="h-3 w-3 mr-1" />
-                      Shift {selectedShiftProject.shiftNumber}
-                    </Badge>
-                  )}
-                  {project.isRecurring && project.rotationOnDays && (
-                    <>
+      {isGrouped ? (
+        <>
+          {/* 3-Zone Cohesive Header for Grouped Projects */}
+          <div className="overflow-hidden rounded-lg border border-teal-500/50">
+            {/* Zone 1 — Group Header */}
+            <div className="bg-teal-500/10 p-6">
+              <div className="flex flex-col md:flex-row md:items-start gap-6">
+                {project.imageUrl ? (
+                  <img src={project.imageUrl} alt={groupDisplayName} className="h-20 w-20 rounded-xl object-cover border border-border" />
+                ) : (
+                  <div className="h-20 w-20 rounded-xl border border-border bg-muted flex items-center justify-center text-4xl">📋</div>
+                )}
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-2xl font-bold text-foreground">{groupDisplayName}</h1>
                       <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
                         <Repeat className="h-3 w-3 mr-1" />
-                        {project.rotationOnDays} days on
+                        Recurring
                       </Badge>
-                      <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
-                        <Repeat className="h-3 w-3 mr-1" />
-                        {project.rotationOffDays} days off
+                      <Badge variant={groupStatusConfig.variant}>
+                        <GroupStatusIcon className="h-3 w-3 mr-1" />
+                        {groupStatusConfig.label}
                       </Badge>
-                    </>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {[
+                        project.location,
+                        groupStart && groupEnd
+                          ? `${format(groupStart, 'MMM d')} – ${format(groupEnd, 'MMM d, yyyy')}`
+                          : groupStart ? `From ${format(groupStart, 'MMM d, yyyy')}` : null,
+                        project.rotationOnDays && project.rotationOffDays
+                          ? `${project.rotationOnDays} on / ${project.rotationOffDays} off`
+                          : null,
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  {project.description && (
+                    <p className="text-muted-foreground text-sm">{project.description}</p>
                   )}
                 </div>
-                <p className="text-muted-foreground">{project.description}</p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4 text-sky-500" />
-                  <span>Start: {format(projectStart, 'MMM d, yyyy')}</span>
+            {/* Zone 2 — Shift Selector */}
+            <div className="bg-[#1E1E3F] px-4 py-2 flex items-center gap-1.5 flex-wrap">
+              <span className="text-white/60 text-sm mr-2">Shift:</span>
+              {siblings.map(s => {
+                const sStart = parseISO(s.startDate);
+                const sEnd = s.endDate ? parseISO(s.endDate) : null;
+                const isNow = sEnd ? (() => { try { return isWithinInterval(today, { start: sStart, end: sEnd }); } catch { return false; } })() : false;
+                const dateLabel = format(sStart, 'MMM d');
+                const isSelected = s.id === selectedShiftId;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedShiftId(s.id)}
+                    className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
+                      isSelected ? 'bg-white text-[#1E1E3F] shadow-sm' : 'text-white/70 hover:bg-white/15 hover:text-white'
+                    }`}
+                  >
+                    Shift {s.shiftNumber} · {dateLabel}{isNow ? ' — Now' : ''}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Zone 3 — Shift Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
+              <div className="bg-card p-4 flex flex-col items-center justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="h-4 w-4 text-violet-500" />
+                  <span className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</span>
                 </div>
-                {projectEnd && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4 text-sky-500" />
-                    <span>End: {format(projectEnd, 'MMM d, yyyy')}</span>
-                  </div>
-                )}
-                {duration && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-4 w-4 text-amber-500" />
-                    <span>{duration} days</span>
-                  </div>
-                )}
-                {project.isPosted && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span>{applications.filter(a => a.status !== 'rejected').length} Applicant{applications.filter(a => a.status !== 'rejected').length !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
+                <p className="text-xs text-muted-foreground">Personnel this shift</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">
+                  {format(projectStart, 'MMM d')} – {projectEnd ? format(projectEnd, 'MMM d') : '—'}
+                </p>
+              </div>
+              <div className="bg-card p-4 flex flex-col items-center justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-sky-500" />
+                  <span className="text-2xl font-bold text-foreground">{duration || '—'}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Shift duration (days)</p>
+              </div>
+              <div className="bg-card p-4 flex flex-col items-center justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  <span className="text-2xl font-bold text-foreground">{complianceStats.valid}/{complianceStats.total}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Certs valid</p>
+              </div>
+              <div className="bg-card p-4 flex flex-col items-center justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="h-4 w-4 text-amber-500" />
+                  <span className="text-2xl font-bold text-foreground">{daysUntilNextShift !== null ? `${daysUntilNextShift}d` : '—'}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{daysUntilNextShift !== null ? 'Next shift starts' : 'Last shift'}</p>
               </div>
             </div>
           </div>
 
-          {/* Shift siblings navigation — now used only as a legacy fallback; main selector is below */}
-        </CardContent>
-      </Card>
+          {project.isPosted && (
+            <Card className="border-border/50 border-primary/30 bg-primary/5">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Inbox className="h-5 w-5 text-primary" />
+                    Project Applications
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ProjectApplicationsList projectId={project.id} />
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Non-grouped: Original Header Card */}
+          <Card className={`border-border/50 ${project.isPosted ? 'border-[#C4B5FD]/50 bg-[#C4B5FD]/10' : ''} ${project.isRecurring ? 'bg-teal-500/10 border-teal-500/50' : ''}`}>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row md:items-start gap-6">
+                {project.imageUrl ? (
+                  <img src={project.imageUrl} alt={project.name} className="h-20 w-20 rounded-xl object-cover border border-border" />
+                ) : (
+                  <div className="h-20 w-20 rounded-xl border border-border bg-muted flex items-center justify-center text-4xl">📋</div>
+                )}
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
+                      {project.isPosted ? (
+                        <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
+                          <Megaphone className="h-3 w-3 mr-1" />
+                          Posted
+                        </Badge>
+                      ) : (
+                        <Badge variant={selectedConfig.variant}>
+                          <SelectedStatusIcon className="h-3 w-3 mr-1" />
+                          {selectedConfig.label}
+                        </Badge>
+                      )}
+                      {project.isRecurring && project.rotationOnDays && (
+                        <>
+                          <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                            <Repeat className="h-3 w-3 mr-1" />
+                            {project.rotationOnDays} days on
+                          </Badge>
+                          <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
+                            <Repeat className="h-3 w-3 mr-1" />
+                            {project.rotationOffDays} days off
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground">{project.description}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="h-4 w-4 text-sky-500" />
+                      <span>Start: {format(projectStart, 'MMM d, yyyy')}</span>
+                    </div>
+                    {projectEnd && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4 text-sky-500" />
+                        <span>End: {format(projectEnd, 'MMM d, yyyy')}</span>
+                      </div>
+                    )}
+                    {duration && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4 text-amber-500" />
+                        <span>{duration} days</span>
+                      </div>
+                    )}
+                    {project.isPosted && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span>{applications.filter(a => a.status !== 'rejected').length} Applicant{applications.filter(a => a.status !== 'rejected').length !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Shift Selector Tab Bar */}
-      {siblings.length > 1 && (
-        <div className="inline-flex items-center gap-1 rounded-md bg-primary p-1 flex-wrap">
-          {siblings.map(s => {
-            const sStart = parseISO(s.startDate);
-            const sEnd = s.endDate ? parseISO(s.endDate) : null;
-            const dateLabel = sEnd
-              ? `${format(sStart, 'MMM d')} – ${format(sEnd, 'MMM d')}`
-              : format(sStart, 'MMM d');
-            const isSelected = s.id === selectedShiftId;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setSelectedShiftId(s.id)}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-200 ${
-                  isSelected
-                    ? 'bg-primary-foreground text-primary shadow-sm'
-                    : 'text-primary-foreground/80 hover:bg-primary-foreground/20 hover:text-primary-foreground hover:shadow-md hover:-translate-y-0.5'
-                }`}
-              >
-                Shift {s.shiftNumber}
-                <span className="ml-1.5 opacity-70 text-xs">{dateLabel}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+          {/* Non-grouped: Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-6">
+                <div className="p-2 rounded-lg bg-violet-500/10">
+                  <Users className="h-5 w-5 text-violet-500" />
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</p>
+                  <p className="text-xs text-muted-foreground">Personnel</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-foreground">{assignedPersonnel.filter(p => p.category !== 'freelancer').length}</p>
+                  <p className="text-xs text-muted-foreground">Employees</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-foreground">{assignedPersonnel.filter(p => p.category === 'freelancer').length}</p>
+                  <p className="text-xs text-muted-foreground">Freelancers</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-sky-500/10">
+                  <Calendar className="h-5 w-5 text-sky-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{duration || '—'}</p>
+                  <p className="text-xs text-muted-foreground">Total Days</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <FileText className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground capitalize">{selectedConfig.label}</p>
+                  <p className="text-xs text-muted-foreground">Project Status</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center gap-6">
-            <div className="p-2 rounded-lg bg-violet-500/10">
-              <Users className="h-5 w-5 text-violet-500" />
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">
-                {assignedPersonnel.length}
-              </p>
-              <p className="text-xs text-muted-foreground">Personnel</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">
-                {assignedPersonnel.filter(p => p.category !== 'freelancer').length}
-              </p>
-              <p className="text-xs text-muted-foreground">Employees</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">
-                {assignedPersonnel.filter(p => p.category === 'freelancer').length}
-              </p>
-              <p className="text-xs text-muted-foreground">Freelancers</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-sky-500/10">
-              <Calendar className="h-5 w-5 text-sky-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">
-                {duration || '—'}
-              </p>
-              <p className="text-xs text-muted-foreground">Total Days</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10">
-              <FileText className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground capitalize">
-                {selectedConfig.label}
-              </p>
-              <p className="text-xs text-muted-foreground">Project Status</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Project Applications Card - shown for posted projects */}
-      {project.isPosted && (
-        <Card className="border-border/50 border-primary/30 bg-primary/5">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Inbox className="h-5 w-5 text-primary" />
-                Project Applications
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ProjectApplicationsList projectId={project.id} />
-          </CardContent>
-        </Card>
+          {project.isPosted && (
+            <Card className="border-border/50 border-primary/30 bg-primary/5">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Inbox className="h-5 w-5 text-primary" />
+                    Project Applications
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ProjectApplicationsList projectId={project.id} />
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Timeline */}
