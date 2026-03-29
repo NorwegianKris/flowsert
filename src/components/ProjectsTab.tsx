@@ -155,17 +155,21 @@ export function ProjectsTab({ projects, personnel, onSelectProject }: ProjectsTa
 
           {(standaloneProjects.length > 0 || shiftGroups.length > 0) ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {shiftGroups.flatMap(group => group.projects.map(project => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  personnel={personnel}
-                  getPersonnelById={getPersonnelById}
-                  getInitials={getInitials}
-                  onClick={() => onSelectProject(project)}
-                  groupColor={group.color}
-                />
-              )))}
+              {shiftGroups.map(group => {
+                const parent = group.projects.find(p => p.isShiftParent) || group.projects[0];
+                return (
+                  <ProjectCard
+                    key={group.groupId}
+                    project={parent}
+                    personnel={personnel}
+                    getPersonnelById={getPersonnelById}
+                    getInitials={getInitials}
+                    onClick={() => onSelectProject(parent)}
+                    groupColor={group.color}
+                    shiftGroup={group.projects}
+                  />
+                );
+              })}
               {standaloneProjects.map((project) => (
                 <ProjectCard 
                   key={project.id} 
@@ -234,12 +238,19 @@ interface ProjectCardProps {
   getInitials: (name: string) => string;
   onClick: () => void;
   groupColor?: string;
+  shiftGroup?: Project[];
 }
 
-function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupColor }: ProjectCardProps) {
+function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupColor, shiftGroup }: ProjectCardProps) {
   const config = statusConfig[project.status];
   const StatusIcon = config.icon;
-  const assignedPersonnel = project.assignedPersonnel
+
+  // When displaying a grouped card, aggregate personnel across all shifts
+  const allPersonnelIds = shiftGroup
+    ? [...new Set(shiftGroup.flatMap(p => p.assignedPersonnel))]
+    : project.assignedPersonnel;
+
+  const assignedPersonnel = allPersonnelIds
     .map(getPersonnelById)
     .filter((p): p is Personnel => p !== undefined);
 
@@ -282,6 +293,19 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
     ? { backgroundColor: `${groupColor}1A` }
     : undefined;
 
+  // Display name: strip " — Shift N" suffix for grouped cards
+  const displayName = shiftGroup
+    ? project.name.replace(/\s*—\s*Shift\s*\d+$/i, '')
+    : project.name;
+
+  // Date range: for grouped cards, use first shift start → last shift end
+  const displayStartDate = shiftGroup
+    ? shiftGroup[0].startDate
+    : project.startDate;
+  const displayEndDate = shiftGroup
+    ? shiftGroup[shiftGroup.length - 1].endDate
+    : project.endDate;
+
   return (
     <Card 
       className={`h-full hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:ring-2 hover:ring-[#C4B5FD] hover:shadow-[#C4B5FD]/20 flex flex-col ${project.isRecurring && !groupColor ? 'bg-teal-500/10 border-teal-500/50' : isPosted ? 'bg-[#C4B5FD]/10 border-[#C4B5FD]/50' : ''}`} 
@@ -295,7 +319,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
             {project.imageUrl ? (
               <img
                 src={project.imageUrl}
-                alt={project.name}
+                alt={displayName}
                 className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
               />
             ) : (
@@ -303,7 +327,7 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
                 📋
               </div>
             )}
-            <CardTitle className="text-base font-medium line-clamp-2">{project.name}</CardTitle>
+            <CardTitle className="text-base font-medium line-clamp-2">{displayName}</CardTitle>
           </div>
           {/* Badge rail — fixed min-h for 2 badge rows so all cards match */}
           <div className="flex flex-col gap-0.5 items-end shrink-0 min-h-[3.25rem]">
@@ -325,14 +349,26 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
                 </Badge>
               </>
             )}
-            {project.shiftGroupId && project.shiftNumber && (
+            {/* For grouped cards: show shift count pill instead of individual "Shift N" */}
+            {shiftGroup && shiftGroup.length > 1 ? (
               <Badge
                 className={groupColor ? '' : 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50'}
                 style={groupColor ? { backgroundColor: `${groupColor}33`, color: groupColor, borderColor: `${groupColor}80` } : undefined}
               >
                 <Layers className="h-3 w-3 mr-1" />
-                Shift {project.shiftNumber}
+                {shiftGroup.length} shifts
               </Badge>
+            ) : (
+              /* For non-grouped cards with a shift badge */
+              !shiftGroup && project.shiftGroupId && project.shiftNumber && (
+                <Badge
+                  className={groupColor ? '' : 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50'}
+                  style={groupColor ? { backgroundColor: `${groupColor}33`, color: groupColor, borderColor: `${groupColor}80` } : undefined}
+                >
+                  <Layers className="h-3 w-3 mr-1" />
+                  Shift {project.shiftNumber}
+                </Badge>
+              )
             )}
             {!project.isRecurring && !isPosted && (
               <Badge className={config.badgeClass}>
@@ -404,8 +440,8 @@ function ProjectCard({ project, getPersonnelById, getInitials, onClick, groupCol
         {/* ZONE 5: Footer — dates + location, always 1 line reserved */}
         <div className="h-4 mt-auto">
           <div className="text-xs text-muted-foreground flex items-center gap-x-3 truncate">
-            <span>Start: {new Date(project.startDate).toLocaleDateString()}</span>
-            <span>End: {project.endDate ? new Date(project.endDate).toLocaleDateString() : '—'}</span>
+            <span>Start: {new Date(displayStartDate).toLocaleDateString()}</span>
+            <span>End: {displayEndDate ? new Date(displayEndDate).toLocaleDateString() : '—'}</span>
             <span className="flex items-center gap-1">
               <MapPin className="h-3 w-3 shrink-0" />
               {project.projectLocationLabel || project.location || '—'}
