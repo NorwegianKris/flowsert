@@ -129,6 +129,13 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
   const projectStart = parseISO(selectedShiftProject.startDate);
   const projectEnd = selectedShiftProject.endDate ? parseISO(selectedShiftProject.endDate) : null;
   const duration = projectEnd ? differenceInDays(projectEnd, projectStart) + 1 : null;
+  console.log('[ShiftDuration]', {
+    selectedId: selectedShiftProject.id,
+    projectId: project.id,
+    start: selectedShiftProject.startDate,
+    end: selectedShiftProject.endDate,
+    duration,
+  });
 
   // Grouped project computed values
   const isGrouped = siblings.length > 1;
@@ -310,10 +317,17 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
             {/* Zone 2 — Shift Selector */}
             <div className="bg-primary px-4 py-2 flex items-center gap-1.5 flex-wrap">
               <span className="text-primary-foreground/60 text-sm mr-2">Shift:</span>
-              {siblings.map(s => {
+              {siblings.map((s, idx) => {
                 const sStart = parseISO(s.startDate);
                 const sEnd = s.endDate ? parseISO(s.endDate) : null;
-                const isNow = sEnd ? (() => { try { const isLast = siblings.indexOf(s) === siblings.length - 1; if (isLast) return isWithinInterval(today, { start: sStart, end: sEnd }); return today >= sStart && today < sEnd; } catch { return false; } })() : false;
+                const isNow = sEnd ? (today >= sStart && today <= sEnd) : false;
+                console.log('[ShiftSelector]', {
+                  shift: s.shiftNumber,
+                  today: today.toISOString(),
+                  sStart: s.startDate,
+                  sEnd: s.endDate,
+                  isNow,
+                });
                 const dateLabel = format(sStart, 'MMM d');
                 const isSelected = s.id === selectedShiftId;
                 return (
@@ -330,9 +344,12 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
               })}
             </div>
 
-            {/* Zone 3 — Shift Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 pb-6 pt-4 border-t border-teal-500/20">
-              <div className="flex items-center gap-3">
+          </div>
+
+          {/* Zone 3 — Shift Stats as separate cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-violet-500/10">
                   <Users className="h-5 w-5 text-violet-500" />
                 </div>
@@ -340,8 +357,10 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                   <p className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</p>
                   <p className="text-xs text-muted-foreground">Personnel</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-sky-500/10">
                   <Clock className="h-5 w-5 text-sky-500" />
                 </div>
@@ -349,8 +368,10 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                   <p className="text-2xl font-bold text-foreground">{duration || '—'}</p>
                   <p className="text-xs text-muted-foreground">Shift days</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-emerald-500/10">
                   <CheckCircle className="h-5 w-5 text-emerald-500" />
                 </div>
@@ -358,8 +379,10 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                   <p className="text-2xl font-bold text-foreground">{complianceStats.valid}/{complianceStats.total}</p>
                   <p className="text-xs text-muted-foreground">Certs valid</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-4 flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-amber-500/10">
                   <Calendar className="h-5 w-5 text-amber-500" />
                 </div>
@@ -375,8 +398,8 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                       : 'Last shift'}
                   </p>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
           {project.isPosted && (
