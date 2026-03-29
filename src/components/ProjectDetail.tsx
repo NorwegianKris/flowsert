@@ -104,20 +104,14 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
 
   const [selectedShiftId, setSelectedShiftId] = useState<string>(defaultShiftId);
 
-  // Compute group-aware status
-  const groupStatus = useMemo(() => {
-    if (siblings.length <= 1) return project.status;
-    return siblings.some(s => s.status === 'active') ? 'active' : project.status;
-  }, [siblings, project.status]);
-
-  const selectedConfig = statusConfig[selectedShiftProject.status as keyof typeof statusConfig] || statusConfig.active;
-  const SelectedStatusIcon = selectedConfig.icon;
-
   // Get the selected shift project for personnel filtering
   const selectedShiftProject = useMemo(() => {
     if (siblings.length <= 1) return project;
     return siblings.find(s => s.id === selectedShiftId) || project;
   }, [siblings, selectedShiftId, project]);
+
+  const selectedConfig = statusConfig[selectedShiftProject.status as keyof typeof statusConfig] || statusConfig.active;
+  const SelectedStatusIcon = selectedConfig.icon;
   
   const assignedPersonnel = selectedShiftProject.assignedPersonnel
     .map((id) => personnel.find((p) => p.id === id))
