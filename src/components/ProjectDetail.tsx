@@ -268,7 +268,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
       {isGrouped ? (
         <>
           {/* 3-Zone Cohesive Header for Grouped Projects */}
-          <div className="overflow-hidden rounded-lg border border-teal-500/50">
+          <div className="overflow-hidden rounded-lg border border-teal-500/30">
             {/* Zone 1 — Group Header */}
             <div className="bg-teal-500/10 p-6">
               <div className="flex flex-col md:flex-row md:items-start gap-6">
@@ -299,6 +299,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                         project.rotationOnDays && project.rotationOffDays
                           ? `${project.rotationOnDays} on / ${project.rotationOffDays} off`
                           : null,
+                        `${siblings.length} shifts`,
                       ].filter(Boolean).join(' · ')}
                     </p>
                   </div>
@@ -312,7 +313,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
               {siblings.map(s => {
                 const sStart = parseISO(s.startDate);
                 const sEnd = s.endDate ? parseISO(s.endDate) : null;
-                const isNow = sEnd ? (() => { try { return isWithinInterval(today, { start: sStart, end: sEnd }); } catch { return false; } })() : false;
+                const isNow = sEnd ? (() => { try { const isLast = siblings.indexOf(s) === siblings.length - 1; if (isLast) return isWithinInterval(today, { start: sStart, end: sEnd }); return today >= sStart && today < sEnd; } catch { return false; } })() : false;
                 const dateLabel = format(sStart, 'MMM d');
                 const isSelected = s.id === selectedShiftId;
                 return (
@@ -330,45 +331,50 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
             </div>
 
             {/* Zone 3 — Shift Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
-              <div className="bg-card p-4 flex flex-col items-center justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <Users className="h-4 w-4 text-violet-500" />
-                  <span className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 pb-6 pt-4 border-t border-teal-500/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-violet-500/10">
+                  <Users className="h-5 w-5 text-violet-500" />
                 </div>
-                <p className="text-xs text-muted-foreground">Personnel this shift</p>
-                <p className="text-xs text-muted-foreground/70 mt-0.5">
-                  {format(projectStart, 'MMM d')} – {projectEnd ? format(projectEnd, 'MMM d') : '—'}
-                </p>
-              </div>
-              <div className="bg-card p-4 flex flex-col items-center justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4 text-sky-500" />
-                  <span className="text-2xl font-bold text-foreground">{duration || '—'}</span>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</p>
+                  <p className="text-xs text-muted-foreground">Personnel</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Shift duration (days)</p>
               </div>
-              <div className="bg-card p-4 flex flex-col items-center justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  <span className="text-2xl font-bold text-foreground">{complianceStats.valid}/{complianceStats.total}</span>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-sky-500/10">
+                  <Clock className="h-5 w-5 text-sky-500" />
                 </div>
-                <p className="text-xs text-muted-foreground">Certs valid</p>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{duration || '—'}</p>
+                  <p className="text-xs text-muted-foreground">Shift days</p>
+                </div>
               </div>
-              <div className="bg-card p-4 flex flex-col items-center justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="h-4 w-4 text-amber-500" />
-                  <span className="text-2xl font-bold text-foreground">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{complianceStats.valid}/{complianceStats.total}</p>
+                  <p className="text-xs text-muted-foreground">Certs valid</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Calendar className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">
                     {daysUntilNextShift !== null
                       ? (daysUntilNextShift < 0 ? `${Math.abs(daysUntilNextShift)}d ago` : `In ${daysUntilNextShift}d`)
                       : '—'}
-                  </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {daysUntilNextShift !== null
+                      ? (daysUntilNextShift < 0 ? 'Next shift started' : 'Next shift starts')
+                      : 'Last shift'}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {daysUntilNextShift !== null
-                    ? (daysUntilNextShift < 0 ? 'Next shift started' : 'Next shift starts')
-                    : 'Last shift'}
-                </p>
               </div>
             </div>
           </div>
