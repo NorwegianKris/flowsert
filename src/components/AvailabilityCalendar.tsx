@@ -489,7 +489,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   // Custom DayContent that renders a green dot for project-block days
   const DayContentWithDot = useCallback((props: DayContentProps) => {
     const isProjectDay = projectBarDates.some(d => isSameDay(d, props.date));
-    const hasColoredFill = availability.some(a => isSameDay(toLocalDate(a.date), props.date));
     return (
       <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
         {props.date.getDate()}
@@ -498,17 +497,17 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
             style={{
               position: 'absolute',
               bottom: '3px',
-              left: '6px',
-              right: '6px',
-              height: '3px',
+              left: '8px',
+              right: '8px',
+              height: '2px',
               borderRadius: '2px',
-              backgroundColor: hasColoredFill ? 'rgba(255,255,255,0.85)' : '#3B3AC2',
+              backgroundColor: '#3B3AC2',
             }}
           />
         )}
       </span>
     );
-  }, [projectBarDates, availability]);
+  }, [projectBarDates]);
 
   // Always-on debug logging for projectBarDates
   console.log('[AvailabilityCalendar] visibleMonth:', format(visibleMonth, 'yyyy-MM'));
@@ -585,7 +584,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         <span className="text-muted-foreground">Cert Expiry</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span style={{ width: '16px', height: '3px', borderRadius: '2px', backgroundColor: '#3B3AC2', display: 'inline-block' }} />
+        <span style={{ width: '16px', height: '2px', borderRadius: '2px', backgroundColor: '#3B3AC2', display: 'inline-block' }} />
         <span className="text-muted-foreground">Assigned Project</span>
       </div>
     </div>
@@ -597,6 +596,30 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     if (!range?.from) return null;
 
     const isSingle = !range.to || isSameDay(range.from, range.to);
+
+    // Look up availability status for the selected day
+    const dayAvailability = isSingle
+      ? availability.find(a => isSameDay(toLocalDate(a.date), range.from!))
+      : null;
+    const availStatusColor: Record<string, string> = {
+      available: '#86C952',
+      unavailable: '#E74C3C',
+      partial: '#F5B942',
+      other: '#5B9FE0',
+    };
+    const availStatusLabel: Record<string, string> = {
+      available: 'Available',
+      unavailable: 'Unavailable',
+      partial: 'Partial',
+      other: 'Other',
+    };
+
+    const projectsList = isSingle
+      ? getProjectsOnDate(range.from)
+      : getProjectsInRange(range.from, range.to!);
+    const certExpiring = isSingle ? getCertificatesExpiringOnDate(range.from) : [];
+    const projectEvents = isSingle ? getProjectEventsOnDate(range.from) : [];
+    const hasAnything = projectsList.length > 0 || certExpiring.length > 0 || projectEvents.length > 0 || !!dayAvailability;
 
     return (
       <div className="space-y-4 pb-4 border-b border-border">
@@ -610,6 +633,20 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           </h3>
           <p className="text-sm text-muted-foreground">{personnelName}</p>
         </div>
+
+        {/* Availability Status */}
+        {isSingle && (
+          <div className="flex items-center gap-2">
+            {dayAvailability ? (
+              <>
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: availStatusColor[dayAvailability.status] || '#94a3b8' }} />
+                <span className="text-sm font-medium">{availStatusLabel[dayAvailability.status] || dayAvailability.status}</span>
+              </>
+            ) : (
+              <span className="text-sm text-muted-foreground italic">No availability set</span>
+            )}
+          </div>
+        )}
 
         {/* Assigned Projects */}
         <div className="space-y-2">
