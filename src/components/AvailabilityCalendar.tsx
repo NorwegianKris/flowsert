@@ -139,6 +139,19 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return allProjectOnPeriods.map((p) => p.date);
   }, [allProjectOnPeriods]);
 
+  // Simple date range for visual bar indicator — ignores rotation logic
+  const projectBarDates = useMemo(() => {
+    const dates: Date[] = [];
+    for (const project of assignedProjects) {
+      if (project.status === 'completed') continue;
+      if (!project.endDate) continue;
+      const start = toLocalDate(project.startDate);
+      const end = toLocalDate(project.endDate);
+      dates.push(...eachDayOfInterval({ start, end }));
+    }
+    return dates;
+  }, [assignedProjects]);
+
   const certificateExpiryDates = certificates
     .filter((cert) => cert.expiryDate)
     .map((cert) => ({
