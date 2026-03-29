@@ -1,110 +1,132 @@
 
 
-## Plan: Redesign grouped header to match regular project visual system
+## Plan: Three fixes to grouped project header
 
 ### File: `src/components/ProjectDetail.tsx`
 
-### Current state
-The grouped header (lines 268-374) already has the 3-zone structure but uses a different visual treatment than regular projects: `gap-px bg-border` grid for stats instead of individual Card components, centered text alignment, and slightly different proportions.
+### Fix 1: "— Now" indicator (line 316)
 
-### Changes
-
-**1. Zone 1 — Header body (lines 273-307): Add shift count to subtitle**
-
-Add `{siblings.length} shifts` to the subtitle filter array (line 294-302) after the rotation pattern.
-
-**2. Zone 2 — Shift selector (lines 310-330): Already correct**
-
-Already uses `bg-primary`, white pills, per-sibling `isWithinInterval`. The "— Now" bug: the current logic at line 315 already checks per-sibling with `sStart`/`sEnd` and guards `sEnd` existence. If both show "— Now", it's a data overlap issue (Shift 1 end equals Shift 2 start, and `isWithinInterval` is inclusive on both bounds). Fix by making the end exclusive — subtract 1 day or use `isBefore(today, sEnd)` as additional guard.
-
-**Fix**: Change line 315 from inclusive interval to: only show "Now" if `today >= sStart && today < sEnd` (exclusive end), OR for the last sibling use inclusive end. This prevents overlap when Shift 1's endDate equals Shift 2's startDate.
+Replace the current `isWithinInterval` logic with simple date comparison and add debug console.log:
 
 ```tsx
-const isNow = sEnd ? (() => {
-  try {
-    const isLastSibling = siblings.indexOf(s) === siblings.length - 1;
-    if (isLastSibling) {
-      return isWithinInterval(today, { start: sStart, end: sEnd });
-    }
-    // Exclusive end for non-last siblings to prevent overlap
-    return today >= sStart && today < sEnd;
-  } catch { return false; }
-})() : false;
+{siblings.map((s, idx) => {
+  const sStart = parseISO(s.startDate);
+  const sEnd = s.endDate ? parseISO(s.endDate) : null;
+  const isNow = sEnd ? (today >= sStart && today <= sEnd) : false;
+  console.log('[ShiftSelector]', {
+    shift: s.shiftNumber,
+    today: today.toISOString(),
+    sStart: s.startDate,
+    sEnd: s.endDate,
+    isNow,
+  });
+  // ... rest unchanged
 ```
 
-**3. Zone 3 — Stat cards (lines 332-373): Match regular project stat card style**
+This removes `isWithinInterval` entirely and uses plain `>=`/`<=` comparison. The console.log will reveal if the date ranges overlap or if the comparison is working correctly.
 
-Replace the `gap-px bg-border` grid with a `grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 pt-4` layout using the same left-aligned style as non-grouped stats (icon in colored circle + text right). Each stat cell styled identically to the regular `Card > CardContent p-4 flex items-center gap-3` pattern but without individual card borders (they're inside the wrapper card).
+### Fix 2: Duration stat (line 349)
 
-Replace lines 332-373 with:
+The `duration` variable on line 131 uses `selectedShiftProject.startDate/endDate`, which should be correct. But `selectedShiftProject` depends on `selectedShiftId` state — if the state isn't updating, duration won't change. Add a console.log right after line 131:
+
+```tsx
+console.log('[ShiftDuration]', {
+  selectedId: selectedShiftProject.id,
+  projectId: project.id,
+  start: selectedShiftProject.startDate,
+  end: selectedShiftProject.endDate,
+  duration,
+});
+```
+
+This will confirm whether `selectedShiftProject` is actually switching when a shift pill is clicked, or if it's stuck on the parent project.
+
+### Fix 3: Stat cards visual match (lines 334-379)
+
+Replace the borderless `div` stat cells inside the wrapper card with actual `Card` components matching the regular project stats. Change the Zone 3 section from:
+
 ```tsx
 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 pb-6 pt-4 border-t border-teal-500/20">
-  {/* Personnel */}
-  <div className="flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-violet-500/10">
-      <Users className="h-5 w-5 text-violet-500" />
-    </div>
-    <div>
-      <p className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</p>
-      <p className="text-xs text-muted-foreground">Personnel</p>
-    </div>
-  </div>
-  {/* Duration */}
-  <div className="flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-sky-500/10">
-      <Clock className="h-5 w-5 text-sky-500" />
-    </div>
-    <div>
-      <p className="text-2xl font-bold text-foreground">{duration || '—'}</p>
-      <p className="text-xs text-muted-foreground">Shift days</p>
-    </div>
-  </div>
-  {/* Compliance */}
-  <div className="flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-emerald-500/10">
-      <CheckCircle className="h-5 w-5 text-emerald-500" />
-    </div>
-    <div>
-      <p className="text-2xl font-bold text-foreground">{complianceStats.valid}/{complianceStats.total}</p>
-      <p className="text-xs text-muted-foreground">Certs valid</p>
-    </div>
-  </div>
-  {/* Next shift */}
-  <div className="flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-amber-500/10">
-      <Calendar className="h-5 w-5 text-amber-500" />
-    </div>
-    <div>
-      <p className="text-2xl font-bold text-foreground">
-        {daysUntilNextShift !== null
-          ? (daysUntilNextShift < 0 ? `${Math.abs(daysUntilNextShift)}d ago` : `In ${daysUntilNextShift}d`)
-          : '—'}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {daysUntilNextShift !== null
-          ? (daysUntilNextShift < 0 ? 'Next shift started' : 'Next shift starts')
-          : 'Last shift'}
-      </p>
-    </div>
-  </div>
+  <div className="flex items-center gap-3">...</div>
+  ...
 </div>
 ```
 
-**4. Wrapper border (line 271): Use softer tint**
+To a separate grid of `Card` components **outside** the wrapper card (after its closing `</div>`), matching the regular project stat card pattern exactly:
 
-Change `border-teal-500/50` to `border-teal-500/30` to match the softer feel requested.
+```tsx
+{/* Close the wrapper card div here */}
+</div>
 
-### Summary of changes
-1. Line 271: border tint `border-teal-500/50` → `border-teal-500/30`
-2. Lines 294-302: Add `${siblings.length} shifts` to subtitle
-3. Line 315: Fix "— Now" overlap with exclusive end boundary for non-last siblings
-4. Lines 332-373: Replace centered grid-gap stat layout with left-aligned icon+text matching regular project stats
+{/* Zone 3 — Shift Stats as separate cards, matching regular project */}
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+  <Card className="border-border/50">
+    <CardContent className="p-4 flex items-center gap-3">
+      <div className="p-2 rounded-lg bg-violet-500/10">
+        <Users className="h-5 w-5 text-violet-500" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-foreground">{assignedPersonnel.length}</p>
+        <p className="text-xs text-muted-foreground">Personnel</p>
+      </div>
+    </CardContent>
+  </Card>
+  <Card className="border-border/50">
+    <CardContent className="p-4 flex items-center gap-3">
+      <div className="p-2 rounded-lg bg-sky-500/10">
+        <Clock className="h-5 w-5 text-sky-500" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-foreground">{duration || '—'}</p>
+        <p className="text-xs text-muted-foreground">Shift days</p>
+      </div>
+    </CardContent>
+  </Card>
+  <Card className="border-border/50">
+    <CardContent className="p-4 flex items-center gap-3">
+      <div className="p-2 rounded-lg bg-emerald-500/10">
+        <CheckCircle className="h-5 w-5 text-emerald-500" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-foreground">{complianceStats.valid}/{complianceStats.total}</p>
+        <p className="text-xs text-muted-foreground">Certs valid</p>
+      </div>
+    </CardContent>
+  </Card>
+  <Card className="border-border/50">
+    <CardContent className="p-4 flex items-center gap-3">
+      <div className="p-2 rounded-lg bg-amber-500/10">
+        <Calendar className="h-5 w-5 text-amber-500" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-foreground">
+          {daysUntilNextShift !== null
+            ? (daysUntilNextShift < 0 ? `${Math.abs(daysUntilNextShift)}d ago` : `In ${daysUntilNextShift}d`)
+            : '—'}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {daysUntilNextShift !== null
+            ? (daysUntilNextShift < 0 ? 'Next shift started' : 'Next shift starts')
+            : 'Last shift'}
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+```
+
+This gives each stat its own `Card` with `border-border/50` — identical to the regular project stat cards at lines 470-510.
+
+### Summary
+1. Line 316: Replace `isWithinInterval` with `today >= sStart && today <= sEnd`, add console.log
+2. After line 131: Add console.log for duration debugging
+3. Lines 334-379: Move stats outside wrapper card, use individual `Card` components matching regular project style
 
 ### No changes to
 - Non-grouped projects
-- Content below header
 - Schema/RLS/backend
+- Content below header
 
 ### Risk
-Q5 — purely UI styling/display change.
+Q5 — UI styling + debug logging only.
 
