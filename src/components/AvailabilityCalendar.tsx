@@ -468,6 +468,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   // Custom DayContent that renders a green dot for project-block days
   const DayContentWithDot = useCallback((props: DayContentProps) => {
     const isProjectDay = projectBlockDates.some(d => isSameDay(d, props.date));
+    const hasColoredFill = availability.some(a => isSameDay(toLocalDate(a.date), props.date));
     return (
       <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
         {props.date.getDate()}
@@ -475,19 +476,18 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
           <span
             style={{
               position: 'absolute',
-              top: '3px',
-              right: '3px',
-              width: '7px',
-              height: '7px',
-              borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
-              border: '1.5px solid #639922',
+              bottom: '3px',
+              left: '6px',
+              right: '6px',
+              height: '3px',
+              borderRadius: '2px',
+              backgroundColor: hasColoredFill ? 'rgba(255,255,255,0.85)' : '#3B3AC2',
             }}
           />
         )}
       </span>
     );
-  }, [projectBlockDates]);
+  }, [projectBlockDates, availability]);
 
   // Always-on debug logging for projectBlockDates
   console.log('[AvailabilityCalendar] projectBlockDates count:', projectBlockDates.length, 'first 5:', projectBlockDates.slice(0, 5).map(d => format(d, 'yyyy-MM-dd')));
@@ -560,7 +560,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         <span className="text-muted-foreground">Cert Expiry</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#FFFFFF', border: '1.5px solid #639922' }} />
+        <span style={{ width: '16px', height: '3px', borderRadius: '2px', backgroundColor: '#3B3AC2', display: 'inline-block' }} />
         <span className="text-muted-foreground">Assigned Project</span>
       </div>
     </div>
