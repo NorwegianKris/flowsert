@@ -724,6 +724,10 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               ))}
             </div>
           )}
+
+          {!hasAnything && (
+            <p className="text-sm text-muted-foreground italic">No events — click to set availability below</p>
+          )}
         </div>
       </div>
     );
