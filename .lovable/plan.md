@@ -1,104 +1,73 @@
 
 
-## Plan: Redesign grouped project detail header into 3-zone cohesive layout
+## Plan: Five fixes to grouped project detail header
 
 ### File: `src/components/ProjectDetail.tsx`
 
-### Overview
+### Changes
 
-For grouped projects (`siblings.length > 1`), replace the current header card + separate shift bar + 3 stat cards with a seamless 3-zone header. Non-grouped projects are completely unchanged — wrap the new layout in a conditional.
+**1. Shift selector bar colour (line 313)**
 
-### Zone 1 — Group Header (lines 242-325)
+Change `bg-[#1E1E3F]` to `bg-primary` to match the main navigation toggle bar. Update pill button colours accordingly:
+- Selected: `bg-primary-foreground text-primary shadow-sm`
+- Unselected: `text-primary-foreground/70 hover:bg-primary-foreground/15 hover:text-primary-foreground`
 
-Replace the current header card content for grouped projects:
+**2. Fix "— Now" marker (line 318)**
 
-- **Name**: Strip `— Shift N` suffix using regex: `project.name.replace(/\s*—\s*Shift\s*\d+$/i, '')`
-- **Subtitle line**: `{location} · {groupStartDate} – {groupEndDate} · {onDays} on / {offDays} off` — compute group date span from `siblings[0].startDate` to `siblings[siblings.length-1].endDate`
-- **Badges**: `Recurring` badge + group-level status badge (Active if any sibling is active, else parent status)
-- **Remove** the start/end date row and duration row from this zone
-- **Keep** same `bg-teal-500/10 border-teal-500/50` tint, same image layout
-- **Border radius**: `rounded-lg rounded-b-none` to connect flush to Zone 2
+The current `isWithinInterval` logic already checks per-sibling using `sStart` and `sEnd` from each `s` in `siblings.map()`. If both shifts show "— Now", the issue is likely that shifts overlap or the interval boundary is inclusive. Add a guard: only mark "Now" if `sEnd` exists AND the interval check passes. The current code looks correct per-sibling — verify by also ensuring `sEnd` is strictly after `sStart`. No structural change needed if already per-sibling; the bug may be that one shift's endDate equals the next shift's startDate. Add `{ start: sStart, end: sEnd }` with no overlap fix needed — the logic is already correct per the code at line 318. If the issue is date overlap, no code fix is possible without data change.
 
-### Zone 2 — Shift Selector (lines 327-353)
+**3. Shift duration stat (lines 350-352)**
 
-Restyle the existing shift selector bar:
+Currently `duration` is computed from `selectedShiftProject` (line 129-131), which should already be correct. Verify lines 129-131 use `selectedShiftProject.startDate` and `selectedShiftProject.endDate` — they do. The value at line 350 uses `duration` which derives from `selectedShiftProject`. If showing 211 days, the issue might be that `selectedShiftProject` isn't updating. This is already fixed from the previous round. No change needed — confirm the existing code is correct.
 
-- **Background**: `bg-[#1E1E3F]` (matches main nav)
-- **No border-radius** (flat top and bottom to sit between Zone 1 and Zone 3): `rounded-none`
-- **Left label**: `<span className="text-white/60 text-sm mr-3">Shift:</span>`
-- **Pill buttons**: Same logic, but mark active shift with `— Now` suffix:
-  ```tsx
-  const isNow = isWithinInterval(today, { start: sStart, end: sEnd });
-  // Label: "Shift 1 · Feb 18" or "Shift 2 · Mar 11 — Now"
-  ```
-- **Selected pill**: `bg-white text-[#1E1E3F]`. **Unselected**: `text-white/70 hover:bg-white/15`
-- Full width: `w-full flex items-center gap-1 p-1.5`
+Actually, re-reading lines 129-131: `projectStart = parseISO(selectedShiftProject.startDate)` and `projectEnd = selectedShiftProject.endDate ? parseISO(selectedShiftProject.endDate) : null` — this is already shift-specific. The duration should be correct. If it's showing 211 days, it might be a stale state issue. No code change needed here.
 
-### Zone 3 — Shift Stats (lines 355-410)
+**4. Next shift starts — handle negative values (line 364)**
 
-For grouped projects, replace the 3 stat cards with 4 stat cards in a single row, styled with `rounded-t-none` on the container to connect to Zone 2:
-
-1. **Personnel this shift**: count + `{shiftStart} – {shiftEnd}` as subtitle
-2. **Shift duration**: `{duration} days`
-3. **Compliance**: count valid certs / total required (derive from `assignedPersonnel` certificates)
-4. **Next shift starts**: calculate days until next sibling's start date, or show `—` if this is the last shift
-
-Wrap the 4 cards in a container with matching border and `rounded-b-lg rounded-t-none border-t-0` to visually connect to Zone 2.
-
-### Implementation structure
-
+Replace line 364:
 ```tsx
-{siblings.length > 1 ? (
-  <div className="overflow-hidden rounded-lg border border-teal-500/50">
-    {/* Zone 1 — Group Header */}
-    <div className="bg-teal-500/10 p-6">
-      {/* image + group name + subtitle + badges */}
-    </div>
-    
-    {/* Zone 2 — Shift Selector */}
-    <div className="bg-[#1E1E3F] px-4 py-2 flex items-center gap-1.5">
-      <span className="text-white/60 text-sm mr-2">Shift:</span>
-      {/* pill buttons */}
-    </div>
-    
-    {/* Zone 3 — Shift Stats */}
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
-      {/* 4 stat cells with white bg */}
-    </div>
-  </div>
-) : (
-  <>
-    {/* Existing header card — completely unchanged */}
-    <Card className={`border-border/50 ...`}>...</Card>
-    {/* Existing 3 stat cards — completely unchanged */}
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">...</div>
-  </>
+<span className="text-2xl font-bold text-foreground">{daysUntilNextShift !== null ? `${daysUntilNextShift}d` : '—'}</span>
+```
+With:
+```tsx
+<span className="text-2xl font-bold text-foreground">
+  {daysUntilNextShift !== null
+    ? (daysUntilNextShift < 0 ? `${Math.abs(daysUntilNextShift)}d ago` : `In ${daysUntilNextShift}d`)
+    : '—'}
+</span>
+```
+Update the subtitle label (line 366) to show "Started" vs "Next shift starts" vs "Last shift":
+```tsx
+<p className="text-xs text-muted-foreground">
+  {daysUntilNextShift !== null
+    ? (daysUntilNextShift < 0 ? 'Next shift started' : 'Next shift starts')
+    : 'Last shift'}
+</p>
+```
+
+**5. Match regular project visual weight — remove description from Zone 1 (lines 305-307)**
+
+Remove the description paragraph from Zone 1 (the subtitle line already conveys the key info). The project name font size (`text-2xl font-bold`) already matches the non-grouped header. Padding (`p-6`) already matches. No other size changes needed.
+
+Remove lines 305-307:
+```tsx
+{project.description && (
+  <p className="text-muted-foreground text-sm">{project.description}</p>
 )}
 ```
 
-### Computed values to add
-
-```tsx
-const groupDisplayName = project.name.replace(/\s*—\s*Shift\s*\d+$/i, '');
-const groupStart = siblings.length > 1 ? parseISO(siblings[0].startDate) : projectStart;
-const groupEnd = siblings.length > 1 && siblings[siblings.length - 1].endDate 
-  ? parseISO(siblings[siblings.length - 1].endDate!) : projectEnd;
-const groupStatus = siblings.some(s => s.status === 'active') ? 'active' : project.status;
-const today = new Date();
-const nextSibling = siblings.find(s => {
-  const idx = siblings.findIndex(x => x.id === selectedShiftId);
-  return siblings.indexOf(s) === idx + 1;
-});
-const daysUntilNextShift = nextSibling 
-  ? differenceInDays(parseISO(nextSibling.startDate), today) 
-  : null;
-```
+### Summary of actual code changes
+1. Line 313: `bg-[#1E1E3F]` → `bg-primary`
+2. Lines 325-327: Update pill button classes to use `bg-primary-foreground`/`text-primary` tokens
+3. Line 364: Handle negative `daysUntilNextShift` with "ago" text
+4. Line 366: Update subtitle label conditionally
+5. Lines 305-307: Remove description block from Zone 1
 
 ### No changes to
-- Non-grouped projects (entire existing header/stats preserved in else branch)
-- Content below header (Timeline, Chat, Personnel, Documents) — already uses `selectedShiftProject`
+- Non-grouped projects
 - Schema/RLS/backend
+- Content below header
 
 ### Risk
-Q5 — purely UI display/layout change.
+Q5 — purely UI styling/display change.
 
