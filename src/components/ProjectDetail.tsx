@@ -110,8 +110,8 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
     return siblings.some(s => s.status === 'active') ? 'active' : project.status;
   }, [siblings, project.status]);
 
-  const config = statusConfig[groupStatus];
-  const StatusIcon = config.icon;
+  const selectedConfig = statusConfig[selectedShiftProject.status as keyof typeof statusConfig] || statusConfig.active;
+  const SelectedStatusIcon = selectedConfig.icon;
 
   // Get the selected shift project for personnel filtering
   const selectedShiftProject = useMemo(() => {
@@ -132,8 +132,8 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
       .slice(0, 2);
   };
 
-  const projectStart = parseISO(project.startDate);
-  const projectEnd = project.endDate ? parseISO(project.endDate) : null;
+  const projectStart = parseISO(selectedShiftProject.startDate);
+  const projectEnd = selectedShiftProject.endDate ? parseISO(selectedShiftProject.endDate) : null;
   const duration = projectEnd ? differenceInDays(projectEnd, projectStart) + 1 : null;
 
   const handleUpdateDates = (startDate: string, endDate: string | undefined) => {
@@ -264,7 +264,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-2xl font-bold text-foreground">
-                    {project.name}
+                    {selectedShiftProject.name}
                   </h1>
                   {project.isPosted ? (
                     <Badge className="bg-[#C4B5FD] text-[#4338CA] border-[#C4B5FD]">
@@ -272,15 +272,15 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                       Posted
                     </Badge>
                   ) : (
-                    <Badge variant={config.variant}>
-                      <StatusIcon className="h-3 w-3 mr-1" />
-                      {config.label}
+                    <Badge variant={selectedConfig.variant}>
+                      <SelectedStatusIcon className="h-3 w-3 mr-1" />
+                      {selectedConfig.label}
                     </Badge>
                   )}
-                  {project.shiftGroupId && project.shiftNumber && (
+                  {selectedShiftProject.shiftGroupId && selectedShiftProject.shiftNumber && (
                     <Badge className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/50">
                       <Layers className="h-3 w-3 mr-1" />
-                      Shift {project.shiftNumber}
+                      Shift {selectedShiftProject.shiftNumber}
                     </Badge>
                   )}
                   {project.isRecurring && project.rotationOnDays && (
@@ -407,7 +407,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground capitalize">
-                {groupStatus}
+                {selectedConfig.label}
               </p>
               <p className="text-xs text-muted-foreground">Project Status</p>
             </div>
@@ -434,7 +434,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
 
       {/* Timeline */}
       <ProjectTimeline
-        project={project}
+        project={selectedShiftProject}
         personnel={personnel}
         phases={phases}
         onPersonnelClick={onPersonnelClick}
@@ -450,7 +450,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
         {/* Chat Section */}
         <div className="lg:col-span-2 space-y-6">
           {/* Project Chat */}
-          <ProjectChat projectId={project.id} projectName={project.name} />
+          <ProjectChat projectId={selectedShiftProject.id} projectName={selectedShiftProject.name} />
         </div>
 
         {/* Right Side Tabs - Personnel & Calendar Items */}
@@ -521,7 +521,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
 
                 {/* Documents Tab */}
                 <TabsContent value="documents" className="mt-0 h-full overflow-y-auto">
-                  <ProjectDocuments projectId={project.id} businessId={businessId || undefined} />
+                  <ProjectDocuments projectId={selectedShiftProject.id} businessId={businessId || undefined} />
                 </TabsContent>
 
               </CardContent>
@@ -581,9 +581,9 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
-                <Badge variant={config.variant}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
-                  {config.label}
+                <Badge variant={selectedConfig.variant}>
+                  <SelectedStatusIcon className="h-3 w-3 mr-1" />
+                  {selectedConfig.label}
                 </Badge>
               </div>
             </div>
