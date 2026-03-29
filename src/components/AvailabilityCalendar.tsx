@@ -126,6 +126,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -139,18 +140,23 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     return allProjectOnPeriods.map((p) => p.date);
   }, [allProjectOnPeriods]);
 
-  // Simple date range for visual bar indicator — ignores rotation logic
+  // Simple date range for visual bar indicator — scoped to visible month
   const projectBarDates = useMemo(() => {
+    const monthStart = startOfMonth(visibleMonth);
+    const monthEnd = endOfMonth(visibleMonth);
     const dates: Date[] = [];
     for (const project of assignedProjects) {
       if (project.status === 'completed') continue;
       if (!project.endDate) continue;
       const start = toLocalDate(project.startDate);
       const end = toLocalDate(project.endDate);
-      dates.push(...eachDayOfInterval({ start, end }));
+      const clampedStart = start < monthStart ? monthStart : start;
+      const clampedEnd = end > monthEnd ? monthEnd : end;
+      if (clampedStart > clampedEnd) continue;
+      dates.push(...eachDayOfInterval({ start: clampedStart, end: clampedEnd }));
     }
     return dates;
-  }, [assignedProjects]);
+  }, [assignedProjects, visibleMonth]);
 
   const certificateExpiryDates = certificates
     .filter((cert) => cert.expiryDate)
@@ -504,10 +510,11 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
     );
   }, [projectBarDates, availability]);
 
-  // Always-on debug logging for projectBlockDates
-  console.log('[AvailabilityCalendar] projectBarDates total:', projectBarDates.length, 'first 5:', projectBarDates.slice(0, 5).map(d => format(d, 'yyyy-MM-dd')));
+  // Always-on debug logging for projectBarDates
+  console.log('[AvailabilityCalendar] visibleMonth:', format(visibleMonth, 'yyyy-MM'));
+  console.log('[AvailabilityCalendar] projectBarDates (this month):', projectBarDates.length);
   assignedProjects.forEach(p => {
-    console.log(`[Project] "${p.name}" | start: ${p.startDate} | end: ${p.endDate ?? 'NONE'} | status: ${p.status}`);
+    console.log(`  [Project] "${p.name}" | ${p.startDate} → ${p.endDate ?? 'NONE'} | status: ${p.status}`);
   });
 
   // Debug logging when the expanded modal opens
@@ -741,6 +748,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 mode="range"
                 selected={selectedRange}
                 onSelect={(range) => setSelectedRange(range)}
+                onMonthChange={setVisibleMonth}
                 modifiers={modifiers}
                 modifiersStyles={modifiersStyles}
                 modifiersClassNames={modifiersClassNames}
@@ -773,6 +781,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 mode="range"
                 selected={expandedSelectedRange}
                 onSelect={handleRangeSelect}
+                onMonthChange={setVisibleMonth}
                 modifiers={modifiers}
                 modifiersStyles={modifiersStyles}
                 modifiersClassNames={modifiersClassNames}
