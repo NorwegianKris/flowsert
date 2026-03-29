@@ -4,6 +4,7 @@ import type { DayContentProps } from 'react-day-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -479,7 +480,8 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               width: '7px',
               height: '7px',
               borderRadius: '50%',
-              backgroundColor: '#639922',
+              backgroundColor: '#FFFFFF',
+              border: '1.5px solid #639922',
             }}
           />
         )}
@@ -558,7 +560,7 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
         <span className="text-muted-foreground">Cert Expiry</span>
       </div>
       <div className="flex items-center gap-1.5 text-sm">
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#639922' }} />
+        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#FFFFFF', border: '1.5px solid #639922' }} />
         <span className="text-muted-foreground">Assigned Project</span>
       </div>
     </div>
@@ -749,12 +751,6 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
                 <h2 className="text-lg font-bold text-foreground">Personal Calendar</h2>
               </div>
 
-              {/* Tip banner */}
-              <div className="flex items-center gap-2 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-1.5">
-                <span className="text-sm">💡</span>
-                <span className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</span>
-              </div>
-
               <Calendar
                 mode="range"
                 selected={expandedSelectedRange}
@@ -818,6 +814,33 @@ export function AvailabilityCalendar({ personnelId, personnelName, certificates 
               {/* Set Availability — always visible */}
               <div className="space-y-3 border-t border-border pt-4">
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Set Availability</h4>
+                <p className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">From</label>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs"
+                      value={expandedSelectedRange?.from ? format(expandedSelectedRange.from, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => {
+                        const d = e.target.value ? toLocalDate(e.target.value) : undefined;
+                        setExpandedSelectedRange(prev => ({ from: d, to: prev?.to }));
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">To</label>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs"
+                      value={expandedSelectedRange?.to ? format(expandedSelectedRange.to, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => {
+                        const d = e.target.value ? toLocalDate(e.target.value) : undefined;
+                        setExpandedSelectedRange(prev => ({ from: prev?.from, to: d }));
+                      }}
+                    />
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {(['available', 'partial', 'unavailable', 'other'] as AvailabilityStatus[]).map((status) => {
                     const config = statusConfig[status];
