@@ -1,39 +1,36 @@
 
 
-## Plan: Fix right panel layout overlap in expanded modal
-
-### File: `src/components/AvailabilityCalendar.tsx`
+## Plan: Fix `can_worker_access_project` to filter on accepted invitations
 
 ### Problem
-The right panel (line 840) uses `flex flex-col gap-5` but the Upcoming Events section has `flex-1 min-h-0` (line 845) which causes it to compete for space. When `renderSelectedDateDetails()` adds content above it, the fixed `h-[240px]` ScrollArea and flex-1 cause overlap.
+The `can_worker_access_project` function's first `EXISTS` subquery joins `project_invitations` without filtering on `status`, allowing workers with rejected/expired/pending invitations to access project data.
 
-### Changes
+### Change
+Create a migration that replaces the function, adding `AND pi.status = 'accepted'` to the `project_invitations` subquery.
 
-**1. Remove `flex-1 min-h-0` from Upcoming Events wrapper (line 845)**
-
-Change:
-```tsx
-<div className="space-y-3 flex-1 min-h-0">
+```sql
+CREATE OR REPLACE FUNCTION public.can_worker_access_project(_user_id uuid, _project_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM project_invitations pi
+    JOIN personnel per ON per.id = pi.personnel_id
+    WHERE pi.project_id = _project_id
+    AND per.user_id = _user_id
+    AND pi.status = 'accepted'
+  )
+  OR EXISTS (
+    SELECT 1 FROM personnel per
+    JOIN projects p ON per.id::text = ANY(p.assigned_personnel)
+    WHERE per.user_id = _user_id
+    AND p.id = _project_id
+  )
+$$;
 ```
-To:
-```tsx
-<div className="space-y-3">
-```
-
-**2. Reduce ScrollArea height when day detail is shown (line 847)**
-
-Make the events ScrollArea height dynamic — shorter when detail is visible so everything fits:
-```tsx
-<ScrollArea className={expandedSelectedRange?.from ? "h-[140px]" : "h-[240px]"}>
-```
-
-**3. Ensure the right column itself scrolls properly (line 840)**
-
-The container already has `overflow-y-auto` which is correct. No change needed there — the fix is removing `flex-1` so sections stack naturally.
-
-### Result
-All three sections (day detail, upcoming events, set availability) stack cleanly in a scrollable column without overlap.
 
 ### Risk
-Q5 — purely layout fix.
+Q1/Q3: 🔴 — This is a security-critical RLS helper function. Anchor before publish.
 
