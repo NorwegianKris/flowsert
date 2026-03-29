@@ -1,74 +1,47 @@
 
 
-## Plan: Scope projectBarDates to visible month and add per-project debug logging
+## Plan: Refine project bar indicator and add day detail in expanded modal only
 
 ### File: `src/components/AvailabilityCalendar.tsx`
 
-### Finding
+### 1. Simplify bar indicator
 
-The bars appearing on every March day is **not a bug** — three active/pending projects collectively cover all 31 March days. The 324-date `projectBarDates` array is correct but wasteful since most dates are outside the visible month.
+Update `DayContentWithDot` — remove color-switching logic, use consistent `#3B3AC2` everywhere, reduce dimensions:
 
-### Changes
-
-**1. Add `visibleMonth` state tracking** (near line 128)
-
-The collapsed calendar already shows one month. Track which month is displayed so we can scope dates:
-
-```typescript
-const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
+```tsx
+{isProjectDay && (
+  <span style={{
+    position: 'absolute',
+    bottom: '3px',
+    left: '8px',
+    right: '8px',
+    height: '2px',
+    borderRadius: '2px',
+    backgroundColor: '#3B3AC2',
+  }} />
+)}
 ```
 
-Pass `onMonthChange={setVisibleMonth}` to both DayPicker instances (collapsed and expanded).
+Remove `hasColoredFill` variable and `availability` from the dependency array.
 
-**2. Scope `projectBarDates` to visible month** (lines 143–153)
+### 2. Update legend bar swatch
 
-Only generate dates that fall within the visible month boundaries, drastically reducing the array size and `.some()` cost:
+Change height from `3px` to `2px` to match the new bar.
 
-```typescript
-const projectBarDates = useMemo(() => {
-  const monthStart = startOfMonth(visibleMonth);
-  const monthEnd = endOfMonth(visibleMonth);
-  const dates: Date[] = [];
-  for (const project of assignedProjects) {
-    if (project.status === 'completed') continue;
-    if (!project.endDate) continue;
-    const start = toLocalDate(project.startDate);
-    const end = toLocalDate(project.endDate);
-    // Clamp to visible month
-    const clampedStart = start < monthStart ? monthStart : start;
-    const clampedEnd = end > monthEnd ? monthEnd : end;
-    if (clampedStart > clampedEnd) continue;
-    dates.push(...eachDayOfInterval({ start: clampedStart, end: clampedEnd }));
-  }
-  return dates;
-}, [assignedProjects, visibleMonth]);
-```
+### 3. Enhance day detail in expanded modal only
 
-**3. Enhanced per-project debug logging** (lines 508–511)
+The existing `renderSelectedDateDetails()` function already shows project/cert info when `expandedSelectedRange?.from` is set. Enhance it:
 
-Show per-project contribution to the bar dates for the visible month:
+- Add **availability status** display: look up the day's availability entry and show a coloured dot + label (e.g. "● Available"). If none, show "No availability set".
+- Add fallback message when no projects, no certs, no availability: "No events — click to set availability below"
+- Keep existing project cards, cert expiry, and project event displays unchanged.
 
-```typescript
-console.log('[AvailabilityCalendar] visibleMonth:', format(visibleMonth, 'yyyy-MM'));
-console.log('[AvailabilityCalendar] projectBarDates (this month):', projectBarDates.length);
-assignedProjects.forEach(p => {
-  const start = p.startDate;
-  const end = p.endDate ?? 'NONE';
-  console.log(`  [Project] "${p.name}" | ${start} → ${end} | status: ${p.status}`);
-});
-```
+The collapsed view stays compact — no detail section added there.
 
-**4. Pass `onMonthChange` to both Calendar components**
+### No other changes
 
-Add `onMonthChange={setVisibleMonth}` prop to the collapsed `<Calendar>` and the expanded modal `<Calendar>`.
-
-### Result
-
-- Bars still appear on every March day (correct — 3 projects cover all of March)
-- `projectBarDates` shrinks from 324 to ~31 entries (only visible month)
-- Debug logs clearly show per-project date ranges so you can verify the data
-- Performance improvement from smaller `.some()` comparisons
+All functionality, saves, events panel, date inputs stay identical.
 
 ### Risk
-Q5 — purely visual/performance, no backend or permission changes.
+Q5 — purely UI styling and layout, no backend or permission changes.
 
