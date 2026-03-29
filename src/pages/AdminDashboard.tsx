@@ -514,6 +514,7 @@ export default function AdminDashboard() {
         <ProjectDetail
           project={selectedProject}
           personnel={personnel}
+          allProjects={projects}
           onBack={() => {
             setSelectedProject(null);
             setActiveTab('projects');
