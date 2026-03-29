@@ -302,16 +302,13 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                       ].filter(Boolean).join(' · ')}
                     </p>
                   </div>
-                  {project.description && (
-                    <p className="text-muted-foreground text-sm">{project.description}</p>
-                  )}
                 </div>
               </div>
             </div>
 
             {/* Zone 2 — Shift Selector */}
-            <div className="bg-[#1E1E3F] px-4 py-2 flex items-center gap-1.5 flex-wrap">
-              <span className="text-white/60 text-sm mr-2">Shift:</span>
+            <div className="bg-primary px-4 py-2 flex items-center gap-1.5 flex-wrap">
+              <span className="text-primary-foreground/60 text-sm mr-2">Shift:</span>
               {siblings.map(s => {
                 const sStart = parseISO(s.startDate);
                 const sEnd = s.endDate ? parseISO(s.endDate) : null;
@@ -323,7 +320,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
                     key={s.id}
                     onClick={() => setSelectedShiftId(s.id)}
                     className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
-                      isSelected ? 'bg-white text-[#1E1E3F] shadow-sm' : 'text-white/70 hover:bg-white/15 hover:text-white'
+                      isSelected ? 'bg-primary-foreground text-primary shadow-sm' : 'text-primary-foreground/70 hover:bg-primary-foreground/15 hover:text-primary-foreground'
                     }`}
                   >
                     Shift {s.shiftNumber} · {dateLabel}{isNow ? ' — Now' : ''}
@@ -361,9 +358,17 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
               <div className="bg-card p-4 flex flex-col items-center justify-center">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar className="h-4 w-4 text-amber-500" />
-                  <span className="text-2xl font-bold text-foreground">{daysUntilNextShift !== null ? `${daysUntilNextShift}d` : '—'}</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {daysUntilNextShift !== null
+                      ? (daysUntilNextShift < 0 ? `${Math.abs(daysUntilNextShift)}d ago` : `In ${daysUntilNextShift}d`)
+                      : '—'}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground">{daysUntilNextShift !== null ? 'Next shift starts' : 'Last shift'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {daysUntilNextShift !== null
+                    ? (daysUntilNextShift < 0 ? 'Next shift started' : 'Next shift starts')
+                    : 'Last shift'}
+                </p>
               </div>
             </div>
           </div>
