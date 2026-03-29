@@ -1,47 +1,39 @@
 
 
-## Plan: Refine project bar indicator and add day detail in expanded modal only
+## Plan: Fix right panel layout overlap in expanded modal
 
 ### File: `src/components/AvailabilityCalendar.tsx`
 
-### 1. Simplify bar indicator
+### Problem
+The right panel (line 840) uses `flex flex-col gap-5` but the Upcoming Events section has `flex-1 min-h-0` (line 845) which causes it to compete for space. When `renderSelectedDateDetails()` adds content above it, the fixed `h-[240px]` ScrollArea and flex-1 cause overlap.
 
-Update `DayContentWithDot` — remove color-switching logic, use consistent `#3B3AC2` everywhere, reduce dimensions:
+### Changes
 
+**1. Remove `flex-1 min-h-0` from Upcoming Events wrapper (line 845)**
+
+Change:
 ```tsx
-{isProjectDay && (
-  <span style={{
-    position: 'absolute',
-    bottom: '3px',
-    left: '8px',
-    right: '8px',
-    height: '2px',
-    borderRadius: '2px',
-    backgroundColor: '#3B3AC2',
-  }} />
-)}
+<div className="space-y-3 flex-1 min-h-0">
+```
+To:
+```tsx
+<div className="space-y-3">
 ```
 
-Remove `hasColoredFill` variable and `availability` from the dependency array.
+**2. Reduce ScrollArea height when day detail is shown (line 847)**
 
-### 2. Update legend bar swatch
+Make the events ScrollArea height dynamic — shorter when detail is visible so everything fits:
+```tsx
+<ScrollArea className={expandedSelectedRange?.from ? "h-[140px]" : "h-[240px]"}>
+```
 
-Change height from `3px` to `2px` to match the new bar.
+**3. Ensure the right column itself scrolls properly (line 840)**
 
-### 3. Enhance day detail in expanded modal only
+The container already has `overflow-y-auto` which is correct. No change needed there — the fix is removing `flex-1` so sections stack naturally.
 
-The existing `renderSelectedDateDetails()` function already shows project/cert info when `expandedSelectedRange?.from` is set. Enhance it:
-
-- Add **availability status** display: look up the day's availability entry and show a coloured dot + label (e.g. "● Available"). If none, show "No availability set".
-- Add fallback message when no projects, no certs, no availability: "No events — click to set availability below"
-- Keep existing project cards, cert expiry, and project event displays unchanged.
-
-The collapsed view stays compact — no detail section added there.
-
-### No other changes
-
-All functionality, saves, events panel, date inputs stay identical.
+### Result
+All three sections (day detail, upcoming events, set availability) stack cleanly in a scrollable column without overlap.
 
 ### Risk
-Q5 — purely UI styling and layout, no backend or permission changes.
+Q5 — purely layout fix.
 
