@@ -1,49 +1,54 @@
 
 
-## Plan: Update dot indicator colour and restructure Set Availability section
+## Plan: Replace dot indicator with bottom bar for project days
 
 ### File: `src/components/AvailabilityCalendar.tsx`
 
-### 1. Change dot indicator to white with green border
+### 1. Update `DayContentWithDot` (lines 469–490)
 
-Update `DayContentWithDot` (lines 474–484) — replace the solid green fill with a white dot outlined in dark green:
+Replace the corner dot with a bottom bar. To pick the right bar colour, check if the day has an availability status (coloured fill) by looking up `availability` array:
 
 ```tsx
-style={{
-  position: 'absolute',
-  top: '3px',
-  right: '3px',
-  width: '7px',
-  height: '7px',
-  borderRadius: '50%',
-  backgroundColor: '#FFFFFF',
-  border: '1.5px solid #639922',
-}}
+const DayContentWithDot = useCallback((props: DayContentProps) => {
+  const isProjectDay = projectBlockDates.some(d => isSameDay(d, props.date));
+  const hasColoredFill = availability.some(a => isSameDay(toLocalDate(a.date), props.date));
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+      {props.date.getDate()}
+      {isProjectDay && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '3px',
+            left: '6px',
+            right: '6px',
+            height: '3px',
+            borderRadius: '2px',
+            backgroundColor: hasColoredFill ? 'rgba(255,255,255,0.85)' : '#3B3AC2',
+          }}
+        />
+      )}
+    </span>
+  );
+}, [projectBlockDates, availability]);
 ```
 
-Also update the legend dot (wherever the `Assigned Project` legend swatch is) to match: white background with green border instead of solid green fill.
+Add `availability` to the dependency array since we now read it for colour logic.
 
-### 2. Remove tip banner from expanded modal
+### 2. Update the legend swatch (line 562–565)
 
-Delete lines 752–756 (the amber tip banner in the expanded left column).
+Replace the circle dot with a horizontal bar:
 
-### 3. Restructure the Set Availability section (right panel, lines 818–869)
+```tsx
+<div className="flex items-center gap-1.5 text-sm">
+  <span style={{ width: '16px', height: '3px', borderRadius: '2px', backgroundColor: '#3B3AC2', display: 'inline-block' }} />
+  <span className="text-muted-foreground">Assigned Project</span>
+</div>
+```
 
-Reorder the section content as follows:
-
-1. **Section header** — keep "Set Availability" heading
-2. **Hint text** — add `<p className="text-xs text-muted-foreground">Click a day to select it, or click start → end to select a period.</p>`
-3. **From/To date inputs** — two `<Input type="date">` fields:
-   - `From` value bound to `expandedSelectedRange?.from` (formatted as `yyyy-MM-dd`)
-   - `To` value bound to `expandedSelectedRange?.to` (formatted as `yyyy-MM-dd`)
-   - On change, parse the input value and call `setExpandedSelectedRange({ from, to })` — bidirectional sync with the calendar
-4. **4 availability buttons** — unchanged
-5. **Notes textarea** — unchanged
-6. **Save / Remove buttons** — unchanged
-
-### No other changes
-- All modifier data, availability saving, debug logging, interaction logic stays identical.
+### 3. No other changes
+All functionality, fills, events panel, date inputs stay identical.
 
 ### Risk
-Q5 — purely UI layout and styling, no backend or permission changes.
+Q5 — purely visual, no backend or permission changes.
 
