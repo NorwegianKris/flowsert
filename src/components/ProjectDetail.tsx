@@ -37,7 +37,7 @@ import {
   Layers,
   Repeat,
 } from 'lucide-react';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO, differenceInDays, isWithinInterval } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,10 +81,45 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
   const { phases, addPhase, removePhase, updatePhase } = useProjectPhases(project.id);
   const { applications } = useProjectApplications(project.isPosted ? project.id : undefined);
 
-  const config = statusConfig[project.status];
+  // Load sibling shifts for grouped projects
+  const siblings = useMemo(() => {
+    if (!project.shiftGroupId || !allProjects) return [];
+    return allProjects
+      .filter(p => p.shiftGroupId === project.shiftGroupId)
+      .sort((a, b) => (a.shiftNumber || 0) - (b.shiftNumber || 0));
+  }, [project.shiftGroupId, allProjects]);
+
+  // Default selected shift to currently active shift or shift 1
+  const defaultShiftId = useMemo(() => {
+    if (siblings.length <= 1) return project.id;
+    const today = new Date();
+    const activeSibling = siblings.find(s => {
+      if (!s.endDate) return false;
+      try {
+        return isWithinInterval(today, { start: parseISO(s.startDate), end: parseISO(s.endDate) });
+      } catch { return false; }
+    });
+    return activeSibling?.id || siblings[0]?.id || project.id;
+  }, [siblings, project.id]);
+
+  const [selectedShiftId, setSelectedShiftId] = useState<string>(defaultShiftId);
+
+  // Compute group-aware status
+  const groupStatus = useMemo(() => {
+    if (siblings.length <= 1) return project.status;
+    return siblings.some(s => s.status === 'active') ? 'active' : project.status;
+  }, [siblings, project.status]);
+
+  const config = statusConfig[groupStatus];
   const StatusIcon = config.icon;
+
+  // Get the selected shift project for personnel filtering
+  const selectedShiftProject = useMemo(() => {
+    if (siblings.length <= 1) return project;
+    return siblings.find(s => s.id === selectedShiftId) || project;
+  }, [siblings, selectedShiftId, project]);
   
-  const assignedPersonnel = project.assignedPersonnel
+  const assignedPersonnel = selectedShiftProject.assignedPersonnel
     .map((id) => personnel.find((p) => p.id === id))
     .filter((p): p is Personnel => p !== undefined);
 
@@ -291,33 +326,44 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
             </div>
           </div>
 
-          {/* Shift siblings navigation */}
-          {project.shiftGroupId && allProjects && onSelectProject && (() => {
-            const siblings = allProjects
-              .filter(p => p.shiftGroupId === project.shiftGroupId)
-              .sort((a, b) => (a.shiftNumber || 0) - (b.shiftNumber || 0));
-            if (siblings.length <= 1) return null;
-            return (
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
-                <span className="text-xs text-muted-foreground font-medium">Shifts:</span>
-                {siblings.map(s => (
+          {/* Shift siblings navigation — now used only as a legacy fallback; main selector is below */}
+        </CardContent>
+      </Card>
+
+      {/* Shift Selector Tab Bar */}
+      {siblings.length > 1 && (
+        <Card className="border-border/50 bg-teal-500/5 border-teal-500/30">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground font-medium mr-1">
+                <Layers className="h-3.5 w-3.5 inline mr-1" />
+                Shift:
+              </span>
+              {siblings.map(s => {
+                const sStart = parseISO(s.startDate);
+                const sEnd = s.endDate ? parseISO(s.endDate) : null;
+                const dateLabel = sEnd
+                  ? `${format(sStart, 'MMM d')} – ${format(sEnd, 'MMM d')}`
+                  : format(sStart, 'MMM d');
+                return (
                   <button
                     key={s.id}
-                    onClick={() => s.id !== project.id && onSelectProject(s)}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                      s.id === project.id
-                        ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/50'
+                    onClick={() => setSelectedShiftId(s.id)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      s.id === selectedShiftId
+                        ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/50 shadow-sm'
                         : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/50'
                     }`}
                   >
-                    Shift {s.shiftNumber}
+                    <span className="font-semibold">Shift {s.shiftNumber}</span>
+                    <span className="ml-1.5 opacity-70">{dateLabel}</span>
                   </button>
-                ))}
-              </div>
-            );
-          })()}
-        </CardContent>
-      </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -368,7 +414,7 @@ export function ProjectDetail({ project, personnel, allProjects, onBack, onUpdat
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground capitalize">
-                {project.status}
+                {groupStatus}
               </p>
               <p className="text-xs text-muted-foreground">Project Status</p>
             </div>
