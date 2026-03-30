@@ -321,24 +321,16 @@ export function AddCertificateDialog({
     // Validate certificates - only require name and date of issue
     const validCerts = certificates.filter(c => {
       const hasType = c.certificateTypeId || c.certificateTypeFreeText?.trim();
-      const hasDateOfIssue = c.dateOfIssue?.trim();
-      
-      if (!hasType || !hasDateOfIssue) return false;
-      
-      return true;
+      return !!hasType;
     });
 
     if (validCerts.length === 0) {
-      toast.error('Please select or enter a certificate type and date of issue for each certificate');
+      toast.error('Please select or enter a certificate type for at least one certificate');
       return;
     }
 
     if (validCerts.length < certificates.length) {
-      toast.warning(`${certificates.length - validCerts.length} certificate(s) are missing required fields and will be skipped`);
-    }
-
-    if (validCerts.length < certificates.length) {
-      toast.warning(`${certificates.length - validCerts.length} certificate(s) are missing required fields and will be skipped`);
+      toast.warning(`${certificates.length - validCerts.length} certificate(s) without a type will be skipped`);
     }
 
     setIsSubmitting(true);

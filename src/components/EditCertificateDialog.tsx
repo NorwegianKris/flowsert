@@ -557,7 +557,7 @@ export function EditCertificateDialog({
             {useCanonicalCertificates && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label>Certificate Type {isAdminOrManager && '*'}</Label>
+                  <Label>Certificate Type</Label>
                   {/* Subtle alias indicator */}
                   {debouncedName && !aliasLoading && (
                     <TooltipProvider>
