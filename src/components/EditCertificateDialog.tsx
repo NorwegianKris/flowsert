@@ -424,10 +424,6 @@ export function EditCertificateDialog({
   const handleSubmit = async () => {
     if (!certificate) return;
 
-    if (!dateOfIssue || !placeOfIssue || !issuingAuthority) {
-      toast.error('Please fill in all required fields (Date of Issue, Place of Issue, Issuing Authority)');
-      return;
-    }
 
     // Check for ambiguity warning if admin wants to remember this name
     if (useCanonicalCertificates && isAdminOrManager && rememberName && selectedTypeId) {
@@ -485,7 +481,7 @@ export function EditCertificateDialog({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="cert-name">Certificate Name *</Label>
+              <Label htmlFor="cert-name">Certificate Name</Label>
               <Input
                 id="cert-name"
                 value={name}
@@ -517,7 +513,7 @@ export function EditCertificateDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date-of-issue">Date of Issue *</Label>
+                <Label htmlFor="date-of-issue">Date of Issue</Label>
                 <Input
                   id="date-of-issue"
                   type="date"
@@ -561,7 +557,7 @@ export function EditCertificateDialog({
             {useCanonicalCertificates && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label>Certificate Type {isAdminOrManager && '*'}</Label>
+                  <Label>Certificate Type</Label>
                   {/* Subtle alias indicator */}
                   {debouncedName && !aliasLoading && (
                     <TooltipProvider>
