@@ -513,7 +513,7 @@ export function EditCertificateDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date-of-issue">Date of Issue *</Label>
+                <Label htmlFor="date-of-issue">Date of Issue</Label>
                 <Input
                   id="date-of-issue"
                   type="date"
