@@ -481,7 +481,7 @@ export function EditCertificateDialog({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="cert-name">Certificate Name *</Label>
+              <Label htmlFor="cert-name">Certificate Name</Label>
               <Input
                 id="cert-name"
                 value={name}
