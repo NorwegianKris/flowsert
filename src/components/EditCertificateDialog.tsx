@@ -424,10 +424,6 @@ export function EditCertificateDialog({
   const handleSubmit = async () => {
     if (!certificate) return;
 
-    if (!dateOfIssue || !placeOfIssue || !issuingAuthority) {
-      toast.error('Please fill in all required fields (Date of Issue, Place of Issue, Issuing Authority)');
-      return;
-    }
 
     // Check for ambiguity warning if admin wants to remember this name
     if (useCanonicalCertificates && isAdminOrManager && rememberName && selectedTypeId) {
