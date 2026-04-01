@@ -1,26 +1,47 @@
+## Plan: Fix notification_recipients cross-tenant RLS vulnerability
 
+### Problem
 
-## Plan: Remove mandatory field requirements from certificate forms
+The `notification_recipients` table has two admin policies (SELECT and INSERT) that only check `auth.uid() IS NOT NULL AND has_role(auth.uid(), 'admin')` — no `business_id` scoping. Any admin from any business can view and insert notification recipients for all businesses.
 
-### File 1: `src/components/EditCertificateDialog.tsx`
+### Migration
 
-**Remove validation block (lines 427-430):** Delete the check that requires `dateOfIssue`, `placeOfIssue`, and `issuingAuthority` — allow saving with any combination of fields filled.
+Drop and recreate both admin policies with proper business_id scoping via the `personnel` table:
 
-**Remove asterisks from labels:**
-- Line 488: `Certificate Name *` → `Certificate Name`
-- Line 520: `Date of Issue *` → `Date of Issue`
-- Line 564: Remove the conditional `*` from Certificate Type label
+```sql
+-- Fix SELECT: admin can only see recipients in their business
+DROP POLICY "Admins can view notification recipients" ON public.notification_recipients;
+CREATE POLICY "Admins can view notification recipients"
+ON public.notification_recipients
+FOR SELECT TO public
+USING (
+  has_role(auth.uid(), 'admin'::app_role)
+  AND EXISTS (
+    SELECT 1 FROM public.personnel p
+    WHERE p.id = notification_recipients.personnel_id
+      AND p.business_id = get_user_business_id(auth.uid())
+  )
+);
 
-### File 2: `src/components/AddCertificateDialog.tsx`
-
-**Relax validation (lines 322-328):** Change `validCerts` filter to only require a certificate type (name) — remove the `hasDateOfIssue` requirement. A certificate without a name is meaningless, but all other fields become optional.
-
-**Remove duplicate warning toast (lines 340-342):** The same toast fires twice — clean up while here.
+-- Fix INSERT: admin can only add recipients in their business
+DROP POLICY "Admins can insert notification recipients" ON public.notification_recipients;
+CREATE POLICY "Admins can insert notification recipients"
+ON public.notification_recipients
+FOR INSERT TO public
+WITH CHECK (
+  has_role(auth.uid(), 'admin'::app_role)
+  AND EXISTS (
+    SELECT 1 FROM public.personnel p
+    WHERE p.id = notification_recipients.personnel_id
+      AND p.business_id = get_user_business_id(auth.uid())
+  )
+);
+```
 
 ### No changes to
-- Database schema or RLS
-- Non-certificate forms
+- Client code (NotificationBell, SendNotificationDialog already filter by personnel_id)
+- Worker policies (already properly scoped via `p.user_id = auth.uid()`)
+- `notifications` table policies (already has `business_id = get_user_business_id()`)
 
 ### Risk
-Q5 — purely UI validation change.
-
+Q1 — RLS/policy change. Anchor required before publish.
